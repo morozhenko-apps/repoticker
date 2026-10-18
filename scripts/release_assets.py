@@ -95,7 +95,9 @@ def merge(parts, output, version):
             if not local.is_file() or local.stat().st_size != item["size"] or digest(local) != item["sha256"]:
                 raise ValueError(f"Artifact checksum mismatch: {rel}")
             catalog[str(rel)] = item
-    if set(found) != set(TYPES):
+    # macOS remains optional until an Apple signing account exists.
+    required = {"linux", "windows"}
+    if not required.issubset(found):
         raise ValueError("Missing platforms")
     output.write_text(json.dumps({
         "schema": 1, "product": "RepoTicker", "version": version,

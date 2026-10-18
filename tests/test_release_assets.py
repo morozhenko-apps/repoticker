@@ -33,8 +33,10 @@ class ReleaseAssetsTest(unittest.TestCase):
             result = root / "latest.json"
             a.merge(parts, result, "0.1.0")
             self.assertEqual(json.loads(result.read_text())["product"], "RepoTicker")
+            # Linux/Windows form a complete release while macOS is stubbed.
+            a.merge(parts[:2], result, "0.1.0")
             with self.assertRaisesRegex(ValueError, "Missing platforms"):
-                a.merge(parts[:2], result, "0.1.0")
+                a.merge(parts[:1], result, "0.1.0")
             (root / "linux" / a.canonical("0.1.0", "linux", ".deb")).write_bytes(b"wrong")
             with self.assertRaisesRegex(ValueError, "checksum"):
                 a.merge(parts, result, "0.1.0")

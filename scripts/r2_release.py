@@ -75,21 +75,21 @@ def source_map(release, apt, version):
             raise ValueError("Artifact manifest mismatch: " + platform)
         for name in sorted(required):
             result[f"releases/v{version}/{platform}/{name}"] = base / name
-    required = [
-        "pool/main/r/repoticker", "dists/stable/main/binary-amd64/by-hash/SHA256"
-    ]
-    if not all((apt / p).is_dir() for p in required):
-        raise ValueError("Incomplete signed APT snapshot")
-    for file in apt.rglob("*"):
-        if file.is_file() and file.name not in ("Release", "Packages", "Packages.gz") and \
-                "/by-hash/" not in file.as_posix() and file.name != "InRelease":
-            # pool deb and public keyring
-            result["apt/" + file.relative_to(apt).as_posix()] = file
-        elif file.is_file() and "/by-hash/" in file.as_posix():
-            result["apt/" + file.relative_to(apt).as_posix()] = file
+    index = apt / "dists/stable/main/binary-amd64"
+    package = apt / f"pool/main/r/repoticker/repoticker_{version}_amd64.deb"
+    keyring = apt / "repoticker-archive-keyring.gpg"
     mutable = apt / "dists/stable/InRelease"
-    if not mutable.is_file():
-        raise ValueError("Signed InRelease is absent")
+    allowed = [package, keyring, index / "Packages", index / "Packages.gz"]
+    if not all(path.is_file() and not path.is_symlink() for path in allowed + [mutable]):
+        raise ValueError("Incomplete signed APT snapshot")
+    from release_assets import digest as checksum
+    for path in (index / "Packages", index / "Packages.gz"):
+        hashed = index / "by-hash/SHA256" / checksum(path)
+        if not hashed.is_file() or hashed.is_symlink() or checksum(hashed) != checksum(path):
+            raise ValueError("Missing or invalid APT by-hash index: " + path.name)
+        allowed.append(hashed)
+    for path in allowed:
+        result["apt/" + path.relative_to(apt).as_posix()] = path
     return result, ("apt/dists/stable/InRelease", mutable)
 
 

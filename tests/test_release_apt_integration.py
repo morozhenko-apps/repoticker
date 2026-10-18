@@ -63,6 +63,9 @@ class SignedAptIntegration(unittest.TestCase):
             index = output / "dists/stable/main/binary-amd64/Packages.gz"
             hashed = index.parent / "by-hash/SHA256" / apt_repository.sha256(index)
             self.assertEqual(index.read_bytes(), hashed.read_bytes())
+            uncompressed = index.parent / "Packages"
+            plain_hash = uncompressed.parent / "by-hash/SHA256" / apt_repository.sha256(uncompressed)
+            self.assertEqual(uncompressed.read_bytes(), plain_hash.read_bytes())
             # Wrong public key or altered signed release must not pass gpgv.
             signed = output / "dists/stable/InRelease"
             original = signed.read_bytes()

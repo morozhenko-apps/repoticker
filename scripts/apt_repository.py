@@ -62,10 +62,11 @@ def assemble(deb: Path, out: Path, version: str, gpg_home: Path,
         with gzip.GzipFile(filename="", mode="wb", fileobj=f, mtime=0) as g:
             g.write(packages)
     archive = index / "Packages.gz"
-    checksum = sha256(archive)
-    by_hash = index / "by-hash/SHA256" / checksum
-    by_hash.parent.mkdir(parents=True)
-    shutil.copyfile(archive, by_hash)
+    for archive in (index / "Packages", index / "Packages.gz"):
+        checksum = sha256(archive)
+        by_hash = index / "by-hash/SHA256" / checksum
+        by_hash.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(archive, by_hash)
 
     release_dir = out / "dists/stable"
     release_body = subprocess.run(["apt-ftparchive", "release", "."],

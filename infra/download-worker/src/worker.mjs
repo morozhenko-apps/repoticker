@@ -4,6 +4,7 @@ const paths = [
   /^releases\/v(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\/(?:linux|windows)\/[A-Za-z0-9][A-Za-z0-9._-]{0,180}$/,
   /^apt\/pool\/main\/r\/repoticker\/repoticker_(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)_amd64\.deb$/,
   /^apt\/dists\/stable\/InRelease$/,
+  /^apt\/dists\/stable\/main\/binary-amd64\/Packages(?:\.gz)?$/,
   /^apt\/dists\/stable\/main\/binary-amd64\/by-hash\/SHA256\/[a-f0-9]{64}$/,
   /^apt\/repoticker-archive-keyring\.gpg$/
 ];
@@ -19,7 +20,8 @@ export function keyFor(rawUrl) {
 function mime(key) {
   if (key.endsWith(".deb")) return "application/vnd.debian.binary-package";
   if (key.endsWith(".gpg")) return "application/pgp-keys";
-  if (key.endsWith(".sha256") || key.endsWith("InRelease")) return "text/plain; charset=utf-8";
+  if (key.endsWith("Packages.gz")) return "application/gzip";
+  if (key.endsWith(".sha256") || key.endsWith("InRelease") || key.endsWith("/Packages")) return "text/plain; charset=utf-8";
   return "application/octet-stream";
 }
 

@@ -8,8 +8,13 @@ test("allow only release assets and signed apt URLs", () => {
     "dist/RepoTicker/apt/dists/stable/InRelease");
   assert.ok(keyFor(base + "releases/v0.1.0/linux/RepoTicker-0.1.0-linux-x64.AppImage"));
   assert.ok(keyFor(base + "apt/dists/stable/main/binary-amd64/by-hash/SHA256/" + "a".repeat(64)));
+  assert.equal(keyFor(base + "apt/dists/stable/main/binary-amd64/Packages.gz"),
+    "dist/RepoTicker/apt/dists/stable/main/binary-amd64/Packages.gz");
+  assert.equal(keyFor(base + "apt/dists/stable/main/binary-amd64/Packages"),
+    "dist/RepoTicker/apt/dists/stable/main/binary-amd64/Packages");
   for (const path of ["", "../rQuickShare/key", "apt/", "apt/dists/stable/Release",
-                     "apt/../../secret", "%2e%2e/foo", "apt/list", "random.txt"]) {
+                     "apt/../../secret", "%2e%2e/foo", "apt/list",
+                     "apt/dists/stable/main/binary-amd64/Packages.xz", "random.txt"]) {
     assert.equal(keyFor(base + path), null, path);
   }
 });

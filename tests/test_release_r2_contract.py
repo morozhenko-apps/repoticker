@@ -26,14 +26,19 @@ class R2ArtifactContract(unittest.TestCase):
             (folder / "part.json").write_text(
                 json.dumps({"platform": platform, "version": "0.1.0", "files": files}))
         apt = root / "apt"
-        for path in (
-            "pool/main/r/repoticker/repoticker_0.1.0_amd64.deb",
-            "dists/stable/main/binary-amd64/by-hash/SHA256/" + "a" * 64,
-            "dists/stable/InRelease", "repoticker-archive-keyring.gpg",
-        ):
+        for path in ("pool/main/r/repoticker/repoticker_0.1.0_amd64.deb",
+                     "dists/stable/InRelease", "repoticker-archive-keyring.gpg",
+                     "dists/stable/main/binary-amd64/Packages",
+                     "dists/stable/main/binary-amd64/Packages.gz"):
             item = apt / path
             item.parent.mkdir(parents=True, exist_ok=True)
-            item.write_bytes(b"test")
+            item.write_bytes(b"test-" + path.encode())
+        index = apt / "dists/stable/main/binary-amd64"
+        for name in ("Packages", "Packages.gz"):
+            item = index / name
+            hashed = index / "by-hash/SHA256" / release_assets.digest(item)
+            hashed.parent.mkdir(parents=True, exist_ok=True)
+            hashed.write_bytes(item.read_bytes())
         return apt
 
     def test_rejects_wrong_native_files_before_any_r2_write(self):
@@ -44,6 +49,8 @@ class R2ArtifactContract(unittest.TestCase):
             items, active = r2_release.source_map(release, apt, "0.1.0")
             self.assertIn("releases/v0.1.0/windows/RepoTicker-Setup-0.1.0-win-x64.exe", items)
             self.assertEqual(active[0], "apt/dists/stable/InRelease")
+            self.assertIn("apt/dists/stable/main/binary-amd64/Packages.gz", items)
+            self.assertIn("apt/dists/stable/main/binary-amd64/Packages", items)
             unexpected = release / "linux" / "evil-0.1.0.deb"
             unexpected.write_bytes(b"bad")
             with self.assertRaisesRegex(ValueError, "Unexpected file"):

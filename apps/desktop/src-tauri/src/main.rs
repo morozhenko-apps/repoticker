@@ -202,6 +202,17 @@ fn execute(
     let targets: Vec<_> = repositories
         .into_iter()
         .filter(|path| only_path.is_none_or(|requested| path.to_string_lossy() == requested))
+        .filter(|path| {
+            if operation != "safe_pull" {
+                return true;
+            }
+            // Only branches eligible for fast-forward are attempted. Inspect
+            // again inside safe_pull to fail closed if another agent changed it.
+            matches!(
+                git::inspect(path),
+                Ok(status) if matches!(status.decision, SyncDecision::FastForward { .. })
+            )
+        })
         .collect();
     let total = targets.len();
     notify_progress(app, operation, "", 0, total, "begin", None);

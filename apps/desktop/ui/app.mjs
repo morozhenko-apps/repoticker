@@ -166,7 +166,7 @@ function updateActionState() {
   count.classList.toggle("has-commits", eligible > 0);
   byId("sync-all").title = eligible
     ? eligible + " commits eligible for fast-forward (clean upstream branches)"
-    : "No branches eligible for safe pull. Fetch first to refresh remote refs.";
+    : "No branches eligible for safe pull. Run Fetch to refresh remote refs.";
 }
 function render(next) {
   snapshot = next;

@@ -292,10 +292,10 @@ pub fn fetch(repo: &Path) -> Result<OperationOutcome, GitError> {
     Ok(OperationOutcome::Fetched)
 }
 
-/// Fetch then attempt the current branch fast-forward only.
-/// A rejected check does not attempt a merge, rebase, stash or reset.
+/// Fast-forward using local fetched upstream refs; no implicit network access.
+/// Fetch first to refresh remote refs. Recheck eligibility immediately before
+/// any branch mutation; do not merge, rebase, stash or reset.
 pub fn safe_pull(repo: &Path) -> Result<OperationOutcome, GitError> {
-    fetch(repo)?;
     let state = inspect(repo)?;
     match state.decision {
         SyncDecision::FastForward { commits } => {

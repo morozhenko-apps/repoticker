@@ -144,6 +144,7 @@ fn fetch_only_changes_remote_refs_and_safe_pull_fast_forwards() {
 fn untracked_and_dirty_files_skip_without_stashing() {
     let f = Fixture::new();
     f.push_more();
+    git::fetch(&f.local).expect("refresh remote refs");
     fs::write(f.local.join("untracked.txt"), "local content").expect("untracked");
     let before = run(&f.local, &["rev-parse", "HEAD"]);
     assert_eq!(
@@ -164,6 +165,7 @@ fn divergent_commits_skip_without_merge() {
     run(&f.local, &["add", "local.txt"]);
     run(&f.local, &["commit", "-m", "local commit"]);
     f.push_more();
+    git::fetch(&f.local).expect("refresh remote refs");
     let before = run(&f.local, &["rev-parse", "HEAD"]);
     assert_eq!(
         git::safe_pull(&f.local).expect("decision"),
@@ -195,4 +197,24 @@ fn explicitly_enrolled_root_can_be_the_repository_itself() {
 fn missing_root_and_relative_path_rejected() {
     assert!(git::discover(Path::new("/nonexistent/repoticker-root-test")).is_err());
     assert!(git::normalize_root("relative/path").is_err());
+}
+
+#[test]
+fn safe_pull_uses_fetched_refs_without_implicit_network() {
+    let f = Fixture::new();
+    f.push_more();
+    let old_remote_ref = run(&f.local, &["rev-parse", "refs/remotes/origin/dev"]);
+    assert_eq!(
+        git::safe_pull(&f.local).expect("no network pull"),
+        git::OperationOutcome::AlreadyCurrent
+    );
+    assert_eq!(
+        run(&f.local, &["rev-parse", "refs/remotes/origin/dev"]),
+        old_remote_ref
+    );
+    git::fetch(&f.local).expect("explicit fetch");
+    assert_eq!(
+        git::safe_pull(&f.local).expect("fast forward"),
+        git::OperationOutcome::Updated(1)
+    );
 }

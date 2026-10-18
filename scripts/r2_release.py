@@ -40,17 +40,41 @@ def media(path):
 
 
 def source_map(release, apt, version):
+    # Do not allow a compromised/incorrect artifact job to make us publish
+    # arbitrary side files simply because their names include the version.
+    from release_assets import TYPES, canonical, digest
+    import json
     result = {}
     for platform in ("linux", "windows"):
         base = release / platform
-        if not base.is_dir():
-            raise ValueError("Missing release artifact directory " + str(base))
-        for file in base.iterdir():
-            if not file.is_file() or file.name == "part.json":
-                continue
-            if version not in file.name:
-                raise ValueError("Wrong version in bundle")
-            result[f"releases/v{version}/{platform}/{file.name}"] = file
+        if not base.is_dir() or not (base / "part.json").is_file():
+            raise ValueError("Missing verified platform artifact directory " + str(base))
+        manifest = json.loads((base / "part.json").read_text())
+        if manifest.get("platform") != platform or manifest.get("version") != version:
+            raise ValueError("Wrong artifact platform/version")
+        required = set()
+        entries = {}
+        for extension in TYPES[platform]:
+            name = canonical(version, platform, extension)
+            required.update((name, name + ".sha256"))
+            binary = base / name
+            sidecar = base / (name + ".sha256")
+            if not binary.is_file() or not sidecar.is_file() or binary.is_symlink():
+                raise ValueError("Missing or unsafe native release artifact: " + name)
+            checksum = digest(binary)
+            if sidecar.read_text().strip() != checksum + "  " + name:
+                raise ValueError("Release checksum sidecar mismatch: " + name)
+            entries[f"{platform}/{name}"] = (checksum, binary.stat().st_size)
+        if {file.name for file in base.iterdir() if file.is_file()} != required | {"part.json"}:
+            raise ValueError("Unexpected file in release artifact directory " + str(base))
+        actual = {
+            item["path"]: (item["sha256"], item["size"])
+            for item in manifest.get("files", [])
+        }
+        if actual != entries or len(manifest.get("files", [])) != len(entries):
+            raise ValueError("Artifact manifest mismatch: " + platform)
+        for name in sorted(required):
+            result[f"releases/v{version}/{platform}/{name}"] = base / name
     required = [
         "pool/main/r/repoticker", "dists/stable/main/binary-amd64/by-hash/SHA256"
     ]

@@ -38,3 +38,9 @@ Polling interval, sync automation enable/disable, repository roots/enrollment an
 - Hide automatically 15 seconds after last pointer, key, wheel or touch activity; explicit Hide and tray clicks remain available. Git operations continue safely if the card disappears.
 - New Linux dependency: the system GTK Layer Shell library and its development headers (on Ubuntu, `libgtk-layer-shell-dev`) are needed for building from source. No new external service or paid API is required.
 - The workspace currently does not check in `Cargo.lock`, so generated local lockfiles are ignored to prevent a false dirty checkout. Pinning and committing the release lockfile is a hardening task before reproducible packaging.
+
+## Preferences and dragging (2026-10-18)
+
+- Settings opens in an independent, resizable Tauri window, not in the compact tray card. Its first working page manages enrolled repository roots and persists an English/Russian language **preference**; interface translation itself is not yet implemented. GitHub authorization, polling mode and optional Worker URL are clearly marked upcoming and disabled.
+- The popup is draggable using any non-interactive body space. KDE Wayland changes the GTK Layer Shell bottom/right margins; changing the list height retains that same bottom anchor. The expanded height is clamped to available screen space when the card has been dragged high up. On other platforms use native Tauri window dragging.
+- User icon import is provided by `tools/import_icon.py` and requires the user's source file. The GitHub integration has no access to local `~/Downloads` files. Generated Linux/Windows/macOS icon assets must be reviewed and committed separately.

@@ -69,3 +69,14 @@ test("native progress reports are in rows with translucent fills and bulk button
   assert.match(ui, /const IDLE_MS = 15_000/);
   assert.match(ui, /"repoticker-card-shown"/);
 });
+
+test("settings has a separate entrypoint and card can be dragged", () => {
+  const settings = readFileSync(new URL("../apps/desktop/ui/settings.html", import.meta.url), "utf8");
+  assert.match(settings, /id="roots-list"/);
+  assert.match(settings, /id="language"/);
+  assert.match(settings, /Worker URL/);
+  assert.doesNotMatch(html, /id="roots-editor"/);
+  assert.match(ui, /start_card_drag/);
+  assert.match(ui, /move_card/);
+  assert.match(ui, /movementX/);
+});

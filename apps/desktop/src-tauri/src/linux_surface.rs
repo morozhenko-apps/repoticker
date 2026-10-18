@@ -89,13 +89,18 @@ pub fn resize(app: AppHandle, height: i32) -> Result<(), String> {
     // Bottom anchor belongs to the compositor; expanding to a larger height
     // always grows upward, independent of the previous client position.
     on_main(&app, move |window| {
+        let max_height = MARGINS.with(|offset| {
+            let bottom = offset.borrow().0;
+            window.screen().map_or(900, |screen| (screen.height() - bottom - 8).max(122))
+        });
+        let bounded_height = height.min(max_height);
         CONTENT.with(|cell| {
             if let Some(content) = cell.borrow().as_ref() {
-                content.set_size_request(390, height);
+                content.set_size_request(390, bounded_height);
             }
         });
-        window.set_default_size(390, height);
-        window.resize(390, height);
+        window.set_default_size(390, bounded_height);
+        window.resize(390, bounded_height);
     })
 }
 

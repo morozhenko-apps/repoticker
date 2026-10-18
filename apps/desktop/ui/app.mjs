@@ -292,11 +292,11 @@ dragSurface.addEventListener("pointerdown", async event => {
 });
 dragSurface.addEventListener("pointermove", event => {
   if (!dragging || dragging.id !== event.pointerId) return;
-  const dx = Math.round(event.clientX - dragging.x);
-  const dy = Math.round(event.clientY - dragging.y);
+  // View-local client coordinates change when the popup itself moves.
+  // movementX/Y are pointer deltas and avoid reversing the drag after each frame.
+  const dx = Math.round(event.movementX);
+  const dy = Math.round(event.movementY);
   if (!dx && !dy) return;
-  dragging.x = event.clientX;
-  dragging.y = event.clientY;
   void invoke("move_card", { dx, dy }).catch(showError);
 });
 function stopDragging(event) {

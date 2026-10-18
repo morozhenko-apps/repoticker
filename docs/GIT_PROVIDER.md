@@ -41,3 +41,12 @@ All actions are currently **manual**, accessible from the card toolbar, each rep
 Additional tests are mandatory for staged tracked modifications, rebase/cherry-pick markers, concurrent head movements, symlink escapes, hooks/credential helpers, multiple remotes, timeout/cancel, and Windows/macOS path handling.
 
 No repository deletion, reset, rebase, checkout switch or force operation is offered.
+
+## Manual Fetch versus Safe pull
+
+Fetch is the **only** operation that contacts configured remotes. Safe pull
+uses the last fetched refs and targets only branches that are actually behind
+and eligible for a fast-forward. All target branches are re-inspected before
+any merge. Running Safe pull does not trigger 32 redundant network fetches.
+When new commits are pushed upstream after your most recent Fetch, run Fetch
+again to discover them; the local snapshot cannot know about unseen changes.

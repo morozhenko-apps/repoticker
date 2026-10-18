@@ -187,7 +187,7 @@ fn explicitly_enrolled_root_can_be_the_repository_itself() {
     let f = Fixture::new();
     assert_eq!(
         git::discover(&f.local).expect("explicit repo"),
-        vec![f.local]
+        vec![f.local.clone()]
     );
 }
 

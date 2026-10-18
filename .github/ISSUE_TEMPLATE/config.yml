@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerabilities
+    url: https://github.com/morozhenko-apps/repoticker/security/advisories
+    about: Report security-sensitive findings privately rather than in public Issues.

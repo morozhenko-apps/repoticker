@@ -1,13 +1,35 @@
-# Contributing
+# Bug reports and forks
 
-RepoTicker welcomes bug reports and focused contributions. Please open an issue before major changes.
+RepoTicker is developed and maintained by morozhenko apps.
 
-- Keep the application small, local-first and transparent about unavailable data.
-- Do not add mandatory SaaS services or feature paywalls.
-- Keep platform adapters isolated, with independent Linux/Windows/macOS checks.
-- Add regression tests for changes to Git safety, credentials or relay trust boundaries.
-- Run `cargo fmt --all --check`, `cargo test -p repoticker-core`, `cargo clippy -p repoticker-core --all-targets -- -D warnings` and `node --test tests/*.test.mjs` before proposing a PR.
-- Target `dev` with small PRs; main is the reviewed stable snapshot.
-- Never commit tokens, secrets, local credentials or privately retrieved repository contents.
+## Report a bug
 
-Please do not claim platform compatibility without actual installed acceptance evidence.
+Bug reports, reproducible defects, platform compatibility findings and
+security observations are welcome. Use GitHub Issues and the Bug report
+template. Include operating system, application version, expected/actual
+behavior and reproduction steps; sanitize paths, repository names, tokens,
+access keys, usernames, and private CI logs.
+
+Please report security vulnerabilities privately using GitHub's security
+advisory reporting instead of exposing a working exploit or secret in Issues.
+
+## Forking and code contributions
+
+You may fork RepoTicker and independently maintain and distribute your work
+subject to the repository's license. Preserve copyright/license notices as
+required by that license. Do not misrepresent a fork as an official
+morozhenko apps release.
+
+The upstream maintainer currently does **not accept third-party code
+contributions or feature PRs**. A GitHub pull request is not a commitment
+to review, merge or support external work. Please do not open PRs expecting
+code integration; use Issues for actionable bug reports instead.
+
+## Development and release
+
+Local tests: cargo fmt --all --check, cargo test -p repoticker-core,
+cargo clippy -p repoticker-core --all-targets -- -D warnings,
+node --test tests/*.test.mjs.
+
+Do not report signed, notarized, or installer-level compatibility unless
+tested on an actual target OS. Never put personal secrets in test fixtures.

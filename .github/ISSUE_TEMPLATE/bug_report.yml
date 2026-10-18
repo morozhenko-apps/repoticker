@@ -1,0 +1,95 @@
+name: Bug report
+description: Report a reproducible problem with RepoTicker
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the issue in the official RepoTicker project.
+        Remove tokens, personal data, private Git remote URLs, paths
+        and credentials from all logs/screenshots.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected area
+      options:
+        - Tray card or desktop window
+        - Local Git fetch
+        - Safe pull
+        - Repository discovery
+        - GitHub Actions and runners
+        - Installation or update
+        - Settings
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: release
+    attributes:
+      label: RepoTicker version or Git SHA
+      placeholder: "0.1.0 or SHA"
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: OS and desktop session
+      placeholder: "Ubuntu 26.04 / KDE Plasma / Wayland; Windows 11; macOS"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install
+    attributes:
+      label: Installation method
+      options:
+        - From source (cargo run)
+        - DEB
+        - AppImage
+        - Windows installer
+        - macOS DMG
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open RepoTicker.
+        2. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Sanitized logs or screenshots (optional)
+      description: Never disclose secrets, names of private repositories, or personal file paths.
+
+  - type: checkboxes
+    id: review
+    attributes:
+      label: Privacy check
+      options:
+        - label: I have checked that the report contains no sensitive data.
+          required: true

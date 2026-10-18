@@ -118,10 +118,17 @@ pub fn hide(app: &AppHandle) -> Result<(), String> {
 /// Move the Wayland popup by adjusting compositor-managed bottom/right margins.
 /// The bottom edge remains anchored through subsequent drawer size changes.
 pub fn shift(app: &AppHandle, dx: i32, dy: i32) -> Result<(), String> {
+    if !visible() {
+        // Ignore any asynchronous pointer deltas arriving after the card hid.
+        return Ok(());
+    }
     if dx.abs() > 150 || dy.abs() > 150 {
         return Err("Invalid drag delta".into());
     }
     on_main(app, move |window| {
+        if !visible() {
+            return;
+        }
         MARGINS.with(|state| {
             let mut margins = state.borrow_mut();
             let new_bottom = (margins.0 - dy).clamp(0, 5000);

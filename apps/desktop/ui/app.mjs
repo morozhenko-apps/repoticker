@@ -17,6 +17,7 @@ let busy = false;
 let view = "compact";
 let progress = null;
 let idleTimer = null;
+let cardVisible = false;
 const IDLE_MS = 15_000;
 const AUTO_HIDE_EVENTS = ["pointermove", "pointerdown", "keydown", "wheel", "touchstart"];
 function cancelAutoHide() {
@@ -24,8 +25,9 @@ function cancelAutoHide() {
 }
 function armAutoHide() {
   cancelAutoHide();
-  // A reparented GTK Layer Shell webview may initially retain the old
-  // hidden Tauri window's visibility state; the tray's show event is authoritative.
+  // Only the compact card is transient. An open Repos drawer must never
+  // disappear while users inspect repositories or perform operations.
+  if (!cardVisible || view !== "compact") return;
   idleTimer = setTimeout(async () => {
     try { await invoke("hide_card"); resetView(); }
     catch (error) { showError(error); }
@@ -211,6 +213,7 @@ async function openView(target) {
   try {
     await invoke("set_card_view", { view: desired });
     view = desired;
+    armAutoHide();
     byId("card").dataset.view = view;
     byId("repo-drawer").hidden = view !== "repos";
     byId("show-repos").setAttribute("aria-pressed", String(view === "repos"));
@@ -260,8 +263,15 @@ window.__TAURI__?.event?.listen?.("repoticker-git-progress", event => {
     row.classList.toggle("is-failed", !!progress?.errors?.has(path));
   });
 });
-window.__TAURI__?.event?.listen?.("repoticker-card-hidden", cancelAutoHide);
-window.__TAURI__?.event?.listen?.("repoticker-card-shown", armAutoHide);
+window.__TAURI__?.event?.listen?.("repoticker-card-hidden", () => {
+  cardVisible = false;
+  cancelAutoHide();
+  stopDragging();
+});
+window.__TAURI__?.event?.listen?.("repoticker-card-shown", () => {
+  cardVisible = true;
+  armAutoHide();
+});
 window.__TAURI__?.event?.listen?.("repoticker-reset-view", () => {
   resetView();
   clearError();
@@ -280,29 +290,59 @@ refresh();
    On KDE Wayland the compositor owns the anchored popup; we adjust its
    margins, not its absolute window coordinates. */
 let dragging = null;
+let dragPendingX = 0;
+let dragPendingY = 0;
+let dragInFlight = false;
 const dragSurface = byId("card");
-dragSurface.addEventListener("pointerdown", async event => {
-  if (event.button !== 0 || event.target.closest("button,input,select,a,[role=button]")) return;
+
+async function sendQueuedDrag() {
+  if (dragInFlight) return;
+  dragInFlight = true;
   try {
-    const anchored = await invoke("start_card_drag");
-    if (!anchored) return; // Native Tauri dragging is already in progress.
-    dragging = { id: event.pointerId, x: event.clientX, y: event.clientY };
-    dragSurface.setPointerCapture(event.pointerId);
+    while (dragging && dragging.active && cardVisible) {
+      const dx = dragPendingX;
+      const dy = dragPendingY;
+      dragPendingX = 0;
+      dragPendingY = 0;
+      if (!dx && !dy) break;
+      await invoke("move_card", { dx: Math.max(-100, Math.min(100, dx)), dy: Math.max(-100, Math.min(100, dy)) });
+    }
   } catch (error) { showError(error); }
+  finally { dragInFlight = false; }
+}
+
+dragSurface.addEventListener("pointerdown", event => {
+  if (event.button !== 0 || !event.isPrimary ||
+      event.target.closest("button,input,select,a,[role=button]")) return;
+  // Capture before awaiting IPC. Otherwise pointerup may arrive first and
+  // leave a stale capture that shifts the popup on subsequent tray openings.
+  dragging = { id: event.pointerId, active: false };
+  dragPendingX = 0;
+  dragPendingY = 0;
+  dragSurface.setPointerCapture(event.pointerId);
+  void invoke("start_card_drag").then(anchored => {
+    if (!dragging || dragging.id !== event.pointerId) return;
+    dragging.active = Boolean(anchored);
+    if (!anchored) stopDragging();
+  }).catch(error => { stopDragging(); showError(error); });
 });
+
 dragSurface.addEventListener("pointermove", event => {
-  if (!dragging || dragging.id !== event.pointerId) return;
-  // View-local client coordinates change when the popup itself moves.
-  // movementX/Y are pointer deltas and avoid reversing the drag after each frame.
-  const dx = Math.round(event.movementX);
-  const dy = Math.round(event.movementY);
-  if (!dx && !dy) return;
-  void invoke("move_card", { dx, dy }).catch(showError);
+  if (!dragging || !dragging.active || dragging.id !== event.pointerId ||
+      !(event.buttons & 1) || !cardVisible) return;
+  dragPendingX += Math.round(event.movementX);
+  dragPendingY += Math.round(event.movementY);
+  void sendQueuedDrag();
 });
-function stopDragging(event) {
-  if (!dragging || dragging.id !== event.pointerId) return;
+
+function stopDragging() {
+  if (dragging && dragSurface.hasPointerCapture(dragging.id)) {
+    dragSurface.releasePointerCapture(dragging.id);
+  }
   dragging = null;
-  if (dragSurface.hasPointerCapture(event.pointerId)) dragSurface.releasePointerCapture(event.pointerId);
+  dragPendingX = 0;
+  dragPendingY = 0;
 }
 dragSurface.addEventListener("pointerup", stopDragging);
 dragSurface.addEventListener("pointercancel", stopDragging);
+dragSurface.addEventListener("lostpointercapture", stopDragging);

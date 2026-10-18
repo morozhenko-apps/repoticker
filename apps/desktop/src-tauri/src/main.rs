@@ -179,7 +179,10 @@ fn scan(app: &AppHandle) -> Result<Snapshot, String> {
     })
 }
 
-fn git_action_result(path: &std::path::Path, outcome: Result<OperationOutcome, GitError>) -> ActionResult {
+fn git_action_result(
+    path: &std::path::Path,
+    outcome: Result<OperationOutcome, GitError>,
+) -> ActionResult {
     let path = path.to_string_lossy().into_owned();
     match outcome {
         Ok(OperationOutcome::Fetched) => ActionResult {

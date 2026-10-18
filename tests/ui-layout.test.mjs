@@ -80,3 +80,12 @@ test("settings has a separate entrypoint and card can be dragged", () => {
   assert.match(ui, /move_card/);
   assert.match(ui, /movementX/);
 });
+
+test("repository drawer disables idle dismissal and drag never survives hiding", () => {
+  assert.match(ui, /view !== "compact"/);
+  assert.match(ui, /if \(!cardVisible \|\| view !== "compact"\) return/);
+  assert.match(ui, /"repoticker-card-hidden"/);
+  assert.match(ui, /stopDragging\(\)/);
+  assert.match(ui, /dragSurface\.setPointerCapture\(event\.pointerId\)/);
+  assert.match(ui, /lostpointercapture/);
+});

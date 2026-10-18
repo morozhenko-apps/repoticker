@@ -44,3 +44,11 @@ Polling interval, sync automation enable/disable, repository roots/enrollment an
 - Settings opens in an independent, resizable Tauri window, not in the compact tray card. Its first working page manages enrolled repository roots and persists an English/Russian language **preference**; interface translation itself is not yet implemented. GitHub authorization, polling mode and optional Worker URL are clearly marked upcoming and disabled.
 - The popup is draggable using any non-interactive body space. KDE Wayland changes the GTK Layer Shell bottom/right margins; changing the list height retains that same bottom anchor. When dragged close to the top of the screen, a tall drawer can extend beyond the visible area; compositor-aware per-monitor height clamping remains a physical acceptance item. On other platforms use native Tauri window dragging.
 - User icon import is provided by `tools/import_icon.py` and requires the user's source file. The GitHub integration has no access to local `~/Downloads` files. Generated Linux/Windows/macOS icon assets must be reviewed and committed separately.
+
+## 2026-10-18 visual and concurrency review
+
+- Compact card palette is intentionally close to rQuickShare: softly grey rounded surface, subtle border, light buttons with clear outlined boundaries. The CI strip sits directly above the four actions; no duplicate headings or blank status rows.
+- The Linux layer popup retains the current bottom/right margins across hide/reopen. Asynchronous drag requests are ignored once hidden, and a pointer drag is captured before starting asynchronous IPC, preventing stale movement after pointerup.
+- Repos drawer disables 15-second idle hide; only compact mode is transient. Explicit Hide and tray click still hide immediately.
+- Manual Fetch uses a bounded worker pool of four *distinct* repositories, with per-repo success/error isolation and true completion progress. Safe Pull is a separate, sequential offline fast-forward of locally fetched upstream refs; it does not issue another fetch.
+- Settings is a separate fixed-size window, with compact General, Local repositories and GitHub/Relay panels and no whole-page scrolling. Only the enrolled-root list may scroll when long.

@@ -69,3 +69,6 @@ button:focus-visible, input:focus-visible, .quota-anchor:focus-visible { outline
 .action:disabled { background: #f1f2f3; color: #9ba1a9; opacity: 1; box-shadow: none; }
 .quota-tooltip { background: #f8fafb; border-color: #bcc4cc; }
 #notice { background: #fcf7f3; }
+
+/* Ensure hover details remain legible with a light rQuickShare-like surface. */
+.quota-tooltip { color: #242b30; }

@@ -10,9 +10,9 @@ use std::{
     sync::Mutex,
 };
 #[cfg(target_os = "linux")]
-mod linux_tray;
-#[cfg(target_os = "linux")]
 mod linux_surface;
+#[cfg(target_os = "linux")]
+mod linux_tray;
 
 #[cfg(not(target_os = "linux"))]
 use tauri::{

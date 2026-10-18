@@ -62,7 +62,7 @@ test("successes do not create logs, errors remain visible and check is green", (
 
 test("native progress reports are in rows with translucent fills and bulk button percentages", () => {
   assert.match(ui, /"repoticker-git-progress"/);
-  assert.match(ui, /data[.]repoPath/);
+  assert.match(ui, /dataset[.]repoPath/);
   assert.match(ui, /pct \+ "%"/);
   assert.match(css, /[.]repo-row[.]is-running::before/);
   assert.match(css, /[.]repo-row[.]is-finished::before/);

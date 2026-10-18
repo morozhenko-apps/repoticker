@@ -63,7 +63,10 @@ pub fn install(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn on_main(app: &AppHandle, action: impl FnOnce(&gtk::ApplicationWindow) + Send + 'static) -> Result<(), String> {
+fn on_main(
+    app: &AppHandle,
+    action: impl FnOnce(&gtk::ApplicationWindow) + Send + 'static,
+) -> Result<(), String> {
     let app = app.clone();
     app.run_on_main_thread(move || {
         CARD.with(|cell| {

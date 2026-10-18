@@ -485,7 +485,10 @@ fn open_project_website() -> Result<(), String> {
     let mut command = std::process::Command::new("open");
     #[cfg(target_os = "windows")]
     let mut command = std::process::Command::new("explorer");
-    command.arg(url).spawn().map(|_| ())
+    command
+        .arg(url)
+        .spawn()
+        .map(|_| ())
         .map_err(|error| format!("Cannot open website: {error}"))
 }
 
@@ -625,9 +628,11 @@ fn main() {
                 let settings = MenuItem::with_id(app, "settings", "Settings", true, None::<&str>)?;
                 let fetch = MenuItem::with_id(app, "fetch", "Fetch all", true, None::<&str>)?;
                 let sync = MenuItem::with_id(app, "sync", "Safe pull all", true, None::<&str>)?;
-                let about = MenuItem::with_id(app, "about", "About RepoTicker", true, None::<&str>)?;
+                let about =
+                    MenuItem::with_id(app, "about", "About RepoTicker", true, None::<&str>)?;
                 let quit = MenuItem::with_id(app, "quit", "Quit RepoTicker", true, None::<&str>)?;
-                let menu = Menu::with_items(app, &[&open, &settings, &fetch, &sync, &about, &quit])?;
+                let menu =
+                    Menu::with_items(app, &[&open, &settings, &fetch, &sync, &about, &quit])?;
 
                 TrayIconBuilder::with_id("repoticker")
                     .icon(tray_image())

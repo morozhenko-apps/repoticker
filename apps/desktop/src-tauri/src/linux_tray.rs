@@ -1,6 +1,8 @@
 //! Linux StatusNotifierItem: unlike Tauri's Linux tray backend, Activate
 //! fires for KDE's primary click. All UI/Git work is marshalled away from DBus.
-use crate::{app_icon, dispatch_menu_action, show_about, show_compact_card, show_settings, toggle_card};
+use crate::{
+    app_icon, dispatch_menu_action, show_about, show_compact_card, show_settings, toggle_card,
+};
 use ksni::{blocking::TrayMethods as _, menu::StandardItem, Icon, MenuItem, Tray};
 use tauri::{App, AppHandle, Manager};
 

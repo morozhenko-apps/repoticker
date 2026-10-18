@@ -24,7 +24,8 @@ function cancelAutoHide() {
 }
 function armAutoHide() {
   cancelAutoHide();
-  if (document.hidden) return;
+  // A reparented GTK Layer Shell webview may initially retain the old
+  // hidden Tauri window's visibility state; the tray's show event is authoritative.
   idleTimer = setTimeout(async () => {
     try { await invoke("hide_card"); resetView(); }
     catch (error) { showError(error); }

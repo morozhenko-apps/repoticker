@@ -65,7 +65,9 @@ class SignedAptIntegration(unittest.TestCase):
             self.assertEqual(index.read_bytes(), hashed.read_bytes())
             # Wrong public key or altered signed release must not pass gpgv.
             signed = output / "dists/stable/InRelease"
-            signed.write_bytes(signed.read_bytes() + b"\nCORRUPTED")
+            original = signed.read_bytes()
+            self.assertIn(b"Origin: RepoTicker", original)
+            signed.write_bytes(original.replace(b"Origin: RepoTicker", b"Origin: ForgedTicker", 1))
             with self.assertRaises(subprocess.CalledProcessError):
                 apt_repository.verify(output, output / "repoticker-archive-keyring.gpg")
 

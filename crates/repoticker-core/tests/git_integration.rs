@@ -52,18 +52,48 @@ impl Fixture {
         let local = base.join("local");
         let remote = base.join("remote.git");
         fs::create_dir_all(&seed).expect("seed");
-        run(&base, &["init", "--bare", remote.to_str().expect("UTF-8 fixture path")]);
+        run(
+            &base,
+            &[
+                "init",
+                "--bare",
+                remote.to_str().expect("UTF-8 fixture path"),
+            ],
+        );
         run(&seed, &["init", "-b", "dev"]);
         run(&seed, &["config", "user.name", "RepoTicker tests"]);
-        run(&seed, &["config", "user.email", "repoticker@example.invalid"]);
+        run(
+            &seed,
+            &["config", "user.email", "repoticker@example.invalid"],
+        );
         fs::write(seed.join("tracked.txt"), "base\n").expect("initial fixture");
         run(&seed, &["add", "tracked.txt"]);
         run(&seed, &["commit", "-m", "base"]);
-        run(&seed, &["remote", "add", "origin", remote.to_str().expect("remote path")]);
+        run(
+            &seed,
+            &[
+                "remote",
+                "add",
+                "origin",
+                remote.to_str().expect("remote path"),
+            ],
+        );
         run(&seed, &["push", "--set-upstream", "origin", "dev"]);
-        run(&base, &["clone", "--branch", "dev", remote.to_str().expect("remote path"), local.to_str().expect("local path")]);
+        run(
+            &base,
+            &[
+                "clone",
+                "--branch",
+                "dev",
+                remote.to_str().expect("remote path"),
+                local.to_str().expect("local path"),
+            ],
+        );
         run(&local, &["config", "user.name", "RepoTicker tests"]);
-        run(&local, &["config", "user.email", "repoticker@example.invalid"]);
+        run(
+            &local,
+            &["config", "user.email", "repoticker@example.invalid"],
+        );
         Self { base, seed, local }
     }
 
@@ -92,13 +122,22 @@ fn fetch_only_changes_remote_refs_and_safe_pull_fast_forwards() {
     let f = Fixture::new();
     f.push_more();
     let before = run(&f.local, &["rev-parse", "HEAD"]);
-    assert_eq!(git::fetch(&f.local).expect("fetch"), git::OperationOutcome::Fetched);
+    assert_eq!(
+        git::fetch(&f.local).expect("fetch"),
+        git::OperationOutcome::Fetched
+    );
     assert_eq!(run(&f.local, &["rev-parse", "HEAD"]), before);
     let state = git::inspect(&f.local).expect("status");
     assert_eq!((state.ahead, state.behind), (0, 1));
     assert_eq!(state.decision, SyncDecision::FastForward { commits: 1 });
-    assert_eq!(git::safe_pull(&f.local).expect("safe pull"), git::OperationOutcome::Updated(1));
-    assert_eq!(run(&f.local, &["rev-parse", "HEAD"]), run(&f.seed, &["rev-parse", "HEAD"]));
+    assert_eq!(
+        git::safe_pull(&f.local).expect("safe pull"),
+        git::OperationOutcome::Updated(1)
+    );
+    assert_eq!(
+        run(&f.local, &["rev-parse", "HEAD"]),
+        run(&f.seed, &["rev-parse", "HEAD"])
+    );
 }
 
 #[test]
@@ -107,9 +146,15 @@ fn untracked_and_dirty_files_skip_without_stashing() {
     f.push_more();
     fs::write(f.local.join("untracked.txt"), "local content").expect("untracked");
     let before = run(&f.local, &["rev-parse", "HEAD"]);
-    assert_eq!(git::safe_pull(&f.local).expect("decision"), git::OperationOutcome::Skipped(SyncDecision::LocalChanges));
+    assert_eq!(
+        git::safe_pull(&f.local).expect("decision"),
+        git::OperationOutcome::Skipped(SyncDecision::LocalChanges)
+    );
     assert_eq!(run(&f.local, &["rev-parse", "HEAD"]), before);
-    assert_eq!(fs::read_to_string(f.local.join("untracked.txt")).expect("retained"), "local content");
+    assert_eq!(
+        fs::read_to_string(f.local.join("untracked.txt")).expect("retained"),
+        "local content"
+    );
 }
 
 #[test]
@@ -120,7 +165,10 @@ fn divergent_commits_skip_without_merge() {
     run(&f.local, &["commit", "-m", "local commit"]);
     f.push_more();
     let before = run(&f.local, &["rev-parse", "HEAD"]);
-    assert_eq!(git::safe_pull(&f.local).expect("decision"), git::OperationOutcome::Skipped(SyncDecision::Diverged));
+    assert_eq!(
+        git::safe_pull(&f.local).expect("decision"),
+        git::OperationOutcome::Skipped(SyncDecision::Diverged)
+    );
     assert_eq!(run(&f.local, &["rev-parse", "HEAD"]), before);
 }
 
@@ -128,13 +176,19 @@ fn divergent_commits_skip_without_merge() {
 fn branch_with_no_upstream_skips() {
     let f = Fixture::new();
     run(&f.local, &["branch", "--unset-upstream"]);
-    assert_eq!(git::safe_pull(&f.local).expect("decision"), git::OperationOutcome::Skipped(SyncDecision::NoUpstream));
+    assert_eq!(
+        git::safe_pull(&f.local).expect("decision"),
+        git::OperationOutcome::Skipped(SyncDecision::NoUpstream)
+    );
 }
 
 #[test]
 fn explicitly_enrolled_root_can_be_the_repository_itself() {
     let f = Fixture::new();
-    assert_eq!(git::discover(&f.local).expect("explicit repo"), vec![f.local]);
+    assert_eq!(
+        git::discover(&f.local).expect("explicit repo"),
+        vec![f.local]
+    );
 }
 
 #[test]

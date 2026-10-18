@@ -59,7 +59,11 @@ fn stderr(output: &Output) -> String {
 fn required(repo: &Path, args: &[&str]) -> Result<String, GitError> {
     let output = invoke(repo, args)?;
     if !output.status.success() {
-        return Err(GitError(format!("git {}: {}", args.join(" "), stderr(&output))));
+        return Err(GitError(format!(
+            "git {}: {}",
+            args.join(" "),
+            stderr(&output)
+        )));
     }
     Ok(String::from_utf8_lossy(&output.stdout).trim().to_owned())
 }
@@ -67,7 +71,9 @@ fn required(repo: &Path, args: &[&str]) -> Result<String, GitError> {
 fn optional(repo: &Path, args: &[&str]) -> Result<Option<String>, GitError> {
     let output = invoke(repo, args)?;
     if output.status.success() {
-        Ok(Some(String::from_utf8_lossy(&output.stdout).trim().to_owned()))
+        Ok(Some(
+            String::from_utf8_lossy(&output.stdout).trim().to_owned(),
+        ))
     } else {
         Ok(None)
     }
@@ -83,18 +89,24 @@ fn verified_checkout(path: &Path) -> Result<bool, GitError> {
         Some(value) if !value.is_empty() => PathBuf::from(value),
         _ => return Ok(false),
     };
-    let canonical_top = fs::canonicalize(top)
-        .map_err(|err| GitError(format!("Cannot resolve git root: {err}")))?;
+    let canonical_top =
+        fs::canonicalize(top).map_err(|err| GitError(format!("Cannot resolve git root: {err}")))?;
     let canonical_path = fs::canonicalize(path)
         .map_err(|err| GitError(format!("Cannot resolve repository: {err}")))?;
     Ok(canonical_top == canonical_path)
 }
 
 fn ignored_child(path: &Path) -> bool {
-    let name = path.file_name().and_then(|name| name.to_str()).unwrap_or("");
+    let name = path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or("");
     name.starts_with('.')
         || name.ends_with(".worktrees")
-        || matches!(name, "node_modules" | "target" | "build" | "dist" | "snapshots")
+        || matches!(
+            name,
+            "node_modules" | "target" | "build" | "dist" | "snapshots"
+        )
 }
 
 /// Search an explicitly enrolled root and its immediate children only.
@@ -104,7 +116,10 @@ pub fn discover(root: &Path) -> Result<Vec<PathBuf>, GitError> {
     let root = fs::canonicalize(root)
         .map_err(|err| GitError(format!("Invalid root {}: {err}", root.display())))?;
     if !root.is_dir() {
-        return Err(GitError(format!("Root is not a directory: {}", root.display())));
+        return Err(GitError(format!(
+            "Root is not a directory: {}",
+            root.display()
+        )));
     }
     if looks_like_checkout(&root, true) {
         return if verified_checkout(&root)? {
@@ -121,7 +136,10 @@ pub fn discover(root: &Path) -> Result<Vec<PathBuf>, GitError> {
         let entry = entry.map_err(|err| GitError(format!("Directory entry error: {err}")))?;
         let path = entry.path();
         // Do not follow directory symlinks or enter hidden/snapshot/worktree roots.
-        if !entry.file_type().map_err(|err| GitError(err.to_string()))?.is_dir()
+        if !entry
+            .file_type()
+            .map_err(|err| GitError(err.to_string()))?
+            .is_dir()
             || ignored_child(&path)
             || !looks_like_checkout(&path, false)
         {
@@ -178,17 +196,35 @@ pub fn normalize_root(path: &str) -> Result<PathBuf, GitError> {
 /// Returns authoritative local refs/status. Does NOT contact any remote.
 pub fn inspect(repo: &Path) -> Result<RepoSnapshot, GitError> {
     if !verified_checkout(repo)? {
-        return Err(GitError(format!("Not a valid checkout: {}", repo.display())));
+        return Err(GitError(format!(
+            "Not a valid checkout: {}",
+            repo.display()
+        )));
     }
     let branch = optional(repo, &["symbolic-ref", "-q", "--short", "HEAD"])?;
-    let dirty = !required(repo, &["status", "--porcelain=v1", "--untracked-files=normal"])?.is_empty();
+    let dirty = !required(
+        repo,
+        &["status", "--porcelain=v1", "--untracked-files=normal"],
+    )?
+    .is_empty();
     let upstream = if branch.is_some() {
-        optional(repo, &["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"])?
+        optional(
+            repo,
+            &[
+                "rev-parse",
+                "--abbrev-ref",
+                "--symbolic-full-name",
+                "@{upstream}",
+            ],
+        )?
     } else {
         None
     };
     let (ahead, behind) = if upstream.is_some() {
-        let raw = required(repo, &["rev-list", "--left-right", "--count", "HEAD...@{upstream}"])?;
+        let raw = required(
+            repo,
+            &["rev-list", "--left-right", "--count", "HEAD...@{upstream}"],
+        )?;
         let mut tokens = raw.split_whitespace();
         let ahead = tokens.next().and_then(|v| v.parse::<u64>().ok());
         let behind = tokens.next().and_then(|v| v.parse::<u64>().ok());
@@ -225,10 +261,21 @@ pub fn inspect(repo: &Path) -> Result<RepoSnapshot, GitError> {
 
 fn git_operation_in_progress(repo: &Path) -> Result<bool, GitError> {
     // rev-parse --git-path respects linked worktrees, unlike .git-relative checks.
-    for marker in ["MERGE_HEAD", "CHERRY_PICK_HEAD", "REVERT_HEAD", "rebase-merge", "rebase-apply", "sequencer"] {
+    for marker in [
+        "MERGE_HEAD",
+        "CHERRY_PICK_HEAD",
+        "REVERT_HEAD",
+        "rebase-merge",
+        "rebase-apply",
+        "sequencer",
+    ] {
         let marker_path = required(repo, &["rev-parse", "--git-path", marker])?;
         let marker_path = PathBuf::from(marker_path);
-        let marker_path = if marker_path.is_absolute() { marker_path } else { repo.join(marker_path) };
+        let marker_path = if marker_path.is_absolute() {
+            marker_path
+        } else {
+            repo.join(marker_path)
+        };
         if marker_path.exists() {
             return Ok(true);
         }
@@ -259,7 +306,9 @@ pub fn safe_pull(repo: &Path) -> Result<OperationOutcome, GitError> {
                 || again.decision != state.decision
                 || required(repo, &["rev-parse", "HEAD"])? != expected_head
             {
-                return Err(GitError("Repository changed during sync; retry manually".into()));
+                return Err(GitError(
+                    "Repository changed during sync; retry manually".into(),
+                ));
             }
             required(repo, &["merge", "--ff-only", "--quiet", "@{upstream}"])?;
             Ok(OperationOutcome::Updated(commits))

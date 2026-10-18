@@ -130,7 +130,11 @@ fn scan(app: &AppHandle) -> Result<Snapshot, String> {
     })
 }
 
-fn execute(app: &AppHandle, operation: &str, only_path: Option<&str>) -> Result<Vec<ActionResult>, String> {
+fn execute(
+    app: &AppHandle,
+    operation: &str,
+    only_path: Option<&str>,
+) -> Result<Vec<ActionResult>, String> {
     if operation != "fetch" && operation != "safe_pull" {
         return Err("Unknown Git operation".into());
     }
@@ -139,7 +143,10 @@ fn execute(app: &AppHandle, operation: &str, only_path: Option<&str>) -> Result<
     let config = read_config(app)?;
     let (repositories, failures) = git::discover_all(&roots_as_paths(&config));
     if let Some(requested) = only_path {
-        if !repositories.iter().any(|path| path.to_string_lossy() == requested) {
+        if !repositories
+            .iter()
+            .any(|path| path.to_string_lossy() == requested)
+        {
             return Err("Repository is not enrolled or no longer valid".into());
         }
     }

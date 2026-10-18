@@ -64,10 +64,7 @@ pub fn install(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
     // WebKit's natural minimum can exceed a 122 px tray popup. A non-scrolling
     // viewport constrains the allocation rather than letting GTK grow a blank
     // area above the actual card contents.
-    let viewport = gtk::ScrolledWindow::new(
-        None::<&gtk::Adjustment>,
-        None::<&gtk::Adjustment>,
-    );
+    let viewport = gtk::ScrolledWindow::new(None::<&gtk::Adjustment>, None::<&gtk::Adjustment>);
     viewport.set_policy(gtk::PolicyType::Never, gtk::PolicyType::Never);
     viewport.set_propagate_natural_height(false);
     viewport.set_propagate_natural_width(false);

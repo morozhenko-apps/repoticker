@@ -519,7 +519,8 @@ fn save_settings(app: AppHandle, roots: Vec<String>, language: String) -> Result
 
 #[tauri::command]
 fn close_settings(app: AppHandle) -> Result<(), String> {
-    let window = app.get_webview_window("settings")
+    let window = app
+        .get_webview_window("settings")
         .ok_or_else(|| "Settings window is unavailable".to_owned())?;
     window.hide().map_err(|err| err.to_string())
 }

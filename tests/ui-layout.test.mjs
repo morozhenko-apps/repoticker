@@ -53,7 +53,7 @@ test("only clean, behind and upstream tracking repos activate safe pull", () => 
 
 test("successes do not create logs, errors remain visible and check is green", () => {
   assert.doesNotMatch(ui, /result-line/);
-  assert.match(ui, /result\.filter\(item => item\.status === "error"\)/);
+  assert.match(ui, /results\.filter\(item => item\.status === "error"\)/);
   assert.match(css, /\.repo-delta\.is-current \{[^}]*color: #159947/s);
   assert.match(css, /\.repo-name \{[^}]*font-weight: 400/s);
   assert.match(html, /class="quota-anchor" tabindex="0"/);

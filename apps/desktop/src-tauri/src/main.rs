@@ -12,14 +12,12 @@ use std::{
 #[cfg(target_os = "linux")]
 mod linux_tray;
 
+use tauri::{AppHandle, Emitter, Manager, State};
+#[cfg(not(target_os = "linux"))]
 use tauri::{
-    #[cfg(not(target_os = "linux"))]
     image::Image,
-    #[cfg(not(target_os = "linux"))]
     menu::{Menu, MenuItem},
-    #[cfg(not(target_os = "linux"))]
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    AppHandle, Emitter, Manager, State,
 };
 
 #[derive(Default)]

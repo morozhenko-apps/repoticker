@@ -57,7 +57,7 @@ jobs:
         run: cargo tauri build --bundles deb,appimage
       - name: Verify Linux artifacts
         env:
-          VERSION: ${{ steps.check.outputs.version }}_REF
+          VERSION: ${{ needs.validate.outputs.version }}
         run: |
           python3 scripts/release_assets.py collect --source target/release/bundle --target "$RUNNER_TEMP/linux" --platform linux --version "$VERSION"
           cd "$RUNNER_TEMP/linux"
@@ -87,7 +87,7 @@ jobs:
       - name: Verify Windows artifact
         shell: pwsh
         env:
-          VERSION: ${{ steps.check.outputs.version }}_REF
+          VERSION: ${{ needs.validate.outputs.version }}
         run: |
           python scripts/release_assets.py collect --source target/release/bundle --target "$env:RUNNER_TEMP/windows" --platform windows --version "$env:VERSION"
       - uses: actions/upload-artifact@v4
@@ -114,7 +114,7 @@ jobs:
         run: cargo tauri build --bundles dmg
       - name: Verify macOS artifact
         env:
-          VERSION: ${{ steps.check.outputs.version }}_REF
+          VERSION: ${{ needs.validate.outputs.version }}
         run: |
           python3 scripts/release_assets.py collect --source target/release/bundle --target "$RUNNER_TEMP/macos" --platform macos --version "$VERSION"
       - uses: actions/upload-artifact@v4

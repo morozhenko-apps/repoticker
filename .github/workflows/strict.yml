@@ -1,0 +1,31 @@
+name: Strict quality gate (manual)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: strict-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  repeat_core_and_ui:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Ten independent core + JS passes on the same SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          for pass in {1..10}; do
+            echo "::group::Pass $pass"
+            cargo test -p repoticker-core
+            node --test tests/*.test.mjs
+            echo "::endgroup::"
+          done

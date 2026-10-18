@@ -1,0 +1,6 @@
+{
+  "identifier": "default",
+  "description": "The local RepoTicker card. Custom commands return no credentials.",
+  "windows": ["main"],
+  "permissions": ["core:default"]
+}

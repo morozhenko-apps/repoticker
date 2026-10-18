@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>RepoTicker</title>
+  <link rel="stylesheet" href="./style.css">
+  <script type="module" src="./app.mjs"></script>
+</head>
+<body>
+  <main class="card">
+    <header class="header">
+      <span class="brand" aria-label="RepoTicker">◈ RepoTicker</span>
+      <button id="refresh" type="button" title="Refresh local snapshot" aria-label="Refresh snapshot">↻</button>
+    </header>
+    <div id="connection" class="connection" role="status">GitHub not connected</div>
+    <section class="repositories">
+      <button id="toggle-repos" class="section-toggle" type="button" aria-expanded="true">
+        <span>▾ Repositories</span><span id="repo-count">0</span>
+      </button>
+      <div id="repo-list" class="rows" aria-live="polite">
+        <p class="empty">Repository discovery is not configured yet.</p>
+      </div>
+    </section>
+    <section class="runners">
+      <button id="toggle-runners" class="section-toggle" type="button" aria-expanded="false">
+        <span>▸ Runners</span><span id="runner-count">0 online</span>
+      </button>
+      <div id="runner-list" class="rows" hidden></div>
+    </section>
+    <footer class="summary">
+      <span id="git-summary">↓ 0 behind</span>
+      <span id="ci-running">◷ 0 running</span>
+      <span id="ci-failed">× 0 failed</span>
+      <button id="usage" type="button" title="Quota information" aria-label="Quota information">◴</button>
+    </footer>
+    <p id="usage-message" class="hint" hidden>Quota data is unavailable until GitHub authentication and billing permissions are configured.</p>
+  </main>
+</body>
+</html>

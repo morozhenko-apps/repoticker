@@ -1,0 +1,48 @@
+# Roadmap and evidence
+
+This is a planning backlog, not a progress claim. Dates indicate when decisions were recorded, not promised delivery.
+
+## P0: Baseline shell and invariants
+
+- [x] Initialize public RepoTicker repository and MIT license.
+- [x] Document product, security and two delivery modes.
+- [x] Add a pure Git fast-forward eligibility classifier with unit tests.
+- [x] Add Tauri tray/card prototype showing **empty** real state, no mock API activity.
+- [x] Add CI configuration adapted from rQuickShare.
+- [ ] Confirm exact SHA GitHub Preflight success; fix any red checks.
+- [ ] Physically verify tray/menu/card on KDE Wayland.
+- [ ] Validate Windows and macOS desktop-shell builds and interactions.
+
+## P1: Local Git provider
+
+- [ ] Explicit root enrollment and configurable ignores.
+- [ ] Discover only valid repos, handle symlink cycles, submodules, linked/broken worktrees, administrative snapshots.
+- [ ] Fetch all with remote isolation, timeouts and credentials from existing Git config.
+- [ ] Safe ff-only pull only on clean upstream-tracking active branch, no merge/stash/rebase/force.
+- [ ] Aggregated progress, per-repo errors and clear user notifications.
+- [ ] Reproducible local integration tests with temp bare remotes.
+
+## P2: GitHub REST polling
+
+- [ ] Least-privilege GitHub authentication using OS-native secret storage.
+- [ ] Runs/jobs status and direct browser links.
+- [ ] Self-hosted runner online/busy when permitted, unknown otherwise.
+- [ ] Rate-limit-aware adaptive polling, cache stale markers, startup/reconnect reconciliation.
+- [ ] Optional usage/quota popover, explicit unknown/estimated billing data.
+- [ ] OS notifications only on meaningful state transitions.
+
+## P3: Hybrid mode
+
+- [ ] Versioned relay envelope, signing, tenant isolation, resume protocol.
+- [ ] Cloudflare Worker + Durable Object self-deployment instructions and tests.
+- [ ] Generic Docker/VPS implementation and interoperability tests.
+- [ ] WebSocket auth/reconnect and authoritative polling fallback.
+- [ ] Abuse/rate-limit and failure injection acceptance.
+
+## P4: Distribution
+
+- [ ] Native packages/installers with verified tray/autostart/uninstall semantics.
+- [ ] Cross-platform release matrix and reproducible signed artifacts.
+- [ ] GitHub releases, supply-chain review and public documentation.
+
+No progress checkbox should be checked solely because a file or workflow exists; P0 code/CI checkboxes mean scaffolding was committed, not that runtime acceptance passed.

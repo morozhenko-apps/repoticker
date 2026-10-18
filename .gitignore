@@ -1,0 +1,29 @@
+# Rust
+/target/
+**/target/
+**/*.rs.bk
+
+# Generated platform assets
+**/gen/schemas/
+**/gen/apple/
+**/gen/android/
+**/.tauri/
+
+# Node, frontend and IDE
+**/node_modules/
+**/dist/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Local state and credentials
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+*.sqlite
+*.sqlite-*
+.local/

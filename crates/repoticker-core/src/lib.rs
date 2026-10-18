@@ -66,7 +66,10 @@ mod tests {
 
     #[test]
     fn clean_behind_branch_allows_fast_forward() {
-        assert_eq!(classify_sync(clean(0, 3)), SyncDecision::FastForward { commits: 3 });
+        assert_eq!(
+            classify_sync(clean(0, 3)),
+            SyncDecision::FastForward { commits: 3 }
+        );
     }
 
     #[test]

@@ -472,7 +472,7 @@ struct AboutInfo {
 fn get_about_info() -> AboutInfo {
     AboutInfo {
         version: env!("CARGO_PKG_VERSION"),
-        author: "morozhenko apps",
+        author: "Stanislav Moseyko (morozhenko)",
         website: "https://morozhenko.com",
     }
 }

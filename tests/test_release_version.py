@@ -18,7 +18,7 @@ class VersionContract(unittest.TestCase):
         repo = ROOT / "apps/desktop/src-tauri/tauri.conf.json"
         cfg = json.loads(repo.read_text())
         self.assertTrue(cfg["bundle"]["active"])
-        self.assertEqual(cfg["bundle"]["license"], "MIT")
+        self.assertEqual(cfg["bundle"]["license"], "Apache-2.0")
         self.assertIn("icons/icon.icns", cfg["bundle"]["icon"])
 
     def test_tag_validation_is_strict(self):

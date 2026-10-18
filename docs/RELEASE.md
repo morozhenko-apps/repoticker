@@ -1,8 +1,9 @@
 # Release and licensing
 
-RepoTicker is currently licensed under MIT. The owner is considering
-Apache-2.0 plus NOTICE for mandatory retention of notices in redistributions.
-Switching license requires explicit owner approval before a public release.
+RepoTicker is licensed under Apache License 2.0 with a NOTICE file identifying
+Stanislav Moseyko (morozhenko) as the original author. Redistributors must
+comply with Section 4 including preservation of applicable LICENSE/NOTICE and
+notices in modified files. No logo-placement or UI-credit requirement exists.
 Forks are welcome; third-party pull requests are not accepted upstream.
 Bug reports use the issue template.
 

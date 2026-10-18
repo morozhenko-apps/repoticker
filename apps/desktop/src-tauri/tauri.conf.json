@@ -65,9 +65,9 @@
     ],
     "category": "DeveloperTool",
     "shortDescription": "Lightweight Git and GitHub Actions tray companion",
-    "license": "MIT",
+    "license": "Apache-2.0",
     "licenseFile": "../../../LICENSE",
-    "copyright": "Copyright (c) 2026 morozhenko apps contributors",
+    "copyright": "Copyright (c) 2026 Stanislav Moseyko (morozhenko)",
     "linux": {
       "deb": {
         "depends": [

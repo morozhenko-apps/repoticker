@@ -1,6 +1,6 @@
 # Bug reports and forks
 
-RepoTicker is developed and maintained by morozhenko apps.
+RepoTicker was created by Stanislav Moseyko (morozhenko), https://morozhenko.com.
 
 ## Report a bug
 

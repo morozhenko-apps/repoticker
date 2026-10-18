@@ -41,4 +41,4 @@ See [Git Provider behavior and limitations](docs/GIT_PROVIDER.md), [product](doc
 
 ## Contributing / license
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). MIT, see [LICENSE](LICENSE).
+See [CONTRIBUTING.md](CONTRIBUTING.md). Apache 2.0, see [LICENSE](LICENSE) and [NOTICE](NOTICE). You can file bugs via [GitHub Issues](https://github.com/morozhenko-apps/repoticker/issues); forks are welcome, upstream does not accept code PRs.

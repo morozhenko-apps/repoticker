@@ -84,7 +84,10 @@ pub fn resize(app: AppHandle, height: i32) -> Result<(), String> {
     }
     // Bottom anchor belongs to the compositor; expanding to a larger height
     // always grows upward, independent of the previous client position.
-    on_main(&app, move |window| window.set_default_size(390, height))
+    on_main(&app, move |window| {
+        window.set_default_size(390, height);
+        window.resize(390, height);
+    })
 }
 
 pub fn show(app: &AppHandle) -> Result<(), String> {

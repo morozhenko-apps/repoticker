@@ -144,8 +144,9 @@ function makeRepoRow(repo) {
 function updateActionState() {
   const hasRepos = snapshot.repositories.length > 0;
   const eligible = pullReadyCommitCount(snapshot.repositories);
-  byId("fetch-all").disabled = busy || !hasRepos;
-  byId("sync-all").disabled = busy || eligible === 0;
+  const isRunning = busy || (progress && progress.phase !== "finish");
+  byId("fetch-all").disabled = isRunning || !hasRepos;
+  byId("sync-all").disabled = isRunning || eligible === 0;
   for (const [operation, id] of [["fetch", "fetch-all"], ["safe_pull", "sync-all"]]) {
     const button = byId(id);
     const active = progress?.operation === operation;

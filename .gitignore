@@ -27,3 +27,7 @@ Thumbs.db
 *.sqlite
 *.sqlite-*
 .local/
+
+# Prototype builds generate a local workspace lockfile; lock reproducibility
+# and checked-in artifact versions before release packaging.
+/Cargo.lock

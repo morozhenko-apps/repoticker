@@ -56,3 +56,8 @@ This is a planning backlog, not a progress claim. Dates indicate when decisions 
 - [ ] GitHub releases, supply-chain review and public documentation.
 
 No progress checkbox should be checked solely because a file or workflow exists; P0 code/CI checkboxes mean scaffolding was committed, not that runtime acceptance passed.
+
+- [x] Add GTK3 Layer Shell popup with bottom/right compositor anchors, top layer, and no taskbar entry for KDE Wayland; generic frameless fallback for unsupported compositors.
+- [x] Add real completed-repository progress events, indeterminate per-repository translucent overlays, button percentage/pulse, 15-second idle hide and silent successful fetch.
+- [ ] Physically accept Layer Shell Wayland positioning, resizing, tray left-click, taskbar hiding, and idle dismissal on Alcotester.
+- [ ] Reproducible release packaging: check in Cargo.lock after the Linux native dependencies are stabilized.

@@ -6,8 +6,20 @@ on:
     paths-ignore:
       - 'docs/**'
       - 'doc/**'
-      - '**/*.md'
-      - '**/*.mdx'
+      - '**/docs/**'
+      - '**/doc/**'
+      - 'README.md'
+      - '**/README.md'
+      - 'AGENT.md'
+      - '**/AGENT.md'
+      - 'AGENTS.md'
+      - '**/AGENTS.md'
+      - 'CHANGELOG.md'
+      - '**/CHANGELOG.md'
+      - 'CONTRIBUTING.md'
+      - '**/CONTRIBUTING.md'
+      - '.github/agents/**'
+      - '.codex.md'
   pull_request:
     branches: [dev, main]
   workflow_dispatch:

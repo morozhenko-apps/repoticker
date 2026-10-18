@@ -10,7 +10,8 @@ This is a planning backlog, not a progress claim. Dates indicate when decisions 
 - [x] Add Tauri tray/card prototype showing **empty** real state, no mock API activity.
 - [x] Add CI configuration adapted from rQuickShare.
 - [ ] Confirm exact SHA GitHub Preflight success; fix any red checks.
-- [x] Create compact/card-list/settings view states, one-line regular-weight repository rows, hover quota help, bounded Tauri window resize and bottom summary metrics.
+- [x] Create compact/card-list/settings view states, one-line regular-weight repository rows, hover quota help, four bottom actions, no duplicate header and no redundant success output.
+- [ ] Physically verify Linux StatusNotifierItem primary-click and bottom anchored resizing on KDE Wayland; native window positioning may be refused by KWin.
 - [ ] Implement a native Linux tray interaction adapter (standard Tauri 2 Linux click callback is unsupported) and anchor the card to the tray.
 - [ ] Physically verify tray/menu/card on KDE Wayland.
 - [ ] Validate Windows and macOS desktop-shell builds and interactions.

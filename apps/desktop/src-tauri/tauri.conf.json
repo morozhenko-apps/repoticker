@@ -13,7 +13,7 @@
         "label": "main",
         "title": "RepoTicker",
         "width": 390,
-        "height": 225,
+        "height": 130,
         "resizable": false,
         "visible": false,
         "decorations": true

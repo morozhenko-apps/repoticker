@@ -9,9 +9,15 @@ use std::{
     path::{Path, PathBuf},
     sync::Mutex,
 };
+#[cfg(target_os = "linux")]
+mod linux_tray;
+
 use tauri::{
+    #[cfg(not(target_os = "linux"))]
     image::Image,
+    #[cfg(not(target_os = "linux"))]
     menu::{Menu, MenuItem},
+    #[cfg(not(target_os = "linux"))]
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     AppHandle, Emitter, Manager, State,
 };
@@ -43,7 +49,8 @@ struct Snapshot {
     repositories: Vec<RepoSummary>,
     errors: Vec<String>,
     ci_running: Option<u32>,
-    ci_failed: Option<u32>,
+    ci_queued: Option<u32>,
+    runners_online: Option<u32>,
     connected: bool,
 }
 
@@ -125,7 +132,8 @@ fn scan(app: &AppHandle) -> Result<Snapshot, String> {
         repositories: summaries,
         errors,
         ci_running: None,
-        ci_failed: None,
+        ci_queued: None,
+        runners_online: None,
         connected: false,
     })
 }
@@ -244,22 +252,46 @@ async fn perform_git_action(
         .map_err(|err| err.to_string())?
 }
 
-/// Strictly bounded card sizes. Expanding the repository drawer must never
-/// change the width or turn the compact utility into a permanent dashboard.
+/// The card grows upward from its previous bottom edge when the platform
+/// permits setting window coordinates. Wayland compositors may deny it.
 #[tauri::command]
 fn set_card_view(app: AppHandle, view: String) -> Result<(), String> {
     let height = match view.as_str() {
-        "compact" => 225.0,
-        "repos" => 550.0,
-        "settings" => 370.0,
+        "compact" => 130.0,
+        "repos" => 510.0,
+        "settings" => 318.0,
         _ => return Err("Unknown card view".into()),
     };
     let window = app
         .get_webview_window("main")
         .ok_or_else(|| "Card window is unavailable".to_owned())?;
+
+    let before_position = window.outer_position().ok();
+    let before_size = window.outer_size().ok();
     window
         .set_size(tauri::LogicalSize::new(390.0, height))
-        .map_err(|err| format!("Cannot resize card: {err}"))
+        .map_err(|err| format!("Cannot resize card: {err}"))?;
+
+    if let (Some(position), Some(size)) = (before_position, before_size) {
+        let scale = window.scale_factor().unwrap_or(1.0);
+        let new_physical_height = (height * scale).round() as i64;
+        let bottom = i64::from(position.y) + i64::from(size.height);
+        let top = bottom - new_physical_height;
+        if let Ok(top) = i32::try_from(top) {
+            // Position changes are unsupported by some Wayland compositors.
+            // The card must remain functional if this request is rejected.
+            let _ = window.set_position(tauri::PhysicalPosition::new(position.x, top));
+        }
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn hide_card(app: AppHandle) -> Result<(), String> {
+    let window = app
+        .get_webview_window("main")
+        .ok_or_else(|| "Card window is unavailable".to_owned())?;
+    window.hide().map_err(|err| err.to_string())
 }
 
 fn show_compact_card(app: &AppHandle) {
@@ -269,6 +301,11 @@ fn show_compact_card(app: &AppHandle) {
         let _ = window.show();
         let _ = window.set_focus();
     }
+}
+
+fn show_settings(app: &AppHandle) {
+    show_compact_card(app);
+    let _ = app.emit("repoticker-open-settings", ());
 }
 
 fn toggle_card(app: &AppHandle) {
@@ -281,6 +318,7 @@ fn toggle_card(app: &AppHandle) {
     }
 }
 
+#[cfg(not(target_os = "linux"))]
 fn tray_image() -> Image<'static> {
     let mut rgba = vec![0u8; 16 * 16 * 4];
     for y in 3usize..13 {
@@ -307,34 +345,45 @@ fn main() {
     tauri::Builder::default()
         .manage(OperationLock::default())
         .setup(|app| {
-            let open = MenuItem::with_id(app, "open", "Open card", true, None::<&str>)?;
-            let fetch = MenuItem::with_id(app, "fetch", "Fetch all", true, None::<&str>)?;
-            let sync = MenuItem::with_id(app, "sync", "Safe pull all", true, None::<&str>)?;
-            let quit = MenuItem::with_id(app, "quit", "Quit RepoTicker", true, None::<&str>)?;
-            let menu = Menu::with_items(app, &[&open, &fetch, &sync, &quit])?;
 
-            TrayIconBuilder::with_id("repoticker")
-                .icon(tray_image())
-                .menu(&menu)
-                .show_menu_on_left_click(false)
-                .on_menu_event(|app, event| match event.id().as_ref() {
-                    "open" => show_compact_card(app),
-                    "fetch" => dispatch_menu_action(app, "fetch"),
-                    "sync" => dispatch_menu_action(app, "safe_pull"),
-                    "quit" => app.exit(0),
-                    _ => {}
-                })
-                .on_tray_icon_event(|tray, event| {
-                    if let TrayIconEvent::Click {
-                        button: MouseButton::Left,
-                        button_state: MouseButtonState::Up,
-                        ..
-                    } = event
-                    {
-                        toggle_card(tray.app_handle());
-                    }
-                })
-                .build(app)?;
+            #[cfg(target_os = "linux")]
+            linux_tray::install(app)?;
+
+            #[cfg(not(target_os = "linux"))]
+            {
+                let open = MenuItem::with_id(app, "open", "Open card", true, None::<&str>)?;
+                let settings =
+                    MenuItem::with_id(app, "settings", "Settings", true, None::<&str>)?;
+                let fetch = MenuItem::with_id(app, "fetch", "Fetch all", true, None::<&str>)?;
+                let sync =
+                    MenuItem::with_id(app, "sync", "Safe pull all", true, None::<&str>)?;
+                let quit = MenuItem::with_id(app, "quit", "Quit RepoTicker", true, None::<&str>)?;
+                let menu = Menu::with_items(app, &[&open, &settings, &fetch, &sync, &quit])?;
+
+                TrayIconBuilder::with_id("repoticker")
+                    .icon(tray_image())
+                    .menu(&menu)
+                    .show_menu_on_left_click(false)
+                    .on_menu_event(|app, event| match event.id().as_ref() {
+                        "open" => show_compact_card(app),
+                        "settings" => show_settings(app),
+                        "fetch" => dispatch_menu_action(app, "fetch"),
+                        "sync" => dispatch_menu_action(app, "safe_pull"),
+                        "quit" => app.exit(0),
+                        _ => {}
+                    })
+                    .on_tray_icon_event(|tray, event| {
+                        if let TrayIconEvent::Click {
+                            button: MouseButton::Left,
+                            button_state: MouseButtonState::Up,
+                            ..
+                        } = event
+                        {
+                            toggle_card(tray.app_handle());
+                        }
+                    })
+                    .build(app)?;
+            }
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -348,7 +397,8 @@ fn main() {
             add_root,
             remove_root,
             perform_git_action,
-            set_card_view
+            set_card_view,
+            hide_card
         ])
         .run(tauri::generate_context!())
         .expect("failed to run RepoTicker");

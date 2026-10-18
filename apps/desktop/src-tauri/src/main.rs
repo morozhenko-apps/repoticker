@@ -112,7 +112,10 @@ fn config_path(app: &AppHandle) -> Result<PathBuf, String> {
 fn read_config(app: &AppHandle) -> Result<Config, String> {
     let path = config_path(app)?;
     if !path.exists() {
-        return Ok(Config { roots: Vec::new(), language: default_language() });
+        return Ok(Config {
+            roots: Vec::new(),
+            language: default_language(),
+        });
     }
     let content = fs::read(&path).map_err(|err| format!("Cannot read config: {err}"))?;
     serde_json::from_slice::<Config>(&content)

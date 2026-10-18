@@ -1,50 +1,61 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { nextCardView, cardWindowHeight, CARD_HEIGHT } from "../apps/desktop/ui/view.mjs";
+import { nextCardView, cardWindowHeight, pullReadyCommitCount } from "../apps/desktop/ui/view.mjs";
 
 const html = readFileSync(new URL("../apps/desktop/ui/index.html", import.meta.url), "utf8");
 const css = readFileSync(new URL("../apps/desktop/ui/style.css", import.meta.url), "utf8");
+const ui = readFileSync(new URL("../apps/desktop/ui/app.mjs", import.meta.url), "utf8");
 
-test("compact is the default view, list opens from a dedicated action", () => {
+test("compact has no duplicate header, refresh, or permanent results", () => {
   assert.match(html, /data-view="compact"/);
   assert.match(html, /id="repo-drawer"[^>]+hidden/);
+  assert.doesNotMatch(html, /class="utility-bar"/);
+  assert.doesNotMatch(html, /id="refresh"/);
+  assert.doesNotMatch(html, /id="results-panel"/);
+  assert.doesNotMatch(html, /id="metric-repos"/);
+  assert.doesNotMatch(html, /RepoTicker<\/span>/);
+  assert.match(html, /id="hide-card"/);
   assert.match(html, /id="show-repos"/);
-  assert.doesNotMatch(html, /id="toggle-repos"/);
-  assert.doesNotMatch(html, /class="brand"/);
-  assert.doesNotMatch(html, /id="toggle-runners"/);
 });
 
-test("drawer toggle matches rQuickShare's closed/open semantics", () => {
+test("four main operations are at the bottom without an extra heading", () => {
+  assert.match(css, /\.actions \{[^}]*grid-template-columns: repeat\(4/s);
+  assert.ok(html.indexOf('id="repo-drawer"') < html.indexOf('class="status-strip"'));
+  assert.ok(html.indexOf('class="status-strip"') < html.indexOf('class="actions"'));
+  assert.match(html, /id="ci-running"/);
+  assert.match(html, /id="ci-queued"/);
+  assert.match(html, /id="runner-status"/);
+});
+
+test("repeating Repos collapses to compact; new open always resets", () => {
   assert.equal(nextCardView("compact", "repos"), "repos");
   assert.equal(nextCardView("repos", "repos"), "compact");
-  assert.equal(nextCardView("repos", "settings"), "settings");
-  assert.equal(nextCardView("settings", "settings"), "compact");
   assert.equal(nextCardView("settings", "repos"), "repos");
-  assert.throws(() => nextCardView("compact", "__proto__"));
+  assert.equal(nextCardView("settings", "settings"), "compact");
   assert.ok(cardWindowHeight("repos") > cardWindowHeight("compact"));
-  assert.ok(cardWindowHeight("settings") > cardWindowHeight("compact"));
-  assert.equal(cardWindowHeight("compact"), CARD_HEIGHT.compact);
+  assert.throws(() => nextCardView("compact", "constructor"));
+  assert.match(ui, /function resetView/);
+  assert.match(ui, /"repoticker-reset-view"/);
 });
 
-test("usage is a hover/focus tooltip rather than a click toggle", () => {
-  assert.match(html, /class="quota-anchor" tabindex="0"/);
-  assert.match(html, /class="quota-tooltip" role="tooltip"/);
-  assert.match(css, /\.quota-anchor:hover \.quota-tooltip/);
-  assert.match(css, /\.quota-anchor:focus-visible \.quota-tooltip/);
-  assert.doesNotMatch(html, /id="usage-message"/);
+test("only clean, behind and upstream tracking repos activate safe pull", () => {
+  const base = { upstream: "origin/dev", ahead: 0, behind: 4, dirty: false, sync_state: "behind 4" };
+  assert.equal(pullReadyCommitCount([base]), 4);
+  for (const changed of [
+    { dirty: true }, { ahead: 1 }, { upstream: null },
+    { sync_state: "operation in progress" }, { sync_state: "diverged" },
+    { behind: 0 }, { behind: -1 }
+  ]) {
+    assert.equal(pullReadyCommitCount([{ ...base, ...changed }]), 0);
+  }
 });
 
-test("row typography is regular and not the old 12px bold style", () => {
-  assert.match(css, /font-size: 14px/);
+test("successes do not create logs, errors remain visible and check is green", () => {
+  assert.doesNotMatch(ui, /result-line/);
+  assert.match(ui, /result\.filter\(item => item\.status === "error"\)/);
+  assert.match(css, /\.repo-delta\.is-current \{[^}]*color: #159947/s);
   assert.match(css, /\.repo-name \{[^}]*font-weight: 400/s);
-  assert.match(css, /\.repo-row \{[^}]*font-size: 14px/s);
-});
-
-test("stats stay below the optional list, above action buttons", () => {
-  const list = html.indexOf('id="repo-drawer"');
-  const stats = html.indexOf('class="metrics"');
-  const quota = html.indexOf('class="quota-anchor"');
-  const actions = html.indexOf('class="actions"');
-  assert.ok(list < stats && stats < quota && quota < actions);
+  assert.match(html, /class="quota-anchor" tabindex="0"/);
+  assert.match(css, /\.quota-anchor:hover \.quota-tooltip/);
 });

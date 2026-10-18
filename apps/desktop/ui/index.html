@@ -9,20 +9,12 @@
   <script type="module" src="./app.mjs"></script>
 </head>
 <body>
-  <main class="card" id="card" data-view="compact">
-    <div class="utility-bar">
-      <span id="connection" class="connection" role="status">Local Git · Manual mode</span>
-      <button id="settings" class="utility-button" type="button" aria-label="Manage repository folders" aria-pressed="false" title="Manage repository folders">⚙</button>
-    </div>
-
-    <section id="repo-drawer" class="drawer" aria-label="Local repositories" hidden>
-      <div class="drawer-caption"><span>Repositories</span><span id="repo-count">0</span></div>
-      <div id="repo-list" class="rows" aria-live="polite">
-        <p class="empty">No repositories enrolled.</p>
-      </div>
+  <main id="card" class="card" data-view="compact">
+    <section id="repo-drawer" class="drawer" aria-label="Repositories" hidden>
+      <div id="repo-list" class="rows" aria-live="polite"></div>
     </section>
 
-    <section id="roots-editor" class="roots-editor" aria-label="Local repository folders" hidden>
+    <section id="roots-editor" class="roots-editor" aria-label="Repository folders" hidden>
       <form id="add-root-form">
         <label for="root-path">Repository folder or parent directory</label>
         <div class="input-row">
@@ -31,50 +23,34 @@
         </div>
       </form>
       <div id="roots-list" class="roots-list"></div>
-      <p class="hint">Only this folder and its immediate subfolders are scanned. Removing a folder here never deletes files.</p>
+      <p class="hint">Only the chosen folder and its direct children are scanned. Removing a root never deletes files.</p>
     </section>
 
-    <div id="results-panel" class="results-panel" hidden>
-      <button id="close-results" type="button" aria-label="Close operation results">×</button>
-      <div id="results-list"></div>
-    </div>
-    <div id="activity" class="activity" role="status" aria-live="polite" hidden></div>
+    <div id="notice" role="status" aria-live="polite" hidden></div>
 
-    <section class="metrics" aria-label="Local Git status">
-      <div class="metric">
-        <span id="metric-repos" class="metric-number">0</span>
-        <span class="metric-label">Repos</span>
-      </div>
-      <div class="metric">
-        <span id="metric-behind" class="metric-number">0</span>
-        <span class="metric-label">Behind</span>
-      </div>
-      <div class="metric">
-        <span id="metric-dirty" class="metric-number">0</span>
-        <span class="metric-label">Modified</span>
-      </div>
-    </section>
-    <div class="ci-footer" aria-label="CI and runner status">
-      <span id="ci-running" title="GitHub Actions monitoring has not been configured">CI —</span>
-      <span id="runner-status" title="Self-hosted runners are not connected">Runners —</span>
+    <div class="status-strip" aria-label="GitHub Actions and runners">
+      <span id="runner-status" title="Runner availability is not connected">Runners —</span>
+      <span id="ci-running" title="GitHub Actions is not connected">Running —</span>
+      <span id="ci-queued" title="GitHub Actions is not connected">Queued —</span>
       <span class="quota-anchor" tabindex="0" aria-label="GitHub usage details" aria-describedby="quota-tooltip">
         <span aria-hidden="true">ⓘ</span>
-        <span id="quota-tooltip" class="quota-tooltip" role="tooltip">GitHub usage is unavailable. Billing permissions are required to display Actions minutes; self-hosted activity is tracked separately.</span>
+        <span id="quota-tooltip" class="quota-tooltip" role="tooltip">GitHub Actions minutes are not available until billing permissions are granted. Self-hosted runner status does not measure CPU or RAM.</span>
       </span>
     </div>
 
-    <nav class="actions" aria-label="Git operations">
-      <button id="refresh" type="button" class="action" title="Refresh local status (no network)">
-        <span class="action-icon" aria-hidden="true">↻</span><span>Refresh</span>
+    <nav class="actions" aria-label="Repository operations">
+      <button id="fetch-all" class="action" type="button" title="Fetch remote references for enrolled repositories">
+        <span class="action-icon" aria-hidden="true">⇄</span><span class="action-label">Fetch</span>
       </button>
-      <button id="fetch-all" type="button" class="action" title="Fetch remote references in all enrolled repositories">
-        <span class="action-icon" aria-hidden="true">⇄</span><span>Fetch</span>
+      <button id="sync-all" class="action" type="button" disabled title="Fast-forward eligible clean branches only">
+        <span id="pull-indicator" class="action-icon" aria-hidden="true">↓</span>
+        <span class="action-label">Safe pull</span>
       </button>
-      <button id="sync-all" type="button" class="action" title="Fetch and fast-forward clean upstream branches only">
-        <span class="action-icon" aria-hidden="true">↓</span><span>Safe pull</span>
+      <button id="show-repos" class="action" type="button" aria-pressed="false" title="Show repository list">
+        <span class="action-icon" aria-hidden="true">▤</span><span class="action-label">Repos</span>
       </button>
-      <button id="show-repos" type="button" class="action" aria-pressed="false" title="Show repositories">
-        <span class="action-icon" aria-hidden="true">▤</span><span>Repos</span>
+      <button id="hide-card" class="action" type="button" title="Hide the card (keep RepoTicker running)">
+        <span class="action-icon" aria-hidden="true">⌄</span><span class="action-label">Hide</span>
       </button>
     </nav>
   </main>

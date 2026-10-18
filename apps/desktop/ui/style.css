@@ -7,57 +7,48 @@
 body { margin: 0; background: Canvas; color: CanvasText; }
 button, input { font: inherit; }
 button { cursor: pointer; background: transparent; color: inherit; border: 0; }
-button:disabled { opacity: .35; cursor: default; }
-button:focus-visible, input:focus-visible, .quota-anchor:focus-visible { outline: 2px solid #3b82f6; outline-offset: 2px; }
+button:disabled { opacity: .38; cursor: default; }
+button:focus-visible, input:focus-visible, .quota-anchor:focus-visible { outline: 2px solid #3b82f6; outline-offset: -2px; }
 [hidden] { display: none !important; }
-.card { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-.utility-bar { min-height: 34px; padding: 5px 13px 1px; display: flex; align-items: center; justify-content: space-between; }
-.connection { color: GrayText; font-size: 12px; font-weight: 400; }
-.utility-button { height: 29px; width: 31px; font-size: 20px; border-radius: 5px; }
-.utility-button:hover, .utility-button[aria-pressed="true"] { background: color-mix(in srgb, CanvasText 11%, transparent); }
-.drawer { flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; padding-top: 3px; }
-.drawer-caption { display: flex; justify-content: space-between; align-items: center; padding: 8px 15px; font-size: 13px; color: GrayText; border-top: 1px solid color-mix(in srgb, CanvasText 13%, transparent); }
-.rows { min-height: 0; overflow-y: auto; overflow-x: hidden; flex: 1; }
-.repo-row { min-height: 37px; padding: 3px 10px 3px 15px; display: flex; gap: 9px; align-items: center; font-size: 14px; border-bottom: 1px solid color-mix(in srgb, CanvasText 7%, transparent); position: relative; }
-.repo-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 400; }
-.repo-branch { max-width: 94px; color: GrayText; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; font-size: 13px; }
-.repo-delta { min-width: 33px; text-align: center; font-weight: 500; font-size: 13px; }
-.repo-more { width: 29px; height: 30px; border-radius: 4px; font-size: 20px; flex-shrink: 0; }
-.repo-more:hover { background: color-mix(in srgb, CanvasText 9%, transparent); }
-.repo-menu { position: absolute; right: 9px; top: 31px; z-index: 10; background: Canvas; border: 1px solid color-mix(in srgb, CanvasText 25%, transparent); border-radius: 7px; padding: 4px; box-shadow: 0 4px 12px #0003; display: flex; flex-direction: column; min-width: 110px; }
-.repo-menu button { text-align: left; padding: 7px 10px; border-radius: 4px; font-size: 13px; }
-.repo-menu button:hover { background: color-mix(in srgb, CanvasText 10%, transparent); }
-.empty { color: GrayText; margin: 12px 15px; font-size: 13px; }
-.metrics { margin-top: auto; display: grid; grid-template-columns: repeat(3, 1fr); padding: 12px 9px 9px; border-top: 1px solid color-mix(in srgb, CanvasText 12%, transparent); gap: 3px; text-align: center; }
-.metric { display: flex; flex-direction: column; align-items: center; gap: 1px; }
-.metric-number { font-size: 22px; line-height: 26px; font-weight: 600; font-variant-numeric: tabular-nums; }
-.metric-label { color: GrayText; font-size: 13px; font-weight: 400; }
-.ci-footer { display: flex; justify-content: center; align-items: center; gap: 19px; min-height: 27px; font-size: 12px; color: GrayText; }
-.quota-anchor { cursor: help; display: inline-flex; position: relative; font-size: 17px; line-height: 18px; }
-.quota-tooltip { display: none; position: absolute; z-index: 30; right: -4px; bottom: calc(100% + 8px); width: 275px; max-width: 80vw; font-size: 13px; font-weight: 400; line-height: 1.4; padding: 10px 12px; color: CanvasText; background: Canvas; border: 1px solid color-mix(in srgb, CanvasText 25%, transparent); box-shadow: 0 5px 20px #0004; border-radius: 7px; pointer-events: none; white-space: normal; }
-.quota-anchor:hover .quota-tooltip, .quota-anchor:focus-visible .quota-tooltip { display: block; }
-.actions { margin: 5px 10px 9px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; min-height: 66px; }
-.action { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border: 1px solid color-mix(in srgb, CanvasText 22%, transparent); border-radius: 7px; padding: 4px 1px; font-size: 13px; font-weight: 400; background: color-mix(in srgb, Canvas 87%, CanvasText 13%); }
-.action-icon { font-size: 24px; line-height: 26px; font-weight: 400; }
-.action:hover:not(:disabled) { border-color: #5baaf0; }
-.action[aria-pressed="true"] { background: color-mix(in srgb, #5baaf0 22%, Canvas); border-color: #5baaf0; }
-.activity { border-top: 1px solid color-mix(in srgb, CanvasText 12%, transparent); padding: 6px 12px; font-size: 12px; max-height: 46px; overflow-y: auto; color: GrayText; }
-.activity.error { color: #cb4d4d; }
-.roots-editor { flex: 1; min-height: 0; overflow-y: auto; padding: 14px 13px; border-top: 1px solid color-mix(in srgb, CanvasText 12%, transparent); }
-.roots-editor label { display: block; font-size: 13px; color: GrayText; margin-bottom: 8px; }
-.input-row { display: flex; gap: 7px; }
-.input-row input { flex: 1; min-width: 0; border: 1px solid color-mix(in srgb, CanvasText 26%, transparent); border-radius: 5px; background: Canvas; color: CanvasText; padding: 8px; font-size: 14px; }
-.input-row button { padding: 7px 12px; border-radius: 5px; background: color-mix(in srgb, CanvasText 12%, transparent); }
-.roots-list { margin-top: 11px; }
-.root-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: 13px; padding: 5px 0; }
-.root-row .truncate { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.root-row button { padding: 2px 8px; }
-.hint { margin: 8px 0; font-size: 12px; color: GrayText; line-height: 1.4; }
-.results-panel { max-height: 96px; overflow-y: auto; border-top: 1px solid color-mix(in srgb, CanvasText 12%, transparent); padding: 7px 12px; position: relative; font-size: 12px; }
-.results-panel > button { position: absolute; right: 8px; top: 5px; }
-.result-line { margin: 4px 18px 4px 0; color: GrayText; }
 
-/* The compact tray card reports only the aggregate result. Detailed per-repo
-   outcomes remain available when the repository drawer is opened. */
-.card[data-view="compact"] .results-panel,
-.card[data-view="settings"] .results-panel { display: none !important; }
+.card { height: 100vh; width: 100%; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+.drawer { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.rows { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; }
+.repo-row { min-height: 35px; padding: 2px 11px 2px 14px; display: flex; gap: 9px; align-items: center; position: relative; font-size: 14px; border-bottom: 1px solid color-mix(in srgb, CanvasText 9%, transparent); }
+.repo-name { flex: 1; min-width: 0; font-weight: 400; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; }
+.repo-branch { max-width: 85px; font-size: 13px; color: GrayText; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.repo-delta { min-width: 32px; font-size: 15px; font-weight: 500; text-align: center; }
+.repo-delta.is-current { color: #159947; font-size: 21px; font-weight: 700; }
+.repo-delta.is-dirty { color: #bd8726; }
+.repo-delta.is-behind { color: #246da0; }
+.repo-more { width: 28px; height: 29px; font-size: 20px; border-radius: 5px; flex-shrink: 0; }
+.repo-more:hover { background: color-mix(in srgb, CanvasText 9%, transparent); }
+.repo-menu { position: absolute; right: 9px; top: 31px; z-index: 12; background: Canvas; border: 1px solid color-mix(in srgb, CanvasText 23%, transparent); border-radius: 7px; padding: 4px; box-shadow: 0 5px 15px #0003; min-width: 114px; display: flex; flex-direction: column; }
+.repo-menu button { text-align: left; border-radius: 4px; font-size: 13px; padding: 6px 9px; }
+.repo-menu button:hover { background: color-mix(in srgb, CanvasText 10%, transparent); }
+.empty { margin: 12px 15px; font-size: 13px; color: GrayText; }
+
+.roots-editor { flex: 1; min-height: 0; overflow-y: auto; padding: 14px; }
+.roots-editor label { display: block; font-size: 13px; margin-bottom: 8px; font-weight: 400; }
+.input-row { display: flex; gap: 7px; }
+.input-row input { flex: 1; min-width: 0; border: 1px solid color-mix(in srgb, CanvasText 25%, transparent); border-radius: 5px; padding: 7px 8px; background: Canvas; color: CanvasText; }
+.input-row button { padding: 7px 11px; border-radius: 5px; background: color-mix(in srgb, CanvasText 12%, Canvas); }
+.roots-list { margin-top: 10px; }
+.root-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 4px 0; font-size: 13px; }
+.root-row span { text-overflow: ellipsis; white-space: nowrap; overflow: hidden; }
+.root-row button { flex-shrink: 0; padding: 3px 8px; }
+.hint { margin: 10px 0; font-size: 12px; line-height: 1.4; color: GrayText; }
+
+.status-strip { margin-top: auto; min-height: 28px; display: flex; align-items: center; justify-content: space-around; gap: 5px; padding: 1px 10px 0; font-size: 12px; color: GrayText; white-space: nowrap; }
+.quota-anchor { cursor: help; display: inline-flex; position: relative; font-size: 17px; outline-offset: 2px; }
+.quota-tooltip { display: none; position: absolute; right: -6px; bottom: calc(100% + 6px); z-index: 20; width: 274px; max-width: 80vw; font-size: 13px; font-weight: 400; white-space: normal; line-height: 1.4; padding: 10px; color: CanvasText; background: Canvas; border: 1px solid color-mix(in srgb, CanvasText 25%, transparent); border-radius: 7px; box-shadow: 0 5px 20px #0004; pointer-events: none; }
+.quota-anchor:hover .quota-tooltip, .quota-anchor:focus-visible .quota-tooltip { display: block; }
+
+.actions { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 6px; flex-shrink: 0; padding: 0 10px 10px; min-height: 89px; }
+.action { min-height: 79px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 5px; border: 1px solid color-mix(in srgb, CanvasText 22%, transparent); border-radius: 6px; background: color-mix(in srgb, Canvas 86%, CanvasText 14%); font-size: 13px; font-weight: 400; padding: 5px 1px; }
+.action:hover:not(:disabled) { border-color: #4699e7; }
+.action[aria-pressed="true"] { border-color: #4699e7; background: color-mix(in srgb, #4699e7 22%, Canvas); }
+.action-icon { font-size: 25px; font-weight: 400; line-height: 28px; font-variant-numeric: tabular-nums; }
+.action-icon.has-commits { font-size: 18px; color: #1f8b4c; font-weight: 500; }
+
+#notice { position: absolute; left: 11px; right: 11px; bottom: 100px; z-index: 25; padding: 8px 10px; background: Canvas; border: 1px solid #cd664d; border-radius: 6px; box-shadow: 0 4px 10px #0003; font-size: 12px; font-weight: 400; max-height: 82px; overflow-y: auto; }

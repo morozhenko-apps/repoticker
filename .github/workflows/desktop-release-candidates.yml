@@ -160,18 +160,6 @@ jobs:
             --gpg-home "$RUNNER_TEMP/private/gnupg" \
             --fingerprint "$SIGNING_FPR" \
             --passphrase-file "$RUNNER_TEMP/private/passphrase"
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 24
-      - name: Verify and deploy isolated read-only download Worker
-        shell: bash
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.REPOTICKER_CLOUDFLARE_API_TOKEN }}
-        run: |
-          set -euo pipefail
-          [[ -n "$CLOUDFLARE_API_TOKEN" ]]
-          node --test tests/download-worker.test.mjs
-          npx --yes wrangler@4.150.0 deploy --config infra/download-worker/wrangler.jsonc
       - name: Verify R2 artifacts and publish signed APT last
         shell: bash
         env:

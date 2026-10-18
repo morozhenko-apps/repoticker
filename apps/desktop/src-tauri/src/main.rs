@@ -11,6 +11,8 @@ use std::{
 };
 #[cfg(target_os = "linux")]
 mod linux_tray;
+#[cfg(target_os = "linux")]
+mod linux_surface;
 
 #[cfg(not(target_os = "linux"))]
 use tauri::{
@@ -311,6 +313,11 @@ fn set_card_view(app: AppHandle, view: String) -> Result<(), String> {
         .get_webview_window("main")
         .ok_or_else(|| "Card window is unavailable".to_owned())?;
 
+    #[cfg(target_os = "linux")]
+    if linux_surface::enabled() {
+        return linux_surface::resize(app, height as i32);
+    }
+
     let before_position = window.outer_position().ok();
     let before_size = window.outer_size().ok();
     window
@@ -336,6 +343,12 @@ fn hide_card(app: AppHandle) -> Result<(), String> {
     let window = app
         .get_webview_window("main")
         .ok_or_else(|| "Card window is unavailable".to_owned())?;
+    #[cfg(target_os = "linux")]
+    if linux_surface::enabled() {
+        linux_surface::hide(&app)?;
+        let _ = app.emit("repoticker-card-hidden", ());
+        return Ok(());
+    }
     window.hide().map_err(|err| err.to_string())?;
     let _ = app.emit("repoticker-card-hidden", ());
     Ok(())
@@ -344,6 +357,15 @@ fn hide_card(app: AppHandle) -> Result<(), String> {
 fn show_compact_card(app: &AppHandle) {
     let _ = set_card_view(app.clone(), "compact".to_owned());
     let _ = app.emit("repoticker-reset-view", ());
+    #[cfg(target_os = "linux")]
+    if linux_surface::enabled() {
+        if let Err(error) = linux_surface::show(app) {
+            eprintln!("RepoTicker Layer Shell show: {error}");
+        }
+        let _ = app.emit("repoticker-card-shown", ());
+        return;
+    }
+
     if let Some(window) = app.get_webview_window("main") {
         let _ = window.show();
         let _ = window.set_focus();
@@ -357,6 +379,16 @@ fn show_settings(app: &AppHandle) {
 }
 
 fn toggle_card(app: &AppHandle) {
+    #[cfg(target_os = "linux")]
+    if linux_surface::enabled() {
+        if linux_surface::visible() {
+            let _ = linux_surface::hide(app);
+            let _ = app.emit("repoticker-card-hidden", ());
+        } else {
+            show_compact_card(app);
+        }
+        return;
+    }
     if let Some(window) = app.get_webview_window("main") {
         if window.is_visible().unwrap_or(false) {
             let _ = window.hide();
@@ -395,7 +427,10 @@ fn main() {
         .manage(OperationLock::default())
         .setup(|app| {
             #[cfg(target_os = "linux")]
-            linux_tray::install(app)?;
+            {
+                linux_surface::install(app)?;
+                linux_tray::install(app)?;
+            }
 
             #[cfg(not(target_os = "linux"))]
             {
@@ -435,6 +470,13 @@ fn main() {
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
+                #[cfg(target_os = "linux")]
+                if linux_surface::enabled() {
+                    let _ = linux_surface::hide(window.app_handle());
+                } else {
+                    let _ = window.hide();
+                }
+                #[cfg(not(target_os = "linux"))]
                 let _ = window.hide();
                 let _ = window.app_handle().emit("repoticker-card-hidden", ());
             }

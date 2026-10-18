@@ -270,12 +270,12 @@ fn execute(
                 let outcome = git::fetch(&path);
                 (path, outcome)
             },
-            |path, _| {
+            |path, already_done, _| {
                 notify_progress(
                     app,
                     operation,
                     &path.to_string_lossy(),
-                    0,
+                    already_done,
                     total,
                     "start",
                     None,

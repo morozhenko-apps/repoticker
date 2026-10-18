@@ -89,3 +89,10 @@ test("repository drawer disables idle dismissal and drag never survives hiding",
   assert.match(ui, /dragSurface\.setPointerCapture\(event\.pointerId\)/);
   assert.match(ui, /lostpointercapture/);
 });
+
+test("parallel repo tracking keeps multiple running rows and monotonic button progress", () => {
+  assert.match(ui, /active: new Set\(\)/);
+  assert.match(ui, /progress\.active\.add\(payload\.path\)/);
+  assert.match(ui, /progress\.active\.delete\(payload\.path\)/);
+  assert.match(ui, /Math\.max\(progress\.completed \|\| 0, payload\.completed\)/);
+});

@@ -15,7 +15,7 @@ where
     T: Send,
     R: Send,
     Work: Fn(T) -> R + Sync,
-    Start: FnMut(&T, usize),
+    Start: FnMut(&T, usize, usize),
     Complete: FnMut(&R, usize, usize),
 {
     let total = tasks.len();
@@ -30,7 +30,7 @@ where
         std::thread::scope(|scope| {
             let (sender, receiver) = mpsc::channel();
             for task in batch {
-                started(&task, total);
+                started(&task, results.len(), total);
                 let tx = sender.clone();
                 let work = &work;
                 scope.spawn(move || {
@@ -74,7 +74,7 @@ mod tests {
                 active.fetch_sub(1, Ordering::SeqCst);
                 i * 2
             },
-            |_, total| {
+            |_, _, total| {
                 started += 1;
                 assert_eq!(total, 12);
             },
@@ -99,7 +99,7 @@ mod tests {
             Vec::new(),
             4,
             |value| value,
-            |_, _| panic!("no task should start"),
+            |_, _, _| panic!("no task should start"),
             |_, _, _| panic!("no task should complete"),
         );
         assert!(no_results.is_empty());
@@ -109,7 +109,7 @@ mod tests {
             vec![1, 2, 3],
             0,
             |v| v,
-            |_, _| {},
+            |_, _, _| {},
             |_, completed, _| done = completed,
         );
         assert_eq!(values, vec![1, 2, 3]);

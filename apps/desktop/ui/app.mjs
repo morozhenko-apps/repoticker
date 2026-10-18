@@ -77,7 +77,7 @@ function makeRepoRow(repo) {
     repo.ahead ? "↑" + repo.ahead :
     current ? "✓" : "—";
   if (progress) {
-    if (progress.path === repo.path && progress.phase === "start") {
+    if (progress.active?.has(repo.path)) {
       row.classList.add("is-running");
     } else if (progress.done?.has(repo.path)) {
       row.classList.add("is-finished");
@@ -183,7 +183,7 @@ function consumeResults(results) {
 async function runGitAction(operation, repoPath = null) {
   if (busy) return;
   busy = true;
-  progress = { operation, total: 0, completed: 0, path: "", phase: "begin", done: new Set(), errors: new Set() };
+  progress = { operation, total: 0, completed: 0, path: "", phase: "begin", active: new Set(), done: new Set(), errors: new Set() };
   clearError();
   updateActionState();
   try {
@@ -240,13 +240,15 @@ window.__TAURI__?.event?.listen?.("repoticker-git-progress", event => {
   const payload = event.payload;
   if (!payload || !["fetch", "safe_pull"].includes(payload.operation)) return;
   if (!progress || progress.operation !== payload.operation) {
-    progress = { operation: payload.operation, done: new Set(), errors: new Set() };
+    progress = { operation: payload.operation, active: new Set(), done: new Set(), errors: new Set() };
   }
   progress.total = payload.total;
-  progress.completed = payload.completed;
+  progress.completed = Math.max(progress.completed || 0, payload.completed);
   progress.path = payload.path;
   progress.phase = payload.phase;
+  if (payload.phase === "start") progress.active.add(payload.path);
   if (payload.phase === "complete") {
+    progress.active.delete(payload.path);
     progress.done.add(payload.path);
     if (payload.status === "error") progress.errors.add(payload.path);
   }
@@ -258,7 +260,7 @@ window.__TAURI__?.event?.listen?.("repoticker-git-progress", event => {
   // Only paint changed row; do not reconstruct the entire list or reset its scroll.
   document.querySelectorAll(".repo-row").forEach(row => {
     const path = row.dataset.repoPath;
-    row.classList.toggle("is-running", progress?.phase === "start" && progress.path === path);
+    row.classList.toggle("is-running", !!progress?.active?.has(path));
     row.classList.toggle("is-finished", !!progress?.done?.has(path));
     row.classList.toggle("is-failed", !!progress?.errors?.has(path));
   });

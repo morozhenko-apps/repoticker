@@ -96,3 +96,19 @@ test("parallel repo tracking keeps multiple running rows and monotonic button pr
   assert.match(ui, /progress\.active\.delete\(payload\.path\)/);
   assert.match(ui, /Math\.max\(progress\.completed \|\| 0, payload\.completed\)/);
 });
+
+test("settings is transactional and has no duplicate title or scrolling page", () => {
+  const settingsHtml = readFileSync(new URL("../apps/desktop/ui/settings.html", import.meta.url), "utf8");
+  const settingsCss = readFileSync(new URL("../apps/desktop/ui/settings.css", import.meta.url), "utf8");
+  const settingsJs = readFileSync(new URL("../apps/desktop/ui/settings.mjs", import.meta.url), "utf8");
+  assert.doesNotMatch(settingsHtml, /<h1/);
+  assert.doesNotMatch(settingsHtml, /class="heading"/);
+  assert.match(settingsHtml, /id="apply-settings"/);
+  assert.match(settingsHtml, /id="cancel-settings"/);
+  assert.match(settingsJs, /"save_settings"/);
+  assert.match(settingsJs, /"close_settings"/);
+  assert.doesNotMatch(settingsJs, /"add_root"/);
+  assert.doesNotMatch(settingsJs, /"remove_root"/);
+  assert.match(settingsCss, /\.github-grid input, \.github-grid select \{[^}]*height: 34px/);
+  assert.match(settingsCss, /overflow: hidden/);
+});

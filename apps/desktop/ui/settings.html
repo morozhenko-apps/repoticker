@@ -1,15 +1,13 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <title>RepoTicker Settings</title>
   <link rel="stylesheet" href="./settings.css">
   <script type="module" src="./settings.mjs"></script>
 </head>
 <body>
 <main class="settings-shell">
-  <div class="heading"><h1>Settings</h1><span class="caption">RepoTicker</span></div>
-
   <section class="block general">
     <h2>General</h2>
     <div class="general-line">
@@ -18,7 +16,6 @@
       <span class="hint">Translations are planned</span>
     </div>
   </section>
-
   <section class="block repositories">
     <div class="section-heading"><h2>Local repositories</h2><span class="hint">Direct children only</span></div>
     <form id="add-root-form" class="inline">
@@ -28,7 +25,6 @@
     </form>
     <div id="roots-list" class="roots-list"></div>
   </section>
-
   <section class="block github">
     <div class="section-heading"><h2>GitHub &amp; Relay</h2><span class="hint">Not connected yet</span></div>
     <div class="github-grid">
@@ -37,7 +33,13 @@
       <label class="worker-label">Worker URL<input disabled placeholder="https://your-worker.example"></label>
     </div>
   </section>
-  <p id="message" role="status" aria-live="polite"></p>
+  <div class="settings-footer">
+    <span id="message" role="status" aria-live="polite"></span>
+    <div class="footer-buttons">
+      <button id="cancel-settings" type="button">Cancel</button>
+      <button id="apply-settings" type="button" class="primary" disabled>Apply</button>
+    </div>
+  </div>
 </main>
 </body>
 </html>

@@ -443,6 +443,7 @@ fn show_settings(app: &AppHandle) {
     if let Some(window) = app.get_webview_window("settings") {
         let _ = window.show();
         let _ = window.set_focus();
+        let _ = app.emit("repoticker-settings-opened", ());
     }
 }
 
@@ -472,6 +473,39 @@ fn move_card(app: AppHandle, dx: i32, dy: i32) -> Result<(), String> {
 #[tauri::command]
 fn open_settings(app: AppHandle) {
     show_settings(&app);
+}
+
+#[tauri::command]
+fn save_settings(app: AppHandle, roots: Vec<String>, language: String) -> Result<(), String> {
+    if language != "en" && language != "ru" {
+        return Err("Unsupported language".into());
+    }
+    if roots.len() > 100 {
+        return Err("Too many enrolled roots".into());
+    }
+    let mut validated = Vec::new();
+    for root in roots {
+        let canonical = git::normalize_root(&root).map_err(|err| err.to_string())?;
+        git::discover(&canonical).map_err(|err| err.to_string())?;
+        let text = canonical.to_string_lossy().into_owned();
+        if !validated.contains(&text) {
+            validated.push(text);
+        }
+    }
+    validated.sort();
+    let mut config = read_config(&app)?;
+    config.roots = validated;
+    config.language = language;
+    write_config(&app, &config)?;
+    let _ = app.emit("repoticker-config-changed", ());
+    Ok(())
+}
+
+#[tauri::command]
+fn close_settings(app: AppHandle) -> Result<(), String> {
+    let window = app.get_webview_window("settings")
+        .ok_or_else(|| "Settings window is unavailable".to_owned())?;
+    window.hide().map_err(|err| err.to_string())
 }
 
 #[tauri::command]
@@ -591,6 +625,8 @@ fn main() {
             remove_root,
             open_settings,
             set_language,
+            save_settings,
+            close_settings,
             start_card_drag,
             move_card,
             perform_git_action,

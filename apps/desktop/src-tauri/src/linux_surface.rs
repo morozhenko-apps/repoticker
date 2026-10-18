@@ -91,8 +91,7 @@ pub fn resize(app: AppHandle, height: i32) -> Result<(), String> {
     on_main(&app, move |window| {
         let max_height = MARGINS.with(|offset| {
             let bottom = offset.borrow().0;
-            window
-                .screen()
+            gtk::prelude::WidgetExt::screen(&window)
                 .map_or(900, |screen| (screen.height() - bottom - 8).max(122))
         });
         let bounded_height = height.min(max_height);
@@ -131,7 +130,7 @@ pub fn shift(app: &AppHandle, dx: i32, dy: i32) -> Result<(), String> {
             let new_bottom = (margins.0 - dy).clamp(0, 5000);
             let new_right = (margins.1 - dx).clamp(0, 5000);
             // Keep popup on the screen when monitor dimensions are available.
-            let screen = window.screen();
+            let screen = gtk::prelude::WidgetExt::screen(&window);
             let max_bottom = screen.as_ref().map_or(5000, |s| (s.height() - 130).max(0));
             let max_right = screen.as_ref().map_or(5000, |s| (s.width() - 390).max(0));
             margins.0 = new_bottom.min(max_bottom);

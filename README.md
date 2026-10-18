@@ -4,7 +4,7 @@
 
 RepoTicker is a planned cross-platform desktop utility for keeping local Git repositories and GitHub Actions in sight, without a full dashboard.
 
-**Status:** early scaffold. The desktop tray/card shell and testable Git pull safety policy are included; real Git discovery/synchronization, GitHub monitoring, relay delivery and public packages are **not implemented**.
+**Status:** local Git Provider prototype is implemented: explicit root enrollment, shallow discovery, local status, fetch and manual safe fast-forward pull. GitHub Actions monitoring, relay delivery, automatic background sync and released packages are **not implemented**. Windows/macOS and physical KDE Wayland UI acceptance are pending.
 
 ## Scope
 
@@ -17,7 +17,7 @@ RepoTicker is a planned cross-platform desktop utility for keeping local Git rep
 
 ## Repository layout
 
-- `crates/repoticker-core`: dependency-free Git sync decision model with unit tests.
+- `crates/repoticker-core`: dependency-free Git decision engine and native Git process adapter, with temporary bare-remote integration tests.
 - `apps/desktop`: Tauri 2 shell and dependency-free web card.
 - `apps/relay-cloudflare`: deployment placeholder for a user-managed Worker.
 - `apps/relay-selfhost`: future generic Docker/VPS relay.
@@ -35,9 +35,9 @@ node --test tests/*.test.mjs
 cargo run -p repoticker-desktop
 ```
 
-`cargo run` is for desktop development; it does **not** install autostart, packages, webhook infrastructure, or background services. In the UI, an empty repo list is real: no demo repositories or imaginary CI counters are inserted.
+`cargo run` is for desktop development; it does **not** install autostart, packages, webhook infrastructure, or background services. Right-click the tray icon and choose **Open card** on Linux. Open Settings (gear), enroll a directory such as `~/Documents/GitHub`, then Fetch or Safe pull via the toolbar, per-repository `…` menu, or the tray context menu. Sync is **manual only**; it will never run merely because the app starts. The card lists actual local Git state. GitHub/runner/quota values are unavailable rather than invented.
 
-See [product](docs/PRODUCT.md), [architecture](docs/ARCHITECTURE.md), [roadmap](docs/ROADMAP.md), [CI](docs/CI.md), [security](docs/SECURITY.md), [relay](docs/RELAY.md) and [tests](docs/TEST_STRATEGY.md).
+See [Git Provider behavior and limitations](docs/GIT_PROVIDER.md), [product](docs/PRODUCT.md), [architecture](docs/ARCHITECTURE.md), [roadmap](docs/ROADMAP.md), [CI](docs/CI.md), [security](docs/SECURITY.md), [relay](docs/RELAY.md) and [tests](docs/TEST_STRATEGY.md).
 
 ## Contributing / license
 

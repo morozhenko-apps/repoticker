@@ -7,7 +7,7 @@ Follow rQuickShare's principle of distinguishing planned tests, configured CI, s
 - Pure Rust sync decisions: clean behind, current, local ahead, divergent, worktree dirty, unfinished operation, missing upstream.
 - JavaScript presentation model: empty state, runner busy vs online, local behind total, strict Actions run links.
 - CI: fmt, Clippy, tests, Tauri compilation check. Strict manual ten-pass tests.
-- These tests **do not** prove Git process execution, remote authorization, webhooks, or OS tray acceptance.
+- Real local integration tests now run installed Git against temporary bare remotes with clone, remote push, fetch, fast-forward, dirty/untracked, divergence, no upstream, bounded discovery and invalid paths. They do **not** prove remote GitHub authentication, hooks and adversarial Git config, long-running command cancellation, webhook delivery, or physical OS tray acceptance.
 
 ## Mandatory next negative cases
 

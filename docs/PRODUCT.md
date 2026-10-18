@@ -10,7 +10,7 @@ A small, fully open-source desktop companion for developers running multiple loc
 
 - **Target:** left-click tray toggles the card; right-click gives quick actions (Open/Hide, later Fetch all, Safe sync all, Settings, Quit). The current Tauri 2 Linux tray API does **not** deliver click events, so the initial Linux shell needs the context-menu **Open card** fallback. A native Linux adapter is required for rQuickShare-like primary-click opening and tray anchoring.
 - Card follows the density and disclosure pattern of rQuickShare: 32–36px repository rows, one line each, expandable repository and runner sections.
-- Each repository row: name, active branch, behind/ahead or dirty state, compact CI status; contextual operations when implemented.
+- Each repository row now shows local name, active branch and behind/ahead/dirty status, with an `…` menu for Fetch or Safe pull. CI indicators are deferred until a working GitHub client exists.
 - Bottom footer shows aggregate local behind count, running and failed jobs, runner state; quota is a popover rather than a permanent row.
 - Runner section: online/offline and busy/idle. CPU/RAM requires a separate optional host telemetry component. Never interpret runner busy as actual CPU utilization.
 - Clicking a CI run opens the exact GitHub Actions URL in the system browser. No logs/step view in RepoTicker.

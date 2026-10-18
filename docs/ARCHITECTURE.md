@@ -2,9 +2,9 @@
 
 ## Components
 
-1. `repoticker-core`: pure, testable domain types and decisions (currently includes safe sync classifier).
+1. `repoticker-core`: pure sync decisions plus the real, shell-free, local Git process adapter (discovery, inspect, fetch, ff-only) with integration fixtures.
 2. Desktop Tauri shell: tray and compact card, with platform-independent state projection; OS-specific placement and lifecycle need physical testing.
-3. Local Git adapter: future process-level integration with the user's installed Git, credentials and LFS. Never read remote tokens into JS.
+3. Local Git adapter: calls installed Git with explicit argument vectors and relies on existing Git credentials/LFS configuration. No Git credentials enter JS. Manual operations are callable from UI and tray.
 4. GitHub provider: future REST API actions/runners/billing clients; least-privilege auth stored in OS credential store.
 5. Event engine: future cache, deduplication, reconnect/reconciliation scheduler, notifications.
 6. Relay protocol: future independently versioned event envelope for Cloudflare and generic self-hosted implementations.
@@ -33,7 +33,7 @@ Relay implementations: Cloudflare Worker + Durable Objects with authenticated pe
 
 ## Current executable boundaries
 
-The Tauri shell presently returns an *empty* snapshot from a stub command; it does not enumerate repos or call GitHub. The Rust core only classifies an already inspected repository state. The Cloudflare and self-hosted relay code is not yet functional. No action should imply production readiness.
+The Tauri shell now loads enrolled roots from its local app config, enumerates direct child Git checkouts, displays real local state, and supports manual fetch/safe pull. Git operations are serialized within this process and launched on a blocking worker thread. Repo details and errors return to the UI; no remote authentication is implemented inside the app. There is no automatic background fetch/pull, GitHub Actions API client, Cloudflare/self-hosted relay, packaged binary, or physically accepted KDE/Windows/macOS integration. See `docs/GIT_PROVIDER.md` for current known limits.
 
 ## Packaging and portability
 

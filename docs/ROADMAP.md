@@ -16,12 +16,17 @@ This is a planning backlog, not a progress claim. Dates indicate when decisions 
 
 ## P1: Local Git provider
 
-- [ ] Explicit root enrollment and configurable ignores.
-- [ ] Discover only valid repos, handle symlink cycles, submodules, linked/broken worktrees, administrative snapshots.
-- [ ] Fetch all with remote isolation, timeouts and credentials from existing Git config.
-- [ ] Safe ff-only pull only on clean upstream-tracking active branch, no merge/stash/rebase/force.
-- [ ] Aggregated progress, per-repo errors and clear user notifications.
-- [ ] Reproducible local integration tests with temp bare remotes.
+- [x] Explicit root enrollment and removal from local app config.
+- [ ] Configurable path ignores beyond the built-in exclusions.
+- [x] Shallow direct-child discovery of valid checkouts; skip symlinks, hidden snapshots, and linked-worktree administrative trees.
+- [ ] Worktree/submodule explicit enrollment acceptance on all target platforms; richer discovery rules.
+- [x] Manual fetch-all using existing Git configuration, with per-repository error isolation.
+- [ ] Network timeouts, cancellation, concurrent external Git-process race acceptance.
+- [x] Manual native ff-only pull for eligible clean upstream-tracking active branches, no stash/rebase/force.
+- [x] End-of-operation results and per-repository errors inside the card.
+- [ ] Live progress/cancellation and OS-native notifications.
+- [x] Reproducible local integration tests with temporary bare remotes.
+- [ ] Verify passing CI for the latest Git Provider commit and physical KDE Wayland behavior.
 
 ## P2: GitHub REST polling
 

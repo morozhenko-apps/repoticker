@@ -12,13 +12,13 @@ use std::{
 #[cfg(target_os = "linux")]
 mod linux_tray;
 
-use tauri::{AppHandle, Emitter, Manager, State};
 #[cfg(not(target_os = "linux"))]
 use tauri::{
     image::Image,
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
 };
+use tauri::{AppHandle, Emitter, Manager, State};
 
 #[derive(Default)]
 struct OperationLock(Mutex<()>);
@@ -343,18 +343,15 @@ fn main() {
     tauri::Builder::default()
         .manage(OperationLock::default())
         .setup(|app| {
-
             #[cfg(target_os = "linux")]
             linux_tray::install(app)?;
 
             #[cfg(not(target_os = "linux"))]
             {
                 let open = MenuItem::with_id(app, "open", "Open card", true, None::<&str>)?;
-                let settings =
-                    MenuItem::with_id(app, "settings", "Settings", true, None::<&str>)?;
+                let settings = MenuItem::with_id(app, "settings", "Settings", true, None::<&str>)?;
                 let fetch = MenuItem::with_id(app, "fetch", "Fetch all", true, None::<&str>)?;
-                let sync =
-                    MenuItem::with_id(app, "sync", "Safe pull all", true, None::<&str>)?;
+                let sync = MenuItem::with_id(app, "sync", "Safe pull all", true, None::<&str>)?;
                 let quit = MenuItem::with_id(app, "quit", "Quit RepoTicker", true, None::<&str>)?;
                 let menu = Menu::with_items(app, &[&open, &settings, &fetch, &sync, &quit])?;
 

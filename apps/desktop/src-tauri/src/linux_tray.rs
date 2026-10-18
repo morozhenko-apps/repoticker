@@ -43,7 +43,11 @@ impl Tray for LinuxTray {
                 }
             }
         }
-        vec![Icon { width: 16, height: 16, data }]
+        vec![Icon {
+            width: 16,
+            height: 16,
+            data,
+        }]
     }
 
     fn activate(&mut self, _x: i32, _y: i32) {

@@ -26,9 +26,10 @@ macOS is a skipped stub (no Apple Developer ID/notarization or runner cost).
 
 After Linux/Windows succeed, the protected apt-release environment must
 authorize the publish job. It imports a signing SUBKEY from GitHub Secrets,
-creates signed APT metadata, deploys the dedicated read-only Cloudflare Worker,
-uploads immutable release files and pool/by-hash objects to private R2,
-verifies public HTTP readback, and uploads InRelease LAST. GitHub Release is
+creates signed APT metadata, uploads immutable release files and pool/by-hash
+objects to private R2, verifies public HTTP readback, and uploads InRelease
+LAST. The read-only download Worker is maintained independently by Cloudflare
+Git Integration from main, not by the release workflow. GitHub Release is
 created only if all steps succeed. Never distribute a failed candidate.
 
 ## GitHub protected environment: apt-release
@@ -41,15 +42,16 @@ Environment Secrets:
     REPOTICKER_APT_SIGNING_PASSPHRASE
     REPOTICKER_R2_ACCESS_KEY_ID
     REPOTICKER_R2_SECRET_ACCESS_KEY
-    REPOTICKER_CLOUDFLARE_API_TOKEN
 
 Environment Variables:
     REPOTICKER_APT_FINGERPRINT
     REPOTICKER_R2_ACCOUNT_ID
 
-Use a dedicated R2 S3 token scoped to app-dist and a dedicated limited
-Cloudflare token to deploy only the RepoTicker Worker and route. Do not
-reuse signing keys or tokens from rQuickShare or Picturix.
+Use a dedicated R2 S3 token scoped to app-dist. The RepoTicker download
+Worker is deployed independently through Cloudflare's GitHub integration
+from the main branch (root directory infra/download-worker); its deploy
+token is managed by Cloudflare and is NOT a GitHub Actions release secret.
+Do not reuse signing keys or tokens from rQuickShare or Picturix.
 
 ## Signing key on Alcotester and backup in Google Drive
 
@@ -78,8 +80,8 @@ separate backup passphrase in your password manager, not the Drive folder.
 Confirm the encrypted archive has actually synchronized; the script
 cannot verify remote Google Drive sync.
 
-Supply R2 and Cloudflare secrets separately through the environment
-Settings. Public fingerprint and account ID are environment variables.
+Supply R2 secrets through GitHub environment Settings. Public fingerprint
+and account ID are environment variables.
 The publish job rejects primary secret key material and requires a
 usable signing subkey.
 
@@ -88,6 +90,13 @@ usable signing subkey.
 R2 bucket: app-dist. Scope: dist/RepoTicker ONLY.
 Dedicated Worker route:
     https://download.morozhenko.com/dist/RepoTicker/*
+
+Worker configuration: infra/download-worker/wrangler.jsonc
+Cloudflare Git: main only, root infra/download-worker, empty build command,
+deploy command: npx --yes wrangler@4.150.0 deploy --config wrangler.jsonc
+Build watch path: infra/download-worker/*
+No tag is needed to deploy Worker; no dev branch deployment is configured.
+Application installers/APT remain tag-only, independent of Worker changes.
 
 Artifact paths:
     dist/RepoTicker/releases/vVERSION/linux/
@@ -109,8 +118,9 @@ which remains unsigned and may trigger SmartScreen warnings.
 1. Freeze and check in a verified Cargo.lock (prototype currently ignores it).
 2. Validate real DEB/AppImage and hosted Windows x64 NSIS builds, install,
    uninstall and long-lived runtime behavior.
-3. Configure the protected environment, isolated signing subkey, R2 and
-   Cloudflare tokens; verify the encrypted Google Drive backup is synced.
+3. Configure the protected environment, isolated signing subkey and R2
+   token; separately authorize the Worker in Cloudflare Git Integration.
+   Verify the encrypted Google Drive backup is synced.
 4. Verify public read-only download route and independent APT acquisition.
 5. Define signed metadata expiry/refresh and rollback before public rollout.
 6. Keep macOS off until Apple Developer identity and notarization exist.

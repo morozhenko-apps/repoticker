@@ -453,6 +453,42 @@ fn show_settings(app: &AppHandle) {
     }
 }
 
+fn show_about(app: &AppHandle) {
+    if let Some(window) = app.get_webview_window("about") {
+        let _ = window.show();
+        let _ = window.set_focus();
+    }
+}
+
+#[derive(Serialize)]
+struct AboutInfo {
+    version: &'static str,
+    author: &'static str,
+    website: &'static str,
+}
+
+#[tauri::command]
+fn get_about_info() -> AboutInfo {
+    AboutInfo {
+        version: env!("CARGO_PKG_VERSION"),
+        author: "morozhenko apps",
+        website: "https://morozhenko.com",
+    }
+}
+
+#[tauri::command]
+fn open_project_website() -> Result<(), String> {
+    let url = "https://morozhenko.com";
+    #[cfg(target_os = "linux")]
+    let mut command = std::process::Command::new("xdg-open");
+    #[cfg(target_os = "macos")]
+    let mut command = std::process::Command::new("open");
+    #[cfg(target_os = "windows")]
+    let mut command = std::process::Command::new("explorer");
+    command.arg(url).spawn().map(|_| ())
+        .map_err(|error| format!("Cannot open website: {error}"))
+}
+
 #[tauri::command]
 fn start_card_drag(app: AppHandle) -> Result<bool, String> {
     #[cfg(target_os = "linux")]
@@ -589,8 +625,9 @@ fn main() {
                 let settings = MenuItem::with_id(app, "settings", "Settings", true, None::<&str>)?;
                 let fetch = MenuItem::with_id(app, "fetch", "Fetch all", true, None::<&str>)?;
                 let sync = MenuItem::with_id(app, "sync", "Safe pull all", true, None::<&str>)?;
+                let about = MenuItem::with_id(app, "about", "About RepoTicker", true, None::<&str>)?;
                 let quit = MenuItem::with_id(app, "quit", "Quit RepoTicker", true, None::<&str>)?;
-                let menu = Menu::with_items(app, &[&open, &settings, &fetch, &sync, &quit])?;
+                let menu = Menu::with_items(app, &[&open, &settings, &fetch, &sync, &about, &quit])?;
 
                 TrayIconBuilder::with_id("repoticker")
                     .icon(tray_image())
@@ -599,6 +636,7 @@ fn main() {
                     .on_menu_event(|app, event| match event.id().as_ref() {
                         "open" => show_compact_card(app),
                         "settings" => show_settings(app),
+                        "about" => show_about(app),
                         "fetch" => dispatch_menu_action(app, "fetch"),
                         "sync" => dispatch_menu_action(app, "safe_pull"),
                         "quit" => app.exit(0),
@@ -621,7 +659,7 @@ fn main() {
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
-                if window.label() == "settings" {
+                if window.label() == "settings" || window.label() == "about" {
                     let _ = window.hide();
                     return;
                 }
@@ -638,6 +676,8 @@ fn main() {
         })
         .invoke_handler(tauri::generate_handler![
             get_snapshot,
+            get_about_info,
+            open_project_website,
             add_root,
             remove_root,
             open_settings,

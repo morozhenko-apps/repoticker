@@ -119,3 +119,13 @@ test("popup is transparent and persists native anchor after manual movement", ()
   assert.match(ui, /"persist_card_position"/);
   assert.match(ui, /dragHasMoved/);
 });
+
+test("tray About uses real package version, icon and author", () => {
+  const about = readFileSync(new URL("../apps/desktop/ui/about.html", import.meta.url), "utf8");
+  const js = readFileSync(new URL("../apps/desktop/ui/about.mjs", import.meta.url), "utf8");
+  assert.match(about, /src="\.\/icon.png"/);
+  assert.match(about, /id="version"/);
+  assert.match(about, /id="author"/);
+  assert.match(js, /"get_about_info"/);
+  assert.match(js, /"open_project_website"/);
+});

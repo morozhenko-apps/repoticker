@@ -35,6 +35,21 @@
         "maxWidth": 660,
         "maxHeight": 468,
         "maximizable": false
+      },
+      {
+        "label": "about",
+        "title": "About RepoTicker",
+        "url": "about.html",
+        "width": 360,
+        "height": 265,
+        "minWidth": 360,
+        "minHeight": 265,
+        "maxWidth": 360,
+        "maxHeight": 265,
+        "visible": false,
+        "resizable": false,
+        "maximizable": false,
+        "decorations": true
       }
     ],
     "security": {

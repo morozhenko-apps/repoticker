@@ -30,13 +30,15 @@ def main():
     for size in sizes:
         base.resize((size, size), Image.Resampling.LANCZOS).save(dest / f"icon-{size}.png")
     base.resize((256, 256), Image.Resampling.LANCZOS).save(dest / "icon.png")
+    frontend_icon = root / "apps" / "desktop" / "ui" / "icon.png"
+    base.resize((128, 128), Image.Resampling.LANCZOS).save(frontend_icon)
     base.resize((256, 256), Image.Resampling.LANCZOS).save(
         dest / "icon.ico", format="ICO", sizes=[(16, 16), (24, 24),
         (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)]
     )
     base.resize((1024, 1024), Image.Resampling.LANCZOS).save(dest / "icon.icns", format="ICNS")
     print(f"Icon assets written to {dest}")
-    print("Review icon-16.png; then git add apps/desktop/src-tauri/icons/")
+    print("Review icon-16.png; then git add apps/desktop/src-tauri/icons/ apps/desktop/ui/icon.png")
 
 if __name__ == "__main__":
     main()

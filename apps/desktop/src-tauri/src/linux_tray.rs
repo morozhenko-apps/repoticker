@@ -1,6 +1,6 @@
 //! Linux StatusNotifierItem: unlike Tauri's Linux tray backend, Activate
 //! fires for KDE's primary click. All UI/Git work is marshalled away from DBus.
-use crate::{app_icon, dispatch_menu_action, show_compact_card, show_settings, toggle_card};
+use crate::{app_icon, dispatch_menu_action, show_about, show_compact_card, show_settings, toggle_card};
 use ksni::{blocking::TrayMethods as _, menu::StandardItem, Icon, MenuItem, Tray};
 use tauri::{App, AppHandle, Manager};
 
@@ -16,6 +16,7 @@ impl LinuxTray {
             "open" => show_compact_card(&app),
             "toggle" => toggle_card(&app),
             "settings" => show_settings(&app),
+            "about" => show_about(&app),
             "fetch" => dispatch_menu_action(&app, "fetch"),
             "sync" => dispatch_menu_action(&app, "safe_pull"),
             "quit" => app.exit(0),
@@ -69,6 +70,12 @@ impl Tray for LinuxTray {
             StandardItem {
                 label: "Safe pull all".into(),
                 activate: Box::new(|tray: &mut Self| tray.on_ui("sync")),
+                ..Default::default()
+            }
+            .into(),
+            StandardItem {
+                label: "About RepoTicker".into(),
+                activate: Box::new(|tray: &mut Self| tray.on_ui("about")),
                 ..Default::default()
             }
             .into(),

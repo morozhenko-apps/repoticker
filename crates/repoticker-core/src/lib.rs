@@ -1,4 +1,6 @@
-//! Pure RepoTicker domain decisions. No network access or local Git mutations.
+//! RepoTicker domain rules and Git provider.
+
+pub mod git;
 
 /// Remote comparison is meaningful only after a successful fetch.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -21,11 +23,7 @@ pub enum SyncDecision {
     FastForward { commits: u64 },
 }
 
-/// Fail closed: only an upstream-tracking branch with a clean worktree,
-/// no unfinished Git operation and no divergent local commits may advance.
-///
-/// This decision is only a precondition. The future Git adapter must verify
-/// checkout/ref ownership again and execute Git's native --ff-only operation.
+/// Fail closed; the Git adapter must execute the native --ff-only operation.
 pub fn classify_sync(state: RepositoryState) -> SyncDecision {
     if !state.has_upstream {
         return SyncDecision::NoUpstream;

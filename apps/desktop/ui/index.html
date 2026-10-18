@@ -9,18 +9,20 @@
   <script type="module" src="./app.mjs"></script>
 </head>
 <body>
-  <main class="card">
-    <header class="header">
-      <span class="brand" aria-label="RepoTicker">◈ RepoTicker</span>
-      <div class="toolbar">
-        <button id="refresh" type="button" title="Refresh local Git status" aria-label="Refresh local Git status">↻</button>
-        <button id="fetch-all" type="button" title="Fetch all enrolled repositories" aria-label="Fetch all">⇄</button>
-        <button id="sync-all" type="button" title="Safe pull all enrolled repositories" aria-label="Safe pull all">↓</button>
-        <button id="settings" type="button" title="Manage repository roots" aria-label="Manage repository roots">⚙</button>
-      </div>
-    </header>
+  <main class="card" id="card" data-view="compact">
+    <div class="utility-bar">
+      <span id="connection" class="connection" role="status">Local Git · Manual mode</span>
+      <button id="settings" class="utility-button" type="button" aria-label="Manage repository folders" aria-pressed="false" title="Manage repository folders">⚙</button>
+    </div>
 
-    <section id="roots-editor" class="roots-editor" hidden>
+    <section id="repo-drawer" class="drawer" aria-label="Local repositories" hidden>
+      <div class="drawer-caption"><span>Repositories</span><span id="repo-count">0</span></div>
+      <div id="repo-list" class="rows" aria-live="polite">
+        <p class="empty">No repositories enrolled.</p>
+      </div>
+    </section>
+
+    <section id="roots-editor" class="roots-editor" aria-label="Local repository folders" hidden>
       <form id="add-root-form">
         <label for="root-path">Repository folder or parent directory</label>
         <div class="input-row">
@@ -29,36 +31,52 @@
         </div>
       </form>
       <div id="roots-list" class="roots-list"></div>
-      <p class="hint">Only the selected folder and its immediate subfolders are scanned.</p>
+      <p class="hint">Only this folder and its immediate subfolders are scanned. Removing a folder here never deletes files.</p>
     </section>
 
-    <div id="connection" class="connection" role="status">GitHub monitoring not configured</div>
-    <section class="repositories">
-      <button id="toggle-repos" class="section-toggle" type="button" aria-expanded="true">
-        <span>▾ Repositories</span><span id="repo-count">0</span>
-      </button>
-      <div id="repo-list" class="rows" aria-live="polite"></div>
-    </section>
-    <section class="runners">
-      <button id="toggle-runners" class="section-toggle" type="button" aria-expanded="false">
-        <span>▸ Runners</span><span id="runner-count">Unavailable</span>
-      </button>
-      <div id="runner-list" class="rows" hidden>
-        <p class="empty">Runner monitoring is not connected yet.</p>
-      </div>
-    </section>
-    <section id="results-panel" class="results-panel" hidden>
+    <div id="results-panel" class="results-panel" hidden>
       <button id="close-results" type="button" aria-label="Close operation results">×</button>
       <div id="results-list"></div>
-    </section>
+    </div>
     <div id="activity" class="activity" role="status" aria-live="polite" hidden></div>
-    <footer class="summary">
-      <span id="git-summary">↓ 0 behind</span>
-      <span id="ci-running">◷ CI —</span>
-      <span id="ci-failed">× CI —</span>
-      <button id="usage" type="button" title="Quota information" aria-label="Quota information">◴</button>
-    </footer>
-    <p id="usage-message" class="hint" hidden>GitHub Actions usage is unavailable until monitoring and billing permissions are configured.</p>
+
+    <section class="metrics" aria-label="Local Git status">
+      <div class="metric">
+        <span id="metric-repos" class="metric-number">0</span>
+        <span class="metric-label">Repos</span>
+      </div>
+      <div class="metric">
+        <span id="metric-behind" class="metric-number">0</span>
+        <span class="metric-label">Behind</span>
+      </div>
+      <div class="metric">
+        <span id="metric-dirty" class="metric-number">0</span>
+        <span class="metric-label">Modified</span>
+      </div>
+    </section>
+    <div class="ci-footer" aria-label="CI and runner status">
+      <span id="ci-running" title="GitHub Actions monitoring has not been configured">CI —</span>
+      <span id="runner-status" title="Self-hosted runners are not connected">Runners —</span>
+      <span class="quota-anchor" tabindex="0" aria-label="GitHub usage details" title="GitHub usage details">
+        <span aria-hidden="true">ⓘ</span>
+        <span id="quota-tooltip" class="quota-tooltip" role="tooltip">GitHub usage is unavailable. Billing permissions are required to display Actions minutes; self-hosted activity is tracked separately.</span>
+      </span>
+    </div>
+
+    <nav class="actions" aria-label="Git operations">
+      <button id="refresh" type="button" class="action" title="Refresh local status (no network)">
+        <span class="action-icon" aria-hidden="true">↻</span><span>Refresh</span>
+      </button>
+      <button id="fetch-all" type="button" class="action" title="Fetch remote references in all enrolled repositories">
+        <span class="action-icon" aria-hidden="true">⇄</span><span>Fetch</span>
+      </button>
+      <button id="sync-all" type="button" class="action" title="Fetch and fast-forward clean upstream branches only">
+        <span class="action-icon" aria-hidden="true">↓</span><span>Safe pull</span>
+      </button>
+      <button id="show-repos" type="button" class="action" aria-pressed="false" title="Show repositories">
+        <span class="action-icon" aria-hidden="true">▤</span><span>Repos</span>
+      </button>
+    </nav>
   </main>
 </body>
 </html>

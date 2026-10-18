@@ -1,4 +1,5 @@
 import { summarize } from "./model.mjs";
+import { nextCardView, cardWindowHeight } from "./view.mjs";
 
 const emptySnapshot = {
   roots: [],
@@ -19,30 +20,21 @@ const invoke = (command, args = {}) => {
 
 let snapshot = emptySnapshot;
 let busy = false;
+let view = "compact";
 
-function activity(message, isError = false) {
+function setActivity(message, isError = false) {
   const node = byId("activity");
   node.hidden = !message;
   node.textContent = message;
   node.classList.toggle("error", isError);
 }
 
-function toggleSection(buttonId, listId, label, countLabel) {
-  const button = byId(buttonId);
-  const list = byId(listId);
-  const open = button.getAttribute("aria-expanded") !== "true";
-  list.hidden = !open;
-  button.setAttribute("aria-expanded", String(open));
-  button.firstElementChild.textContent = (open ? "▾ " : "▸ ") + label;
-  button.lastElementChild.textContent = countLabel;
-}
-
-function addText(parent, tag, text, className = "") {
-  const element = document.createElement(tag);
-  element.textContent = String(text);
-  if (className) element.className = className;
-  parent.append(element);
-  return element;
+function addText(parent, tag, value, className = "") {
+  const el = document.createElement(tag);
+  el.textContent = String(value);
+  if (className) el.className = className;
+  parent.append(el);
+  return el;
 }
 
 function renderRoots(roots) {
@@ -58,15 +50,15 @@ function renderRoots(roots) {
     addText(row, "span", root, "truncate");
     const remove = addText(row, "button", "×");
     remove.type = "button";
-    remove.title = "Remove this root from RepoTicker (does not delete files)";
+    remove.title = "Stop tracking this folder (files are not deleted)";
     remove.setAttribute("aria-label", "Remove " + root);
     remove.addEventListener("click", async () => {
       try {
         await invoke("remove_root", { root });
-        activity("Root removed from tracking. Files were not changed.");
+        setActivity("Folder removed from tracking. Files were not changed.");
         await refresh();
       } catch (error) {
-        activity(String(error), true);
+        setActivity(String(error), true);
       }
     });
     list.append(row);
@@ -79,24 +71,19 @@ function makeRepoRow(repo) {
   row.title = repo.path;
   addText(row, "span", repo.name, "repo-name");
   addText(row, "span", repo.branch, "repo-branch");
-  const delta = repo.dirty
-    ? "●"
-    : repo.ahead && repo.behind
-      ? "⇅"
-      : repo.behind
-        ? "↓" + repo.behind
-        : repo.ahead
-          ? "↑" + repo.ahead
-          : repo.upstream
-            ? "✓"
-            : "—";
-  const indicator = addText(row, "span", delta, "repo-delta");
+  const status = repo.dirty ? "●" :
+    repo.ahead && repo.behind ? "⇅" :
+    repo.behind ? "↓" + repo.behind :
+    repo.ahead ? "↑" + repo.ahead :
+    repo.upstream ? "✓" : "—";
+  const indicator = addText(row, "span", status, "repo-delta");
   indicator.title = repo.sync_state;
   const button = addText(row, "button", "⋯", "repo-more");
   button.type = "button";
   button.title = "Git operations";
   button.setAttribute("aria-label", "Git operations for " + repo.name);
   button.setAttribute("aria-expanded", "false");
+
   const menu = document.createElement("div");
   menu.className = "repo-menu";
   menu.hidden = true;
@@ -104,35 +91,39 @@ function makeRepoRow(repo) {
     const item = addText(menu, "button", label);
     item.type = "button";
     item.addEventListener("click", () => {
-      menu.hidden = true;
-      button.setAttribute("aria-expanded", "false");
+      hideRepoMenus();
       runGitAction(operation, repo.path);
     });
   }
   button.addEventListener("click", () => {
-    const expand = menu.hidden;
-    document.querySelectorAll(".repo-menu").forEach(existing => {
-      existing.hidden = true;
-    });
-    document.querySelectorAll(".repo-more").forEach(existing => {
-      existing.setAttribute("aria-expanded", "false");
-    });
-    menu.hidden = !expand;
-    button.setAttribute("aria-expanded", String(expand));
+    const shouldOpen = menu.hidden;
+    hideRepoMenus();
+    if (shouldOpen) {
+      menu.hidden = false;
+      button.setAttribute("aria-expanded", "true");
+    }
   });
   row.append(menu);
   return row;
 }
 
+function hideRepoMenus() {
+  for (const menu of document.querySelectorAll(".repo-menu")) menu.hidden = true;
+  for (const button of document.querySelectorAll(".repo-more")) {
+    button.setAttribute("aria-expanded", "false");
+  }
+}
+
 function render(next) {
   snapshot = next;
   const metrics = summarize(next);
-  byId("connection").textContent = "GitHub Actions monitoring not configured";
+  byId("connection").textContent = "Local Git · Manual mode";
+  byId("metric-repos").textContent = String(metrics.repositoryCount);
+  byId("metric-behind").textContent = String(metrics.behind);
+  byId("metric-dirty").textContent = String(next.repositories.filter(repo => repo.dirty).length);
   byId("repo-count").textContent = String(metrics.repositoryCount);
-  byId("runner-count").textContent = "Unavailable";
-  byId("git-summary").textContent = "↓ " + metrics.behind + " behind";
-  byId("ci-running").textContent = "◷ CI —";
-  byId("ci-failed").textContent = "× CI —";
+  byId("ci-running").textContent = next.ci_running == null ? "CI —" : "CI " + next.ci_running;
+  byId("runner-status").textContent = "Runners —";
   byId("fetch-all").disabled = busy || !metrics.repositoryCount;
   byId("sync-all").disabled = busy || !metrics.repositoryCount;
 
@@ -140,26 +131,21 @@ function render(next) {
   const list = byId("repo-list");
   list.replaceChildren();
   if (!metrics.repositoryCount) {
-    addText(
-      list,
-      "p",
-      next.roots?.length
-        ? "No valid checkouts in enrolled folders."
-        : "Add a local folder in Settings to discover repositories.",
-      "empty"
-    );
+    addText(list, "p", next.roots?.length
+      ? "No valid checkouts in enrolled folders."
+      : "Use Settings to add a local repository folder.", "empty");
   } else {
     for (const repo of next.repositories) list.append(makeRepoRow(repo));
   }
-  const errors = next.errors || [];
-  if (errors.length) activity(errors.join(" · "), true);
+
+  if (next.errors?.length) setActivity(next.errors.join(" · "), true);
 }
 
 async function refresh() {
   try {
     render(await invoke("get_snapshot"));
   } catch (error) {
-    activity(String(error), true);
+    setActivity(String(error), true);
   }
 }
 
@@ -172,8 +158,8 @@ function displayResults(results) {
     counts[item.status] = (counts[item.status] || 0) + 1;
     addText(list, "p", (item.path.split(/[/\\]/).at(-1) || "Root") + ": " + item.message, "result-line");
   }
-  const overview = Object.entries(counts).map(([key, value]) => value + " " + key).join(" · ");
-  activity(overview || "Nothing to update.", Boolean(counts.error));
+  const summary = Object.entries(counts).map(([key, total]) => total + " " + key).join(" · ");
+  setActivity(summary || "Nothing to update.", Boolean(counts.error));
   panel.hidden = !results.length;
 }
 
@@ -182,13 +168,13 @@ async function runGitAction(operation, repoPath = null) {
   busy = true;
   byId("fetch-all").disabled = true;
   byId("sync-all").disabled = true;
-  activity(operation === "fetch" ? "Fetching remote refs…" : "Checking safe fast-forward eligibility…");
+  setActivity(operation === "fetch" ? "Fetching remote references…" : "Checking safe fast-forward eligibility…");
   try {
     const results = await invoke("perform_git_action", { operation, repoPath });
     displayResults(results);
     await refresh();
   } catch (error) {
-    activity(String(error), true);
+    setActivity(String(error), true);
   } finally {
     busy = false;
     byId("fetch-all").disabled = !snapshot.repositories.length;
@@ -196,39 +182,58 @@ async function runGitAction(operation, repoPath = null) {
   }
 }
 
-byId("toggle-repos").addEventListener("click", () => {
-  toggleSection("toggle-repos", "repo-list", "Repositories", byId("repo-count").textContent);
-});
-byId("toggle-runners").addEventListener("click", () => {
-  toggleSection("toggle-runners", "runner-list", "Runners", byId("runner-count").textContent);
-});
-byId("settings").addEventListener("click", () => {
-  byId("roots-editor").hidden = !byId("roots-editor").hidden;
-});
+async function openView(target) {
+  const desired = nextCardView(view, target);
+  if (desired === view) return;
+  try {
+    // Resize before showing new content, mirroring rQuickShare's drawer model.
+    await invoke("set_card_view", { view: desired });
+    view = desired;
+    const card = byId("card");
+    card.dataset.view = view;
+    byId("repo-drawer").hidden = view !== "repos";
+    byId("roots-editor").hidden = view !== "settings";
+    byId("show-repos").setAttribute("aria-pressed", String(view === "repos"));
+    byId("show-repos").title = view === "repos" ? "Hide repositories" : "Show repositories";
+    byId("settings").setAttribute("aria-pressed", String(view === "settings"));
+    if (view !== "repos") hideRepoMenus();
+  } catch (error) {
+    setActivity("Could not change card size: " + String(error), true);
+  }
+}
+
+byId("settings").addEventListener("click", () => openView("settings"));
+byId("show-repos").addEventListener("click", () => openView("repos"));
 byId("add-root-form").addEventListener("submit", async event => {
   event.preventDefault();
   const input = byId("root-path");
   try {
     await invoke("add_root", { root: input.value });
     input.value = "";
-    activity("Root enrolled.");
+    setActivity("Folder enrolled.");
     await refresh();
   } catch (error) {
-    activity(String(error), true);
+    setActivity(String(error), true);
   }
 });
 byId("refresh").addEventListener("click", refresh);
 byId("fetch-all").addEventListener("click", () => runGitAction("fetch"));
 byId("sync-all").addEventListener("click", () => runGitAction("safe_pull"));
-byId("usage").addEventListener("click", () => {
-  byId("usage-message").hidden = !byId("usage-message").hidden;
-});
 byId("close-results").addEventListener("click", () => {
   byId("results-panel").hidden = true;
+  if (!byId("activity").classList.contains("error")) setActivity("");
 });
+
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape" && view !== "compact") {
+    hideRepoMenus();
+    openView(view);
+  }
+});
+
 window.__TAURI__?.event?.listen?.("repoticker-git-action-finished", async event => {
   if (event.payload?.Ok) displayResults(event.payload.Ok);
-  else if (event.payload?.Err) activity(event.payload.Err, true);
+  else if (event.payload?.Err) setActivity(event.payload.Err, true);
   await refresh();
 });
 

@@ -8,7 +8,7 @@ use repoticker_core::{
 use serde::{Deserialize, Serialize};
 use std::{
     fs,
-    path::{Path, PathBuf},
+    path::PathBuf,
     sync::Mutex,
 };
 #[cfg(target_os = "linux")]
@@ -22,7 +22,7 @@ use tauri::{
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
 };
-use tauri::{AppHandle, Emitter, Manager, State};
+use tauri::{AppHandle, Emitter, Manager};
 
 #[derive(Default)]
 struct OperationLock(Mutex<()>);

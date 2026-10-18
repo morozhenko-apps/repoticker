@@ -1,7 +1,6 @@
 //! Native GTK3 layer shell for a true KDE Wayland anchored tray card.
 //! Reparents the Tauri webview into a top-layer GtkApplicationWindow before
 //! it is ever presented. The normal Tauri window stays hidden.
-use gtk::gdk::prelude::ScreenExt;
 use gtk::prelude::*;
 use gtk_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
 use std::{
@@ -90,12 +89,9 @@ pub fn resize(app: AppHandle, height: i32) -> Result<(), String> {
     // Bottom anchor belongs to the compositor; expanding to a larger height
     // always grows upward, independent of the previous client position.
     on_main(&app, move |window| {
-        let max_height = MARGINS.with(|offset| {
-            let bottom = offset.borrow().0;
-            gtk::prelude::WidgetExt::screen(window)
-                .map_or(900, |screen| (screen.height() - bottom - 8).max(122))
-        });
-        let bounded_height = height.min(max_height);
+        // The compositor keeps the bottom anchor fixed. Monitor geometry
+        // cannot be read portably from Gtk3 on all Wayland configurations.
+        let bounded_height = height;
         CONTENT.with(|cell| {
             if let Some(content) = cell.borrow().as_ref() {
                 content.set_size_request(390, bounded_height);
@@ -131,11 +127,8 @@ pub fn shift(app: &AppHandle, dx: i32, dy: i32) -> Result<(), String> {
             let new_bottom = (margins.0 - dy).clamp(0, 5000);
             let new_right = (margins.1 - dx).clamp(0, 5000);
             // Keep popup on the screen when monitor dimensions are available.
-            let screen = gtk::prelude::WidgetExt::screen(window);
-            let max_bottom = screen.as_ref().map_or(5000, |s| (s.height() - 130).max(0));
-            let max_right = screen.as_ref().map_or(5000, |s| (s.width() - 390).max(0));
-            margins.0 = new_bottom.min(max_bottom);
-            margins.1 = new_right.min(max_right);
+            margins.0 = new_bottom;
+            margins.1 = new_right;
             window.set_layer_shell_margin(Edge::Bottom, margins.0);
             window.set_layer_shell_margin(Edge::Right, margins.1);
         });

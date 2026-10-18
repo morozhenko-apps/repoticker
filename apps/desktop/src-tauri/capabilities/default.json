@@ -1,6 +1,6 @@
 {
   "identifier": "default",
-  "description": "The local RepoTicker card. Custom commands return no credentials.",
+  "description": "RepoTicker local card, Git state and local operation status. No Git credentials are sent to JS.",
   "windows": ["main"],
-  "permissions": ["core:default"]
+  "permissions": ["core:default", "core:event:allow-listen"]
 }

@@ -8,7 +8,7 @@ A small, fully open-source desktop companion for developers running multiple loc
 
 ## Card and tray interaction
 
-- Left-click tray icon toggles a small card. Right-click gives quick actions (Open/Hide, later Fetch all, Safe sync all, Settings, Quit).
+- **Target:** left-click tray toggles the card; right-click gives quick actions (Open/Hide, later Fetch all, Safe sync all, Settings, Quit). The current Tauri 2 Linux tray API does **not** deliver click events, so the initial Linux shell needs the context-menu **Open card** fallback. A native Linux adapter is required for rQuickShare-like primary-click opening and tray anchoring.
 - Card follows the density and disclosure pattern of rQuickShare: 32–36px repository rows, one line each, expandable repository and runner sections.
 - Each repository row: name, active branch, behind/ahead or dirty state, compact CI status; contextual operations when implemented.
 - Bottom footer shows aggregate local behind count, running and failed jobs, runner state; quota is a popover rather than a permanent row.

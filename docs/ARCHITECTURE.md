@@ -37,4 +37,4 @@ The Tauri shell presently returns an *empty* snapshot from a stub command; it do
 
 ## Packaging and portability
 
-Tauri 2 is selected provisionally for a common UI; Rust for core. GTK/WebKit dependencies are platform-specific build requirements. Linux KDE Wayland card anchoring, GNOME tray support, Windows/macOS notification and packaging behaviors must be physically verified. Do not mistake a cross-compiled binary for product acceptance.
+Tauri 2 is selected provisionally for a common UI; Rust for core. GTK/WebKit dependencies are platform-specific build requirements. Known Linux limitation: Tauri 2's standard tray-icon click callback is unsupported on Linux, and show-menu-on-left-click is unsupported. The shell's **Open card** context menu is an interim entry point. rQuickShare-style primary-click opening, tray placement and edge-aware popover need a dedicated Linux adapter. KDE Wayland card anchoring, GNOME tray support, Windows/macOS notification and packaging behaviors must be physically verified. Do not mistake a cross-compiled binary for product acceptance.

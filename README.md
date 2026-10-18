@@ -13,7 +13,7 @@ RepoTicker is a planned cross-platform desktop utility for keeping local Git rep
 - GitHub Actions run/job status, self-hosted runner occupancy and optional usage information.
 - Open the exact GitHub workflow run in a browser; no in-app log viewer.
 - Two modes: **Simple** (polling, default) and **Hybrid** (opt-in self-hosted webhook relay + reconciliation polling).
-- Linux, Windows and macOS are targets, not verified release claims. No paid features or central RepoTicker service.
+- Linux, Windows and macOS are targets, not verified release claims. No paid features or central RepoTicker service. The Linux Tauri tray API does not report primary clicks, so the initial shell uses the **Open card** context-menu fallback until a native adapter is implemented.
 
 ## Repository layout
 

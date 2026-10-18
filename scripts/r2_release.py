@@ -79,18 +79,27 @@ def source_map(release, apt, version):
     package = apt / f"pool/main/r/repoticker/repoticker_{version}_amd64.deb"
     keyring = apt / "repoticker-archive-keyring.gpg"
     mutable = apt / "dists/stable/InRelease"
-    allowed = [package, keyring, index / "Packages", index / "Packages.gz"]
-    if not all(path.is_file() and not path.is_symlink() for path in allowed + [mutable]):
+    immutable = [package, keyring]
+    mutable_indexes = [index / "Packages", index / "Packages.gz"]
+    if not all(path.is_file() and not path.is_symlink()
+               for path in immutable + mutable_indexes + [mutable]):
         raise ValueError("Incomplete signed APT snapshot")
     from release_assets import digest as checksum
-    for path in (index / "Packages", index / "Packages.gz"):
+    for path in mutable_indexes:
         hashed = index / "by-hash/SHA256" / checksum(path)
         if not hashed.is_file() or hashed.is_symlink() or checksum(hashed) != checksum(path):
             raise ValueError("Missing or invalid APT by-hash index: " + path.name)
-        allowed.append(hashed)
-    for path in allowed:
+        immutable.append(hashed)
+    for path in immutable:
         result["apt/" + path.relative_to(apt).as_posix()] = path
-    return result, ("apt/dists/stable/InRelease", mutable)
+    # These filenames stay constant across releases, so their contents are
+    # mutable and must not be served with immutable caching. InRelease is last.
+    mutable_paths = [
+        ("apt/" + path.relative_to(apt).as_posix(), path)
+        for path in mutable_indexes
+    ]
+    mutable_paths.append(("apt/dists/stable/InRelease", mutable))
+    return result, mutable_paths
 
 
 def public_verify(path, key):
@@ -125,7 +134,7 @@ def publish(release, apt, version, account, access_key, secret):
         region_name="auto", aws_access_key_id=access_key, aws_secret_access_key=secret,
         config=Config(signature_version="s3v4", retries={"max_attempts": 3, "mode": "standard"})
     )
-    items, mutable = source_map(release, apt, version)
+    items, mutable_paths = source_map(release, apt, version)
     def upload(key, file, immutable):
         object_key = PREFIX + "/" + key
         existing = None
@@ -144,10 +153,8 @@ def publish(release, apt, version, account, access_key, secret):
                 if existing.get("Metadata", {}).get("sha256") != sha(file):
                     raise ValueError(f"Immutable R2 key already contains different bytes: {object_key}")
                 return
-        if not immutable and existing:
-            # The only mutable object is signed InRelease. A single GitHub
-            # concurrency group serializes our releases.
-            pass
+        # Mutable indexes and InRelease are serialized by the one-at-a-time
+        # release workflow. The signed InRelease must always be written last.
         client.upload_file(str(file), "app-dist", object_key, ExtraArgs={
             "ContentType": media(file),
             "Metadata": {"sha256": sha(file)},
@@ -175,8 +182,9 @@ def publish(release, apt, version, account, access_key, secret):
     for key, path in items.items():
         if "/by-hash/" in key:
             public_verify(path, key)
-    upload(mutable[0], mutable[1], False)
-    public_verify(mutable[1], mutable[0])
+    for key, path in mutable_paths:
+        upload(key, path, False)
+        public_verify(path, key)
 
 
 def main():

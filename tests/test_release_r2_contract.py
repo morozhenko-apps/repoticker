@@ -48,9 +48,13 @@ class R2ArtifactContract(unittest.TestCase):
             release = root / "release"
             items, active = r2_release.source_map(release, apt, "0.1.0")
             self.assertIn("releases/v0.1.0/windows/RepoTicker-Setup-0.1.0-win-x64.exe", items)
-            self.assertEqual(active[0], "apt/dists/stable/InRelease")
-            self.assertIn("apt/dists/stable/main/binary-amd64/Packages.gz", items)
-            self.assertIn("apt/dists/stable/main/binary-amd64/Packages", items)
+            self.assertEqual([key for key, _ in active], [
+                "apt/dists/stable/main/binary-amd64/Packages",
+                "apt/dists/stable/main/binary-amd64/Packages.gz",
+                "apt/dists/stable/InRelease",
+            ])
+            self.assertNotIn("apt/dists/stable/main/binary-amd64/Packages.gz", items)
+            self.assertNotIn("apt/dists/stable/main/binary-amd64/Packages", items)
             unexpected = release / "linux" / "evil-0.1.0.deb"
             unexpected.write_bytes(b"bad")
             with self.assertRaisesRegex(ValueError, "Unexpected file"):

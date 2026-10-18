@@ -36,7 +36,8 @@ export default {
     if (!object) return new Response("Not Found", { status: 404 });
     const headers = new Headers({
       "Content-Type": mime(key),
-      "Cache-Control": key.endsWith("/InRelease") ? "no-store" : "public, max-age=31536000, immutable",
+      "Cache-Control": /\/(?:InRelease|Packages(?:\.gz)?)$/.test(key)
+        ? "no-store" : "public, max-age=31536000, immutable",
       "X-Content-Type-Options": "nosniff"
     });
     if (object.size != null) headers.set("Content-Length", String(object.size));

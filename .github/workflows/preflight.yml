@@ -3,6 +3,11 @@ name: Preflight
 on:
   push:
     branches: [dev, main]
+    paths-ignore:
+      - 'docs/**'
+      - 'doc/**'
+      - '**/*.md'
+      - '**/*.mdx'
   pull_request:
     branches: [dev, main]
   workflow_dispatch:

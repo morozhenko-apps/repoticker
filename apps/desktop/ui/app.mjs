@@ -295,25 +295,40 @@ let dragging = null;
 let dragPendingX = 0;
 let dragPendingY = 0;
 let dragInFlight = false;
+let dragScheduled = false;
 let dragHasMoved = false;
 const dragSurface = byId("card");
 
-async function sendQueuedDrag() {
-  if (dragInFlight) return;
+// GTK Layer Shell recalculates pointer targeting after each margin change.
+// Limit movement to one queued IPC/frame, and never send stale deltas after
+// a pointer release or when the popup is hidden.
+function scheduleDrag() {
+  if (dragScheduled || dragInFlight || !dragging?.active || !cardVisible) return;
+  dragScheduled = true;
+  requestAnimationFrame(() => {
+    dragScheduled = false;
+    void flushDrag();
+  });
+}
+
+async function flushDrag() {
+  if (dragInFlight || !dragging?.active || !cardVisible) return;
+  const dx = Math.max(-60, Math.min(60, dragPendingX));
+  const dy = Math.max(-60, Math.min(60, dragPendingY));
+  dragPendingX -= dx;
+  dragPendingY -= dy;
+  if (!dx && !dy) return;
   dragInFlight = true;
   try {
-    while (dragging && dragging.active && cardVisible) {
-      const dx = dragPendingX;
-      const dy = dragPendingY;
-      dragPendingX = 0;
-      dragPendingY = 0;
-      if (!dx && !dy) break;
-      await invoke("move_card", { dx: Math.max(-100, Math.min(100, dx)), dy: Math.max(-100, Math.min(100, dy)) });
-    }
-  } catch (error) { showError(error); }
-  finally {
+    await invoke("move_card", { dx, dy });
+  } catch (error) {
+    showError(error);
+    stopDragging();
+  } finally {
     dragInFlight = false;
-    if (!dragging && dragHasMoved) {
+    if (dragging?.active && (dragPendingX || dragPendingY)) {
+      scheduleDrag();
+    } else if (!dragging && dragHasMoved) {
       dragHasMoved = false;
       void invoke("persist_card_position").catch(showError);
     }
@@ -323,8 +338,6 @@ async function sendQueuedDrag() {
 dragSurface.addEventListener("pointerdown", event => {
   if (event.button !== 0 || !event.isPrimary ||
       event.target.closest("button,input,select,a,[role=button]")) return;
-  // Capture before awaiting IPC. Otherwise pointerup may arrive first and
-  // leave a stale capture that shifts the popup on subsequent tray openings.
   dragging = {
     id: event.pointerId, active: false,
     lastX: event.screenX, lastY: event.screenY
@@ -341,17 +354,19 @@ dragSurface.addEventListener("pointerdown", event => {
 });
 
 dragSurface.addEventListener("pointermove", event => {
-  if (!dragging || !dragging.active || dragging.id !== event.pointerId ||
+  if (!dragging?.active || dragging.id !== event.pointerId ||
       !(event.buttons & 1) || !cardVisible) return;
+  // Screen-space coordinates do not jump when the moving popup changes its
+  // local DOM coordinates. Ignore zero movement caused by GTK reallocation.
   const dx = Math.round(event.screenX - dragging.lastX);
   const dy = Math.round(event.screenY - dragging.lastY);
   dragging.lastX = event.screenX;
   dragging.lastY = event.screenY;
   if (!dx && !dy) return;
-  dragPendingX += dx;
-  dragPendingY += dy;
+  dragPendingX = Math.max(-160, Math.min(160, dragPendingX + dx));
+  dragPendingY = Math.max(-160, Math.min(160, dragPendingY + dy));
   dragHasMoved = true;
-  void sendQueuedDrag();
+  scheduleDrag();
 });
 
 function stopDragging() {

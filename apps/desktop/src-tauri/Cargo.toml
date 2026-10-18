@@ -3,7 +3,8 @@ name = "repoticker-desktop"
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
-description = "RepoTicker tray shell"
+authors = ["morozhenko apps"]
+description = "RepoTicker lightweight desktop Git and CI companion"
 build = "build.rs"
 
 [build-dependencies]

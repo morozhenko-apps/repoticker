@@ -57,10 +57,23 @@
     }
   },
   "bundle": {
-    "active": false,
+    "active": true,
     "icon": [
       "icons/icon.png",
-      "icons/icon.ico"
-    ]
+      "icons/icon.ico",
+      "icons/icon.icns"
+    ],
+    "category": "DeveloperTool",
+    "shortDescription": "Lightweight Git and GitHub Actions tray companion",
+    "license": "MIT",
+    "licenseFile": "../../../LICENSE",
+    "copyright": "Copyright (c) 2026 morozhenko apps contributors",
+    "linux": {
+      "deb": {
+        "depends": [
+          "libgtk-layer-shell0"
+        ]
+      }
+    }
   }
 }

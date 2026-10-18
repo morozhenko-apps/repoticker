@@ -62,6 +62,8 @@ jobs:
           node --check apps/desktop/ui/app.mjs
       - name: JS unit tests
         run: node --test tests/*.test.mjs
+      - name: Version and release metadata tests
+        run: python3 -m unittest discover -s tests -p 'test_release_*.py' -v
 
   desktop:
     name: Desktop compile (Linux)

@@ -3,6 +3,7 @@ name = "repoticker-core"
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
+authors = ["morozhenko apps"]
 description = "Testable, platform-agnostic RepoTicker domain policies"
 
 [lib]

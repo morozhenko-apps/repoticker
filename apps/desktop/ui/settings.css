@@ -1,12 +1,33 @@
-:root{font:14px system-ui,"Segoe UI",sans-serif;color-scheme:light dark}*{box-sizing:border-box}
-body{margin:0;background:Canvas;color:CanvasText}main{max-width:750px;margin:auto;padding:25px 28px}
-header{margin-bottom:22px}h1{font-size:24px;margin:0 0 4px;font-weight:600}h2{font-size:17px;margin:0 0 8px;font-weight:600}
-header p,section>p,.hint{color:GrayText;font-size:13px;line-height:1.5}
-section{border-top:1px solid color-mix(in srgb, CanvasText 15%, transparent);padding:18px 0}
-label{display:block;font-size:13px;margin:9px 0 6px}button,input,select{font:inherit;border:1px solid color-mix(in srgb, CanvasText 30%, Canvas);border-radius:6px;padding:8px 10px}
-input,select{color:CanvasText;background:Canvas}button{color:CanvasText;background:color-mix(in srgb, CanvasText 12%, Canvas);cursor:pointer}
-button:hover{border-color:#5b9def}.inline{display:flex;gap:8px}.inline input{flex:1;min-width:0}
-.root{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:7px 0}.root span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.future{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px}.future label:last-child{grid-column:1/-1}.future input,.future select{display:block;width:100%;margin-top:6px}
-.future input:disabled,.future select:disabled{opacity:.55}.error{color:#cd4c4c}#message{font-size:13px}
-@media(max-width:580px){main{padding:15px}.future{grid-template-columns:1fr}.future label:last-child{grid-column:auto}}
+:root { font: 14px system-ui, "Segoe UI", sans-serif; color-scheme: light dark; }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; }
+body { background: Canvas; color: CanvasText; }
+.settings-shell { max-width: 680px; height: 100%; margin: auto; padding: 15px 20px 12px; display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
+.heading, .section-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.heading { padding-bottom: 5px; }
+h1 { font-size: 19px; font-weight: 600; margin: 0; }
+h2 { font-size: 14px; font-weight: 600; margin: 0 0 8px; }
+.caption, .hint { color: GrayText; font-size: 12px; }
+.block { border: 1px solid color-mix(in srgb, CanvasText 15%, Canvas); border-radius: 9px; padding: 10px 12px; min-width: 0; }
+.general-line { display: flex; align-items: center; gap: 12px; }
+.general-line label { min-width: 70px; }
+.general-line .hint { margin-left: auto; }
+button, input, select { font: inherit; border: 1px solid color-mix(in srgb, CanvasText 28%, Canvas); border-radius: 6px; padding: 6px 9px; }
+input, select { color: CanvasText; background: Canvas; }
+button { background: color-mix(in srgb, CanvasText 9%, Canvas); color: CanvasText; cursor: pointer; }
+button:hover { border-color: #579dd2; }
+label { font-size: 12px; }
+.inline { display: flex; gap: 8px; }
+.inline input { flex: 1; min-width: 0; }
+.roots-list { margin-top: 5px; max-height: 60px; min-height: 26px; overflow-y: auto; }
+.root { display: flex; justify-content: space-between; align-items: center; gap: 10px; min-height: 30px; padding: 2px 0; }
+.root span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+.root button { flex-shrink: 0; padding: 4px 7px; font-size: 12px; }
+.github-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px 10px; }
+.github-grid label { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.github-grid input, .github-grid select { min-width: 0; width: 100%; }
+.worker-label { grid-column: 1/-1; }
+.github-grid :disabled { opacity: .58; }
+#message { min-height: 17px; margin: 0; font-size: 12px; color: #577a9b; }
+#message.error { color: #b64040; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }

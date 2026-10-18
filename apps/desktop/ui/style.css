@@ -4,17 +4,17 @@
   color-scheme: light dark;
 }
 * { box-sizing: border-box; }
-body { margin: 0; background: Canvas; color: CanvasText; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: transparent; color: CanvasText; }
 button, input { font: inherit; }
 button { cursor: pointer; background: transparent; color: inherit; border: 0; }
 button:disabled { opacity: .38; cursor: default; }
 button:focus-visible, input:focus-visible, .quota-anchor:focus-visible { outline: 2px solid #3b82f6; outline-offset: -2px; }
 [hidden] { display: none !important; }
 
-.card { height: 100vh; width: 100%; display: flex; flex-direction: column; overflow: hidden; position: relative; }
-.drawer { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.card { height: 100%; width: 100%; display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden; position: relative; background: #e9ecef; border: 1px solid #c7cbd0; border-radius: 17px; padding: 9px 10px 10px; box-shadow: inset 0 1px 0 #ffffffbb; color: #242b30; }
+.drawer { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 0; border-bottom: 1px solid #d1d5d9; margin-bottom: 6px; }
 .rows { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; }
-.repo-row { min-height: 35px; padding: 2px 11px 2px 14px; display: flex; gap: 9px; align-items: center; position: relative; font-size: 14px; border-bottom: 1px solid color-mix(in srgb, CanvasText 9%, transparent); }
+.repo-row { min-height: 35px; padding: 2px 7px; display: flex; gap: 9px; align-items: center; position: relative; font-size: 14px; border-bottom: 1px solid #d8dce0; }
 .repo-name { flex: 1; min-width: 0; font-weight: 400; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; }
 .repo-branch { max-width: 85px; font-size: 13px; color: GrayText; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .repo-delta { min-width: 32px; font-size: 15px; font-weight: 500; text-align: center; }
@@ -23,20 +23,20 @@ button:focus-visible, input:focus-visible, .quota-anchor:focus-visible { outline
 .repo-delta.is-behind { color: #246da0; }
 .repo-more { width: 28px; height: 29px; font-size: 20px; border-radius: 5px; flex-shrink: 0; }
 .repo-more:hover { background: color-mix(in srgb, CanvasText 9%, transparent); }
-.repo-menu { position: absolute; right: 9px; top: 31px; z-index: 12; background: Canvas; border: 1px solid color-mix(in srgb, CanvasText 23%, transparent); border-radius: 7px; padding: 4px; box-shadow: 0 5px 15px #0003; min-width: 114px; display: flex; flex-direction: column; }
+.repo-menu { position: absolute; right: 9px; top: 31px; z-index: 12; background: #f9fafb; border: 1px solid #c7cbd0; border-radius: 7px; padding: 4px; box-shadow: 0 5px 15px #0003; min-width: 114px; display: flex; flex-direction: column; }
 .repo-menu button { text-align: left; border-radius: 4px; font-size: 13px; padding: 6px 9px; }
 .repo-menu button:hover { background: color-mix(in srgb, CanvasText 10%, transparent); }
 .empty { margin: 12px 15px; font-size: 13px; color: GrayText; }
 
-.status-strip { margin-top: auto; min-height: 28px; display: flex; align-items: center; justify-content: space-around; gap: 5px; padding: 1px 10px 0; font-size: 12px; color: GrayText; white-space: nowrap; }
+.status-strip { flex-shrink: 0; min-height: 25px; display: flex; align-items: center; justify-content: space-around; gap: 5px; padding: 0 5px 2px; font-size: 12px; color: #7a828b; white-space: nowrap; }
 .quota-anchor { cursor: help; display: inline-flex; position: relative; font-size: 17px; outline-offset: 2px; }
 .quota-tooltip { display: none; position: absolute; right: -6px; bottom: calc(100% + 6px); z-index: 20; width: 274px; max-width: 80vw; font-size: 13px; font-weight: 400; white-space: normal; line-height: 1.4; padding: 10px; color: CanvasText; background: Canvas; border: 1px solid color-mix(in srgb, CanvasText 25%, transparent); border-radius: 7px; box-shadow: 0 5px 20px #0004; pointer-events: none; }
 .quota-anchor:hover .quota-tooltip, .quota-anchor:focus-visible .quota-tooltip { display: block; }
 
-.actions { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 6px; flex-shrink: 0; padding: 0 10px 10px; min-height: 89px; }
-.action { min-height: 79px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 5px; border: 1px solid color-mix(in srgb, CanvasText 22%, transparent); border-radius: 6px; background: color-mix(in srgb, Canvas 86%, CanvasText 14%); font-size: 13px; font-weight: 400; padding: 5px 1px; }
-.action:hover:not(:disabled) { border-color: #4699e7; }
-.action[aria-pressed="true"] { border-color: #4699e7; background: color-mix(in srgb, #4699e7 22%, Canvas); }
+.actions { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 6px; flex-shrink: 0; padding: 0; min-height: 70px; }
+.action { min-height: 70px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 4px; border: 1px solid #c5c9ce; border-radius: 6px; background: #fafbfc; color: #262c32; box-shadow: 0 1px 1px #0000001c; font-size: 13px; font-weight: 400; padding: 5px 1px; }
+.action:hover:not(:disabled) { border-color: #81bfe5; background: #eaf5fc; }
+.action[aria-pressed="true"] { border-color: #78bde9; background: #d1e9f7; }
 .action-icon { font-size: 25px; font-weight: 400; line-height: 28px; font-variant-numeric: tabular-nums; }
 .action-icon.has-commits { font-size: 18px; color: #1f8b4c; font-weight: 500; }
 
@@ -50,7 +50,7 @@ button:focus-visible, input:focus-visible, .quota-anchor:focus-visible { outline
 .repo-row.is-finished::before { width: 100%; opacity: .38; transition: opacity .7s ease-out; }
 .repo-row.is-failed::before { background: color-mix(in srgb, #e65b52 20%, transparent); }
 @keyframes repo-sweep { from { width: 5%; } to { width: 94%; } }
-.action.is-working { opacity: 1 !important; background: color-mix(in srgb, #4f9ac9 13%, Canvas); }
+.action.is-working { opacity: 1 !important; background: #d1e9f7; border-color: #78bde9; }
 .action.is-working .action-icon { animation: action-pulse 1s ease-in-out infinite alternate; }
 .action.is-working .action-label { font-variant-numeric: tabular-nums; }
 @keyframes action-pulse { from { opacity: .55; } to { opacity: 1; } }
@@ -61,3 +61,11 @@ button:focus-visible, input:focus-visible, .quota-anchor:focus-visible { outline
 .card:active { cursor: grabbing; }
 .card button, .card input, .card select, .card .quota-anchor { cursor: pointer; }
 .card[data-view="compact"] { justify-content: flex-end; }
+
+/* The card is an actual compact popup: no title area, empty caption or
+   click-to-open nested accordion. The anchor is controlled by GTK Layer Shell. */
+.card[data-view="compact"] { justify-content: flex-end; }
+.card[data-view="repos"] { justify-content: flex-end; }
+.action:disabled { background: #f1f2f3; color: #9ba1a9; opacity: 1; box-shadow: none; }
+.quota-tooltip { background: #f8fafb; border-color: #bcc4cc; }
+#notice { background: #fcf7f3; }

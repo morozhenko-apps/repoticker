@@ -262,13 +262,21 @@ fn set_card_view(app: AppHandle, view: String) -> Result<(), String> {
         .map_err(|err| format!("Cannot resize card: {err}"))
 }
 
+fn show_compact_card(app: &AppHandle) {
+    let _ = set_card_view(app.clone(), "compact".to_owned());
+    let _ = app.emit("repoticker-reset-view", ());
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.show();
+        let _ = window.set_focus();
+    }
+}
+
 fn toggle_card(app: &AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
         if window.is_visible().unwrap_or(false) {
             let _ = window.hide();
         } else {
-            let _ = window.show();
-            let _ = window.set_focus();
+            show_compact_card(app);
         }
     }
 }
@@ -310,12 +318,7 @@ fn main() {
                 .menu(&menu)
                 .show_menu_on_left_click(false)
                 .on_menu_event(|app, event| match event.id().as_ref() {
-                    "open" => {
-                        if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.show();
-                            let _ = window.set_focus();
-                        }
-                    }
+                    "open" => show_compact_card(app),
                     "fetch" => dispatch_menu_action(app, "fetch"),
                     "sync" => dispatch_menu_action(app, "safe_pull"),
                     "quit" => app.exit(0),

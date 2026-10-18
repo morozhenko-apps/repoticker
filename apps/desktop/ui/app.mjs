@@ -231,6 +231,17 @@ document.addEventListener("keydown", event => {
   }
 });
 
+window.__TAURI__?.event?.listen?.("repoticker-reset-view", () => {
+  view = "compact";
+  byId("card").dataset.view = "compact";
+  byId("repo-drawer").hidden = true;
+  byId("roots-editor").hidden = true;
+  byId("show-repos").setAttribute("aria-pressed", "false");
+  byId("show-repos").title = "Show repositories";
+  byId("settings").setAttribute("aria-pressed", "false");
+  hideRepoMenus();
+});
+
 window.__TAURI__?.event?.listen?.("repoticker-git-action-finished", async event => {
   if (event.payload?.Ok) displayResults(event.payload.Ok);
   else if (event.payload?.Err) setActivity(event.payload.Err, true);

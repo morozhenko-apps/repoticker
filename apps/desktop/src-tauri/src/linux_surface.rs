@@ -91,7 +91,9 @@ pub fn resize(app: AppHandle, height: i32) -> Result<(), String> {
     on_main(&app, move |window| {
         let max_height = MARGINS.with(|offset| {
             let bottom = offset.borrow().0;
-            window.screen().map_or(900, |screen| (screen.height() - bottom - 8).max(122))
+            window
+                .screen()
+                .map_or(900, |screen| (screen.height() - bottom - 8).max(122))
         });
         let bounded_height = height.min(max_height);
         CONTENT.with(|cell| {

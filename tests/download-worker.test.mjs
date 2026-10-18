@@ -40,3 +40,15 @@ test("read-only worker protects mutable InRelease, denies mutation", async () =>
     new Request("https://download.morozhenko.com/dist/rQuickShare/apt/secret"), env);
   assert.equal(forbidden.status, 404);
 });
+
+test("APT mutable package indexes must not be cached as immutable", async () => {
+  const base = "https://download.morozhenko.com/dist/RepoTicker/apt/dists/stable/main/binary-amd64/";
+  const env = { ARCHIVE: { async get() { return { body: "contents", size: 8 }; } } };
+  for (const suffix of ["Packages", "Packages.gz"]) {
+    const response = await worker.fetch(new Request(base + suffix), env);
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get("Cache-Control"), "no-store");
+  }
+  const byHash = await worker.fetch(new Request(base + "by-hash/SHA256/" + "a".repeat(64)), env);
+  assert.match(byHash.headers.get("Cache-Control"), /immutable/);
+});

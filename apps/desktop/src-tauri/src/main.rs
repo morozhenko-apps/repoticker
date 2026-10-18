@@ -402,6 +402,29 @@ fn show_settings(app: &AppHandle) {
 }
 
 #[tauri::command]
+fn start_card_drag(app: AppHandle) -> Result<bool, String> {
+    #[cfg(target_os = "linux")]
+    if linux_surface::enabled() {
+        return Ok(true);
+    }
+    let window = app
+        .get_webview_window("main")
+        .ok_or_else(|| "Card unavailable".to_owned())?;
+    window.start_dragging().map_err(|error| error.to_string())?;
+    Ok(false)
+}
+
+#[tauri::command]
+fn move_card(app: AppHandle, dx: i32, dy: i32) -> Result<(), String> {
+    #[cfg(target_os = "linux")]
+    if linux_surface::enabled() {
+        return linux_surface::shift(&app, dx, dy);
+    }
+    let _ = (app, dx, dy);
+    Ok(())
+}
+
+#[tauri::command]
 fn open_settings(app: AppHandle) {
     show_settings(&app);
 }
@@ -531,6 +554,8 @@ fn main() {
             remove_root,
             open_settings,
             set_language,
+            start_card_drag,
+            move_card,
             perform_git_action,
             set_card_view,
             hide_card

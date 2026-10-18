@@ -55,3 +55,9 @@ button:focus-visible, input:focus-visible, .quota-anchor:focus-visible { outline
 .action.is-working .action-label { font-variant-numeric: tabular-nums; }
 @keyframes action-pulse { from { opacity: .55; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .repo-row.is-running::before, .action.is-working .action-icon { animation: none; } }
+
+/* The title-less card is its own drag surface: only controls keep click cursors. */
+.card { cursor: grab; }
+.card:active { cursor: grabbing; }
+.card button, .card input, .card select, .card .quota-anchor { cursor: pointer; }
+.card[data-view="compact"] { justify-content: flex-end; }

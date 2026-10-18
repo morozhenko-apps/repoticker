@@ -12,6 +12,7 @@ use tauri::{App, AppHandle, Manager};
 thread_local! {
     static CARD: RefCell<Option<gtk::ApplicationWindow>> = const { RefCell::new(None) };
     static CONTENT: RefCell<Option<gtk::Box>> = const { RefCell::new(None) };
+    static MARGINS: RefCell<(i32, i32)> = const { RefCell::new((46, 10)) };
 }
 
 static ENABLED: AtomicBool = AtomicBool::new(false);
@@ -109,4 +110,27 @@ pub fn show(app: &AppHandle) -> Result<(), String> {
 pub fn hide(app: &AppHandle) -> Result<(), String> {
     VISIBLE.store(false, Ordering::Release);
     on_main(app, |window| window.hide())
+}
+
+/// Move the Wayland popup by adjusting compositor-managed bottom/right margins.
+/// The bottom edge remains anchored through subsequent drawer size changes.
+pub fn shift(app: &AppHandle, dx: i32, dy: i32) -> Result<(), String> {
+    if dx.abs() > 150 || dy.abs() > 150 {
+        return Err("Invalid drag delta".into());
+    }
+    on_main(app, move |window| {
+        MARGINS.with(|state| {
+            let mut margins = state.borrow_mut();
+            let new_bottom = (margins.0 - dy).clamp(0, 5000);
+            let new_right = (margins.1 - dx).clamp(0, 5000);
+            // Keep popup on the screen when monitor dimensions are available.
+            let screen = window.screen();
+            let max_bottom = screen.as_ref().map_or(5000, |s| (s.height() - 130).max(0));
+            let max_right = screen.as_ref().map_or(5000, |s| (s.width() - 390).max(0));
+            margins.0 = new_bottom.min(max_bottom);
+            margins.1 = new_right.min(max_right);
+            window.set_layer_shell_margin(Edge::Bottom, margins.0);
+            window.set_layer_shell_margin(Edge::Right, margins.1);
+        });
+    })
 }

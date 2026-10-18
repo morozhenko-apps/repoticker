@@ -275,3 +275,34 @@ window.__TAURI__?.event?.listen?.("repoticker-git-action-finished", async event 
   await refresh();
 });
 refresh();
+
+/* Drag anywhere on noninteractive card body, including the repository rows.
+   On KDE Wayland the compositor owns the anchored popup; we adjust its
+   margins, not its absolute window coordinates. */
+let dragging = null;
+const dragSurface = byId("card");
+dragSurface.addEventListener("pointerdown", async event => {
+  if (event.button !== 0 || event.target.closest("button,input,select,a,[role=button]")) return;
+  try {
+    const anchored = await invoke("start_card_drag");
+    if (!anchored) return; // Native Tauri dragging is already in progress.
+    dragging = { id: event.pointerId, x: event.clientX, y: event.clientY };
+    dragSurface.setPointerCapture(event.pointerId);
+  } catch (error) { showError(error); }
+});
+dragSurface.addEventListener("pointermove", event => {
+  if (!dragging || dragging.id !== event.pointerId) return;
+  const dx = Math.round(event.clientX - dragging.x);
+  const dy = Math.round(event.clientY - dragging.y);
+  if (!dx && !dy) return;
+  dragging.x = event.clientX;
+  dragging.y = event.clientY;
+  void invoke("move_card", { dx, dy }).catch(showError);
+});
+function stopDragging(event) {
+  if (!dragging || dragging.id !== event.pointerId) return;
+  dragging = null;
+  if (dragSurface.hasPointerCapture(event.pointerId)) dragSurface.releasePointerCapture(event.pointerId);
+}
+dragSurface.addEventListener("pointerup", stopDragging);
+dragSurface.addEventListener("pointercancel", stopDragging);

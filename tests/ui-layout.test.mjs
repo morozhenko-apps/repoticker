@@ -59,3 +59,13 @@ test("successes do not create logs, errors remain visible and check is green", (
   assert.match(html, /class="quota-anchor" tabindex="0"/);
   assert.match(css, /\.quota-anchor:hover \.quota-tooltip/);
 });
+
+test("native progress reports are in rows with translucent fills and bulk button percentages", () => {
+  assert.match(ui, /"repoticker-git-progress"/);
+  assert.match(ui, /data[.]repoPath/);
+  assert.match(ui, /pct \+ "%"/);
+  assert.match(css, /[.]repo-row[.]is-running::before/);
+  assert.match(css, /[.]repo-row[.]is-finished::before/);
+  assert.match(ui, /const IDLE_MS = 15_000/);
+  assert.match(ui, /"repoticker-card-shown"/);
+});

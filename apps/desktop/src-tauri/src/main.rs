@@ -59,6 +59,38 @@ struct ActionResult {
     message: String,
 }
 
+#[derive(Serialize, Clone)]
+struct GitProgress {
+    operation: String,
+    path: String,
+    completed: usize,
+    total: usize,
+    phase: String,
+    status: Option<String>,
+}
+
+fn notify_progress(
+    app: &AppHandle,
+    operation: &str,
+    path: &str,
+    completed: usize,
+    total: usize,
+    phase: &str,
+    status: Option<&str>,
+) {
+    let _ = app.emit(
+        "repoticker-git-progress",
+        GitProgress {
+            operation: operation.to_owned(),
+            path: path.to_owned(),
+            completed,
+            total,
+            phase: phase.to_owned(),
+            status: status.map(str::to_owned),
+        },
+    );
+}
+
 fn config_path(app: &AppHandle) -> Result<PathBuf, String> {
     app.path()
         .app_config_dir()
@@ -165,11 +197,16 @@ fn execute(
         })
         .collect();
 
-    for path in repositories {
+    let targets: Vec<_> = repositories
+        .into_iter()
+        .filter(|path| only_path.is_none_or(|requested| path.to_string_lossy() == requested))
+        .collect();
+    let total = targets.len();
+    notify_progress(app, operation, "", 0, total, "begin", None);
+
+    for (index, path) in targets.into_iter().enumerate() {
         let display_path = path.to_string_lossy().into_owned();
-        if only_path.is_some_and(|requested| requested != display_path) {
-            continue;
-        }
+        notify_progress(app, operation, &display_path, index, total, "start", None);
         let operation_result = match operation {
             "fetch" => git::fetch(&path),
             "safe_pull" => git::safe_pull(&path),
@@ -202,8 +239,18 @@ fn execute(
                 message: error,
             },
         };
+        notify_progress(
+            app,
+            operation,
+            &display_path,
+            index + 1,
+            total,
+            "complete",
+            Some(&result.status),
+        );
         results.push(result);
     }
+    notify_progress(app, operation, "", total, total, "finish", None);
     Ok(results)
 }
 
@@ -289,7 +336,9 @@ fn hide_card(app: AppHandle) -> Result<(), String> {
     let window = app
         .get_webview_window("main")
         .ok_or_else(|| "Card window is unavailable".to_owned())?;
-    window.hide().map_err(|err| err.to_string())
+    window.hide().map_err(|err| err.to_string())?;
+    let _ = app.emit("repoticker-card-hidden", ());
+    Ok(())
 }
 
 fn show_compact_card(app: &AppHandle) {
@@ -298,6 +347,7 @@ fn show_compact_card(app: &AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
         let _ = window.show();
         let _ = window.set_focus();
+        let _ = app.emit("repoticker-card-shown", ());
     }
 }
 
@@ -310,6 +360,7 @@ fn toggle_card(app: &AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
         if window.is_visible().unwrap_or(false) {
             let _ = window.hide();
+            let _ = app.emit("repoticker-card-hidden", ());
         } else {
             show_compact_card(app);
         }
@@ -385,6 +436,7 @@ fn main() {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
                 let _ = window.hide();
+                let _ = window.app_handle().emit("repoticker-card-hidden", ());
             }
         })
         .invoke_handler(tauri::generate_handler![

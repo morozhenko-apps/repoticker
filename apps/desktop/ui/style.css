@@ -52,3 +52,17 @@ button:focus-visible, input:focus-visible, .quota-anchor:focus-visible { outline
 .action-icon.has-commits { font-size: 18px; color: #1f8b4c; font-weight: 500; }
 
 #notice { position: absolute; left: 11px; right: 11px; bottom: 100px; z-index: 25; padding: 8px 10px; background: Canvas; border: 1px solid #cd664d; border-radius: 6px; box-shadow: 0 4px 10px #0003; font-size: 12px; font-weight: 400; max-height: 82px; overflow-y: auto; }
+
+/* One translucent progress fill per repository row. Active work is indeterminate,
+   finished repositories receive a full-width fill briefly. */
+.repo-row { isolation: isolate; }
+.repo-row::before { content: ""; position: absolute; inset: 0; z-index: -1; width: var(--repo-progress, 0%); background: color-mix(in srgb, #409ddf 24%, transparent); pointer-events: none; transition: width .16s ease; }
+.repo-row.is-running::before { animation: repo-sweep 1.6s ease-in-out infinite alternate; }
+.repo-row.is-finished::before { width: 100%; opacity: .38; transition: opacity .7s ease-out; }
+.repo-row.is-failed::before { background: color-mix(in srgb, #e65b52 20%, transparent); }
+@keyframes repo-sweep { from { width: 5%; } to { width: 94%; } }
+.action.is-working { opacity: 1 !important; background: color-mix(in srgb, #4f9ac9 13%, Canvas); }
+.action.is-working .action-icon { animation: action-pulse 1s ease-in-out infinite alternate; }
+.action.is-working .action-label { font-variant-numeric: tabular-nums; }
+@keyframes action-pulse { from { opacity: .55; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .repo-row.is-running::before, .action.is-working .action-icon { animation: none; } }

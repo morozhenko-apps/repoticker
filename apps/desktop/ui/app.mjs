@@ -1,4 +1,3 @@
-import { summarize } from "./model.mjs";
 import { nextCardView, pullReadyCommitCount } from "./view.mjs";
 
 const emptySnapshot = {
@@ -16,6 +15,28 @@ const invoke = (command, args = {}) => {
 let snapshot = emptySnapshot;
 let busy = false;
 let view = "compact";
+let progress = null;
+let idleTimer = null;
+const IDLE_MS = 15_000;
+const AUTO_HIDE_EVENTS = ["pointermove", "pointerdown", "keydown", "wheel", "touchstart"];
+function cancelAutoHide() {
+  if (idleTimer !== null) { clearTimeout(idleTimer); idleTimer = null; }
+}
+function armAutoHide() {
+  cancelAutoHide();
+  if (document.hidden) return;
+  idleTimer = setTimeout(async () => {
+    try { await invoke("hide_card"); resetView(); }
+    catch (error) { showError(error); }
+  }, IDLE_MS);
+}
+for (const eventName of AUTO_HIDE_EVENTS) {
+  document.addEventListener(eventName, armAutoHide, { passive: true });
+}
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) cancelAutoHide();
+  else armAutoHide();
+});
 
 function showError(message) {
   const node = byId("notice");
@@ -69,6 +90,7 @@ function makeRepoRow(repo) {
   const row = document.createElement("div");
   row.className = "repo-row";
   row.title = repo.path;
+  row.dataset.repoPath = repo.path;
   addText(row, "span", repo.name, "repo-name");
   addText(row, "span", repo.branch, "repo-branch");
   const current = !repo.dirty && !repo.ahead && !repo.behind && repo.upstream;
@@ -77,6 +99,14 @@ function makeRepoRow(repo) {
     repo.behind ? "↓" + repo.behind :
     repo.ahead ? "↑" + repo.ahead :
     current ? "✓" : "—";
+  if (progress) {
+    if (progress.path === repo.path && progress.phase === "start") {
+      row.classList.add("is-running");
+    } else if (progress.done?.has(repo.path)) {
+      row.classList.add("is-finished");
+      if (progress.errors?.has(repo.path)) row.classList.add("is-failed");
+    }
+  }
   const indicator = addText(row, "span", symbol, "repo-delta");
   indicator.title = repo.sync_state;
   indicator.classList.toggle("is-current", Boolean(current));
@@ -116,6 +146,19 @@ function updateActionState() {
   const eligible = pullReadyCommitCount(snapshot.repositories);
   byId("fetch-all").disabled = busy || !hasRepos;
   byId("sync-all").disabled = busy || eligible === 0;
+  for (const [operation, id] of [["fetch", "fetch-all"], ["safe_pull", "sync-all"]]) {
+    const button = byId(id);
+    const active = progress?.operation === operation;
+    button.classList.toggle("is-working", active);
+    if (active) {
+      const pct = progress.total
+        ? Math.round(100 * progress.completed / progress.total) : 100;
+      button.querySelector(".action-label").textContent = pct + "%";
+    } else {
+      button.querySelector(".action-label").textContent =
+        operation === "fetch" ? "Fetch" : "Safe pull";
+    }
+  }
   const count = byId("pull-indicator");
   count.textContent = eligible ? "↓" + eligible : "↓";
   count.classList.toggle("has-commits", eligible > 0);
@@ -163,6 +206,7 @@ function consumeResults(results) {
 async function runGitAction(operation, repoPath = null) {
   if (busy) return;
   busy = true;
+  progress = { operation, total: 0, completed: 0, path: "", phase: "begin", done: new Set(), errors: new Set() };
   clearError();
   updateActionState();
   try {
@@ -173,7 +217,9 @@ async function runGitAction(operation, repoPath = null) {
     showError(error);
   } finally {
     busy = false;
+    progress = null;
     updateActionState();
+    render(snapshot);
   }
 }
 function resetView() {
@@ -223,6 +269,35 @@ document.addEventListener("keydown", event => {
     else byId("hide-card").click();
   }
 });
+window.__TAURI__?.event?.listen?.("repoticker-git-progress", event => {
+  const payload = event.payload;
+  if (!payload || !["fetch", "safe_pull"].includes(payload.operation)) return;
+  if (!progress || progress.operation !== payload.operation) {
+    progress = { operation: payload.operation, done: new Set(), errors: new Set() };
+  }
+  progress.total = payload.total;
+  progress.completed = payload.completed;
+  progress.path = payload.path;
+  progress.phase = payload.phase;
+  if (payload.phase === "complete") {
+    progress.done.add(payload.path);
+    if (payload.status === "error") progress.errors.add(payload.path);
+  }
+  if (payload.phase === "finish") {
+    // Clear after native tray operations finish; GUI invocations clear in finally.
+    if (!busy) progress = null;
+  }
+  updateActionState();
+  // Only paint changed row; do not reconstruct the entire list or reset its scroll.
+  document.querySelectorAll(".repo-row").forEach(row => {
+    const path = row.dataset.repoPath;
+    row.classList.toggle("is-running", progress?.phase === "start" && progress.path === path);
+    row.classList.toggle("is-finished", !!progress?.done?.has(path));
+    row.classList.toggle("is-failed", !!progress?.errors?.has(path));
+  });
+});
+window.__TAURI__?.event?.listen?.("repoticker-card-hidden", cancelAutoHide);
+window.__TAURI__?.event?.listen?.("repoticker-card-shown", armAutoHide);
 window.__TAURI__?.event?.listen?.("repoticker-reset-view", () => {
   resetView();
   clearError();
@@ -232,6 +307,7 @@ window.__TAURI__?.event?.listen?.("repoticker-open-settings", () => openView("se
 window.__TAURI__?.event?.listen?.("repoticker-git-action-finished", async event => {
   if (event.payload?.Ok) consumeResults(event.payload.Ok);
   else if (event.payload?.Err) showError(event.payload.Err);
+  progress = null;
   await refresh();
 });
 refresh();

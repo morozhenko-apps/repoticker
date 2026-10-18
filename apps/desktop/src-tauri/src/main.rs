@@ -418,6 +418,7 @@ fn hide_card(app: AppHandle) -> Result<(), String> {
     #[cfg(target_os = "linux")]
     if linux_surface::enabled() {
         linux_surface::hide(&app)?;
+        linux_surface::resize(app.clone(), 122)?;
         let _ = app.emit("repoticker-card-hidden", ());
         return Ok(());
     }
@@ -581,6 +582,7 @@ fn toggle_card(app: &AppHandle) {
     if linux_surface::enabled() {
         if linux_surface::visible() {
             let _ = linux_surface::hide(app);
+            let _ = linux_surface::resize(app.clone(), 122);
             let _ = app.emit("repoticker-card-hidden", ());
         } else {
             show_compact_card(app);
@@ -671,6 +673,7 @@ fn main() {
                 #[cfg(target_os = "linux")]
                 if linux_surface::enabled() {
                     let _ = linux_surface::hide(window.app_handle());
+                    let _ = linux_surface::resize(window.app_handle().clone(), 122);
                 } else {
                     let _ = window.hide();
                 }

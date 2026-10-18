@@ -216,27 +216,27 @@ fn execute(
         };
         let result = match operation_result {
             Ok(OperationOutcome::Fetched) => ActionResult {
-                path: display_path,
+                path: display_path.clone(),
                 status: "fetched".into(),
                 message: "Fetch complete".into(),
             },
             Ok(OperationOutcome::Updated(commits)) => ActionResult {
-                path: display_path,
+                path: display_path.clone(),
                 status: "updated".into(),
                 message: format!("Fast-forwarded by {commits} commits"),
             },
             Ok(OperationOutcome::AlreadyCurrent) => ActionResult {
-                path: display_path,
+                path: display_path.clone(),
                 status: "current".into(),
                 message: "Already current".into(),
             },
             Ok(OperationOutcome::Skipped(decision)) => ActionResult {
-                path: display_path,
+                path: display_path.clone(),
                 status: "skipped".into(),
                 message: decision_label(decision),
             },
             Err(GitError(error)) => ActionResult {
-                path: display_path,
+                path: display_path.clone(),
                 status: "error".into(),
                 message: error,
             },

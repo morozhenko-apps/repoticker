@@ -1,5 +1,5 @@
 import { summarize } from "./model.mjs";
-import { nextCardView, cardWindowHeight } from "./view.mjs";
+import { nextCardView } from "./view.mjs";
 
 const emptySnapshot = {
   roots: [],

@@ -9,10 +9,10 @@ A small, fully open-source desktop companion for developers running multiple loc
 ## Card and tray interaction
 
 - **Target:** left-click tray toggles the card; right-click gives quick actions (Open/Hide, later Fetch all, Safe sync all, Settings, Quit). The current Tauri 2 Linux tray API does **not** deliver click events, so the initial Linux shell needs the context-menu **Open card** fallback. A native Linux adapter is required for rQuickShare-like primary-click opening and tray anchoring.
-- Card follows the density and disclosure pattern of rQuickShare: 32–36px repository rows, one line each, expandable repository and runner sections.
+- Default compact card follows rQuickShare's closed/open drawer pattern: one utility strip, local counters and actions; a dedicated **Repos** action opens or closes a scrollable repository list. Settings are a separate card view, not a permanent input form. No nested expand/collapse controls for repositories or runners. The window height changes with the view while width stays constant; true KDE tray anchoring requires native Linux support.
 - Each repository row now shows local name, active branch and behind/ahead/dirty status, with an `…` menu for Fetch or Safe pull. CI indicators are deferred until a working GitHub client exists.
-- Bottom footer shows aggregate local behind count, running and failed jobs, runner state; quota is a popover rather than a permanent row.
-- Runner section: online/offline and busy/idle. CPU/RAM requires a separate optional host telemetry component. Never interpret runner busy as actual CPU utilization.
+- Bottom metrics show repository count, aggregate local behind count, and modified working trees; a compact CI/runner strip sits immediately above the action buttons. Quota details are shown in an accessible hover/focus tooltip, not a permanent row or click-to-open section.
+- A future runner-specific view may show online/offline and busy/idle. CPU/RAM requires an optional host telemetry component. Never interpret runner busy as actual CPU utilization.
 - Clicking a CI run opens the exact GitHub Actions URL in the system browser. No logs/step view in RepoTicker.
 - No invented metrics. Unknown, unavailable, stale and insufficient-permissions states are explicit.
 

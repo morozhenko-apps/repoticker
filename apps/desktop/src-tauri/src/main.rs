@@ -244,6 +244,24 @@ async fn perform_git_action(
         .map_err(|err| err.to_string())?
 }
 
+/// Strictly bounded card sizes. Expanding the repository drawer must never
+/// change the width or turn the compact utility into a permanent dashboard.
+#[tauri::command]
+fn set_card_view(app: AppHandle, view: String) -> Result<(), String> {
+    let height = match view.as_str() {
+        "compact" => 225.0,
+        "repos" => 550.0,
+        "settings" => 370.0,
+        _ => return Err("Unknown card view".into()),
+    };
+    let window = app
+        .get_webview_window("main")
+        .ok_or_else(|| "Card window is unavailable".to_owned())?;
+    window
+        .set_size(tauri::LogicalSize::new(390.0, height))
+        .map_err(|err| format!("Cannot resize card: {err}"))
+}
+
 fn toggle_card(app: &AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
         if window.is_visible().unwrap_or(false) {
@@ -326,7 +344,8 @@ fn main() {
             get_snapshot,
             add_root,
             remove_root,
-            perform_git_action
+            perform_git_action,
+            set_card_view
         ])
         .run(tauri::generate_context!())
         .expect("failed to run RepoTicker");

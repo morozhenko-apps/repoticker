@@ -58,6 +58,7 @@ jobs:
       - name: Syntax checks
         run: |
           node --check apps/desktop/ui/model.mjs
+          node --check apps/desktop/ui/view.mjs
           node --check apps/desktop/ui/app.mjs
       - name: JS unit tests
         run: node --test tests/*.test.mjs

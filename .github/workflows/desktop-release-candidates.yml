@@ -1,0 +1,136 @@
+name: Desktop release candidate
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Immutable vMAJOR.MINOR.PATCH tag at main HEAD
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: repoticker-build-${{ inputs.tag }}
+  cancel-in-progress: false
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.check.outputs.version }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify tag is main HEAD and all versions agree
+        id: check
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$RELEASE_TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
+          git fetch --no-tags origin main
+          git fetch origin "refs/tags/$RELEASE_TAG:refs/tags/$RELEASE_TAG"
+          test "$(git rev-parse "refs/tags/$RELEASE_TAG^{commit}")" = "$(git rev-parse origin/main^{commit})"
+          git checkout --detach "refs/tags/$RELEASE_TAG^{commit}"
+          python3 scripts/release_version.py --check-tag "$RELEASE_TAG"
+          echo "version=$(echo "$RELEASE_TAG" | cut -c 2-)" >> "$GITHUB_OUTPUT"
+  linux:
+    name: Linux amd64 DEB and AppImage
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.tag }}
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install platform dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends build-essential curl file wget libssl-dev libxdo-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev libgtk-layer-shell-dev librsvg2-dev libfuse2 dpkg-dev
+      - name: Install Tauri CLI
+        run: cargo install tauri-cli --version '^2' --locked
+      - name: Build Linux distributions
+        working-directory: apps/desktop/src-tauri
+        run: cargo tauri build --bundles deb,appimage
+      - name: Verify Linux artifacts
+        env:
+          VERSION: ${{ steps.check.outputs.version }}_REF
+        run: |
+          python3 scripts/release_assets.py collect --source target/release/bundle --target "$RUNNER_TEMP/linux" --platform linux --version "$VERSION"
+          cd "$RUNNER_TEMP/linux"
+          sha256sum -c ./*.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: repoticker-linux
+          path: ${{ runner.temp }}/linux/*
+          if-no-files-found: error
+          retention-days: 14
+  windows:
+    name: Windows x64 NSIS
+    needs: validate
+    runs-on: windows-2025
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.tag }}
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install Tauri CLI
+        run: cargo install tauri-cli --version '^2' --locked
+      - name: Build installer
+        working-directory: apps/desktop/src-tauri
+        run: cargo tauri build --bundles nsis
+      - name: Verify Windows artifact
+        shell: pwsh
+        env:
+          VERSION: ${{ steps.check.outputs.version }}_REF
+        run: |
+          python scripts/release_assets.py collect --source target/release/bundle --target "$env:RUNNER_TEMP/windows" --platform windows --version "$env:VERSION"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: repoticker-windows
+          path: ${{ runner.temp }}/windows/*
+          if-no-files-found: error
+          retention-days: 14
+  macos:
+    name: macOS ARM64 unsigned DMG candidate
+    needs: validate
+    runs-on: macos-15-arm64
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.tag }}
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install Tauri CLI
+        run: cargo install tauri-cli --version '^2' --locked
+      - name: Build DMG candidate
+        working-directory: apps/desktop/src-tauri
+        run: cargo tauri build --bundles dmg
+      - name: Verify macOS artifact
+        env:
+          VERSION: ${{ steps.check.outputs.version }}_REF
+        run: |
+          python3 scripts/release_assets.py collect --source target/release/bundle --target "$RUNNER_TEMP/macos" --platform macos --version "$VERSION"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: repoticker-macos
+          path: ${{ runner.temp }}/macos/*
+          if-no-files-found: error
+          retention-days: 14
+  candidate:
+    if: always()
+    needs: [validate, linux, windows, macos]
+    runs-on: ubuntu-24.04
+    steps:
+      - env:
+          RESULTS: ${{ join(needs.*.result, ',') }}
+        run: |
+          echo "$RESULTS"
+          test "$RESULTS" = "success,success,success,success"
+      - run: echo "Unsigned candidates only; nothing published to Cloudflare R2." >> "$GITHUB_STEP_SUMMARY"

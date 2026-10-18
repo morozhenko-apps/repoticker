@@ -12,30 +12,53 @@
   <main class="card">
     <header class="header">
       <span class="brand" aria-label="RepoTicker">◈ RepoTicker</span>
-      <button id="refresh" type="button" title="Refresh local snapshot" aria-label="Refresh snapshot">↻</button>
+      <div class="toolbar">
+        <button id="refresh" type="button" title="Refresh local Git status" aria-label="Refresh local Git status">↻</button>
+        <button id="fetch-all" type="button" title="Fetch all enrolled repositories" aria-label="Fetch all">⇄</button>
+        <button id="sync-all" type="button" title="Safe pull all enrolled repositories" aria-label="Safe pull all">↓</button>
+        <button id="settings" type="button" title="Manage repository roots" aria-label="Manage repository roots">⚙</button>
+      </div>
     </header>
-    <div id="connection" class="connection" role="status">GitHub not connected</div>
+
+    <section id="roots-editor" class="roots-editor" hidden>
+      <form id="add-root-form">
+        <label for="root-path">Repository folder or parent directory</label>
+        <div class="input-row">
+          <input id="root-path" type="text" placeholder="~/Documents/GitHub" autocomplete="off" required>
+          <button type="submit">Add</button>
+        </div>
+      </form>
+      <div id="roots-list" class="roots-list"></div>
+      <p class="hint">Only the selected folder and its immediate subfolders are scanned.</p>
+    </section>
+
+    <div id="connection" class="connection" role="status">GitHub monitoring not configured</div>
     <section class="repositories">
       <button id="toggle-repos" class="section-toggle" type="button" aria-expanded="true">
         <span>▾ Repositories</span><span id="repo-count">0</span>
       </button>
-      <div id="repo-list" class="rows" aria-live="polite">
-        <p class="empty">Repository discovery is not configured yet.</p>
-      </div>
+      <div id="repo-list" class="rows" aria-live="polite"></div>
     </section>
     <section class="runners">
       <button id="toggle-runners" class="section-toggle" type="button" aria-expanded="false">
-        <span>▸ Runners</span><span id="runner-count">0 online</span>
+        <span>▸ Runners</span><span id="runner-count">Unavailable</span>
       </button>
-      <div id="runner-list" class="rows" hidden></div>
+      <div id="runner-list" class="rows" hidden>
+        <p class="empty">Runner monitoring is not connected yet.</p>
+      </div>
     </section>
+    <section id="results-panel" class="results-panel" hidden>
+      <button id="close-results" type="button" aria-label="Close operation results">×</button>
+      <div id="results-list"></div>
+    </section>
+    <div id="activity" class="activity" role="status" aria-live="polite" hidden></div>
     <footer class="summary">
       <span id="git-summary">↓ 0 behind</span>
-      <span id="ci-running">◷ 0 running</span>
-      <span id="ci-failed">× 0 failed</span>
+      <span id="ci-running">◷ CI —</span>
+      <span id="ci-failed">× CI —</span>
       <button id="usage" type="button" title="Quota information" aria-label="Quota information">◴</button>
     </footer>
-    <p id="usage-message" class="hint" hidden>Quota data is unavailable until GitHub authentication and billing permissions are configured.</p>
+    <p id="usage-message" class="hint" hidden>GitHub Actions usage is unavailable until monitoring and billing permissions are configured.</p>
   </main>
 </body>
 </html>

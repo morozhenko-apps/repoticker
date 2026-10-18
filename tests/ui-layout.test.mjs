@@ -112,3 +112,10 @@ test("settings is transactional and has no duplicate title or scrolling page", (
   assert.match(settingsCss, /\.github-grid input, \.github-grid select \{[^}]*height: 34px/);
   assert.match(settingsCss, /overflow: hidden/);
 });
+
+test("popup is transparent and persists native anchor after manual movement", () => {
+  const tauri = JSON.parse(readFileSync(new URL("../apps/desktop/src-tauri/tauri.conf.json", import.meta.url), "utf8"));
+  assert.equal(tauri.app.windows.find(w => w.label === "main").transparent, true);
+  assert.match(ui, /"persist_card_position"/);
+  assert.match(ui, /dragHasMoved/);
+});

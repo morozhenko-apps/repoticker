@@ -295,6 +295,7 @@ let dragging = null;
 let dragPendingX = 0;
 let dragPendingY = 0;
 let dragInFlight = false;
+let dragHasMoved = false;
 const dragSurface = byId("card");
 
 async function sendQueuedDrag() {
@@ -310,7 +311,13 @@ async function sendQueuedDrag() {
       await invoke("move_card", { dx: Math.max(-100, Math.min(100, dx)), dy: Math.max(-100, Math.min(100, dy)) });
     }
   } catch (error) { showError(error); }
-  finally { dragInFlight = false; }
+  finally {
+    dragInFlight = false;
+    if (!dragging && dragHasMoved) {
+      dragHasMoved = false;
+      void invoke("persist_card_position").catch(showError);
+    }
+  }
 }
 
 dragSurface.addEventListener("pointerdown", event => {
@@ -321,6 +328,7 @@ dragSurface.addEventListener("pointerdown", event => {
   dragging = { id: event.pointerId, active: false };
   dragPendingX = 0;
   dragPendingY = 0;
+  dragHasMoved = false;
   dragSurface.setPointerCapture(event.pointerId);
   void invoke("start_card_drag").then(anchored => {
     if (!dragging || dragging.id !== event.pointerId) return;
@@ -334,6 +342,7 @@ dragSurface.addEventListener("pointermove", event => {
       !(event.buttons & 1) || !cardVisible) return;
   dragPendingX += Math.round(event.movementX);
   dragPendingY += Math.round(event.movementY);
+  dragHasMoved = true;
   void sendQueuedDrag();
 });
 
@@ -344,6 +353,10 @@ function stopDragging() {
   dragging = null;
   dragPendingX = 0;
   dragPendingY = 0;
+  if (!dragInFlight && dragHasMoved) {
+    dragHasMoved = false;
+    void invoke("persist_card_position").catch(showError);
+  }
 }
 dragSurface.addEventListener("pointerup", stopDragging);
 dragSurface.addEventListener("pointercancel", stopDragging);

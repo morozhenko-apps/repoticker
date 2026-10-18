@@ -28,6 +28,10 @@ struct Config {
     roots: Vec<String>,
     #[serde(default = "default_language")]
     language: String,
+    #[serde(default)]
+    card_bottom_margin: Option<i32>,
+    #[serde(default)]
+    card_right_margin: Option<i32>,
 }
 
 fn default_language() -> String {
@@ -111,6 +115,8 @@ fn read_config(app: &AppHandle) -> Result<Config, String> {
         return Ok(Config {
             roots: Vec::new(),
             language: default_language(),
+            card_bottom_margin: None,
+            card_right_margin: None,
         });
     }
     let content = fs::read(&path).map_err(|err| format!("Cannot read config: {err}"))?;
@@ -461,6 +467,16 @@ fn start_card_drag(app: AppHandle) -> Result<bool, String> {
 }
 
 #[tauri::command]
+fn persist_card_position(app: AppHandle) -> Result<(), String> {
+    #[cfg(target_os = "linux")]
+    if linux_surface::enabled() {
+        return linux_surface::persist(&app);
+    }
+    let _ = app;
+    Ok(())
+}
+
+#[tauri::command]
 fn move_card(app: AppHandle, dx: i32, dy: i32) -> Result<(), String> {
     #[cfg(target_os = "linux")]
     if linux_surface::enabled() {
@@ -629,6 +645,7 @@ fn main() {
             close_settings,
             start_card_drag,
             move_card,
+            persist_card_position,
             perform_git_action,
             set_card_view,
             hide_card

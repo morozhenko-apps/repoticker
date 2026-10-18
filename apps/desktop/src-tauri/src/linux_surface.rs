@@ -46,17 +46,47 @@ pub fn install(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
     layer.set_decorated(false);
     layer.set_resizable(false);
     layer.set_app_paintable(true);
+    if let Some(screen) = gtk::prelude::WidgetExt::screen(&layer) {
+        if let Some(visual) = screen.rgba_visual() {
+            layer.set_visual(Some(&visual));
+        }
+        let css = gtk::CssProvider::new();
+        css.load_from_data(
+            b"window.repoticker-layer { background-color: transparent; background-image: none; }",
+        )?;
+        gtk::StyleContext::add_provider_for_screen(
+            &screen,
+            &css,
+            gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+        );
+    }
+    layer.style_context().add_class("repoticker-layer");
+    // WebKit's natural minimum can exceed a 122 px tray popup. A non-scrolling
+    // viewport constrains the allocation rather than letting GTK grow a blank
+    // area above the actual card contents.
+    let viewport = gtk::ScrolledWindow::new(
+        None::<&gtk::Adjustment>,
+        None::<&gtk::Adjustment>,
+    );
+    viewport.set_policy(gtk::PolicyType::Never, gtk::PolicyType::Never);
+    viewport.set_propagate_natural_height(false);
+    viewport.set_propagate_natural_width(false);
+    viewport.set_size_request(390, 122);
+    viewport.add(&vbox);
     layer.set_default_size(390, 122);
-    vbox.set_size_request(390, 122);
-    layer.add(&vbox);
+    layer.add(&viewport);
 
     layer.init_layer_shell();
     layer.set_namespace("repoticker");
     layer.set_layer(Layer::Top);
     layer.set_anchor(Edge::Bottom, true);
     layer.set_anchor(Edge::Right, true);
-    layer.set_layer_shell_margin(Edge::Bottom, 46);
-    layer.set_layer_shell_margin(Edge::Right, 10);
+    let config = crate::read_config(app.handle())?;
+    let bottom = config.card_bottom_margin.unwrap_or(46).clamp(0, 5000);
+    let right = config.card_right_margin.unwrap_or(10).clamp(0, 5000);
+    MARGINS.with(|margins| *margins.borrow_mut() = (bottom, right));
+    layer.set_layer_shell_margin(Edge::Bottom, bottom);
+    layer.set_layer_shell_margin(Edge::Right, right);
     // Do not reserve any work area; this is a transient popover, not a panel.
     layer.set_exclusive_zone(-1);
     layer.set_keyboard_mode(KeyboardMode::OnDemand);
@@ -89,22 +119,34 @@ pub fn resize(app: AppHandle, height: i32) -> Result<(), String> {
     // Bottom anchor belongs to the compositor; expanding to a larger height
     // always grows upward, independent of the previous client position.
     on_main(&app, move |window| {
-        // The compositor keeps the bottom anchor fixed. Monitor geometry
-        // cannot be read portably from Gtk3 on all Wayland configurations.
-        let bounded_height = height;
+        // Force the viewport allocation as well as the layer itself. GTK
+        // otherwise uses WebKit's natural minimum and leaves a large gap.
+        if let Some(viewport) = window.child() {
+            viewport.set_size_request(390, height);
+        }
         CONTENT.with(|cell| {
             if let Some(content) = cell.borrow().as_ref() {
-                content.set_size_request(390, bounded_height);
+                content.set_size_request(390, height);
             }
         });
-        window.set_default_size(390, bounded_height);
-        window.resize(390, bounded_height);
+        window.set_default_size(390, height);
+        window.resize(390, height);
+        MARGINS.with(|stored| {
+            let (bottom, right) = *stored.borrow();
+            window.set_layer_shell_margin(Edge::Bottom, bottom);
+            window.set_layer_shell_margin(Edge::Right, right);
+        });
     })
 }
 
 pub fn show(app: &AppHandle) -> Result<(), String> {
     VISIBLE.store(true, Ordering::Release);
     on_main(app, |window| {
+        MARGINS.with(|stored| {
+            let (bottom, right) = *stored.borrow();
+            window.set_layer_shell_margin(Edge::Bottom, bottom);
+            window.set_layer_shell_margin(Edge::Right, right);
+        });
         window.show_all();
         window.present();
     })
@@ -138,6 +180,26 @@ pub fn shift(app: &AppHandle, dx: i32, dy: i32) -> Result<(), String> {
             margins.1 = new_right;
             window.set_layer_shell_margin(Edge::Bottom, margins.0);
             window.set_layer_shell_margin(Edge::Right, margins.1);
+        });
+    })
+}
+
+/// Persist the manually dragged anchor without changing repository settings.
+pub fn persist(app: &AppHandle) -> Result<(), String> {
+    let writer = app.clone();
+    on_main(app, move |_| {
+        MARGINS.with(|state| {
+            let (bottom, right) = *state.borrow();
+            match crate::read_config(&writer) {
+                Ok(mut config) => {
+                    config.card_bottom_margin = Some(bottom);
+                    config.card_right_margin = Some(right);
+                    if let Err(error) = crate::write_config(&writer, &config) {
+                        eprintln!("RepoTicker: cannot save card position: {error}");
+                    }
+                }
+                Err(error) => eprintln!("RepoTicker: cannot read card config: {error}"),
+            }
         });
     })
 }

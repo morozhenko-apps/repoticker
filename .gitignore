@@ -28,6 +28,5 @@ Thumbs.db
 *.sqlite-*
 .local/
 
-# Prototype builds generate a local workspace lockfile; lock reproducibility
-# and checked-in artifact versions before release packaging.
-/Cargo.lock
+# Application workspace lockfile is committed to guarantee repeatable releases.
+# Run cargo generate-lockfile and git add Cargo.lock before tagging.

@@ -28,6 +28,8 @@ jobs:
           git fetch --no-tags origin main
           test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main^{commit})"
           python3 scripts/release_version.py --check-tag "$RELEASE_TAG"
+          test -s Cargo.lock || { echo "Missing committed Cargo.lock" >&2; exit 1; }
+          cargo metadata --locked --format-version 1 --no-deps >/dev/null
           echo "version=$(echo "$RELEASE_TAG" | cut -c 2-)" >> "$GITHUB_OUTPUT"
   linux:
     name: Linux amd64 DEB and AppImage

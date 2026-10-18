@@ -12,8 +12,12 @@ Only a vMAJOR.MINOR.PATCH tag pushed with the current main HEAD launches the
 release workflow. If the tag commit differs from main HEAD, admission fails.
 A dev push or manual workflow dispatch cannot publish a release.
 
-Version markers must match across Rust core, desktop and Tauri. On dev:
+Version markers must match across Rust core, desktop and Tauri. The workspace
+Cargo.lock MUST be tracked in Git and present at the tagged main commit; the
+release admission job rejects a missing or inconsistent lockfile. On dev:
     python3 scripts/release_version.py --bump patch
+    cargo generate-lockfile
+    git add Cargo.lock
     python3 -m unittest discover -s tests -p 'test_release_*.py' -v
 
 After review and a successful main fast-forward, tag main and push only tag:
@@ -115,7 +119,8 @@ which remains unsigned and may trigger SmartScreen warnings.
 
 ## Remaining gates
 
-1. Freeze and check in a verified Cargo.lock (prototype currently ignores it).
+1. Generate, test and commit Cargo.lock; the release admission now refuses
+   to proceed unless it is present and consistent.
 2. Validate real DEB/AppImage and hosted Windows x64 NSIS builds, install,
    uninstall and long-lived runtime behavior.
 3. Configure the protected environment, isolated signing subkey and R2

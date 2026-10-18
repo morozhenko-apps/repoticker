@@ -5,7 +5,7 @@ use gtk::prelude::*;
 use gtk_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
 use std::{
     cell::RefCell,
-    sync::atomic::{AtomicBool, Ordering},
+    sync::atomic::{AtomicBool, AtomicI32, Ordering},
 };
 use tauri::{App, AppHandle, Manager};
 
@@ -17,6 +17,7 @@ thread_local! {
 
 static ENABLED: AtomicBool = AtomicBool::new(false);
 static VISIBLE: AtomicBool = AtomicBool::new(false);
+static CARD_HEIGHT: AtomicI32 = AtomicI32::new(122);
 
 pub fn enabled() -> bool {
     ENABLED.load(Ordering::Acquire)
@@ -68,7 +69,14 @@ pub fn install(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
     viewport.set_policy(gtk::PolicyType::Never, gtk::PolicyType::Never);
     viewport.set_propagate_natural_height(false);
     viewport.set_propagate_natural_width(false);
+    viewport.set_min_content_height(122);
+    viewport.set_max_content_height(122);
+    viewport.set_min_content_width(390);
+    viewport.set_max_content_width(390);
     viewport.set_size_request(390, 122);
+    // The Tauri webview may advertise a much larger natural minimum.
+    // Its parent viewport clips it, rather than expanding the whole layer.
+    vbox.set_size_request(-1, -1);
     viewport.add(&vbox);
     layer.set_default_size(390, 122);
     layer.add(&viewport);
@@ -113,39 +121,39 @@ pub fn resize(app: AppHandle, height: i32) -> Result<(), String> {
     if !(120..=900).contains(&height) {
         return Err("Invalid card height".into());
     }
-    // Bottom anchor belongs to the compositor; expanding to a larger height
-    // always grows upward, independent of the previous client position.
+    // A redundant resize (especially while hidden) can make KDE reconfigure
+    // the layer at a different location. Do not touch the surface when unchanged.
+    if CARD_HEIGHT.swap(height, Ordering::AcqRel) == height {
+        return Ok(());
+    }
     on_main(&app, move |window| {
-        // Force the viewport allocation as well as the layer itself. GTK
-        // otherwise uses WebKit's natural minimum and leaves a large gap.
-        if let Some(viewport) = window.child() {
-            viewport.set_size_request(390, height);
+        if let Some(child) = window.child() {
+            if let Ok(viewport) = child.downcast::<gtk::ScrolledWindow>() {
+                viewport.set_min_content_height(height);
+                viewport.set_max_content_height(height);
+                viewport.set_size_request(390, height);
+            }
         }
         CONTENT.with(|cell| {
             if let Some(content) = cell.borrow().as_ref() {
-                content.set_size_request(390, height);
+                content.set_size_request(-1, -1);
             }
         });
         window.set_default_size(390, height);
         window.resize(390, height);
-        MARGINS.with(|stored| {
-            let (bottom, right) = *stored.borrow();
-            window.set_layer_shell_margin(Edge::Bottom, bottom);
-            window.set_layer_shell_margin(Edge::Right, right);
-        });
     })
 }
 
 pub fn show(app: &AppHandle) -> Result<(), String> {
     VISIBLE.store(true, Ordering::Release);
     on_main(app, |window| {
-        MARGINS.with(|stored| {
-            let (bottom, right) = *stored.borrow();
-            window.set_layer_shell_margin(Edge::Bottom, bottom);
-            window.set_layer_shell_margin(Edge::Right, right);
-        });
         window.show_all();
-        window.present();
+        eprintln!(
+            "RepoTicker layer: requested={} allocated={} margins={:?}",
+            CARD_HEIGHT.load(Ordering::Acquire),
+            window.allocated_height(),
+            MARGINS.with(|stored| *stored.borrow())
+        );
     })
 }
 

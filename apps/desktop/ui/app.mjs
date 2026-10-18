@@ -325,7 +325,10 @@ dragSurface.addEventListener("pointerdown", event => {
       event.target.closest("button,input,select,a,[role=button]")) return;
   // Capture before awaiting IPC. Otherwise pointerup may arrive first and
   // leave a stale capture that shifts the popup on subsequent tray openings.
-  dragging = { id: event.pointerId, active: false };
+  dragging = {
+    id: event.pointerId, active: false,
+    lastX: event.screenX, lastY: event.screenY
+  };
   dragPendingX = 0;
   dragPendingY = 0;
   dragHasMoved = false;
@@ -340,8 +343,13 @@ dragSurface.addEventListener("pointerdown", event => {
 dragSurface.addEventListener("pointermove", event => {
   if (!dragging || !dragging.active || dragging.id !== event.pointerId ||
       !(event.buttons & 1) || !cardVisible) return;
-  dragPendingX += Math.round(event.movementX);
-  dragPendingY += Math.round(event.movementY);
+  const dx = Math.round(event.screenX - dragging.lastX);
+  const dy = Math.round(event.screenY - dragging.lastY);
+  dragging.lastX = event.screenX;
+  dragging.lastY = event.screenY;
+  if (!dx && !dy) return;
+  dragPendingX += dx;
+  dragPendingY += dy;
   dragHasMoved = true;
   void sendQueuedDrag();
 });

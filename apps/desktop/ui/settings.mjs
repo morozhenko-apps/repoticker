@@ -54,7 +54,7 @@ async function refresh() {
   };
   draft = { roots: [...original.roots], language: original.language };
   byId("root-path").value = "";
-  byId("language").value = draft.language;
+  updateLanguagePicker();
   renderRoots();
   message("");
   updateApply();
@@ -69,10 +69,37 @@ byId("add-root-form").addEventListener("submit", event => {
   renderRoots();
   updateApply();
 });
-byId("language").addEventListener("change", event => {
-  if (!draft || saving) return;
-  draft.language = event.target.value;
-  updateApply();
+function updateLanguagePicker() {
+  byId("language-trigger").firstChild.textContent =
+    draft.language === "ru" ? "Русский " : "English ";
+  for (const option of byId("language-options").querySelectorAll("[role=option]")) {
+    option.setAttribute("aria-selected", String(option.dataset.value === draft.language));
+  }
+}
+function closeLanguagePicker() {
+  byId("language-options").hidden = true;
+  byId("language-trigger").setAttribute("aria-expanded", "false");
+}
+byId("language-trigger").addEventListener("click", () => {
+  const open = byId("language-options").hidden;
+  byId("language-options").hidden = !open;
+  byId("language-trigger").setAttribute("aria-expanded", String(open));
+});
+for (const option of byId("language-options").querySelectorAll("[role=option]")) {
+  option.addEventListener("click", () => {
+    if (!draft || saving) return;
+    draft.language = option.dataset.value;
+    updateLanguagePicker();
+    updateApply();
+    closeLanguagePicker();
+    byId("language-trigger").focus();
+  });
+}
+document.addEventListener("pointerdown", event => {
+  if (!event.target.closest(".language-picker")) closeLanguagePicker();
+});
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape") closeLanguagePicker();
 });
 byId("cancel-settings").addEventListener("click", async () => {
   try { await invoke("close_settings"); }

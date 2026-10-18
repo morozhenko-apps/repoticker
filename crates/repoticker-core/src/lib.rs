@@ -1,5 +1,6 @@
 //! RepoTicker domain rules and Git provider.
 
+pub mod bounded;
 pub mod git;
 
 /// Remote comparison is meaningful only after a successful fetch.

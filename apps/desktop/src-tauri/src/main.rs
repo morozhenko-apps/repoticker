@@ -179,6 +179,37 @@ fn scan(app: &AppHandle) -> Result<Snapshot, String> {
     })
 }
 
+fn git_action_result(path: &std::path::Path, outcome: Result<OperationOutcome, GitError>) -> ActionResult {
+    let path = path.to_string_lossy().into_owned();
+    match outcome {
+        Ok(OperationOutcome::Fetched) => ActionResult {
+            path,
+            status: "fetched".into(),
+            message: "Fetch complete".into(),
+        },
+        Ok(OperationOutcome::Updated(commits)) => ActionResult {
+            path,
+            status: "updated".into(),
+            message: format!("Fast-forwarded by {commits} commits"),
+        },
+        Ok(OperationOutcome::AlreadyCurrent) => ActionResult {
+            path,
+            status: "current".into(),
+            message: "Already current".into(),
+        },
+        Ok(OperationOutcome::Skipped(decision)) => ActionResult {
+            path,
+            status: "skipped".into(),
+            message: decision_label(decision),
+        },
+        Err(GitError(error)) => ActionResult {
+            path,
+            status: "error".into(),
+            message: error,
+        },
+    }
+}
+
 fn execute(
     app: &AppHandle,
     operation: &str,
@@ -226,51 +257,61 @@ fn execute(
     let total = targets.len();
     notify_progress(app, operation, "", 0, total, "begin", None);
 
-    for (index, path) in targets.into_iter().enumerate() {
-        let display_path = path.to_string_lossy().into_owned();
-        notify_progress(app, operation, &display_path, index, total, "start", None);
-        let operation_result = match operation {
-            "fetch" => git::fetch(&path),
-            "safe_pull" => git::safe_pull(&path),
-            _ => unreachable!(),
-        };
-        let result = match operation_result {
-            Ok(OperationOutcome::Fetched) => ActionResult {
-                path: display_path.clone(),
-                status: "fetched".into(),
-                message: "Fetch complete".into(),
+    if operation == "fetch" {
+        // At most four independent repositories in flight. Repeated fetches
+        // in the same application are serialized by OperationLock.
+        let completed = repoticker_core::bounded::bounded_map(
+            targets,
+            4,
+            |path| {
+                let outcome = git::fetch(&path);
+                (path, outcome)
             },
-            Ok(OperationOutcome::Updated(commits)) => ActionResult {
-                path: display_path.clone(),
-                status: "updated".into(),
-                message: format!("Fast-forwarded by {commits} commits"),
+            |path, _| {
+                notify_progress(
+                    app,
+                    operation,
+                    &path.to_string_lossy(),
+                    0,
+                    total,
+                    "start",
+                    None,
+                );
             },
-            Ok(OperationOutcome::AlreadyCurrent) => ActionResult {
-                path: display_path.clone(),
-                status: "current".into(),
-                message: "Already current".into(),
+            |(path, outcome), done, _| {
+                notify_progress(
+                    app,
+                    operation,
+                    &path.to_string_lossy(),
+                    done,
+                    total,
+                    "complete",
+                    Some(if outcome.is_ok() { "fetched" } else { "error" }),
+                );
             },
-            Ok(OperationOutcome::Skipped(decision)) => ActionResult {
-                path: display_path.clone(),
-                status: "skipped".into(),
-                message: decision_label(decision),
-            },
-            Err(GitError(error)) => ActionResult {
-                path: display_path.clone(),
-                status: "error".into(),
-                message: error,
-            },
-        };
-        notify_progress(
-            app,
-            operation,
-            &display_path,
-            index + 1,
-            total,
-            "complete",
-            Some(&result.status),
         );
-        results.push(result);
+        results.extend(
+            completed
+                .into_iter()
+                .map(|(path, outcome)| git_action_result(&path, outcome)),
+        );
+    } else {
+        // Safe pull mutates checkouts and remains strictly sequential.
+        for (index, path) in targets.into_iter().enumerate() {
+            let display_path = path.to_string_lossy().into_owned();
+            notify_progress(app, operation, &display_path, index, total, "start", None);
+            let result = git_action_result(&path, git::safe_pull(&path));
+            notify_progress(
+                app,
+                operation,
+                &display_path,
+                index + 1,
+                total,
+                "complete",
+                Some(&result.status),
+            );
+            results.push(result);
+        }
     }
     notify_progress(app, operation, "", total, total, "finish", None);
     Ok(results)

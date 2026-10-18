@@ -20,7 +20,7 @@ class R2ArtifactContract(unittest.TestCase):
                 path = folder / name
                 path.write_bytes(b"test-" + name.encode())
                 checksum = release_assets.digest(path)
-                (folder / (name + ".sha256")).write_text(checksum + "  " + name + "\\n")
+                (folder / (name + ".sha256")).write_text(checksum + "  " + name + "\n")
                 files.append({"path": platform + "/" + name, "sha256": checksum,
                               "size": path.stat().st_size})
             (folder / "part.json").write_text(

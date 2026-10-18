@@ -1,6 +1,6 @@
 //! Linux StatusNotifierItem: unlike Tauri's Linux tray backend, Activate
 //! fires for KDE's primary click. All UI/Git work is marshalled away from DBus.
-use crate::{dispatch_menu_action, show_compact_card, show_settings, toggle_card};
+use crate::{app_icon, dispatch_menu_action, show_compact_card, show_settings, toggle_card};
 use ksni::{blocking::TrayMethods as _, menu::StandardItem, Icon, MenuItem, Tray};
 use tauri::{App, AppHandle, Manager};
 
@@ -34,18 +34,10 @@ impl Tray for LinuxTray {
     }
 
     fn icon_pixmap(&self) -> Vec<Icon> {
-        let mut data = vec![0u8; 16 * 16 * 4];
-        for y in 3usize..13 {
-            for x in 3usize..13 {
-                if x == 3 || x == 12 || y == 3 || y == 12 {
-                    let pos = (y * 16 + x) * 4;
-                    data[pos..pos + 4].copy_from_slice(&[255, 44, 154, 95]); // ARGB32
-                }
-            }
-        }
+        let (data, width, height) = app_icon::tray_argb();
         vec![Icon {
-            width: 16,
-            height: 16,
+            width: width as i32,
+            height: height as i32,
             data,
         }]
     }

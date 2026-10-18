@@ -1,4 +1,6 @@
 //! RepoTicker desktop: local-only roots, Git provider and tray card.
+mod app_icon;
+
 use repoticker_core::{
     git::{self, GitError, OperationOutcome, RepoSnapshot},
     SyncDecision,
@@ -464,16 +466,8 @@ fn toggle_card(app: &AppHandle) {
 
 #[cfg(not(target_os = "linux"))]
 fn tray_image() -> Image<'static> {
-    let mut rgba = vec![0u8; 16 * 16 * 4];
-    for y in 3usize..13 {
-        for x in 3usize..13 {
-            if x == 3 || x == 12 || y == 3 || y == 12 {
-                let index = (y * 16 + x) * 4;
-                rgba[index..index + 4].copy_from_slice(&[44, 154, 95, 255]);
-            }
-        }
-    }
-    Image::new_owned(rgba, 16, 16)
+    let (rgba, width, height) = app_icon::tray_rgba();
+    Image::new_owned(rgba, width, height)
 }
 
 fn dispatch_menu_action(app: &AppHandle, operation: &'static str) {

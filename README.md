@@ -13,7 +13,7 @@ RepoTicker is a planned cross-platform desktop utility for keeping local Git rep
 - GitHub Actions run/job status, self-hosted runner occupancy and optional usage information.
 - Open the exact GitHub workflow run in a browser; no in-app log viewer.
 - Two modes: **Simple** (polling, default) and **Hybrid** (opt-in self-hosted webhook relay + reconciliation polling).
-- Linux, Windows and macOS are targets, not verified release claims. No paid features or central RepoTicker service. The Linux Tauri tray API does not report primary clicks, so the initial shell uses the **Open card** context-menu fallback until a native adapter is implemented.
+- Linux, Windows and macOS are targets, not verified release claims. No paid features or central RepoTicker service. Linux uses a dedicated StatusNotifierItem (`ksni`) implementation for tray primary-click and context menu; Windows/macOS retain Tauri's native tray. Actual KDE Wayland tray and card-positioning acceptance still requires physical verification.
 
 ## Repository layout
 
@@ -35,7 +35,7 @@ node --test tests/*.test.mjs
 cargo run -p repoticker-desktop
 ```
 
-`cargo run` is for desktop development; it does **not** install autostart, packages, webhook infrastructure, or background services. Right-click the tray icon and choose **Open card** on Linux. Open Settings (gear), enroll a directory such as `~/Documents/GitHub`, then Fetch or Safe pull via the toolbar, per-repository `…` menu, or the tray context menu. Sync is **manual only**; it will never run merely because the app starts. The card lists actual local Git state. GitHub/runner/quota values are unavailable rather than invented.
+`cargo run` is for desktop development; it does **not** install autostart, packages, webhook infrastructure, or background services. On Linux KDE, left-click the StatusNotifierItem tray icon to toggle the compact card; use the right-click menu for **Settings**, **Open card**, **Fetch all**, **Safe pull all** and **Quit**. Register a directory such as `~/Documents/GitHub` in Settings. The compact card has **Fetch**, **Safe pull**, **Repos** and **Hide** actions; successful Git operations are silent. Safe pull displays the eligible behind-commit count once local remote refs have been fetched. The repo list has a green current-state checkmark; there are no per-repo success logs. GitHub/runner/quota metrics remain unknown until integration is implemented, not zero. Sync is **manual only**.
 
 See [Git Provider behavior and limitations](docs/GIT_PROVIDER.md), [product](docs/PRODUCT.md), [architecture](docs/ARCHITECTURE.md), [roadmap](docs/ROADMAP.md), [CI](docs/CI.md), [security](docs/SECURITY.md), [relay](docs/RELAY.md) and [tests](docs/TEST_STRATEGY.md).
 

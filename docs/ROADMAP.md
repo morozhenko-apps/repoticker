@@ -11,8 +11,10 @@ This is a planning backlog, not a progress claim. Dates indicate when decisions 
 - [x] Add CI configuration adapted from rQuickShare.
 - [ ] Confirm exact SHA GitHub Preflight success; fix any red checks.
 - [x] Create compact/card-list/settings view states, one-line regular-weight repository rows, hover quota help, four bottom actions, no duplicate header and no redundant success output.
-- [ ] Physically verify Linux StatusNotifierItem primary-click and bottom anchored resizing on KDE Wayland; native window positioning may be refused by KWin.
-- [ ] Implement a native Linux tray interaction adapter (standard Tauri 2 Linux click callback is unsupported) and anchor the card to the tray.
+- [x] Add Linux StatusNotifierItem primary-click tray adapter and testable bottom-edge resize attempt.
+- [ ] Physically verify primary click, right-click menu and bottom-edge resizing on KDE Wayland; replace the toplevel placement strategy if KWin refuses it.
+- [x] Implement Linux StatusNotifierItem activation/menu independently of Tauri's Linux tray-click limitation.
+- [ ] Physically anchor the Wayland card to the tray and verify fixed bottom edge with a native surface if necessary.
 - [ ] Physically verify tray/menu/card on KDE Wayland.
 - [ ] Validate Windows and macOS desktop-shell builds and interactions.
 

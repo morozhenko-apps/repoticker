@@ -8,7 +8,7 @@
 4. GitHub provider: future REST API actions/runners/billing clients; least-privilege auth stored in OS credential store.
 5. Event engine: future cache, deduplication, reconnect/reconciliation scheduler, notifications.
 6. Relay protocol: future independently versioned event envelope for Cloudflare and generic self-hosted implementations.
-7. Platform adapters: future notification, keychain, autostart, tray positioning and secure external-browser opening.
+7. Platform adapters: native StatusNotifierItem through `ksni` on Linux to receive primary-click activation and context menu; Tauri tray on Windows/macOS. Notification, keychain, autostart, stable Wayland Layer Shell anchoring and secure external-browser actions remain future work.
 
 ## Operating modes
 
@@ -37,4 +37,4 @@ The Tauri shell now loads enrolled roots from its local app config, enumerates d
 
 ## Packaging and portability
 
-Tauri 2 is selected provisionally for a common UI; Rust for core. GTK/WebKit dependencies are platform-specific build requirements. Known Linux limitation: Tauri 2's standard tray-icon click callback is unsupported on Linux, and show-menu-on-left-click is unsupported. The shell's **Open card** context menu is an interim entry point. rQuickShare-style primary-click opening, tray placement and edge-aware popover need a dedicated Linux adapter. KDE Wayland card anchoring, GNOME tray support, Windows/macOS notification and packaging behaviors must be physically verified. Do not mistake a cross-compiled binary for product acceptance.
+Tauri 2 is selected provisionally for a common UI; Rust for core. GTK/WebKit dependencies are platform-specific build requirements. Linux now has its own `ksni` StatusNotifierItem adapter (Activate toggles the card, ContextMenu presents actions), avoiding unsupported Tauri Linux tray click events. Card height changes attempt to compensate the Y coordinate to keep the lower edge fixed; ordinary Wayland toplevel window movement can be refused by KWin, so a proper Layer Shell-backed surface may still be required. No geometry acceptance or release platform compatibility is claimed. Other desktop environments without a compatible StatusNotifierWatcher, GNOME extensions, Windows/macOS notification and packaging behavior need separate tests. Do not mistake a cross-compiled binary for product acceptance.

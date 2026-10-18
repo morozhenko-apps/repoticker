@@ -94,3 +94,126 @@ jobs:
     runs-on: macos-15
     steps:
       - run: echo "macOS intentionally disabled"
+
+  publish:
+    needs: [validate, linux, windows]
+    environment: apt-release
+    runs-on: ubuntu-24.04
+    timeout-minutes: 65
+    env:
+      VERSION: ${{ needs.validate.outputs.version }}
+      SIGNING_FPR: ${{ vars.REPOTICKER_APT_FINGERPRINT }}
+      REPOTICKER_R2_ACCOUNT_ID: ${{ vars.REPOTICKER_R2_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: repoticker-linux
+          path: ${{ runner.temp }}/release/linux
+      - uses: actions/download-artifact@v4
+        with:
+          name: repoticker-windows
+          path: ${{ runner.temp }}/release/windows
+      - name: Check required environment and install tooling
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$SIGNING_FPR" =~ ^[a-fA-F0-9]{40}$ ]]
+          [[ "$REPOTICKER_R2_ACCOUNT_ID" =~ ^[a-f0-9]{32}$ ]]
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends apt-utils dpkg-dev gnupg gpgv
+          python3 -m venv "$RUNNER_TEMP/release-python"
+          "$RUNNER_TEMP/release-python/bin/pip" install --no-cache-dir \
+            -r scripts/requirements-release.txt
+          umask 077
+          mkdir -p "$RUNNER_TEMP/private/gnupg"
+          chmod 700 "$RUNNER_TEMP/private/gnupg"
+      - name: Import signing SUBKEY from protected GitHub Secrets
+        shell: bash
+        env:
+          SUBKEY_B64: ${{ secrets.REPOTICKER_APT_SIGNING_SUBKEY_BASE64 }}
+          SUBKEY_PASSPHRASE: ${{ secrets.REPOTICKER_APT_SIGNING_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          [[ -n "$SUBKEY_B64" && -n "$SUBKEY_PASSPHRASE" ]]
+          umask 077
+          printf '%s' "$SUBKEY_B64" | base64 --decode > "$RUNNER_TEMP/private/import.gpg"
+          printf '%s' "$SUBKEY_PASSPHRASE" > "$RUNNER_TEMP/private/passphrase"
+          gpg --homedir "$RUNNER_TEMP/private/gnupg" --batch \
+            --import "$RUNNER_TEMP/private/import.gpg" >/dev/null 2>&1
+          rm -f "$RUNNER_TEMP/private/import.gpg"
+          gpg --homedir "$RUNNER_TEMP/private/gnupg" --batch --with-colons \
+            --list-secret-keys "$SIGNING_FPR" > "$RUNNER_TEMP/private/inventory"
+          python3 scripts/verify_signing_key.py \
+            --listing "$RUNNER_TEMP/private/inventory" --fingerprint "$SIGNING_FPR"
+          rm -f "$RUNNER_TEMP/private/inventory"
+      - name: Build signed APT snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          deb="$(find "$RUNNER_TEMP/release/linux" -maxdepth 1 -name '*.deb' -type f -print -quit)"
+          test -n "$deb"
+          python3 scripts/apt_repository.py \
+            --deb "$deb" --out "$RUNNER_TEMP/apt" --version "$VERSION" \
+            --gpg-home "$RUNNER_TEMP/private/gnupg" \
+            --fingerprint "$SIGNING_FPR" \
+            --passphrase-file "$RUNNER_TEMP/private/passphrase"
+      - name: Verify R2 artifacts and publish signed APT last
+        shell: bash
+        env:
+          REPOTICKER_R2_ACCESS_KEY_ID: ${{ secrets.REPOTICKER_R2_ACCESS_KEY_ID }}
+          REPOTICKER_R2_SECRET_ACCESS_KEY: ${{ secrets.REPOTICKER_R2_SECRET_ACCESS_KEY }}
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/release-python/bin/python" scripts/r2_release.py \
+            --release "$RUNNER_TEMP/release" --apt "$RUNNER_TEMP/apt" --version "$VERSION"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: repoticker-apt-keyring
+          path: ${{ runner.temp }}/apt/repoticker-archive-keyring.gpg
+          if-no-files-found: error
+      - name: Securely clean signing files
+        if: always()
+        shell: bash
+        run: |
+          if [[ -d "$RUNNER_TEMP/private/gnupg" ]]; then
+            gpgconf --homedir "$RUNNER_TEMP/private/gnupg" --kill gpg-agent || true
+          fi
+          rm -rf "$RUNNER_TEMP/private"
+
+  github-release:
+    needs: [validate, linux, windows, publish]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: repoticker-linux
+          path: ${{ runner.temp }}/release/linux
+      - uses: actions/download-artifact@v4
+        with:
+          name: repoticker-windows
+          path: ${{ runner.temp }}/release/windows
+      - uses: actions/download-artifact@v4
+        with:
+          name: repoticker-apt-keyring
+          path: ${{ runner.temp }}/release/public
+      - name: Publish GitHub Release only after signed R2/APT
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release create "$GITHUB_REF_NAME" \
+            "$RUNNER_TEMP"/release/linux/*.deb \
+            "$RUNNER_TEMP"/release/linux/*.AppImage \
+            "$RUNNER_TEMP"/release/linux/*.sha256 \
+            "$RUNNER_TEMP"/release/windows/*.exe \
+            "$RUNNER_TEMP"/release/windows/*.sha256 \
+            "$RUNNER_TEMP"/release/public/repoticker-archive-keyring.gpg \
+            --repo "$GITHUB_REPOSITORY" --verify-tag \
+            --title "RepoTicker $GITHUB_REF_NAME" \
+            --notes "Apache License 2.0. Author: Stanislav Moseyko (morozhenko). Linux amd64 DEB/AppImage, unsigned Windows x64 NSIS, no macOS build. APT is signed on download.morozhenko.com."

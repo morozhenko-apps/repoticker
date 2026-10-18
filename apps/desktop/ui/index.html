@@ -14,18 +14,6 @@
       <div id="repo-list" class="rows" aria-live="polite"></div>
     </section>
 
-    <section id="roots-editor" class="roots-editor" aria-label="Repository folders" hidden>
-      <form id="add-root-form">
-        <label for="root-path">Repository folder or parent directory</label>
-        <div class="input-row">
-          <input id="root-path" type="text" placeholder="~/Documents/GitHub" autocomplete="off" required>
-          <button type="submit">Add</button>
-        </div>
-      </form>
-      <div id="roots-list" class="roots-list"></div>
-      <p class="hint">Only the chosen folder and its direct children are scanned. Removing a root never deletes files.</p>
-    </section>
-
     <div id="notice" role="status" aria-live="polite" hidden></div>
 
     <div class="status-strip" aria-label="GitHub Actions and runners">

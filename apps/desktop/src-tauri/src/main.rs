@@ -28,6 +28,12 @@ struct OperationLock(Mutex<()>);
 #[derive(Debug, Serialize, Deserialize)]
 struct Config {
     roots: Vec<String>,
+    #[serde(default = "default_language")]
+    language: String,
+}
+
+fn default_language() -> String {
+    "en".into()
 }
 
 #[derive(Serialize)]
@@ -46,6 +52,7 @@ struct RepoSummary {
 #[derive(Serialize)]
 struct Snapshot {
     roots: Vec<String>,
+    language: String,
     repositories: Vec<RepoSummary>,
     errors: Vec<String>,
     ci_running: Option<u32>,
@@ -103,7 +110,7 @@ fn config_path(app: &AppHandle) -> Result<PathBuf, String> {
 fn read_config(app: &AppHandle) -> Result<Config, String> {
     let path = config_path(app)?;
     if !path.exists() {
-        return Ok(Config { roots: Vec::new() });
+        return Ok(Config { roots: Vec::new(), language: default_language() });
     }
     let content = fs::read(&path).map_err(|err| format!("Cannot read config: {err}"))?;
     serde_json::from_slice::<Config>(&content)
@@ -161,6 +168,7 @@ fn scan(app: &AppHandle) -> Result<Snapshot, String> {
     summaries.sort_by(|a, b| a.name.cmp(&b.name).then(a.path.cmp(&b.path)));
     Ok(Snapshot {
         roots: config.roots,
+        language: config.language,
         repositories: summaries,
         errors,
         ci_running: None,
@@ -284,6 +292,7 @@ fn add_root(app: AppHandle, root: String) -> Result<Vec<String>, String> {
         config.roots.push(text);
         config.roots.sort();
         write_config(&app, &config)?;
+        let _ = app.emit("repoticker-config-changed", ());
     }
     Ok(config.roots)
 }
@@ -296,6 +305,7 @@ fn remove_root(app: AppHandle, root: String) -> Result<Vec<String>, String> {
     }
     config.roots.retain(|value| value != &root);
     write_config(&app, &config)?;
+    let _ = app.emit("repoticker-config-changed", ());
     Ok(config.roots)
 }
 
@@ -315,7 +325,7 @@ async fn perform_git_action(
 #[tauri::command]
 fn set_card_view(app: AppHandle, view: String) -> Result<(), String> {
     let height = match view.as_str() {
-        "compact" => 130.0,
+        "compact" => 122.0,
         "repos" => 510.0,
         "settings" => 318.0,
         _ => return Err("Unknown card view".into()),
@@ -385,8 +395,27 @@ fn show_compact_card(app: &AppHandle) {
 }
 
 fn show_settings(app: &AppHandle) {
-    show_compact_card(app);
-    let _ = app.emit("repoticker-open-settings", ());
+    if let Some(window) = app.get_webview_window("settings") {
+        let _ = window.show();
+        let _ = window.set_focus();
+    }
+}
+
+#[tauri::command]
+fn open_settings(app: AppHandle) {
+    show_settings(&app);
+}
+
+#[tauri::command]
+fn set_language(app: AppHandle, language: String) -> Result<(), String> {
+    if language != "en" && language != "ru" {
+        return Err("Unsupported language".into());
+    }
+    let mut config = read_config(&app)?;
+    config.language = language;
+    write_config(&app, &config)?;
+    let _ = app.emit("repoticker-config-changed", ());
+    Ok(())
 }
 
 fn toggle_card(app: &AppHandle) {
@@ -481,6 +510,10 @@ fn main() {
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
+                if window.label() == "settings" {
+                    let _ = window.hide();
+                    return;
+                }
                 #[cfg(target_os = "linux")]
                 if linux_surface::enabled() {
                     let _ = linux_surface::hide(window.app_handle());
@@ -496,6 +529,8 @@ fn main() {
             get_snapshot,
             add_root,
             remove_root,
+            open_settings,
+            set_language,
             perform_git_action,
             set_card_view,
             hide_card

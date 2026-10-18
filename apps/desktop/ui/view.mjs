@@ -1,6 +1,6 @@
 // RepoTicker keeps only one drawer/page open; opening from tray resets to compact.
 export const CARD_HEIGHT = Object.freeze({
-  compact: 130,
+  compact: 122,
   repos: 510,
   settings: 318
 });

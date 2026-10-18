@@ -1,0 +1,12 @@
+:root{font:14px system-ui,"Segoe UI",sans-serif;color-scheme:light dark}*{box-sizing:border-box}
+body{margin:0;background:Canvas;color:CanvasText}main{max-width:750px;margin:auto;padding:25px 28px}
+header{margin-bottom:22px}h1{font-size:24px;margin:0 0 4px;font-weight:600}h2{font-size:17px;margin:0 0 8px;font-weight:600}
+header p,section>p,.hint{color:GrayText;font-size:13px;line-height:1.5}
+section{border-top:1px solid color-mix(in srgb, CanvasText 15%, transparent);padding:18px 0}
+label{display:block;font-size:13px;margin:9px 0 6px}button,input,select{font:inherit;border:1px solid color-mix(in srgb, CanvasText 30%, Canvas);border-radius:6px;padding:8px 10px}
+input,select{color:CanvasText;background:Canvas}button{color:CanvasText;background:color-mix(in srgb, CanvasText 12%, Canvas);cursor:pointer}
+button:hover{border-color:#5b9def}.inline{display:flex;gap:8px}.inline input{flex:1;min-width:0}
+.root{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:7px 0}.root span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.future{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px}.future label:last-child{grid-column:1/-1}.future input,.future select{display:block;width:100%;margin-top:6px}
+.future input:disabled,.future select:disabled{opacity:.55}.error{color:#cd4c4c}#message{font-size:13px}
+@media(max-width:580px){main{padding:15px}.future{grid-template-columns:1fr}.future label:last-child{grid-column:auto}}

@@ -61,32 +61,6 @@ function hideRepoMenus() {
     button.setAttribute("aria-expanded", "false");
   });
 }
-function renderRoots(roots) {
-  const list = byId("roots-list");
-  list.replaceChildren();
-  if (!roots.length) {
-    addText(list, "p", "No folders enrolled.", "hint");
-    return;
-  }
-  for (const root of roots) {
-    const row = document.createElement("div");
-    row.className = "root-row";
-    addText(row, "span", root);
-    const remove = addText(row, "button", "×");
-    remove.type = "button";
-    remove.title = "Stop tracking this folder; files are not deleted";
-    remove.setAttribute("aria-label", "Remove " + root);
-    remove.addEventListener("click", async () => {
-      try {
-        await invoke("remove_root", { root });
-        await refresh();
-      } catch (error) {
-        showError(error);
-      }
-    });
-    list.append(row);
-  }
-}
 function makeRepoRow(repo) {
   const row = document.createElement("div");
   row.className = "repo-row";
@@ -177,7 +151,6 @@ function render(next) {
     ? "Running —" : "Running " + next.ci_running;
   byId("ci-queued").textContent = next.ci_queued == null
     ? "Queued —" : "Queued " + next.ci_queued;
-  renderRoots(next.roots || []);
   const list = byId("repo-list");
   list.replaceChildren();
   if (!next.repositories.length) {
@@ -228,7 +201,6 @@ function resetView() {
   view = "compact";
   byId("card").dataset.view = "compact";
   byId("repo-drawer").hidden = true;
-  byId("roots-editor").hidden = true;
   byId("show-repos").setAttribute("aria-pressed", "false");
   byId("show-repos").title = "Show repositories";
   hideRepoMenus();
@@ -241,7 +213,6 @@ async function openView(target) {
     view = desired;
     byId("card").dataset.view = view;
     byId("repo-drawer").hidden = view !== "repos";
-    byId("roots-editor").hidden = view !== "settings";
     byId("show-repos").setAttribute("aria-pressed", String(view === "repos"));
     byId("show-repos").title = view === "repos" ? "Hide repositories" : "Show repositories";
     if (view !== "repos") hideRepoMenus();
@@ -253,15 +224,6 @@ byId("show-repos").addEventListener("click", () => openView("repos"));
 byId("hide-card").addEventListener("click", async () => {
   try { await invoke("hide_card"); resetView(); }
   catch (error) { showError(error); }
-});
-byId("add-root-form").addEventListener("submit", async event => {
-  event.preventDefault();
-  try {
-    await invoke("add_root", { root: byId("root-path").value });
-    byId("root-path").value = "";
-    clearError();
-    await refresh();
-  } catch (error) { showError(error); }
 });
 byId("fetch-all").addEventListener("click", () => runGitAction("fetch"));
 byId("sync-all").addEventListener("click", () => runGitAction("safe_pull"));
@@ -305,7 +267,7 @@ window.__TAURI__?.event?.listen?.("repoticker-reset-view", () => {
   clearError();
   refresh();
 });
-window.__TAURI__?.event?.listen?.("repoticker-open-settings", () => openView("settings"));
+window.__TAURI__?.event?.listen?.("repoticker-config-changed", refresh);
 window.__TAURI__?.event?.listen?.("repoticker-git-action-finished", async event => {
   if (event.payload?.Ok) consumeResults(event.payload.Ok);
   else if (event.payload?.Err) showError(event.payload.Err);

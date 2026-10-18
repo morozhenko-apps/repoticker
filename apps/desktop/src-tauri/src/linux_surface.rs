@@ -11,6 +11,7 @@ use tauri::{App, AppHandle, Manager};
 
 thread_local! {
     static CARD: RefCell<Option<gtk::ApplicationWindow>> = const { RefCell::new(None) };
+    static CONTENT: RefCell<Option<gtk::Box>> = const { RefCell::new(None) };
 }
 
 static ENABLED: AtomicBool = AtomicBool::new(false);
@@ -44,7 +45,8 @@ pub fn install(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
     layer.set_decorated(false);
     layer.set_resizable(false);
     layer.set_app_paintable(true);
-    layer.set_default_size(390, 130);
+    layer.set_default_size(390, 122);
+    vbox.set_size_request(390, 122);
     layer.add(&vbox);
 
     layer.init_layer_shell();
@@ -59,6 +61,7 @@ pub fn install(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
     layer.set_keyboard_mode(KeyboardMode::OnDemand);
     // Never present at initialization: the tray controls popup visibility.
     CARD.with(|cell| *cell.borrow_mut() = Some(layer));
+    CONTENT.with(|cell| *cell.borrow_mut() = Some(vbox));
     ENABLED.store(true, Ordering::Release);
     Ok(())
 }
@@ -85,6 +88,11 @@ pub fn resize(app: AppHandle, height: i32) -> Result<(), String> {
     // Bottom anchor belongs to the compositor; expanding to a larger height
     // always grows upward, independent of the previous client position.
     on_main(&app, move |window| {
+        CONTENT.with(|cell| {
+            if let Some(content) = cell.borrow().as_ref() {
+                content.set_size_request(390, height);
+            }
+        });
         window.set_default_size(390, height);
         window.resize(390, height);
     })

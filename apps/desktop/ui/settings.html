@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RepoTicker Settings</title><link rel="stylesheet" href="./settings.css"><script type="module" src="./settings.mjs"></script></head>
+<body><main>
+<header><h1>Settings</h1><p>Local repositories and connections</p></header>
+<section><h2>Local repositories</h2><p>Only the selected directory and its immediate subdirectories are scanned.</p>
+<form id="add-root-form"><label for="root-path">Repository folder</label>
+<div class="inline"><input id="root-path" required placeholder="~/Documents/GitHub"><button type="submit">Add folder</button></div></form>
+<div id="roots-list"></div></section>
+<section><h2>General</h2><label for="language">Language</label>
+<select id="language"><option value="en">English</option><option value="ru">Русский</option></select>
+<p class="hint">Language preference is saved; full translations will follow.</p></section>
+<section><h2>GitHub Actions and optional relay</h2><p>Upcoming: GitHub authorization, direct polling, and optional Worker/webhook connection.</p>
+<div class="future"><label>GitHub account<input disabled placeholder="Not connected"></label>
+<label>Connection mode<select disabled><option>Simple polling</option><option>Hybrid webhook relay</option></select></label>
+<label>Worker URL<input disabled placeholder="https://your-worker.example"></label></div>
+<p class="hint">No token or Worker connection is stored until this module is implemented.</p></section>
+<p id="message" role="status" aria-live="polite"></p>
+</main></body></html>

@@ -1,6 +1,7 @@
 //! Native GTK3 layer shell for a true KDE Wayland anchored tray card.
 //! Reparents the Tauri webview into a top-layer GtkApplicationWindow before
 //! it is ever presented. The normal Tauri window stays hidden.
+use gtk::gdk::{Geometry, Gravity, WindowHints};
 use gtk::prelude::*;
 use gtk_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
 use std::{
@@ -45,7 +46,9 @@ pub fn install(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
 
     let layer = gtk::ApplicationWindow::new(&application);
     layer.set_decorated(false);
-    layer.set_resizable(false);
+    // Layer Shell is not user-resizable. Keep GTK internally resizable so
+    // explicit mode changes can replace the active exact geometry bounds.
+    layer.set_resizable(true);
     layer.set_app_paintable(true);
     if let Some(screen) = gtk::prelude::WidgetExt::screen(&layer) {
         if let Some(visual) = screen.rgba_visual() {
@@ -78,7 +81,7 @@ pub fn install(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
     // Its parent viewport clips it, rather than expanding the whole layer.
     vbox.set_size_request(-1, -1);
     viewport.add(&vbox);
-    layer.set_default_size(390, 122);
+    apply_size(&layer, 122);
     layer.add(&viewport);
 
     layer.init_layer_shell();
@@ -96,10 +99,48 @@ pub fn install(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
     layer.set_exclusive_zone(-1);
     layer.set_keyboard_mode(KeyboardMode::OnDemand);
     // Never present at initialization: the tray controls popup visibility.
+    if std::env::var_os("REPOTICKER_UI_DEBUG").is_some() {
+        layer.connect_size_allocate(|window, allocation| {
+            eprintln!(
+                "RepoTicker GTK geometry: requested={} actual={}x{} margins={:?} visible={}",
+                CARD_HEIGHT.load(Ordering::Acquire),
+                allocation.width(),
+                allocation.height(),
+                MARGINS.with(|stored| *stored.borrow()),
+                VISIBLE.load(Ordering::Acquire),
+            );
+        });
+    }
     CARD.with(|cell| *cell.borrow_mut() = Some(layer));
     CONTENT.with(|cell| *cell.borrow_mut() = Some(vbox));
     ENABLED.store(true, Ordering::Release);
     Ok(())
+}
+
+/// Set *both* minimum and maximum hints. GTK's default size and widget
+/// size requests alone cannot shrink a toplevel below WebKit's requisition.
+/// The compositor ultimately owns the allocation on Wayland.
+fn apply_size(window: &gtk::ApplicationWindow, height: i32) {
+    let size = Geometry::new(
+        390,
+        height,
+        390,
+        height,
+        390,
+        height,
+        1,
+        1,
+        0.0,
+        0.0,
+        Gravity::SouthEast,
+    );
+    window.set_geometry_hints(
+        None::<&gtk::Widget>,
+        Some(&size),
+        WindowHints::MIN_SIZE | WindowHints::MAX_SIZE,
+    );
+    window.set_default_size(390, height);
+    window.resize(390, height);
 }
 
 fn on_main(
@@ -139,21 +180,29 @@ pub fn resize(app: AppHandle, height: i32) -> Result<(), String> {
                 content.set_size_request(-1, -1);
             }
         });
-        window.set_default_size(390, height);
-        window.resize(390, height);
+        apply_size(window, height);
     })
 }
 
 pub fn show(app: &AppHandle) -> Result<(), String> {
     VISIBLE.store(true, Ordering::Release);
     on_main(app, |window| {
+        MARGINS.with(|stored| {
+            let (bottom, right) = *stored.borrow();
+            window.set_anchor(Edge::Bottom, true);
+            window.set_anchor(Edge::Right, true);
+            window.set_layer_shell_margin(Edge::Bottom, bottom);
+            window.set_layer_shell_margin(Edge::Right, right);
+        });
         window.show_all();
-        eprintln!(
-            "RepoTicker layer: requested={} allocated={} margins={:?}",
-            CARD_HEIGHT.load(Ordering::Acquire),
-            window.allocated_height(),
-            MARGINS.with(|stored| *stored.borrow())
-        );
+        if std::env::var_os("REPOTICKER_UI_DEBUG").is_some() {
+            eprintln!(
+                "RepoTicker layer: requested={} allocated={} margins={:?}",
+                CARD_HEIGHT.load(Ordering::Acquire),
+                window.allocated_height(),
+                MARGINS.with(|stored| *stored.borrow())
+            );
+        }
     })
 }
 

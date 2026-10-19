@@ -1,5 +1,35 @@
 # RepoTicker release, license and signing
 
+## v0.1.0 delivery evidence (recorded 2026-10-19)
+
+Source tag: `v0.1.0` -> `21f3b61d9774b931b57a4e3c83f61b2bcf2bb0ee`.
+[Dev Preflight #39302540338](https://github.com/morozhenko-apps/repoticker/actions/runs/39302540338) and
+[main Preflight #39309058200](https://github.com/morozhenko-apps/repoticker/actions/runs/39309058200) passed for this exact SHA.
+
+The [tagged release run #39319748009](https://github.com/morozhenko-apps/repoticker/actions/runs/39319748009)
+was started; its build/sign/publication outcome must be read from GitHub Actions and
+[GitHub Releases](https://github.com/morozhenko-apps/repoticker/releases).
+Do not infer a published package or a functioning APT repository merely from a tag.
+
+Local Ubuntu KDE smoke exercised DEB install/remove, AppImage startup and persistent
+configuration. The Windows build is distinct from real Windows installation/testing.
+The GTK Layer Shell card still jitters while dragging on Wayland
+([Issue #2](https://github.com/morozhenko-apps/repoticker/issues/2)).
+
+At this snapshot the `apt-release` environment, required reviewers, tag policy,
+four GitHub secret names and two variable names were confirmed. The dedicated
+GPG certification/signing key hierarchy was present; an encrypted full-key backup
+was read from the Google Drive remote with a matching SHA-256 and decrypted for a
+readability check. The public download Worker rejected POST with HTTP 405.
+These checks do not establish that the R2 API credentials can publish or that
+end-to-end APT enrollment succeeds; the release job must prove those gates.
+
+**Release isolation:** the tag admission compares the tag commit to the current
+`main` HEAD. Do not promote unrelated `dev` commits to `main` during this run.
+Documentation cleanup commits may land on `dev` independently and be promoted
+after the release has finished.
+
+
 ## Licensing and contributions
 
 RepoTicker uses Apache License 2.0 with NOTICE. Copyright 2026 Stanislav
@@ -14,7 +44,8 @@ A dev push or manual workflow dispatch cannot publish a release.
 
 Version markers must match across Rust core, desktop and Tauri. The workspace
 Cargo.lock MUST be tracked in Git and present at the tagged main commit; the
-release admission job rejects a missing or inconsistent lockfile. On dev:
+release admission job rejects a missing or inconsistent lockfile. The v0.1.0
+candidate already meets this requirement. For a **future** version bump, on dev:
     python3 scripts/release_version.py --bump patch
     cargo generate-lockfile
     git add Cargo.lock
@@ -122,15 +153,26 @@ live and independent apt update / apt download / package install have
 been tested on Ubuntu amd64. The signature does not sign Windows .exe,
 which remains unsigned and may trigger SmartScreen warnings.
 
-## Remaining gates
+## Release acceptance checklist
 
-1. Generate, test and commit Cargo.lock; the release admission now refuses
-   to proceed unless it is present and consistent.
-2. Validate real DEB/AppImage and hosted Windows x64 NSIS builds, install,
-   uninstall and long-lived runtime behavior.
-3. Configure the protected environment, isolated signing subkey and R2
-   token; separately authorize the Worker in Cloudflare Git Integration.
-   Verify the encrypted Google Drive backup is synced.
-4. Verify public read-only download route and independent APT acquisition.
-5. Define signed metadata expiry/refresh and rollback before public rollout.
-6. Keep macOS off until Apple Developer identity and notarization exist.
+- [x] Track a consistent Cargo.lock; match version markers and tag-to-main commit.
+- [x] Pass source Preflight on dev/main for the candidate SHA.
+- [x] Run local DEB/AppImage smoke on Ubuntu KDE (not a substitute for full OS acceptance).
+- [x] Configure a protected apt-release environment and the required signer/R2
+  secret **names** and variables; verify remote encrypted signing-key backup is readable.
+- [x] Confirm the read-only download Worker denies HTTP POST.
+- [ ] Verify the exact tagged Linux DEB/AppImage and Windows NSIS build jobs succeed
+  and that their binaries/checksums are the expected artifacts.
+- [ ] Approve the protected deployment, verify isolated signing subkey import,
+  R2 credentials, signed metadata, public HTTP readback and GitHub Release creation.
+- [ ] Independently test APT repository enrollment, signed apt update, package
+  download, clean install, upgrade and removal on a supported Ubuntu amd64 host.
+- [ ] Define and test APT metadata refresh/expiry and rollback policy. The present
+  Release metadata deliberately omits Valid-Until until a refresh job exists.
+- [ ] Complete Windows real-device installer/tray/runtime acceptance and Linux
+  multimonitor/drag stability (tracked separately in Issue #2).
+- [ ] Keep macOS disabled until Apple Developer signing/notarization and OS
+  acceptance are available.
+
+Release status is evidence-driven: do not mark pending tasks complete simply
+because a workflow is configured or credentials exist.

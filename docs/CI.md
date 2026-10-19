@@ -31,7 +31,7 @@ Pipeline:
 4. Upload immutable release objects and APT by-hash indexes to scoped R2; independently read back the public download Worker URLs. Update mutable indexes and publish signed `InRelease` last.
 5. Publish GitHub Release only after the signed R2/APT operation and public-key artifact succeeded.
 
-macOS is intentionally skipped. A passing build is not equivalent to signed package distribution. [Release workflow](https://github.com/morozhenko-apps/repoticker/actions/workflows/desktop-release-candidates.yml) is the source of current run status.
+macOS is intentionally skipped. **Release evidence:** [workflow #39319748009](https://github.com/morozhenko-apps/repoticker/actions/runs/39319748009) completed on attempt 3 with successful validate, Linux, Windows, publish and github-release jobs. The first attempt failed at GPG passphrase validation; the second signed successfully but the public readback was blocked by Cloudflare Browser Integrity Check. After a narrowly scoped BIC skip for the download hostname/path, attempt 3 passed and [v0.1.0](https://github.com/morozhenko-apps/repoticker/releases/tag/v0.1.0) became public. Runtime installation and future APT maintenance remain separate acceptance gates.
 
 ## Branch/release isolation
 
@@ -41,7 +41,7 @@ Recommended repository rulesets remain subject to account settings verification;
 
 ## Remaining assurance work
 
-- Verify tagged artifact jobs and signing/public readback by exact run, then perform installed APT and Windows runtime acceptance.
+- Independently verify signed APT enrollment, package installation/upgrade/removal, and physical Windows installer/runtime acceptance. Tagged build/sign/readback checks have passed on v0.1.0.
 - Test KDE multi-monitor, drag stability and supported desktop lifecycle.
 - Expand Git subprocess concurrency, hostile config/hooks and cancellation coverage.
 - Implement and contract-test GitHub API clients, token/rate-limit behavior and relay signing once those features exist.

@@ -18,11 +18,11 @@ GitHub Actions runs/jobs, self-hosted runner occupancy, quota/billing data, auth
 ## Platform and release evidence
 
 - **Linux:** local Ubuntu KDE Wayland DEB install/uninstall and AppImage startup were exercised during v0.1.0 acceptance. The popup still jitters when dragged; tracked in [Issue #2](https://github.com/morozhenko-apps/repoticker/issues/2). Other Linux desktop environments are not yet accepted.
-- **Windows:** a Windows x64 NSIS workflow exists, but a completed installer build and real Windows runtime acceptance must be verified separately.
+- **Windows:** the Windows x64 NSIS installer was built and published by the tagged release workflow. Physical installation, tray and runtime acceptance on Windows are not yet verified.
 - **macOS:** not currently shipped; notarization and signing prerequisites are outstanding.
-- **Publishing:** only a validated `vMAJOR.MINOR.PATCH` tag at the current `main` HEAD triggers the Linux/Windows release pipeline. Public GitHub Release and R2/APT publication are separate gates, not implied by a successful compile. See [release instructions](docs/RELEASE.md).
+- **Publishing:** the tagged `v0.1.0` pipeline completed successfully, uploaded signed APT metadata and release assets to R2, verified public readback and created a public GitHub Release. Independent end-user APT install/upgrade testing is still pending. See [release instructions](docs/RELEASE.md).
 
-The first tagged candidate is `v0.1.0`, source commit `21f3b61d9774b931b57a4e3c83f61b2bcf2bb0ee`. Check [GitHub Releases](https://github.com/morozhenko-apps/repoticker/releases) and [the tagged workflow](https://github.com/morozhenko-apps/repoticker/actions/workflows/desktop-release-candidates.yml) for actual distribution status.
+The first **published** release is [`v0.1.0`](https://github.com/morozhenko-apps/repoticker/releases/tag/v0.1.0), from immutable source commit `21f3b61d9774b931b57a4e3c83f61b2bcf2bb0ee`. [Tagged workflow #39319748009](https://github.com/morozhenko-apps/repoticker/actions/runs/39319748009) completed successfully on attempt 3 (2026-10-19).
 
 ## Build and test
 

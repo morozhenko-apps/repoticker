@@ -7,9 +7,12 @@ Source tag: `v0.1.0` -> `21f3b61d9774b931b57a4e3c83f61b2bcf2bb0ee`.
 [main Preflight #39309058200](https://github.com/morozhenko-apps/repoticker/actions/runs/39309058200) passed for this exact SHA.
 
 The [tagged release run #39319748009](https://github.com/morozhenko-apps/repoticker/actions/runs/39319748009)
-was started; its build/sign/publication outcome must be read from GitHub Actions and
-[GitHub Releases](https://github.com/morozhenko-apps/repoticker/releases).
-Do not infer a published package or a functioning APT repository merely from a tag.
+completed successfully on attempt 3 (2026-10-19). The Linux DEB/AppImage and
+Windows NSIS artifacts, signing-subkey import, signed APT snapshot, R2 upload,
+public byte-for-byte readback, and GitHub Release creation all passed.
+[GitHub Release v0.1.0](https://github.com/morozhenko-apps/repoticker/releases/tag/v0.1.0)
+is public and contains the platform binaries, SHA256 sidecars, and APT public keyring.
+This **does not** replace an independent end-user APT installation/upgrade test.
 
 Local Ubuntu KDE smoke exercised DEB install/remove, AppImage startup and persistent
 configuration. The Windows build is distinct from real Windows installation/testing.
@@ -21,13 +24,14 @@ four GitHub secret names and two variable names were confirmed. The dedicated
 GPG certification/signing key hierarchy was present; an encrypted full-key backup
 was read from the Google Drive remote with a matching SHA-256 and decrypted for a
 readability check. The public download Worker rejected POST with HTTP 405.
-These checks do not establish that the R2 API credentials can publish or that
-end-to-end APT enrollment succeeds; the release job must prove those gates.
+The third release attempt demonstrated that R2 credentials can publish and that
+public Worker readback succeeds. End-to-end APT enrollment and lifecycle testing
+remain outstanding.
 
-**Release isolation:** the tag admission compares the tag commit to the current
-`main` HEAD. Do not promote unrelated `dev` commits to `main` during this run.
-Documentation cleanup commits may land on `dev` independently and be promoted
-after the release has finished.
+**Release isolation:** tag admission compares the tagged SHA to the then-current
+`main` HEAD. The v0.1.0 release is now complete; documentation-only commits
+created during its execution may be fast-forwarded from `dev` into `main`.
+Future releases should not advance `main` between tagging and admission.
 
 
 ## Licensing and contributions
@@ -51,9 +55,10 @@ candidate already meets this requirement. For a **future** version bump, on dev:
     git add Cargo.lock
     python3 -m unittest discover -s tests -p 'test_release_*.py' -v
 
-After review and a successful main fast-forward, tag main and push only tag:
-    git tag v0.1.0
-    git push origin v0.1.0
+For **future** releases, after review and a successful main fast-forward,
+create a new immutable version tag and push only that tag (never reuse v0.1.0):
+    git tag vNEXT_VERSION
+    git push origin vNEXT_VERSION
 
 Workflow: .github/workflows/desktop-release-candidates.yml.
 Linux amd64 builds DEB/AppImage; Windows x64 builds unsigned NSIS.
@@ -147,12 +152,12 @@ Configure an explicit Cloudflare zone-level security rule:
   pretend to be a browser by changing User-Agent, or weaken the download
   Worker's method/path allowlist.
 
-After deployment, verify a real GET made by Python's default urllib client
-against the public pool DEB returns HTTP 200 and actual bytes. Also verify
-unrecognized paths are still 404 and POST remains 405 with a normal curl
-client. Only then rerun failed GitHub Actions jobs. This Cloudflare rule must
-stay active for future CI/public clients; document it as part of operating
-the production download route.
+After deployment, a real Python urllib GET of the public pool DEB returned
+HTTP 200 and Debian archive bytes. Retrying the failed GitHub Actions jobs
+then completed the signed R2/APT publication and GitHub Release (attempt 3).
+Keep the BIC exception active for future CI and client downloads; preserve
+the Worker's separate path/method allowlist. Independently recheck that
+unrecognized paths still return 404 and POST still returns 405.
 
 ## Public distribution
 
@@ -195,10 +200,11 @@ which remains unsigned and may trigger SmartScreen warnings.
 - [x] Configure a protected apt-release environment and the required signer/R2
   secret **names** and variables; verify remote encrypted signing-key backup is readable.
 - [x] Confirm the read-only download Worker denies HTTP POST.
-- [ ] Verify the exact tagged Linux DEB/AppImage and Windows NSIS build jobs succeed
+- [x] Verify the exact tagged Linux DEB/AppImage and Windows NSIS build jobs succeed
   and that their binaries/checksums are the expected artifacts.
-- [ ] Approve the protected deployment, verify isolated signing subkey import,
-  R2 credentials, signed metadata, public HTTP readback and GitHub Release creation.
+- [x] Approve the protected deployment, verify isolated signing subkey import,
+  R2 credentials, signed metadata, public HTTP readback and GitHub Release creation
+  ([successful workflow attempt 3](https://github.com/morozhenko-apps/repoticker/actions/runs/39319748009)).
 - [ ] Independently test APT repository enrollment, signed apt update, package
   download, clean install, upgrade and removal on a supported Ubuntu amd64 host.
 - [ ] Define and test APT metadata refresh/expiry and rollback policy. The present

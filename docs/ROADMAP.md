@@ -2,7 +2,7 @@
 
 This document separates **implemented source code**, **verified tests**, **physical acceptance** and **future development**. A checked item does not imply every operating system or public distribution channel is accepted. No delivery date is promised.
 
-Evidence snapshot: 2026-10-19, `v0.1.0` tagged at `21f3b61d9774b931b57a4e3c83f61b2bcf2bb0ee`. The tagged release workflow, not this snapshot, is authoritative for final publication.
+Evidence snapshot: 2026-10-19, `v0.1.0` published from `21f3b61d9774b931b57a4e3c83f61b2bcf2bb0ee`. [Release workflow #39319748009](https://github.com/morozhenko-apps/repoticker/actions/runs/39319748009) completed successfully on attempt 3; signed APT/R2 publication and GitHub Release succeeded. This is not independent end-user APT acceptance.
 
 ## P0 — Local Git desktop foundation
 
@@ -25,8 +25,8 @@ Evidence snapshot: 2026-10-19, `v0.1.0` tagged at `21f3b61d9774b931b57a4e3c83f61
 
 - [ ] Close the [Wayland dragging jitter regression (#2)](https://github.com/morozhenko-apps/repoticker/issues/2) without regressing anchoring or compact sizing.
 - [ ] Physically accept tray/card behavior across monitors, scaling, panel arrangements, focus, screen bounds, hide/reopen and supported desktop environments.
-- [ ] Confirm the tagged Linux **and** Windows artifact build jobs and actual installers; Windows runtime testing remains separate.
-- [ ] Confirm protected signing job, R2 upload/readback and resulting public GitHub Release.
+- [x] Confirm tagged Linux DEB/AppImage and Windows NSIS build jobs, canonical artifacts and checksums; physical Windows runtime testing remains outstanding.
+- [x] Confirm protected signing job, R2 upload/public readback and [public GitHub Release v0.1.0](https://github.com/morozhenko-apps/repoticker/releases/tag/v0.1.0).
 - [ ] Independently test signed APT enrollment, `apt update`, download, clean install, upgrade and uninstall on supported Ubuntu amd64.
 - [ ] Define APT index refresh/expiry and rollback strategy; verify Cloudflare release assets and keyring are reachable before advertising installation instructions.
 - [ ] Verify autostart, lifecycle and uninstall semantics across supported platforms.

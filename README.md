@@ -1,44 +1,51 @@
 # RepoTicker
 
-**Lightweight, open-source Git and CI companion for the system tray.**
+**An open-source local Git companion for the system tray, with GitHub CI monitoring on the roadmap.**
 
-RepoTicker is a planned cross-platform desktop utility for keeping local Git repositories and GitHub Actions in sight, without a full dashboard.
+RepoTicker is a lightweight Tauri 2 + Rust desktop app for developers managing multiple Git checkouts. It is local-first: no proprietary account or central service is required for the features available today.
 
-**Status:** local Git Provider prototype is implemented: explicit root enrollment, shallow discovery, local status, fetch and manual safe fast-forward pull. GitHub Actions monitoring, relay delivery, automatic background sync and released packages are **not implemented**. Windows/macOS and physical KDE Wayland UI acceptance are pending.
+## Implemented in v0.1.0 source
 
-## Scope
+- Compact tray card with Fetch, Safe pull, Repos and Hide; independent Settings and About windows. On Linux the tray uses StatusNotifierItem (SNI), and KDE Wayland uses GTK Layer Shell for the anchored popup.
+- Explicit enrollment of local directories, shallow discovery of their direct-child Git repositories, and per-repository inspection of branch, upstream, ahead/behind and dirty state.
+- Manual Fetch of enrolled repositories, with up to four independent fetches in parallel, failure isolation and progress events. Fetch updates remote-tracking refs, not checked-out files.
+- Manual Safe pull, operating **only on previously fetched refs**. Eligible clean upstream-tracking branches are advanced using Git fast-forward only; dirty, detached, ahead/diverged, unfinished or no-upstream branches are skipped. No automatic stash, rebase, reset or force operation.
+- Persistent local settings, including enrolled roots, selected language preference and Linux popup anchor. Choosing a language does not yet translate the full interface.
+- Desktop icon assets, package configurations and signed-APT release automation.
 
-- Compact tray card, dense expandable repository list, totals in the bottom footer, context menu.
-- Git fetch and explicit safe fast-forward-only pull after checking local state.
-- GitHub Actions run/job status, self-hosted runner occupancy and optional usage information.
-- Open the exact GitHub workflow run in a browser; no in-app log viewer.
-- Two modes: **Simple** (polling, default) and **Hybrid** (opt-in self-hosted webhook relay + reconciliation polling).
-- Linux, Windows and macOS are targets, not verified release claims. No paid features or central RepoTicker service. Linux uses a dedicated StatusNotifierItem (`ksni`) implementation for tray primary-click and context menu; Windows/macOS retain Tauri's native tray. Actual KDE Wayland tray and card-positioning acceptance still requires physical verification.
+GitHub Actions runs/jobs, self-hosted runner occupancy, quota/billing data, authenticated polling, notifications and webhook relays **are not connected**. Their UI indicators remain unavailable rather than showing invented values. Automatic background fetch/pull is not implemented.
 
-## Repository layout
+## Platform and release evidence
 
-- `crates/repoticker-core`: dependency-free Git decision engine and native Git process adapter, with temporary bare-remote integration tests.
-- `apps/desktop`: Tauri 2 shell and dependency-free web card.
-- `apps/relay-cloudflare`: deployment placeholder for a user-managed Worker.
-- `apps/relay-selfhost`: future generic Docker/VPS relay.
-- `docs`: product and security contracts, implementation roadmap, CI, test strategy.
+- **Linux:** local Ubuntu KDE Wayland DEB install/uninstall and AppImage startup were exercised during v0.1.0 acceptance. The popup still jitters when dragged; tracked in [Issue #2](https://github.com/morozhenko-apps/repoticker/issues/2). Other Linux desktop environments are not yet accepted.
+- **Windows:** a Windows x64 NSIS workflow exists, but a completed installer build and real Windows runtime acceptance must be verified separately.
+- **macOS:** not currently shipped; notarization and signing prerequisites are outstanding.
+- **Publishing:** only a validated `vMAJOR.MINOR.PATCH` tag at the current `main` HEAD triggers the Linux/Windows release pipeline. Public GitHub Release and R2/APT publication are separate gates, not implied by a successful compile. See [release instructions](docs/RELEASE.md).
+
+The first tagged candidate is `v0.1.0`, source commit `21f3b61d9774b931b57a4e3c83f61b2bcf2bb0ee`. Check [GitHub Releases](https://github.com/morozhenko-apps/repoticker/releases) and [the tagged workflow](https://github.com/morozhenko-apps/repoticker/actions/workflows/desktop-release-candidates.yml) for actual distribution status.
 
 ## Build and test
 
-Install a recent Rust toolchain; building the Tauri shell also needs the [Tauri 2 platform prerequisites](https://v2.tauri.app/start/prerequisites/).
+Install Rust, Node.js 24, Git and the Tauri 2 native dependencies for your OS. On Ubuntu Linux the Tauri/WebKit development packages and `libgtk-layer-shell-dev` are required.
 
-```sh
+~~~sh
 cargo fmt --all --check
 cargo test -p repoticker-core
 cargo clippy -p repoticker-core --all-targets -- -D warnings
 node --test tests/*.test.mjs
+python3 -m unittest discover -s tests -p 'test_release_*.py' -v
+cargo check -p repoticker-desktop
 cargo run -p repoticker-desktop
-```
+~~~
 
-`cargo run` is for desktop development; it does **not** install autostart, packages, webhook infrastructure, or background services. On Linux KDE, left-click the StatusNotifierItem tray icon to toggle the compact card; use the right-click menu for **Settings**, **Open card**, **Fetch all**, **Safe pull all** and **Quit**. Register a directory such as `~/Documents/GitHub` in Settings. The compact card has **Fetch**, **Safe pull**, **Repos** and **Hide** actions; successful Git operations are silent. Safe pull displays the eligible behind-commit count once local remote refs have been fetched. The repo list has a green current-state checkmark; there are no per-repo success logs. GitHub/runner/quota metrics remain unknown until integration is implemented, not zero. Sync is **manual only**.
+The signed-APT integration test requires `apt-utils`, `dpkg-dev`, `gnupg` and `gpgv`. CI installs those tools. `cargo run` does not install an OS package or register autostart.
 
-See [Git Provider behavior and limitations](docs/GIT_PROVIDER.md), [product](docs/PRODUCT.md), [architecture](docs/ARCHITECTURE.md), [roadmap](docs/ROADMAP.md), [CI](docs/CI.md), [security](docs/SECURITY.md), [relay](docs/RELAY.md) and [tests](docs/TEST_STRATEGY.md).
+On KDE, left-click the SNI tray icon to toggle the card; right-click for Open, Settings, Fetch all, Safe pull all, About or Quit. Enroll a directory such as `~/Documents/GitHub` in Settings and run Fetch before Safe pull.
 
-## Contributing / license
+## Documentation
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). Apache 2.0, see [LICENSE](LICENSE) and [NOTICE](NOTICE). You can file bugs via [GitHub Issues](https://github.com/morozhenko-apps/repoticker/issues); forks are welcome, upstream does not accept code PRs.
+- [Product contract](docs/PRODUCT.md) and [architecture](docs/ARCHITECTURE.md)
+- [Current Git behavior](docs/GIT_PROVIDER.md), [roadmap](docs/ROADMAP.md) and [test strategy](docs/TEST_STRATEGY.md)
+- [CI](docs/CI.md), [releases/APT signing](docs/RELEASE.md), [security](docs/SECURITY.md) and [planned webhook relay](docs/RELAY.md)
+
+Apache License 2.0; see [LICENSE](LICENSE), [NOTICE](NOTICE) and [CONTRIBUTING.md](CONTRIBUTING.md). Bug reports: [GitHub Issues](https://github.com/morozhenko-apps/repoticker/issues).

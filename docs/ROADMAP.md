@@ -1,63 +1,67 @@
-# Roadmap and evidence
+# Roadmap and delivery evidence
 
-This is a planning backlog, not a progress claim. Dates indicate when decisions were recorded, not promised delivery.
+This document separates **implemented source code**, **verified tests**, **physical acceptance** and **future development**. A checked item does not imply every operating system or public distribution channel is accepted. No delivery date is promised.
 
-## P0: Baseline shell and invariants
+Evidence snapshot: 2026-10-19, `v0.1.0` tagged at `21f3b61d9774b931b57a4e3c83f61b2bcf2bb0ee`. The tagged release workflow, not this snapshot, is authoritative for final publication.
 
-- [x] Initialize public RepoTicker repository and MIT license.
-- [x] Document product, security and two delivery modes.
-- [x] Add a pure Git fast-forward eligibility classifier with unit tests.
-- [x] Add Tauri tray/card prototype showing **empty** real state, no mock API activity.
-- [x] Add CI configuration adapted from rQuickShare.
-- [ ] Confirm exact SHA GitHub Preflight success; fix any red checks.
-- [x] Create compact/card-list/settings view states, one-line regular-weight repository rows, hover quota help, four bottom actions, no duplicate header and no redundant success output.
-- [x] Add Linux StatusNotifierItem primary-click tray adapter and testable bottom-edge resize attempt.
-- [ ] Physically verify primary click, right-click menu and bottom-edge resizing on KDE Wayland; replace the toplevel placement strategy if KWin refuses it.
-- [x] Implement Linux StatusNotifierItem activation/menu independently of Tauri's Linux tray-click limitation.
-- [ ] Physically anchor the Wayland card to the tray and verify fixed bottom edge with a native surface if necessary.
-- [ ] Physically verify tray/menu/card on KDE Wayland.
-- [ ] Validate Windows and macOS desktop-shell builds and interactions.
+## P0 — Local Git desktop foundation
 
-## P1: Local Git provider
+### Implemented
 
-- [x] Explicit root enrollment and removal from local app config.
-- [ ] Configurable path ignores beyond the built-in exclusions.
-- [x] Shallow direct-child discovery of valid checkouts; skip symlinks, hidden snapshots, and linked-worktree administrative trees.
-- [ ] Worktree/submodule explicit enrollment acceptance on all target platforms; richer discovery rules.
-- [x] Manual fetch-all using existing Git configuration, with per-repository error isolation.
-- [ ] Network timeouts, cancellation, concurrent external Git-process race acceptance.
-- [x] Manual native ff-only pull for eligible clean upstream-tracking active branches, no stash/rebase/force.
-- [x] End-of-operation results and per-repository errors inside the card.
-- [ ] Live progress/cancellation and OS-native notifications.
-- [x] Reproducible local integration tests with temporary bare remotes.
-- [ ] Verify passing CI for the latest Git Provider commit and physical KDE Wayland behavior.
+- [x] Tauri 2 desktop shell, Apache-2.0 licensing, icons, About window and Linux SNI tray integration.
+- [x] Compact card, repository drawer, four actions, error-only notices, settings window, saved root enrollment and language preference.
+- [x] KDE Wayland GTK Layer Shell popup, compositor bottom/right anchor, persisted position and transparent rounded corners.
+- [x] Hide after 15 seconds of inactivity while compact; do not idle-hide an open repository drawer.
+- [x] Explicit Git root enrollment; shallow discovery; branch/upstream/ahead/behind/dirty inspection.
+- [x] Manual parallel Fetch (bounded to four distinct repositories) and sequential offline ff-only Safe pull against fetched refs.
+- [x] Real completed-repository progress events, per-row in-flight overlay and nonpersistent error reporting.
+- [x] Committed `Cargo.lock`, release version consistency checks, Rust/JS/Python integration tests and Linux desktop compile smoke.
+- [x] Preflight passed for exact `v0.1.0` source SHA on `dev` and `main`. [Main run #39309058200](https://github.com/morozhenko-apps/repoticker/actions/runs/39309058200).
+- [x] Ubuntu KDE local smoke of DEB installation/removal, AppImage startup and persistence of per-user settings.
+- [x] Dedicated read-only Cloudflare R2 download Worker and tagged Linux/Windows packaging + signed APT publishing workflow defined.
+- [x] Isolated GPG signing subkey and protected `apt-release` environment configured; encrypted private-key backup checked against Google Drive and decrypted locally.
 
-## P2: GitHub REST polling
+### Not yet accepted or unfinished
 
-- [ ] Least-privilege GitHub authentication using OS-native secret storage.
-- [ ] Runs/jobs status and direct browser links.
-- [ ] Self-hosted runner online/busy when permitted, unknown otherwise.
-- [ ] Rate-limit-aware adaptive polling, cache stale markers, startup/reconnect reconciliation.
-- [ ] Optional usage/quota popover, explicit unknown/estimated billing data.
-- [ ] OS notifications only on meaningful state transitions.
+- [ ] Close the [Wayland dragging jitter regression (#2)](https://github.com/morozhenko-apps/repoticker/issues/2) without regressing anchoring or compact sizing.
+- [ ] Physically accept tray/card behavior across monitors, scaling, panel arrangements, focus, screen bounds, hide/reopen and supported desktop environments.
+- [ ] Confirm the tagged Linux **and** Windows artifact build jobs and actual installers; Windows runtime testing remains separate.
+- [ ] Confirm protected signing job, R2 upload/readback and resulting public GitHub Release.
+- [ ] Independently test signed APT enrollment, `apt update`, download, clean install, upgrade and uninstall on supported Ubuntu amd64.
+- [ ] Define APT index refresh/expiry and rollback strategy; verify Cloudflare release assets and keyring are reachable before advertising installation instructions.
+- [ ] Verify autostart, lifecycle and uninstall semantics across supported platforms.
 
-## P3: Hybrid mode
+## P1 — Git provider hardening and Linux usability
 
-- [ ] Versioned relay envelope, signing, tenant isolation, resume protocol.
-- [ ] Cloudflare Worker + Durable Object self-deployment instructions and tests.
-- [ ] Generic Docker/VPS implementation and interoperability tests.
-- [ ] WebSocket auth/reconnect and authoritative polling fallback.
-- [ ] Abuse/rate-limit and failure injection acceptance.
+- [ ] Replace drag feedback/coordinate loop on KDE Wayland with smooth stable motion; add focused regression coverage.
+- [ ] Cancel/timeout long-running Git processes and SSH prompts without unsafe state changes.
+- [ ] Strengthen concurrent external Git client interference, staged changes, linked worktrees, multiple remotes, submodules, hooks and adversarial configuration coverage.
+- [ ] Configurable ignore paths beyond built-in exclusions; better discovery semantics without unexpected recursive scans.
+- [ ] Atomic configuration writes and migration/recovery coverage.
+- [ ] Full English/Russian interface translation, not only preference persistence.
 
-## P4: Distribution
+## P2 — GitHub REST monitoring (not implemented)
 
-- [ ] Native packages/installers with verified tray/autostart/uninstall semantics.
-- [ ] Cross-platform release matrix and reproducible signed artifacts.
-- [ ] GitHub releases, supply-chain review and public documentation.
+- [ ] Least-privilege GitHub authorization stored through OS-native secret storage.
+- [ ] Runs and jobs API client, status projection and safe direct links to GitHub Actions.
+- [ ] Self-hosted runner online/offline and busy/idle where API permissions permit; distinguish unknown from zero.
+- [ ] Adaptive conditional polling, handling 401/403/404/429 and secondary rate limits, bounded cache and stale indicators.
+- [ ] Startup/resume reconciliation and user-controlled filtering/notifications on meaningful CI transitions.
+- [ ] Optional trustworthy usage/quota data, never fabricate GitHub-hosted pool capacity or billing numbers.
 
-No progress checkbox should be checked solely because a file or workflow exists; P0 code/CI checkboxes mean scaffolding was committed, not that runtime acceptance passed.
+## P3 — Optional automation and Hybrid relay (not implemented)
 
-- [x] Add GTK3 Layer Shell popup with bottom/right compositor anchors, top layer, and no taskbar entry for KDE Wayland; generic frameless fallback for unsupported compositors.
-- [x] Add real completed-repository progress events, indeterminate per-repository translucent overlays, button percentage/pulse, 15-second idle hide and silent successful fetch.
-- [ ] Physically accept Layer Shell Wayland positioning, resizing, tray left-click, taskbar hiding, and idle dismissal on Alcotester.
-- [ ] Reproducible release packaging: check in Cargo.lock after the Linux native dependencies are stabilized.
+- [ ] Explicit opt-in background Git synchronization with existing ff-only safety boundaries and a documented schedule.
+- [ ] Versioned authenticated relay protocol, signed webhook ingestion, replay/deduplication and tenant isolation.
+- [ ] Self-deployed Cloudflare Worker + Durable Object transport and interoperable Docker/VPS implementation.
+- [ ] Authenticated WebSocket, reconnection cursor and authoritative REST polling fallback.
+- [ ] Chaos/failure-injection and security acceptance tests before enabling Hybrid mode.
+
+The **release download Worker** (`infra/download-worker`) is an existing distribution component. It is **not** the planned GitHub webhook relay (`apps/relay-*`).
+
+## P4 — Cross-platform polish and ongoing maintenance
+
+- [ ] Real Windows package/install/uninstall/tray/settings acceptance; code signing when available.
+- [ ] macOS support only after Apple signing/notarization and physical acceptance.
+- [ ] Native notifications, autostart, accessibility and high-DPI/multi-monitor testing.
+- [ ] Keep implementation, evidence, feature support and release documentation synchronized; maintain separate documentation-only commits.

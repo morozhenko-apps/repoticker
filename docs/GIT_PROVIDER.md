@@ -1,52 +1,53 @@
-# Local Git Provider (manual prototype)
+# Local Git provider — implemented manual mode
 
-Implemented in `crates/repoticker-core/src/git.rs` and exposed by Tauri IPC in `apps/desktop/src-tauri/src/main.rs`. The user must explicitly enroll a root folder in RepoTicker Settings before it scans the disk. No global Git database is assumed: Git knows the status of a specific repository, but it does not offer a universal list of every checkout on disk.
+Source: `crates/repoticker-core/src/git.rs` and Tauri IPC in `apps/desktop/src-tauri/src/main.rs`. The user explicitly enrolls roots through the independent Settings window; Apply persists the transaction, Cancel does not alter saved settings.
 
 ## Enrollment and discovery
 
-Enter an **absolute path** or `~/...` into the tray card Settings. The app persists a list of canonical roots in the OS application configuration directory. Removing a root changes RepoTicker's settings only; no user file or repository is deleted.
+A root may be a valid Git checkout itself or a parent whose **immediate child directories** contain valid checkouts. Paths are normalized and validated before use; a hidden directory, symlink, invalid `.git` marker, snapshot/build container or administrative worktree tree is not silently enrolled. A valid linked worktree with a `.git` file may be enrolled explicitly as a root. Deep arbitrary recursion, global Git index and deleting repositories are not supported.
 
-Each root is inspected as an explicit repository first. If it is not one, RepoTicker checks its **immediate child folders**, not an entire recursive tree. A discovered child must have a real `.git` directory and pass a `git rev-parse --show-toplevel` equality check. It ignores symlinks, hidden directories, `.worktrees` containers and known build/snapshot folders. Invalid or broken worktrees do not abort scanning of the other repositories. A valid linked worktree with a `.git` file may be enrolled **explicitly** as its own root.
+Removing a registered root removes only its config entry, not its checkout. Identically named repositories are distinguished by canonical path.
 
-This intentionally does not discover arbitrarily nested projects or clones located under `.local`. Add deeper roots explicitly if needed. Name collisions are allowed; the unique identifier is the canonical path.
+## Snapshot and UI
 
-## Data displayed
+Installed Git supplies current branch/detached status, upstream, ahead/behind, dirty tracked/untracked working tree and unfinished Git operation status. Ahead/behind is measured against **last fetched remote-tracking refs**, which can be stale until Fetch. Empty, disconnected or unavailable GitHub CI/runners/quota measurements are shown as unknown, not zero.
 
-From installed Git: active branch (or detached state), upstream, ahead/behind counts, tracked/untracked status, and unfinished merge/cherry-pick/rebase/sequencer indicators. The card summary counts commits behind across registered checked-out branches. The displayed behind counts are relative to the **last fetched remote refs** and may be stale until Fetch or Safe pull is run.
+The repository drawer shows individual operations and in-flight progress. A successful action is deliberately silent in the final compact card; individual errors remain visible.
 
-GitHub Actions run status, runner availability and quotas are **not yet connected**. They remain unavailable in the UI, not zero.
+## Manual Fetch
 
-## Operations
+- Command semantics: `git fetch --all --prune --quiet` for an eligible enrolled checkout, through an argv-based process invocation rather than a shell.
+- Changes remote-tracking references only, not the checked-out branch, local commits or worktree files.
+- Up to four **different** repos can fetch concurrently; per-repo results and failures are isolated.
+- Overall percentage is based on **number of completed repositories**, not transferred objects or bytes.
+- Git may use existing local SSH/HTTPS credentials, credential helpers, Git configuration and user hooks.
 
-**Fetch** runs `git fetch --all --prune --quiet` for selected enrolled checkouts. It updates remote tracking refs only; working files and local branch refs stay put. A repo failure is recorded without preventing other enrolled repositories from being processed.
+## Manual Safe pull
 
-**Safe pull** fetches, reads local state, and invokes `git merge --ff-only --quiet @{upstream}` only when an active upstream-tracking branch is clean, not ahead/divergent and not in an unfinished operation. It does not stash, rebase, create merge commits, force-update branches or reset. Dirty, detached, ahead-only, diverged or no-upstream repositories are skipped.
+Safe pull deliberately **does not fetch**. It reads the already-fetched upstream ref, checks eligibility, and executes a sequential `git merge --ff-only --quiet @{upstream}` only for branches that are:
+- checked out, tracking a valid upstream and genuinely behind;
+- not locally ahead or diverged;
+- clean of tracked **and untracked** changes;
+- free of unfinished merge/rebase/cherry-pick or similar operations.
 
-All actions are currently **manual**, accessible from the card toolbar, each repo `…` menu or the tray menu. There is no background synchronization schedule, watchdog, webhook-triggered pull or auto pull at application launch.
+Eligibility is re-inspected inside the actual operation to reduce TOCTOU risks. Git itself remains final authority. Dirty, detached, no-upstream, ahead-only, diverged or unfinished repositories are skipped, not auto-repaired. There is **no** stash, automatic merge commit, rebase, forced update, reset, checkout switch or deletion.
 
-## Risks / limitations before a stable release
+A repository may change upstream after the last Fetch. Run Fetch to refresh remote refs before Safe pull when current upstream state is needed; clicking Safe pull alone performs no network request.
 
-- Git operations can use already-configured SSH/HTTPS credentials and local Git hooks. RepoTicker never runs a shell command constructed from repository metadata, but installed Git itself can invoke existing configured helpers/hooks.
-- `GIT_TERMINAL_PROMPT=0` avoids Git terminal password prompts. There is no process timeout, cancellation or comprehensive SSH prompt policy yet; fetch can wait on slow remotes.
-- A local agent or another Git client can modify the checkout concurrently. RepoTicker serializes its own operations and rechecks conditions immediately before fast-forward, but this does not constitute an OS-wide Git lock. Git remains the final authority over merge safety.
-- Automatic discovery skips linked worktrees; explicitly enrolled valid worktrees are supported by `git --git-path` checks but need additional physical tests on each OS.
-- The current on-disk config uses simple JSON writes; a crash-safe atomic configuration replacement and migration tests are future hardening tasks.
-- The Tauri Linux tray click callback is unsupported. Use the right-click menu's **Open card** action until a platform-native tray adapter is implemented.
-- Native Git/SSL configuration and LFS behavior vary by operating system. Cross-platform packaging and authentication must be verified before claiming release support.
+## Known limitations
 
-## Tests
+- No background fetch/pull or automatic startup sync in v0.1.0; all mutation is explicitly user-triggered.
+- No Git subprocess timeouts/cancellation or comprehensive treatment of SSH prompt/hung helpers. `GIT_TERMINAL_PROMPT=0` prevents ordinary terminal Git prompts.
+- External clients can change a checkout during operations; the application lock serializes only RepoTicker operations within one process.
+- Native Git configuration, LFS, worktrees, hooks and credential helpers need broader hostile-input and cross-platform acceptance.
+- Config JSON updates do not yet use atomic replacement or schema migration.
+- Linux KDE Wayland card dragging jitters ([Issue #2](https://github.com/morozhenko-apps/repoticker/issues/2)); the native SNI tray and anchored popup have local smoke evidence but not comprehensive multi-monitor acceptance.
+- GitHub REST polling, Actions runs/jobs, runner occupancy, token storage, quotas and webhook relay are **not implemented**.
 
-`cargo test -p repoticker-core` covers policy decisions and real Git process flows. The integration fixtures create an isolated bare remote and two local checkouts, then test remote updates, fetch-only HEAD preservation, fast-forward, untracked/dirty refusal, divergence, upstream absence, shallow discovery and explicit repository enrollment.
+## Test evidence and remaining cases
 
-Additional tests are mandatory for staged tracked modifications, rebase/cherry-pick markers, concurrent head movements, symlink escapes, hooks/credential helpers, multiple remotes, timeout/cancel, and Windows/macOS path handling.
+`cargo test -p repoticker-core` runs unit tests and real Git integration fixtures using temporary bare remotes/local checkouts. Verified scenarios include fast-forward-only policy, dirty/untracked refusal, missing upstream, divergence, explicit enrollment, bounded discovery and preservation of local checkout files on Fetch.
 
-No repository deletion, reset, rebase, checkout switch or force operation is offered.
+Still required: staged tracked modifications, combined operation markers, symlink escapes, multi-remotes and submodules, concurrent refs/head changes, unusual Git hooks/credentials, long-running cancellation, Windows path behavior and real OS acceptance.
 
-## Manual Fetch versus Safe pull
-
-Fetch is the **only** operation that contacts configured remotes. Safe pull
-uses the last fetched refs and targets only branches that are actually behind
-and eligible for a fast-forward. All target branches are re-inspected before
-any merge. Running Safe pull does not trigger 32 redundant network fetches.
-When new commits are pushed upstream after your most recent Fetch, run Fetch
-again to discover them; the local snapshot cannot know about unseen changes.
+See [PRODUCT.md](PRODUCT.md), [TEST_STRATEGY.md](TEST_STRATEGY.md) and [ROADMAP.md](ROADMAP.md).

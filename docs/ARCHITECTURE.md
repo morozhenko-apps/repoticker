@@ -1,40 +1,47 @@
-# Architecture and boundaries
+# Architecture and trust boundaries
 
-## Components
+## Runtime components and status
 
-1. `repoticker-core`: pure sync decisions plus the real, shell-free, local Git process adapter (discovery, inspect, fetch, ff-only) with integration fixtures.
-2. Desktop Tauri shell: tray and compact card, with platform-independent state projection; OS-specific placement and lifecycle need physical testing.
-3. Local Git adapter: calls installed Git with explicit argument vectors and relies on existing Git credentials/LFS configuration. No Git credentials enter JS. Manual operations are callable from UI and tray.
-4. GitHub provider: future REST API actions/runners/billing clients; least-privilege auth stored in OS credential store.
-5. Event engine: future cache, deduplication, reconnect/reconciliation scheduler, notifications.
-6. Relay protocol: future independently versioned event envelope for Cloudflare and generic self-hosted implementations.
-7. Platform adapters: native StatusNotifierItem through `ksni` on Linux to receive primary-click activation and context menu; Tauri tray on Windows/macOS. Notification, keychain, autostart, stable Wayland Layer Shell anchoring and secure external-browser actions remain future work.
+| Component | v0.1.0 status | Role |
+| --- | --- | --- |
+| `repoticker-core` | Implemented and covered by Rust integration tests | Git root normalization/discovery, status, eligibility and native Git fetch/ff-only operations; bounded independent work |
+| Tauri desktop | Implemented; Linux local smoke | Tray and UI, state projection, transactional settings, action IPC and per-user config |
+| Linux SNI + GTK Layer Shell | Implemented; acceptance incomplete | Native tray left-click/context menu and anchored KDE Wayland card |
+| GitHub REST provider | Planned | Auth, Actions runs/jobs, self-hosted runners, rate limits and usage data |
+| Event/cache/notification engine | Planned | Poll scheduling, reconnect, state transitions and optional safe sync |
+| Hybrid webhook relay | Planned | User-operated Cloudflare DO or Docker/VPS relay and authenticated event delivery |
+| R2 download Worker | Implemented as separate deployment component | Read-only public distribution of installer and signed-APT objects; **not** a GitHub events relay |
 
-## Operating modes
+## Current data flow
 
-### Simple Polling (default)
+1. The user adds an absolute repository root through Settings; config is stored under the OS application config directory. On Linux the app identifier is `com.morozhenko.repoticker`; the default file is `~/.config/com.morozhenko.repoticker/config.json`.
+2. The Rust core discovers only the enrolled root and valid direct-child checkouts, asks installed Git for local/upstream information and returns a snapshot. No GitHub CI network requests are performed.
+3. A manual Fetch calls configured Git remotes without an interpolated shell command. Parallelism is bounded at four independent checkouts; one failure does not cancel others.
+4. A manual Safe pull uses **already-fetched refs** and a fresh eligibility check, then sequentially invokes native Git fast-forward only. It does not contact the network.
+5. Progress events are delivered to the UI; total completion refers to repositories completed, not Git network transfer bytes. Only errors become user-visible transient results.
 
-Desktop -> GitHub REST (authenticated by user) -> state cache -> tray UI. No inbound ports, relay, server, domain or proprietary account required. API rate limits and offline state are first-class. Prefer conditional requests and adaptive per-resource scheduling.
+Config persistence currently uses JSON writes without atomic rename/migration; crash recovery is future hardening. RepoTicker relies on the user's existing Git authentication/helpers and does not read Git secrets into its JS layer.
 
-### Hybrid (opt-in)
+## Presentation boundaries
 
-GitHub webhooks -> user's HTTPS relay -> authenticated outbound client WebSocket -> local event engine. Concurrent low-frequency polling repairs missed/out-of-order deliveries and captures billing/runner snapshots that webhooks don't provide.
+Linux uses `ksni` StatusNotifierItem because the relevant Tauri tray click callback does not satisfy the desired Linux activation semantics. On KDE Wayland, GTK Layer Shell supplies bottom/right anchors, while generic unsupported environments fall back to a frameless Tauri surface. The current Wayland drag path can visibly jitter; [Issue #2](https://github.com/morozhenko-apps/repoticker/issues/2) tracks it. No macOS UI/installer acceptance is implied by icon assets or source compatibility.
 
-Relay implementations: Cloudflare Worker + Durable Objects with authenticated per-user/per-installation channels, and provider-neutral Docker/VPS service. Compatible protocol; no Cloudflare assumptions in desktop logic. Relay is user-deployed using docs and a URL; desktop does not provision infrastructure.
+The app must display `unknown` instead of zero or success when GitHub CI/runners/quota data are not available. Direct Actions URLs may be opened only following a user action and validated according to the security contract.
 
-## Trust boundaries
+## Future operating modes
 
-- GitHub payloads (including metadata) are untrusted until verified. Validate GitHub HMAC-SHA256 using raw body, bound payload size, reject replay and wrong repository/installation.
-- Relay->client stream is separately authenticated with revocable client credentials and verified TLS. Replay by event ID/cursor; never broadcast across tenants.
-- The relay should not store GitHub API credentials. Minimize event data and retain only bounded metadata; redact secrets from logs.
-- An event must never directly invoke a pull or shell command. Fetch then re-evaluate repository state and execute native Git ff-only with failure isolation.
-- Local uncommitted tracked/untracked changes, unfinished operations and divergent branches block auto pull.
-- Distinguish stale cache, network error and permission denial. Never display estimated quotas as exact.
+**Simple:** authenticated desktop-to-GitHub REST polling with conditional requests, per-resource scheduling, bounded cache, rate-limit handling and startup/reconnect reconciliation. This is a planned connection mode, **not currently active background polling**.
 
-## Current executable boundaries
+**Hybrid (opt-in):** GitHub signed webhook -> user-controlled HTTPS relay -> authenticated WebSocket client -> event hint -> authoritative GitHub REST reconciliation. Cloudflare Worker + Durable Objects and a generic Docker/VPS relay must share a versioned, tested envelope. This feature is not implemented.
 
-The Tauri shell now loads enrolled roots from its local app config, enumerates direct child Git checkouts, displays real local state, and supports manual fetch/safe pull. Git operations are serialized within this process and launched on a blocking worker thread. Repo details and errors return to the UI; no remote authentication is implemented inside the app. There is no automatic background fetch/pull, GitHub Actions API client, Cloudflare/self-hosted relay, packaged binary, or physically accepted KDE/Windows/macOS integration. See `docs/GIT_PROVIDER.md` for current known limits.
+## Security boundaries
 
-## Packaging and portability
+- Git metadata, remote URLs, API payloads and webhook hints are untrusted. Never construct shell commands from network data or run arbitrary git mutation on webhook receipt.
+- Auto pull, if added later, must fail closed for dirty/untracked changes, unfinished operations, local ahead/divergence, missing upstream or stale authorization.
+- Webhook ingest must verify raw-body HMAC-SHA256, payload size and replay/delivery ID; relay must enforce client authentication, TLS, isolation, bounded retention and resume.
+- GitHub credentials must be least-privilege and held in native secret storage rather than JS or relay persistence.
+- Cloudflare release signing authority stays in a protected GitHub environment; only the signing subkey is exported to CI, not the local certification key.
 
-Tauri 2 is selected provisionally for a common UI; Rust for core. GTK/WebKit dependencies are platform-specific build requirements. Linux now has its own `ksni` StatusNotifierItem adapter (Activate toggles the card, ContextMenu presents actions), avoiding unsupported Tauri Linux tray click events. Card height changes attempt to compensate the Y coordinate to keep the lower edge fixed; ordinary Wayland toplevel window movement can be refused by KWin, so a proper Layer Shell-backed surface may still be required. No geometry acceptance or release platform compatibility is claimed. Other desktop environments without a compatible StatusNotifierWatcher, GNOME extensions, Windows/macOS notification and packaging behavior need separate tests. Do not mistake a cross-compiled binary for product acceptance.
+## Release and support boundaries
+
+Version consistency and a tracked `Cargo.lock` are release gates. A `v*` tag pointing at current `main` HEAD builds Linux DEB/AppImage and Windows NSIS; signed APT/R2 publication and GitHub Release happen only after successful builds, public readback and approved deployment. macOS is currently skipped. See [RELEASE.md](RELEASE.md), [PRODUCT.md](PRODUCT.md), [GIT_PROVIDER.md](GIT_PROVIDER.md), [RELAY.md](RELAY.md) and [ROADMAP.md](ROADMAP.md).

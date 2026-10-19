@@ -83,10 +83,34 @@ and tests correct, incorrect and corrupt-key cases using ephemeral keys.
 
 **Stage B — KDE Wayland drag jitter investigation (Issue #2; pending
 instrumented local reproduction).**
-Observed: GTK Layer Shell margins move the reparented WebView asynchronously
-while the WebView emits pointer events and rounded delta batches. Candidate
-causes include coordinate-frame feedback, delayed IPC completion and GTK
-reallocation; no single cause has been experimentally confirmed yet.
+**Confirmed by Alcotester trace (2026-10-19):** the WebView reported
+alternating screen-space drag deltas (e.g. (-20,+28), (+22,-28),
+(-15,+25)) while GTK kept its exact 390x122 allocation. Changing
+compositor-owned bottom/right margins feeds back into the WebView's
+screenX/screenY event frame. The current algorithm accumulates those
+alternating deltas and considers a move IPC complete as soon as it schedules
+a GTK main-thread update, not when the update actually executes.
+
+**Architectural correction (preserve GTK Layer Shell, do not bypass it):**
+1. Keep the pointer's original **clientX/clientY inside the WebView** as a
+   fixed grab anchor; each later event supplies current local coordinates.
+   Move by the current anchor error, not by summed deltas between consecutive
+   unstable screen-space events. Window-induced coordinate shifts reduce the
+   error to zero instead of creating a new absolute motion.
+2. Serialize one native move command at a time; make the IPC resolve **after**
+   the GTK main-thread margin update was applied, not merely scheduled.
+   Drop stale intermediate pointer samples instead of replaying accumulated
+   deltas, and schedule a new correction only on a fresh pointer event.
+3. Keep the existing native pointer drag for unsupported Linux compositor,
+   Windows and future macOS paths. Release/cancel/hide must not persist
+   before an in-flight native update has completed.
+4. Regression-test the error correction, pointer lifecycle and single-flight
+   behavior with deterministic JS tests. Complete stable CI, then perform
+   KDE Wayland physical acceptance before closing Issue #2.
+
+**Acceptance invariant:** never change the 390x122 compact allocation,
+bottom/right anchoring, saved margin field names or transparent corners.
+No arbitrary sleep/retry or User-Agent/window manager workaround.
 Preserve GTK bottom/right anchor, exact compact height, transparent rounded
 corners and saved config margins. First collect reproducible pointer/margin
 geometry evidence on KDE Wayland. A scoped `REPOTICKER_UI_DEBUG=1` native

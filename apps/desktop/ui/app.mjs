@@ -1,4 +1,5 @@
 import { nextCardView, pullReadyCommitCount } from "./view.mjs";
+import { createCardDragController } from "./drag.mjs";
 
 const emptySnapshot = {
   roots: [], repositories: [], errors: [],
@@ -288,99 +289,51 @@ window.__TAURI__?.event?.listen?.("repoticker-git-action-finished", async event 
 });
 refresh();
 
-/* Drag anywhere on noninteractive card body, including the repository rows.
-   On KDE Wayland the compositor owns the anchored popup; we adjust its
-   margins, not its absolute window coordinates. */
-let dragging = null;
-let dragPendingX = 0;
-let dragPendingY = 0;
-let dragInFlight = false;
-let dragScheduled = false;
-let dragHasMoved = false;
+/* The grab anchor is fixed in the WebView's LOCAL client coordinate frame.
+   Moving the Layer Shell surface brings clientX/Y back toward that anchor.
+   Screen-space deltas accumulated across reallocations caused oscillation. */
 const dragSurface = byId("card");
+const cardDrag = createCardDragController({
+  apply: (dx, dy) => invoke("move_card", { dx, dy }),
+  persist: () => invoke("persist_card_position"),
+  onError: showError,
+  scheduleFrame: callback => requestAnimationFrame(callback),
+  cancelFrame: id => cancelAnimationFrame(id)
+});
 
-// GTK Layer Shell recalculates pointer targeting after each margin change.
-// Limit movement to one queued IPC/frame, and never send stale deltas after
-// a pointer release or when the popup is hidden.
-function scheduleDrag() {
-  if (dragScheduled || dragInFlight || !dragging?.active || !cardVisible) return;
-  dragScheduled = true;
-  requestAnimationFrame(() => {
-    dragScheduled = false;
-    void flushDrag();
-  });
-}
-
-async function flushDrag() {
-  if (dragInFlight || !dragging?.active || !cardVisible) return;
-  const dx = Math.max(-60, Math.min(60, dragPendingX));
-  const dy = Math.max(-60, Math.min(60, dragPendingY));
-  dragPendingX -= dx;
-  dragPendingY -= dy;
-  if (!dx && !dy) return;
-  dragInFlight = true;
-  try {
-    await invoke("move_card", { dx, dy });
-  } catch (error) {
-    showError(error);
-    stopDragging();
-  } finally {
-    dragInFlight = false;
-    if (dragging?.active && (dragPendingX || dragPendingY)) {
-      scheduleDrag();
-    } else if (!dragging && dragHasMoved) {
-      dragHasMoved = false;
-      void invoke("persist_card_position").catch(showError);
-    }
+function stopDragging() {
+  cardDrag.end();
+  if (dragSurface.hasPointerCapture(activePointerId)) {
+    dragSurface.releasePointerCapture(activePointerId);
   }
+  activePointerId = null;
 }
 
+let activePointerId = null;
 dragSurface.addEventListener("pointerdown", event => {
   if (event.button !== 0 || !event.isPrimary ||
       event.target.closest("button,input,select,a,[role=button]")) return;
-  dragging = {
-    id: event.pointerId, active: false,
-    lastX: event.screenX, lastY: event.screenY
-  };
-  dragPendingX = 0;
-  dragPendingY = 0;
-  dragHasMoved = false;
+  if (!cardDrag.begin(event.pointerId, event.clientX, event.clientY)) return;
+  activePointerId = event.pointerId;
   dragSurface.setPointerCapture(event.pointerId);
   void invoke("start_card_drag").then(anchored => {
-    if (!dragging || dragging.id !== event.pointerId) return;
-    dragging.active = Boolean(anchored);
-    if (!anchored) stopDragging();
+    if (activePointerId !== event.pointerId) return;
+    if (!anchored) {
+      stopDragging();
+      return;
+    }
+    cardDrag.activate(event.pointerId);
   }).catch(error => { stopDragging(); showError(error); });
 });
 
 dragSurface.addEventListener("pointermove", event => {
-  if (!dragging?.active || dragging.id !== event.pointerId ||
-      !(event.buttons & 1) || !cardVisible) return;
-  // Screen-space coordinates do not jump when the moving popup changes its
-  // local DOM coordinates. Ignore zero movement caused by GTK reallocation.
-  const dx = Math.round(event.screenX - dragging.lastX);
-  const dy = Math.round(event.screenY - dragging.lastY);
-  dragging.lastX = event.screenX;
-  dragging.lastY = event.screenY;
-  if (!dx && !dy) return;
-  dragPendingX = Math.max(-160, Math.min(160, dragPendingX + dx));
-  dragPendingY = Math.max(-160, Math.min(160, dragPendingY + dy));
-  dragHasMoved = true;
-  scheduleDrag();
+  if (activePointerId !== event.pointerId) return;
+  if (!cardVisible || !(event.buttons & 1)) {
+    stopDragging();
+    return;
+  }
+  cardDrag.move(event.pointerId, event.clientX, event.clientY);
 });
-
-function stopDragging() {
-  if (dragging && dragSurface.hasPointerCapture(dragging.id)) {
-    dragSurface.releasePointerCapture(dragging.id);
-  }
-  dragging = null;
-  dragPendingX = 0;
-  dragPendingY = 0;
-  if (!dragInFlight && dragHasMoved) {
-    dragHasMoved = false;
-    void invoke("persist_card_position").catch(showError);
-  }
-}
 dragSurface.addEventListener("pointerup", stopDragging);
 dragSurface.addEventListener("pointercancel", stopDragging);
 dragSurface.addEventListener("lostpointercapture", stopDragging);

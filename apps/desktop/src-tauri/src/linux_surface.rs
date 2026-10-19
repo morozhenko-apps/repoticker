@@ -213,40 +213,55 @@ pub fn hide(app: &AppHandle) -> Result<(), String> {
 
 /// Move the Wayland popup by adjusting compositor-managed bottom/right margins.
 /// The bottom edge remains anchored through subsequent drawer size changes.
-pub fn shift(app: &AppHandle, dx: i32, dy: i32) -> Result<(), String> {
+pub async fn shift(app: &AppHandle, dx: i32, dy: i32) -> Result<(), String> {
     if !visible() {
-        // Ignore any asynchronous pointer deltas arriving after the card hid.
         return Ok(());
     }
     if dx.abs() > 150 || dy.abs() > 150 {
         return Err("Invalid drag delta".into());
     }
-    on_main(app, move |window| {
-        if !visible() {
-            return;
-        }
-        MARGINS.with(|state| {
-            let mut margins = state.borrow_mut();
-            let (before_bottom, before_right) = *margins;
-            let new_bottom = (before_bottom - dy).clamp(0, 5000);
-            let new_right = (before_right - dx).clamp(0, 5000);
-            // Keep popup on the screen when monitor dimensions are available.
-            margins.0 = new_bottom;
-            margins.1 = new_right;
-            window.set_layer_shell_margin(Edge::Bottom, margins.0);
-            window.set_layer_shell_margin(Edge::Right, margins.1);
-            // Diagnostic only. Compare signs of consecutive motion deltas
-            // during one steady pointer movement to detect coordinate feedback.
-            // No repository paths, credentials or pointer absolute coordinates.
-            if std::env::var_os("REPOTICKER_UI_DEBUG").is_some() {
-                eprintln!(
-                    "RepoTicker drag: delta=({dx},{dy}) anchor=({before_bottom},{before_right})->({new_bottom},{new_right}) allocated={}x{}",
-                    window.allocated_width(),
-                    window.allocated_height()
-                );
+
+    // The old command acknowledged queuing a GTK update, not executing it.
+    // The UI must see completed margins before sampling another pointer move.
+    // Wait off the GTK event thread to avoid deadlocking the compositor.
+    let (sender, receiver) = std::sync::mpsc::sync_channel(1);
+    app.run_on_main_thread(move || {
+        let result = CARD.with(|cell| {
+            let current = cell.borrow();
+            let Some(window) = current.as_ref() else {
+                return Err("Layer Shell card unavailable".to_owned());
+            };
+            if !visible() {
+                return Ok(());
             }
+            MARGINS.with(|state| {
+                let mut margins = state.borrow_mut();
+                let (before_bottom, before_right) = *margins;
+                let new_bottom = (before_bottom - dy).clamp(0, 5000);
+                let new_right = (before_right - dx).clamp(0, 5000);
+                margins.0 = new_bottom;
+                margins.1 = new_right;
+                window.set_layer_shell_margin(Edge::Bottom, new_bottom);
+                window.set_layer_shell_margin(Edge::Right, new_right);
+                if std::env::var_os("REPOTICKER_UI_DEBUG").is_some() {
+                    eprintln!(
+                        "RepoTicker drag: delta=({dx},{dy}) anchor=({before_bottom},{before_right})->({new_bottom},{new_right}) allocated={}x{}",
+                        window.allocated_width(),
+                        window.allocated_height()
+                    );
+                }
+            });
+            Ok(())
         });
+        let _ = sender.send(result);
     })
+    .map_err(|err| err.to_string())?;
+
+    tauri::async_runtime::spawn_blocking(move || {
+        receiver.recv().map_err(|_| "GTK drag update interrupted".to_owned())?
+    })
+    .await
+    .map_err(|err| err.to_string())?
 }
 
 /// Persist the manually dragged anchor without changing repository settings.

@@ -517,10 +517,11 @@ fn persist_card_position(app: AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn move_card(app: AppHandle, dx: i32, dy: i32) -> Result<(), String> {
+async fn move_card(app: AppHandle, dx: i32, dy: i32) -> Result<(), String> {
     #[cfg(target_os = "linux")]
     if linux_surface::enabled() {
-        return linux_surface::shift(&app, dx, dy);
+        // Acknowledge only after the GTK update has actually executed.
+        return linux_surface::shift(&app, dx, dy).await;
     }
     let _ = (app, dx, dy);
     Ok(())

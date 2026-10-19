@@ -227,13 +227,24 @@ pub fn shift(app: &AppHandle, dx: i32, dy: i32) -> Result<(), String> {
         }
         MARGINS.with(|state| {
             let mut margins = state.borrow_mut();
-            let new_bottom = (margins.0 - dy).clamp(0, 5000);
-            let new_right = (margins.1 - dx).clamp(0, 5000);
+            let (before_bottom, before_right) = *margins;
+            let new_bottom = (before_bottom - dy).clamp(0, 5000);
+            let new_right = (before_right - dx).clamp(0, 5000);
             // Keep popup on the screen when monitor dimensions are available.
             margins.0 = new_bottom;
             margins.1 = new_right;
             window.set_layer_shell_margin(Edge::Bottom, margins.0);
             window.set_layer_shell_margin(Edge::Right, margins.1);
+            // Diagnostic only. Compare signs of consecutive motion deltas
+            // during one steady pointer movement to detect coordinate feedback.
+            // No repository paths, credentials or pointer absolute coordinates.
+            if std::env::var_os("REPOTICKER_UI_DEBUG").is_some() {
+                eprintln!(
+                    "RepoTicker drag: delta=({dx},{dy}) anchor=({before_bottom},{before_right})->({new_bottom},{new_right}) allocated={}x{}",
+                    window.allocated_width(),
+                    window.allocated_height()
+                );
+            }
         });
     })
 }

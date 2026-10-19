@@ -78,8 +78,8 @@ test("settings has a separate entrypoint and card can be dragged", () => {
   assert.doesNotMatch(html, /id="roots-editor"/);
   assert.match(ui, /start_card_drag/);
   assert.match(ui, /move_card/);
-  assert.match(ui, /event\\.clientX/);
-  assert.doesNotMatch(ui, /event\\.screenX/);
+  assert.match(ui, /event\.clientX/);
+  assert.doesNotMatch(ui, /event\.screenX/);
 });
 
 test("repository drawer disables idle dismissal and drag never survives hiding", () => {

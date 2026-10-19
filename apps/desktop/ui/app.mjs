@@ -303,7 +303,7 @@ const cardDrag = createCardDragController({
 
 function stopDragging() {
   cardDrag.end();
-  if (dragSurface.hasPointerCapture(activePointerId)) {
+  if (activePointerId !== null && dragSurface.hasPointerCapture(activePointerId)) {
     dragSurface.releasePointerCapture(activePointerId);
   }
   activePointerId = null;

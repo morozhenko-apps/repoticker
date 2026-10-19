@@ -257,11 +257,10 @@ pub async fn shift(app: &AppHandle, dx: i32, dy: i32) -> Result<(), String> {
     })
     .map_err(|err| err.to_string())?;
 
-    tauri::async_runtime::spawn_blocking(move || {
-        receiver.recv().map_err(|_| "GTK drag update interrupted".to_owned())?
-    })
-    .await
-    .map_err(|err| err.to_string())?
+    let completed = tauri::async_runtime::spawn_blocking(move || receiver.recv())
+        .await
+        .map_err(|err| err.to_string())?;
+    completed.map_err(|_| "GTK drag update interrupted".to_owned())?
 }
 
 /// Persist the manually dragged anchor without changing repository settings.

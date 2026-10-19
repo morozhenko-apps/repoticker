@@ -130,3 +130,26 @@ No new tag or production deployment until Linux physical acceptance succeeds.
 Stage B will be a separate implementation commit. The published v0.1.0 tag and
 APT package remain immutable throughout.
 
+
+
+### Wayland drag implementation and remaining acceptance
+
+- [x] Confirm coordinate-frame feedback via `REPOTICKER_UI_DEBUG` trace on
+  Alcotester: the same drag produced alternating signed deltas without
+  changes to the GTK 390x122 compact allocation.
+- [x] Replace cumulative screen-space deltas with fixed client-space pointer
+  grab-anchor correction in `apps/desktop/ui/drag.mjs`, one in-flight move
+  command, no replay of stale pointer samples, and cancellation-safe
+  persistence. See implementation commit `2deaf46`.
+- [x] Have the asynchronous Tauri move command wait until the GTK main-thread
+  Layer Shell margin update actually executed before resolving the IPC.
+- [x] Add deterministic JS controller tests for anchor convergence, serial
+  IPC, pending persistence, cancellation and stale activation.
+- [ ] Confirm the final Preflight Rust/JS/Python/desktop compile gate for
+  implementation commit `2deaf46` (CI run #39335945391).
+- [ ] Physically verify smooth dragging on Alcotester KDE Wayland in
+  both directions and across Hide/Open and restart; do not close Issue #2
+  before acceptance.
+- [ ] Confirm 390x122 compact geometry, transparent rounded corners and
+  persisted bottom/right margin fields remain unchanged. No update of the
+  published APT package until the next separately tagged release.

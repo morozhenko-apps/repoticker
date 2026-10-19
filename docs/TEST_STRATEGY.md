@@ -12,6 +12,26 @@ Tests must protect local Git data, fail closed on unsafe operations, and never f
 
 **v0.1.0 evidence:** source Preflight on `dev` and `main` passed for commit `21f3b61d9774b931b57a4e3c83f61b2bcf2bb0ee`; local Python release suite passed 8/8 after installing APT packaging tools. Local user smoke covered DEB install/remove, AppImage launch and persistent settings. The Windows and signed public-APT release jobs require distinct evidence. See [CI.md](CI.md).
 
+## Wayland drag controller regression suite (dev, pending physical acceptance)
+
+The `tests/drag-controller.test.mjs` suite exercises the real
+`createCardDragController` and its local-coordinate correction:
+signed/clamped local anchor error, no oscillation after compositor movement
+returns the pointer to its original local offset, a single native IPC
+in flight, dropping stale pointer samples, persistence after the GTK update
+acknowledgment, and cancellation/hide before a scheduled frame. External
+frame scheduling and native IPC are injected; correction/state logic are
+not mocked. The source uses `event.clientX/clientY` and never calculates
+frame-to-frame `screenX/screenY` deltas.
+
+The native Rust `linux_surface::shift` dispatches an update on GTK's main
+thread and awaits the completion signal off that event thread. The
+controller's `apply` promise resolves only after that signal; it does
+not replay samples captured before the native update. CI validates
+compilation, but smooth motion, compositor frame delivery, popup geometry,
+multi-monitor behavior and position persistence still need actual KDE
+Wayland acceptance in Issue #2.
+
 ## Stable, flaky and OS gates
 
 - Ordinary Preflight is the fast source-code gate. A manual `strict.yml` workflow exists for ten repeated core/UI passes; repetition is not evidence of no flaky tests.

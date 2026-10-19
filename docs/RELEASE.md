@@ -120,6 +120,40 @@ and account ID are environment variables.
 The publish job rejects primary secret key material and requires a
 usable signing subkey.
 
+## Cloudflare security exception for public package downloads
+
+Public release artifacts are intentionally served to non-browser clients,
+including APT, curl, and CI release verification. Browser Integrity Check (BIC)
+can reject legitimate Python urllib requests before they reach the read-only
+download Worker. This is a Cloudflare zone configuration issue, not an R2
+object-permission or GPG-signing failure.
+
+On 2026-10-19, release workflow #39319748009 attempt 2 imported the
+signing subkey, built the signed APT snapshot and uploaded immutable files,
+but Cloudflare returned HTTP 403 to a Python-urllib/3.12 GET for the
+repo-ticker_0.1.0_amd64.deb pool object. Cloudflare Security Analytics recorded
+"Block by Browser integrity check" for that hostname/path, matching the
+GitHub-hosted runner. HEAD checks with Python-urllib/3.12 returned 403,
+while curl/8.0 and APT-HTTP/1.3 returned 200.
+
+Configure an explicit Cloudflare zone-level security rule:
+- Expression: `http.host eq "download.morozhenko.com" and starts_with(http.request.uri.path, "/dist/RepoTicker/") and http.request.method in {"GET" "HEAD"}`
+- Action: **Skip**; skip product **Browser Integrity Check only**. Keep
+  all other WAF/security features active and logging enabled.
+- Alternative where the Skip product is not available: a scoped
+  **Configuration Rule** disabling Browser Integrity Check for the same
+  hostname, path prefix and methods.
+- Do not disable BIC globally, use a temporary GitHub runner IP allowlist,
+  pretend to be a browser by changing User-Agent, or weaken the download
+  Worker's method/path allowlist.
+
+After deployment, verify a real GET made by Python's default urllib client
+against the public pool DEB returns HTTP 200 and actual bytes. Also verify
+unrecognized paths are still 404 and POST remains 405 with a normal curl
+client. Only then rerun failed GitHub Actions jobs. This Cloudflare rule must
+stay active for future CI/public clients; document it as part of operating
+the production download route.
+
 ## Public distribution
 
 R2 bucket: app-dist. Scope: dist/RepoTicker ONLY.

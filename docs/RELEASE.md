@@ -221,13 +221,14 @@ which remains unsigned and may trigger SmartScreen warnings.
 Release status is evidence-driven: do not mark pending tasks complete simply
 because a workflow is configured or credentials exist.
 
-## Provisioning passphrase verification (next maintenance change)
+## Provisioning passphrase verification (implemented in dev)
 
 Original provisioning asked for a signing-subkey passphrase and forwarded it
 directly into GitHub Environment Secrets, without checking that it could
 unlock the **exported subkey-only** key material in CI. This caused the first
-v0.1.0 publish attempt to fail on InRelease signing. The planned fix keeps
-the certification-only primary key and full-key encrypted backup offline:
+v0.1.0 publish attempt to fail on InRelease signing. The implementation in `scripts/provision_apt_key.sh` and
+`scripts/verify_signing_passphrase.sh` keeps the certification-only primary
+key and full-key encrypted backup offline:
 
 1. Import exported secret subkeys into a freshly created 0700 GNUPGHOME.
 2. Run the existing subkey-only inventory validator against the requested
@@ -243,3 +244,6 @@ The verification must use a clean agent context: testing the main user's
 keyring can succeed on cached credentials even when the supplied passphrase
 is incorrect. GPG's own encrypted key export and import remain the authority,
 not a hard-coded sample password.
+
+The isolated signing regression test uses disposable test keys, rejects wrong
+passphrases, and passed Preflight [#39333453214](https://github.com/morozhenko-apps/repoticker/actions/runs/39333453214) on commit `9b2971f`.

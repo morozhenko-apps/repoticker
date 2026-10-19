@@ -29,12 +29,11 @@ Tests must protect local Git data, fail closed on unsafe operations, and never f
 
 Run stable tests at the final validation gate for a change, and known flaky tests separately if such a suite exists. Re-run only relevant failing diagnostics, not the entire suite after each edit. Any asserted test success requires an actual run ID or local exit status.
 
-## Next security regression gate: signing provisioning
+## Security regression gate: signing provisioning (implemented)
 
-Add a deterministic ephemeral-key integration check using a temp GNUPGHOME:
+Implemented a deterministic ephemeral-key integration check using a temp GNUPGHOME:
 export signing subkeys, verify subkey-only identity, successfully sign/verify
 a fixture with the correct passphrase and reject an incorrect passphrase.
-Assert invalid input cannot update GitHub Secrets. Do not inspect or depend
-on the local RepoTicker production GPG keyring. Execute the full stable suite
-once at the final gate and treat unavailable local Rust/GTK toolchains as
-unverified rather than green.
+The provisioning flow invokes verification before either GitHub signing
+Secret write; a source contract test protects this ordering. No local
+production keyring is needed. [Preflight #39333453214](https://github.com/morozhenko-apps/repoticker/actions/runs/39333453214) completed successfully, including the stable Rust/UI/release suites and desktop compile gate.

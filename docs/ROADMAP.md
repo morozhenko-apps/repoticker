@@ -69,16 +69,17 @@ The **release download Worker** (`infra/download-worker`) is an existing distrib
 
 ## P1 implementation sequence and validation
 
-**Stage A — Release signing-secret provisioning (in progress).**
+**Stage A — Release signing-secret provisioning (implemented; CI passed).**
 The v0.1.0 release initially failed because the existing script accepted an entered
 subkey passphrase without verifying that the exported **subkey-only** CI bundle
 could sign in a clean GNUPGHOME. Keep the encrypted full-key backup workflow
-unchanged. Before publishing either signing secret, export/import the scoped
-subkey into a temporary private GNUPGHOME, verify inventory and fingerprint,
-produce a real clearsigned fixture with the supplied passphrase, and verify
-the signature using the public key. Fail closed before any GitHub Secret write
-on invalid input. Remove temporary keyring/passphrase materials on all exits;
-tests must cover correct and wrong passphrases without touching user keys.
+unchanged. Before publishing either signing secret, the implementation imports the scoped
+subkey into a temporary private GNUPGHOME, verifies inventory and fingerprint,
+produces a real clearsigned fixture with the supplied passphrase, and verifies
+the signature using the public key. It fails closed before any GitHub Secret
+write on invalid input, cleans temporary keyring/passphrase materials on exit,
+and tests correct, incorrect and corrupt-key cases using ephemeral keys.
+[Preflight #39333453214](https://github.com/morozhenko-apps/repoticker/actions/runs/39333453214) passed for implementation commit `9b2971f`.
 
 **Stage B — KDE Wayland drag jitter investigation (Issue #2; pending
 instrumented local reproduction).**

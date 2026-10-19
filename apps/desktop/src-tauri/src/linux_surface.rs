@@ -100,7 +100,7 @@ pub fn install(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
     layer.set_keyboard_mode(KeyboardMode::OnDemand);
     // Never present at initialization: the tray controls popup visibility.
     if std::env::var_os("REPOTICKER_UI_DEBUG").is_some() {
-        layer.connect_size_allocate(|window, allocation| {
+        layer.connect_size_allocate(|_window, allocation| {
             eprintln!(
                 "RepoTicker GTK geometry: requested={} actual={}x{} margins={:?} visible={}",
                 CARD_HEIGHT.load(Ordering::Acquire),

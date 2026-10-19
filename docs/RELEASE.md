@@ -106,8 +106,13 @@ Artifact paths:
     dist/RepoTicker/releases/vVERSION/linux/
     dist/RepoTicker/releases/vVERSION/windows/
     dist/RepoTicker/apt/dists/stable/InRelease
-    dist/RepoTicker/apt/pool/main/r/repoticker/
+    dist/RepoTicker/apt/pool/main/r/repo-ticker/
     dist/RepoTicker/apt/repoticker-archive-keyring.gpg
+
+The Debian package identity is repo-ticker (apt install repo-ticker).
+Bundled input from Tauri is named RepoTicker_VERSION_amd64.deb; the
+release collector verifies its dpkg identity and publishes the canonical
+repo-ticker_VERSION_amd64.deb name. This is independent of the GUI title.
 
 The Worker permits GET/HEAD for specified RepoTicker files only; it does
 not expose listing, mutation or sibling project storage.

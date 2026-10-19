@@ -155,7 +155,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          deb="$(find "$RUNNER_TEMP/release/linux" -maxdepth 1 -name '*.deb' -type f -print -quit)"
+          deb="$(find "$RUNNER_TEMP/release/linux" -maxdepth 1 -name 'repo-ticker_*.deb' -type f -print -quit)"
           test -n "$deb"
           python3 scripts/apt_repository.py \
             --deb "$deb" --out "$RUNNER_TEMP/apt" --version "$VERSION" \

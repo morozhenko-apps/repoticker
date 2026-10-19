@@ -21,7 +21,7 @@ class SignedAptIntegration(unittest.TestCase):
             control = files / "DEBIAN"
             control.mkdir(parents=True)
             (control / "control").write_text(
-                "Package: repoticker\n"
+                "Package: repo-ticker\n"
                 "Version: 0.1.0\n"
                 "Architecture: amd64\n"
                 "Maintainer: RepoTicker CI <ci@example.invalid>\n"
@@ -29,7 +29,7 @@ class SignedAptIntegration(unittest.TestCase):
                 "Description: RepoTicker integration test fixture\n",
                 encoding="utf-8"
             )
-            deb = root / "repoticker_0.1.0_amd64.deb"
+            deb = root / "repo-ticker_0.1.0_amd64.deb"
             subprocess.run(["dpkg-deb", "--build", str(files), str(deb)],
                            check=True, capture_output=True)
             gnupg = root / "gnupg"

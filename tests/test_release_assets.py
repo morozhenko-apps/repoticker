@@ -10,7 +10,7 @@ import release_assets as a
 
 class ReleaseAssetsTest(unittest.TestCase):
     def test_artifact_names(self):
-        self.assertEqual(a.canonical("1.2.3", "linux", ".deb"), "repoticker_1.2.3_amd64.deb")
+        self.assertEqual(a.canonical("1.2.3", "linux", ".deb"), "repo-ticker_1.2.3_amd64.deb")
         self.assertEqual(a.canonical("1.2.3", "windows", ".exe"), "RepoTicker-Setup-1.2.3-win-x64.exe")
 
     def test_merge_validates_all_platforms_and_bytes(self):

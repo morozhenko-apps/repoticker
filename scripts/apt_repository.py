@@ -35,16 +35,16 @@ def assemble(deb: Path, out: Path, version: str, gpg_home: Path,
         raise ValueError("Missing package or signing input")
     if out.exists() and any(out.iterdir()):
         raise ValueError("Refusing to overwrite APT snapshot")
-    expected = {"Package": "repoticker", "Version": version, "Architecture": "amd64"}
+    expected = {"Package": "repo-ticker", "Version": version, "Architecture": "amd64"}
     for name, value in expected.items():
         if package_field(deb, name) != value:
             raise ValueError(f"Invalid {name}")
     if "libgtk-layer-shell0" not in package_field(deb, "Depends"):
         raise ValueError("Missing GTK Layer Shell runtime dependency")
 
-    pool = out / "pool/main/r/repoticker"
+    pool = out / "pool/main/r/repo-ticker"
     pool.mkdir(parents=True)
-    package = pool / f"repoticker_{version}_amd64.deb"
+    package = pool / f"repo-ticker_{version}_amd64.deb"
     shutil.copyfile(deb, package)
     index = out / "dists/stable/main/binary-amd64"
     index.mkdir(parents=True)
@@ -54,7 +54,7 @@ def assemble(deb: Path, out: Path, version: str, gpg_home: Path,
         cwd=out, capture_output=True, check=True
     )
     packages = proc.stdout
-    if b"Filename: pool/main/r/repoticker/" not in packages:
+    if b"Filename: pool/main/r/repo-ticker/" not in packages:
         raise ValueError("APT package index did not contain the expected pool path")
     (index / "Packages").write_bytes(packages)
     # Deterministic gzip (mtime 0) and content-addressed archive.

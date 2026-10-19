@@ -26,7 +26,7 @@ class R2ArtifactContract(unittest.TestCase):
             (folder / "part.json").write_text(
                 json.dumps({"platform": platform, "version": "0.1.0", "files": files}))
         apt = root / "apt"
-        for path in ("pool/main/r/repoticker/repoticker_0.1.0_amd64.deb",
+        for path in ("pool/main/r/repo-ticker/repo-ticker_0.1.0_amd64.deb",
                      "dists/stable/InRelease", "repoticker-archive-keyring.gpg",
                      "dists/stable/main/binary-amd64/Packages",
                      "dists/stable/main/binary-amd64/Packages.gz"):
@@ -60,7 +60,7 @@ class R2ArtifactContract(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "Unexpected file"):
                 r2_release.source_map(release, apt, "0.1.0")
             unexpected.unlink()
-            (release / "linux" / "repoticker_0.1.0_amd64.deb.sha256").write_text("bad")
+            (release / "linux" / "repo-ticker_0.1.0_amd64.deb.sha256").write_text("bad")
             with self.assertRaisesRegex(ValueError, "sidecar mismatch"):
                 r2_release.source_map(release, apt, "0.1.0")
 

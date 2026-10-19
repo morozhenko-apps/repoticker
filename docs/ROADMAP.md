@@ -27,7 +27,8 @@ Evidence snapshot: 2026-10-19, `v0.1.0` published from `21f3b61d9774b931b57a4e3c
 - [ ] Physically accept tray/card behavior across monitors, scaling, panel arrangements, focus, screen bounds, hide/reopen and supported desktop environments.
 - [x] Confirm tagged Linux DEB/AppImage and Windows NSIS build jobs, canonical artifacts and checksums; physical Windows runtime testing remains outstanding.
 - [x] Confirm protected signing job, R2 upload/public readback and [public GitHub Release v0.1.0](https://github.com/morozhenko-apps/repoticker/releases/tag/v0.1.0).
-- [ ] Independently test signed APT enrollment, `apt update`, download, clean install, upgrade and uninstall on supported Ubuntu amd64.
+- [x] Independently verify signed `InRelease` with `gpgv`, enroll the source with `signed-by`, run `apt update`, resolve candidate `repo-ticker 0.1.0`, and download it via APT on Ubuntu 26.04 amd64 (2026-10-19, Alcotester).
+- [ ] Install via APT on Alcotester and verify installed package, tray startup, persistence and normal package lifecycle. A future-version upgrade and uninstall still require a separate controlled acceptance.
 - [ ] Define APT index refresh/expiry and rollback strategy; verify Cloudflare release assets and keyring are reachable before advertising installation instructions.
 - [ ] Verify autostart, lifecycle and uninstall semantics across supported platforms.
 
@@ -65,3 +66,35 @@ The **release download Worker** (`infra/download-worker`) is an existing distrib
 - [ ] macOS support only after Apple signing/notarization and physical acceptance.
 - [ ] Native notifications, autostart, accessibility and high-DPI/multi-monitor testing.
 - [ ] Keep implementation, evidence, feature support and release documentation synchronized; maintain separate documentation-only commits.
+
+## P1 implementation sequence and validation
+
+**Stage A — Release signing-secret provisioning (in progress).**
+The v0.1.0 release initially failed because the existing script accepted an entered
+subkey passphrase without verifying that the exported **subkey-only** CI bundle
+could sign in a clean GNUPGHOME. Keep the encrypted full-key backup workflow
+unchanged. Before publishing either signing secret, export/import the scoped
+subkey into a temporary private GNUPGHOME, verify inventory and fingerprint,
+produce a real clearsigned fixture with the supplied passphrase, and verify
+the signature using the public key. Fail closed before any GitHub Secret write
+on invalid input. Remove temporary keyring/passphrase materials on all exits;
+tests must cover correct and wrong passphrases without touching user keys.
+
+**Stage B — KDE Wayland drag jitter investigation (Issue #2; pending
+instrumented local reproduction).**
+Observed: GTK Layer Shell margins move the reparented WebView asynchronously
+while the WebView emits pointer events and rounded delta batches. Candidate
+causes include coordinate-frame feedback, delayed IPC completion and GTK
+reallocation; no single cause has been experimentally confirmed yet.
+Preserve GTK bottom/right anchor, exact compact height, transparent rounded
+corners and saved config margins. First collect reproducible pointer/margin
+geometry evidence on KDE Wayland. Only then choose a frame-stable
+coordinate-to-margin implementation that does not accumulate stale deltas.
+Add deterministic pointer sequence/cancel/hide regression tests, run final
+stable checks, and accept smooth dragging manually on Alcotester.
+No new tag or production deployment until Linux physical acceptance succeeds.
+
+**Rollback boundaries:** Stage A edits signing provisioning and its tests only;
+Stage B will be a separate implementation commit. The published v0.1.0 tag and
+APT package remain immutable throughout.
+

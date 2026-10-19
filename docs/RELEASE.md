@@ -187,9 +187,11 @@ repo-ticker_VERSION_amd64.deb name. This is independent of the GUI title.
 The Worker permits GET/HEAD for specified RepoTicker files only; it does
 not expose listing, mutation or sibling project storage.
 
-Do not advertise APT enrollment until the first signed publication is
-live and independent apt update / apt download / package install have
-been tested on Ubuntu amd64. The signature does not sign Windows .exe,
+The v0.1.0 signed publication is live. On 2026-10-19 Alcotester (Ubuntu
+26.04 amd64) independently verified the public InRelease signature with
+gpgv, enrolled the apt source with signed-by, ran apt update and downloaded
+the canonical repo-ticker_0.1.0_amd64.deb package from APT. Installation,
+future-version upgrade and removal are distinct remaining acceptance checks. The signature does not sign Windows .exe,
 which remains unsigned and may trigger SmartScreen warnings.
 
 ## Release acceptance checklist
@@ -205,8 +207,10 @@ which remains unsigned and may trigger SmartScreen warnings.
 - [x] Approve the protected deployment, verify isolated signing subkey import,
   R2 credentials, signed metadata, public HTTP readback and GitHub Release creation
   ([successful workflow attempt 3](https://github.com/morozhenko-apps/repoticker/actions/runs/39319748009)).
-- [ ] Independently test APT repository enrollment, signed apt update, package
-  download, clean install, upgrade and removal on a supported Ubuntu amd64 host.
+- [x] Independently verify APT key fingerprint, signed InRelease, source enrollment,
+  apt update and package download on Ubuntu 26.04 amd64 (Alcotester).
+- [ ] Confirm installed package and desktop tray behavior on Alcotester.
+  A future-version APT upgrade and removal remain separate acceptance tasks.
 - [ ] Define and test APT metadata refresh/expiry and rollback policy. The present
   Release metadata deliberately omits Valid-Until until a refresh job exists.
 - [ ] Complete Windows real-device installer/tray/runtime acceptance and Linux
@@ -216,3 +220,26 @@ which remains unsigned and may trigger SmartScreen warnings.
 
 Release status is evidence-driven: do not mark pending tasks complete simply
 because a workflow is configured or credentials exist.
+
+## Provisioning passphrase verification (next maintenance change)
+
+Original provisioning asked for a signing-subkey passphrase and forwarded it
+directly into GitHub Environment Secrets, without checking that it could
+unlock the **exported subkey-only** key material in CI. This caused the first
+v0.1.0 publish attempt to fail on InRelease signing. The planned fix keeps
+the certification-only primary key and full-key encrypted backup offline:
+
+1. Import exported secret subkeys into a freshly created 0700 GNUPGHOME.
+2. Run the existing subkey-only inventory validator against the requested
+   primary fingerprint.
+3. Sign an ephemeral Release fixture using the supplied passphrase in
+   loopback mode, then check its signature against the primary public key.
+4. Only after all checks succeed write the signing subkey and passphrase to
+   protected GitHub Secrets; error paths must write neither signing secret.
+5. Clean up the temporary keyring and kill its gpg-agent. No private keys or
+   passphrases are ever logged, placed in command arguments, or committed.
+
+The verification must use a clean agent context: testing the main user's
+keyring can succeed on cached credentials even when the supplied passphrase
+is incorrect. GPG's own encrypted key export and import remain the authority,
+not a hard-coded sample password.

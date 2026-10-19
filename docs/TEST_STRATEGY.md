@@ -28,3 +28,13 @@ Tests must protect local Git data, fail closed on unsafe operations, and never f
 6. **Distribution:** independently verify Linux APT enrollment/signature/readback, index refresh/rollback, clean install/upgrade/removal; Windows installer and unsigned SmartScreen behavior.
 
 Run stable tests at the final validation gate for a change, and known flaky tests separately if such a suite exists. Re-run only relevant failing diagnostics, not the entire suite after each edit. Any asserted test success requires an actual run ID or local exit status.
+
+## Next security regression gate: signing provisioning
+
+Add a deterministic ephemeral-key integration check using a temp GNUPGHOME:
+export signing subkeys, verify subkey-only identity, successfully sign/verify
+a fixture with the correct passphrase and reject an incorrect passphrase.
+Assert invalid input cannot update GitHub Secrets. Do not inspect or depend
+on the local RepoTicker production GPG keyring. Execute the full stable suite
+once at the final gate and treat unavailable local Rust/GTK toolchains as
+unverified rather than green.

@@ -6,7 +6,7 @@ umask 077
 REPO="morozhenko-apps/repoticker"
 ENVIRONMENT="apt-release"
 BACKUP="$HOME/morozhenko/secrets/RepoTicker"
-FPR="$1"
+FPR="${1:-}"
 
 if [[ ! "$FPR" =~ ^[0-9a-fA-F]{40}$ ]]; then
   echo "Usage: bash scripts/provision_apt_key.sh <40-character GPG fingerprint>" >&2
@@ -54,13 +54,26 @@ chmod 600 "$BACKUP/$filename"
 chmod 644 "$BACKUP/repoticker-archive-keyring.gpg" "$BACKUP/repoticker-public.asc" "$BACKUP/FINGERPRINT"
 
 echo "Encrypted full-key backup: $BACKUP/$filename"
-echo "Setting GitHub environment secrets with only a signing subkey..."
-gpg --export-secret-subkeys "$FPR" | base64 -w0 |
-  gh secret set REPOTICKER_APT_SIGNING_SUBKEY_BASE64 -R "$REPO" -e "$ENVIRONMENT"
 printf 'Signing subkey passphrase: ' >&2
 IFS= read -rs key_pass
 printf '\n' >&2
 [[ -n "$key_pass" ]] || { echo "Empty signing passphrase rejected." >&2; exit 1; }
+
+# Verify the exact subkey-only CI material in a fresh GPG agent context.
+# Never update GitHub secrets with a password that has not signed and verified.
+private_dir="$(mktemp -d)"
+cleanup_signing_validation() {
+  rm -rf "$private_dir"
+  unset key_pass
+}
+trap cleanup_signing_validation EXIT
+printf '%s' "$key_pass" > "$private_dir/passphrase"
+gpg --export-secret-subkeys "$FPR" |
+  bash "$(dirname "$0")/verify_signing_passphrase.sh" "$FPR" "$private_dir/passphrase"
+
+echo "Signing subkey and passphrase validated; updating protected GitHub secrets."
+gpg --export-secret-subkeys "$FPR" | base64 -w0 |
+  gh secret set REPOTICKER_APT_SIGNING_SUBKEY_BASE64 -R "$REPO" -e "$ENVIRONMENT"
 printf '%s' "$key_pass" |
   gh secret set REPOTICKER_APT_SIGNING_PASSPHRASE -R "$REPO" -e "$ENVIRONMENT"
 unset key_pass

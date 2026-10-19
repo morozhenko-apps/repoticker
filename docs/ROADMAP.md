@@ -89,7 +89,14 @@ causes include coordinate-frame feedback, delayed IPC completion and GTK
 reallocation; no single cause has been experimentally confirmed yet.
 Preserve GTK bottom/right anchor, exact compact height, transparent rounded
 corners and saved config margins. First collect reproducible pointer/margin
-geometry evidence on KDE Wayland. Only then choose a frame-stable
+geometry evidence on KDE Wayland. A scoped `REPOTICKER_UI_DEBUG=1` native
+trace was added in `linux_surface::shift` on dev to report **relative**
+pointer deltas, before/after anchors and GTK allocation during drag. Run
+`REPOTICKER_UI_DEBUG=1 cargo run -p repoticker-desktop` with the installed
+v0.1.0 tray process closed, then drag the card steadily in one direction and
+check whether the reported delta signs flip or the allocations reconfigure
+without corresponding user movement. These are diagnostic data, not
+confirmation that a fix has been made. Only then choose a frame-stable
 coordinate-to-margin implementation that does not accumulate stale deltas.
 Add deterministic pointer sequence/cancel/hide regression tests, run final
 stable checks, and accept smooth dragging manually on Alcotester.

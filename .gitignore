@@ -30,3 +30,7 @@ Thumbs.db
 
 # Application workspace lockfile is committed to guarantee repeatable releases.
 # Run cargo generate-lockfile and git add Cargo.lock before tagging.
+
+# Python release test artifacts
+__pycache__/
+*.py[cod]

@@ -188,3 +188,54 @@ Both retain Layer Shell bottom/right margins, exact compact geometry and
 transparency; no global input capture or X11 assumptions. Do not change
 the input contract until the user chooses the UX/architecture tradeoff.
 The published v0.1.0 and `main` remain unchanged. Issue #2 stays open.
+
+
+## Decision 2026-10-20 — native Wayland relative-pointer-v1 (selected)
+
+Owner chose **option 2: native relative-pointer protocol**, preserving the normal
+system cursor during card dragging; do not implement browser Pointer Lock.
+
+### Architecture / constraints
+
+- Integrate the `zwp_relative_pointer_manager_v1` global into the **existing
+  GDK Wayland wl_display** and bind a relative-pointer object to GDK's owned
+  `wl_pointer`. Never create a competing Wayland connection, consume GDK's
+  pointer listener, or dispatch the socket from a second thread.
+- Generate protocol client code at Linux build time via `wayland-scanner`
+  using the OS-installed `wayland-protocols` XML; compile a small native
+  GTK3/GDK/Wayland bridge. Non-Linux builds must not require Linux headers.
+  Reuse current Rust dependencies (no Cargo.lock drift).
+- GTK main-thread relative-motion handler alone applies `dx/dy` to Layer
+  Shell's bottom/right margins. It maintains fractional residuals for
+  subpixel motion, clamps persisted margins to configured limits and never
+  uses JS client/screen coordinates for movement. UI signals start/stop only.
+- Gesture lifecycle: primary left-button press on noninteractive card area
+  starts a session; button release, pointer cancel, capture loss, Escape,
+  card hide and application quit deactivate motion and persist the last
+  applied margins. A late start acknowledgment cannot resurrect a released
+  session. GDK's `wl_pointer` and display remain GDK-owned.
+- If the compositor does not advertise relative-pointer-v1, **fail
+  explicitly** and do not fall back to the known-jittering JS implementation.
+  The SNI tray, compact dimensions, transparent corners and non-Linux native
+  window drag remain unchanged.
+- Protocol events are delivered only with pointer focus. Treat any loss of
+  WebView capture/focus as gesture termination; physical KWin acceptance
+  must confirm that the implicit button grab sustains focus while moving.
+- Keep the published `v0.1.0` package unchanged. Rollback point is the
+  immediately preceding `dev` commit `989362b`.
+
+### Ordered stages / evidence
+
+- [x] Read compositor protocol and GDK Wayland ownership APIs; confirm
+  selected architectural contract in SSOT.
+- [ ] Implement native bridge and Linux build requirements in a **code-only**
+  commit; delete legacy screen/client movement path and native IPC.
+- [ ] Add native state and JS gesture regressions (same code commit).
+- [ ] Run the **final stable gate once**: Rust fmt, core tests, Clippy,
+  JS/Node tests, Python release tests and full Linux desktop cargo check.
+  The desktop check must compile the generated Wayland bridge.
+- [ ] On Alcotester, test KDE Wayland slow/fast movement, button release,
+  cancel, Hide/Open/restart persistence, exact 390x122 geometry, corners,
+  unsupported-protocol errors and any multi-display behavior.
+- [ ] Only after acceptance, close Issue #2 and consider the next package
+  version. Windows and macOS builds remain isolated from Linux bridge.

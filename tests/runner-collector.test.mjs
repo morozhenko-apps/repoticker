@@ -42,7 +42,10 @@ test("queued jobs in running workflow counted with queued workflows across repos
     get: async path => { requested.push(path); return mockGithub(path); },
   });
   assert.deepEqual([snapshot.counts.busy, snapshot.counts.running, snapshot.counts.queued],
-    [1, 1, 2]);
+    [1, 1, 3]);
+  assert.equal(snapshot.counts.runningSelfHosted, 1);
+  assert.equal(snapshot.counts.queuedSelfHosted, 2);
+  assert.equal(snapshot.counts.queuedGitHubHosted, 1);
   assert.equal(snapshot.checkedAt, "2026-10-20T12:30:00Z");
   assert.equal(snapshot.coverage.queue, true);
   assert.equal(requested.filter(path => path.includes("/77/jobs")).length, 1);

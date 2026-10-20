@@ -27,7 +27,8 @@ test("tooltip is a standalone WebView and not a child of compact card", () => {
   assert.match(native, /fn install_usage_surface/);
   assert.match(native, /usage\.set_layer\(Layer::Overlay\)/);
   assert.match(native, /fn anchor_usage/);
-  assert.match(native, /bottom\.saturating_add\(COMPACT_HEIGHT - USAGE_OVERLAP\)/);
+  assert.match(native, /bottom\.saturating_add\(COMPACT_HEIGHT \+ USAGE_GAP\)/);
+  assert.match(native, /const USAGE_GAP: i32 = 12;/);
 });
 test("usage height is based on content rows, never viewport scrollHeight", () => {
   assert.equal(usageHeight(18, [16, 34]), USAGE_MIN_HEIGHT);
@@ -37,7 +38,10 @@ test("usage height is based on content rows, never viewport scrollHeight", () =>
   assert.equal(usageHeight(20, [-1]), USAGE_MIN_HEIGHT);
   const quotaJs = read("../apps/desktop/ui/quota.mjs");
   assert.doesNotMatch(quotaJs, /root\.scrollHeight/);
-  assert.match(quotaJs, /root\.children\]\.map\(child => child\.scrollHeight\)/);
+  assert.match(quotaJs, /root\.cloneNode\(true\)/);
+  assert.match(quotaJs, /details\.connected/);
+  assert.match(quotaJs, /probe\.getBoundingClientRect\(\)\.height/);
+  assert.doesNotMatch(quotaJs, /root\.children\]\.map\(child => child\.scrollHeight\)/);
   assert.doesNotMatch(quotaJs, /dismiss_usage_popup|repoticker-usage-hover/);
   assert.doesNotMatch(read("../apps/desktop/ui/quota.html"), /class="quota-close"/);
 });
@@ -64,4 +68,13 @@ test("native tooltip ignores pointer/focus and reports the actual surface backen
   assert.match(native, /set_pass_through\(true\)/);
   assert.doesNotMatch(read("../apps/desktop/src-tauri/src/main.rs"), /fn dismiss_usage_popup/);
   assert.match(read("../apps/desktop/src-tauri/src/main.rs"), /RepoTicker surface mode=/);
+});
+
+test("KDE Wayland forces native GDK selection before Tauri setup", () => {
+  const rust = read("../apps/desktop/src-tauri/src/main.rs");
+  assert.match(rust, /fn configure_gdk_for_native_wayland\(\)/);
+  assert.match(rust, /std::env::set_var\("GDK_BACKEND", "wayland"\)/);
+  assert.ok(rust.indexOf("configure_gdk_for_native_wayland();") < rust.indexOf("tauri::Builder::default()"));
+  assert.match(rust, /XDG_SESSION_TYPE/);
+  assert.match(rust, /WAYLAND_DISPLAY/);
 });

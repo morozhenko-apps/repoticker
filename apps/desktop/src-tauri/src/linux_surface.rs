@@ -33,7 +33,8 @@ static USAGE_HEIGHT: AtomicI32 = AtomicI32::new(118);
 const USAGE_WIDTH: i32 = 340;
 const CARD_WIDTH: i32 = 390;
 const COMPACT_HEIGHT: i32 = 122;
-const USAGE_OVERLAP: i32 = 8;
+// Fixed visual space between compact card and hover-only balloon.
+const USAGE_GAP: i32 = 12;
 static DRAG_ACTIVE: AtomicBool = AtomicBool::new(false);
 static DRAG_MOVED: AtomicBool = AtomicBool::new(false);
 
@@ -291,7 +292,7 @@ fn anchor_usage(window: &gtk::ApplicationWindow) {
         let (bottom, right) = *state.borrow();
         window.set_layer_shell_margin(
             Edge::Bottom,
-            bottom.saturating_add(COMPACT_HEIGHT - USAGE_OVERLAP),
+            bottom.saturating_add(COMPACT_HEIGHT + USAGE_GAP),
         );
         window.set_layer_shell_margin(Edge::Right, right.saturating_add(5));
     });

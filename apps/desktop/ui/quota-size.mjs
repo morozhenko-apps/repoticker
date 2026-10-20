@@ -4,6 +4,7 @@
 export const USAGE_MIN_HEIGHT = 118;
 export const USAGE_MAX_HEIGHT = 320;
 export const USAGE_CONTENT_GAP = 7;
+// 11px top/bottom padding, 2px border, 6px title margin.
 export const USAGE_FRAME_HEIGHT = 30;
 
 export function usageHeight(titleHeight, contentHeights) {

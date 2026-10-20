@@ -41,9 +41,34 @@ function paint(details) {
   }
   // Small for disconnected state, expands only this *separate* popup when
   // there are more details. Main card always stays 390x122.
-  const title = document.querySelector(".quota-header");
-  const actualRows = [...root.children].map(child => child.scrollHeight);
-  const targetHeight = usageHeight(title.offsetHeight, actualRows);
+  // A disconnected tooltip is two short messages, not a scrollable 320px
+  // panel. For richer connected data measure an unconstrained clone:
+  // measuring the *existing* flex viewport feeds its previous size back
+  // into window resizing and causes the balloon to grow indefinitely.
+  let targetHeight = usageHeight(0, []);
+  if (details.connected) {
+    const probe = root.cloneNode(true);
+    probe.removeAttribute("id");
+    Object.assign(probe.style, {
+      position: "fixed",
+      visibility: "hidden",
+      pointerEvents: "none",
+      width: root.getBoundingClientRect().width + "px",
+      height: "auto",
+      maxHeight: "none",
+      overflow: "visible",
+      flex: "none",
+      top: "0",
+      left: "-10000px",
+    });
+    document.body.append(probe);
+    const naturalHeight = probe.getBoundingClientRect().height;
+    probe.remove();
+    targetHeight = usageHeight(
+      document.querySelector(".quota-header").getBoundingClientRect().height,
+      [naturalHeight]
+    );
+  }
   void invoke("resize_usage_popup", { height: targetHeight }).catch(() => {});
 }
 async function refresh() {

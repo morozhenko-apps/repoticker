@@ -619,10 +619,16 @@ close; do not resize again. Preserve pointer/keyboard focus and Escape
 handling. Collapse correctly on Hide, focus exit and pointer exit.
 No second window, CSS overflow workaround or platform-specific offsets.
 
-- [ ] Code-only popup layout and lifecycle change, independent tests.
-- [ ] Final stable/desktop CI validation of the new code SHA.
-- [ ] KDE physical acceptance of compact/Reos hover+focus, scroll,
-  Escape, Hide/Open and no changes to three compact counters.
+- [x] Code-only popup layout and lifecycle change and source tests:
+  `09c3107` (UI) plus `c2f824b` (test fix). The tooltip is now
+  an in-flow flex child, not an absolute child of the status icon.
+- [ ] Final desktop CI: [Preflight #39470123745](https://github.com/morozhenko-apps/repoticker/actions/runs/39470123745)
+  for SHA `c2f824b` (Node/Rust/desktop jobs already passed; aggregate gate
+  completion pending at this documentation snapshot).
+- [ ] Physical KDE verification tracked in
+  [Issue #3](https://github.com/morozhenko-apps/repoticker/issues/3):
+  compact/Repos hover+focus, scrolling, Escape, Hide/Open and unchanged
+  three indicators/four buttons.
 
 **Publisher GitHub App created:** owner `morozhenko-apps`,
 numeric App ID `5399579`, public Client ID

@@ -338,3 +338,51 @@ When reporting queue for a runner, account for runner group/access restrictions
 or conservatively label the estimate `label-compatible`. Separate code
 and docs commits. Keep `main`, public v0.1.0 and existing RunnerRouter
 unchanged until authenticated runtime and physical acceptance are complete.
+
+
+### Requirement correction — all active jobs, split by execution lane
+
+The primary **Running** and **Queued** counters sum *all visible active
+GitHub Actions jobs* in the selected account/organization repository scope,
+regardless of hosting lane. The same counters' expanded panel breaks each
+number into **self-hosted**, **GitHub-hosted**, and **unclassified**; job
+details must remain linked to their repository/run. The count of busy
+self-hosted runner registrations is a **separate availability metric**,
+not an alternative definition of running jobs.
+
+GitHub-hosted job concurrency is an account/organization plan quota (e.g.
+GitHub Free standard capacity may allow 20 concurrent jobs), not a single
+permanent runner shared between repositories. Temporary hosted job machines
+are not enumerated from the organization self-hosted runners endpoint.
+Self-hosted org registrations can serve multiple repositories according
+to runner-group access policies. No subscription plan or capacity number
+may be guessed from the client.
+
+Counting rules:
+- `runningTotal` includes every distinct `in_progress` job, even when
+  its runner is GitHub-hosted, unknown or absent in org inventory.
+- `queuedTotal` includes every distinct `queued` job, even if its
+  requested labels are unavailable or incompatible with local runners.
+  Jobs waiting on approvals/environments are tracked separately, not
+  silently classified as queue capacity demand.
+- `selfHosted`: proven by organization runner ID or explicit
+  `self-hosted` requested label; `githubHosted`: recognized standard
+  GitHub-hosted runner label when no self-hosted evidence exists;
+  others are `unclassified`. Breakdowns must always sum to their totals.
+  Unknown group/runner affiliation must never silently be guessed.
+- Across organization repositories, all totals are **monitoring scope**
+  dependent. Offer an opt-in "all accessible organization repositories"
+  scope in addition to selecting individual repositories. Enumerate
+  repository pages rather than assuming one runner per repo; propagate
+  denied, missing or truncated sources as partial/unknown counts.
+- Exact total counts require complete jobs pagination for every monitored
+  repository. Organization runner inventory may fail independently; in
+  that case total running/queued jobs remain available, while runner
+  occupancy and any runner-ID-only lane attribution are partial.
+- Compact card initially shows total `Running` and `Queued`, plus
+  runner occupancy. Expanded UI shows all three lanes and details. No
+  mandatory RunnerRouter or Cloudflare dependency.
+
+Do not auto-enroll every private repository without authorization:
+"all accessible" is an explicit scope choice, and coverage reflects
+the selected visibility and GitHub API permissions.

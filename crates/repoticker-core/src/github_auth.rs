@@ -223,10 +223,19 @@ mod tests {
     fn denied_expired_and_cancelled_sessions_are_terminal() {
         let mut denied = challenge();
         denied.receive(DeviceResponse::AccessDenied, 1_010);
-        assert_eq!(denied.next_poll(1_015), PollDecision::Stop(DevicePhase::Denied));
-        assert_eq!(denied.receive(DeviceResponse::Authorized, 1_020), DevicePhase::Denied);
+        assert_eq!(
+            denied.next_poll(1_015),
+            PollDecision::Stop(DevicePhase::Denied)
+        );
+        assert_eq!(
+            denied.receive(DeviceResponse::Authorized, 1_020),
+            DevicePhase::Denied
+        );
         let mut expired = challenge();
-        assert_eq!(expired.next_poll(1_900), PollDecision::Stop(DevicePhase::Expired));
+        assert_eq!(
+            expired.next_poll(1_900),
+            PollDecision::Stop(DevicePhase::Expired)
+        );
         let mut cancelled = challenge();
         cancelled.cancel();
         assert_eq!(
@@ -238,10 +247,19 @@ mod tests {
     #[test]
     fn authorization_requires_a_nonexpired_active_challenge() {
         let mut s = challenge();
-        assert_eq!(s.receive(DeviceResponse::Authorized, 1_100), DevicePhase::Authorized);
-        assert_eq!(s.next_poll(1_200), PollDecision::Stop(DevicePhase::Authorized));
+        assert_eq!(
+            s.receive(DeviceResponse::Authorized, 1_100),
+            DevicePhase::Authorized
+        );
+        assert_eq!(
+            s.next_poll(1_200),
+            PollDecision::Stop(DevicePhase::Authorized)
+        );
         let mut expired = challenge();
-        assert_eq!(expired.receive(DeviceResponse::Authorized, 1_900), DevicePhase::Expired);
+        assert_eq!(
+            expired.receive(DeviceResponse::Authorized, 1_900),
+            DevicePhase::Expired
+        );
     }
 
     #[test]

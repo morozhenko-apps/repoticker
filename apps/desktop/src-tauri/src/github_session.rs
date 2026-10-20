@@ -1,0 +1,353 @@
+//! GitHub App native authorization lifecycle.
+//!
+//! Public Tauri commands return ONLY a user code, fixed verification URL
+//! and sanitized status. The device code and access/refresh tokens remain
+//! native and are never sent through events, config or JavaScript.
+
+use std::{
+    sync::{
+        atomic::{AtomicU64, Ordering},
+        Arc,
+    },
+    time::{Duration, SystemTime, UNIX_EPOCH},
+};
+
+use repoticker_core::github_auth::{
+    DevicePhase, DeviceResponse, PollDecision, TokenAction, TokenExpiration,
+};
+use serde::Serialize;
+use tauri::{AppHandle, Emitter, Manager};
+use tokio::sync::{Mutex, Notify};
+
+use crate::{
+    github_native::{CredentialRecord, GithubOAuthHttp, NativeAuthError, NativeCredentialStore},
+    github_oauth_wire::{PollReply, TOKEN_URL},
+};
+
+#[derive(Default)]
+pub struct GitHubAuthManager {
+    epoch: AtomicU64,
+    wake: Notify,
+    /// All credential reads/rotations/disconnects are serialized.
+    vault_gate: Mutex<()>,
+}
+
+impl GitHubAuthManager {
+    fn invalidate(&self) -> u64 {
+        let current = self.epoch.fetch_add(1, Ordering::AcqRel) + 1;
+        self.wake.notify_waiters();
+        current
+    }
+
+    fn active(&self, epoch: u64) -> bool {
+        self.epoch.load(Ordering::Acquire) == epoch
+    }
+}
+
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GitHubAuthEvent {
+    pub status: &'static str,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GitHubAuthChallenge {
+    pub user_code: String,
+    pub verification_uri: &'static str,
+    pub expires_at: u64,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GitHubAuthStatus {
+    pub connected: bool,
+    pub expires_at: Option<u64>,
+}
+
+fn unix_now() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs()
+}
+
+fn public_error(error: NativeAuthError) -> String {
+    match error {
+        NativeAuthError::Network => "GitHub is unreachable.".into(),
+        NativeAuthError::HttpStatus(status) if status == 429 => {
+            "GitHub rate limit exceeded.".into()
+        }
+        NativeAuthError::HttpStatus(401 | 403) => "GitHub authorization rejected.".into(),
+        NativeAuthError::HttpStatus(_) | NativeAuthError::Rejected => {
+            "GitHub rejected the authorization request.".into()
+        }
+        NativeAuthError::BadResponse => "Invalid GitHub authorization response.".into(),
+        NativeAuthError::KeychainUnavailable => {
+            "System credential store unavailable or locked.".into()
+        }
+        NativeAuthError::CorruptCredential => {
+            "Stored GitHub credentials are invalid. Disconnect and reconnect.".into()
+        }
+        NativeAuthError::NoCredential => "GitHub is not connected.".into(),
+        NativeAuthError::Expired => "GitHub authorization expired. Reconnect.".into(),
+    }
+}
+
+fn publish(app: &AppHandle, status: &'static str) {
+    let _ = app.emit("repoticker-github-auth", GitHubAuthEvent { status });
+}
+
+pub fn cancel_pending(app: &AppHandle) {
+    if let Some(state) = app.try_state::<Arc<GitHubAuthManager>>() {
+        state.invalidate();
+        publish(app, "cancelled");
+    }
+}
+
+async fn read_credential() -> Result<Option<CredentialRecord>, NativeAuthError> {
+    tauri::async_runtime::spawn_blocking(|| NativeCredentialStore.load())
+        .await
+        .map_err(|_| NativeAuthError::KeychainUnavailable)?
+}
+
+async fn store_credential(record: CredentialRecord) -> Result<(), NativeAuthError> {
+    tauri::async_runtime::spawn_blocking(move || NativeCredentialStore.replace(&record))
+        .await
+        .map_err(|_| NativeAuthError::KeychainUnavailable)?
+}
+
+async fn delete_credential() -> Result<(), NativeAuthError> {
+    tauri::async_runtime::spawn_blocking(|| NativeCredentialStore.clear())
+        .await
+        .map_err(|_| NativeAuthError::KeychainUnavailable)?
+}
+
+#[tauri::command]
+pub async fn github_auth_status(app: AppHandle) -> Result<GitHubAuthStatus, String> {
+    let state = app.state::<Arc<GitHubAuthManager>>().inner().clone();
+    let _guard = state.vault_gate.lock().await;
+    let credential = read_credential().await.map_err(public_error)?;
+    let valid = credential.filter(|c| c.refresh_expires_at > unix_now());
+    Ok(GitHubAuthStatus {
+        connected: valid.is_some(),
+        expires_at: valid.map(|c| c.access_expires_at),
+    })
+}
+
+/// Generates a new device challenge, invalidating any earlier sign-in
+/// attempts. A preflight read ensures the OS credential store is usable
+/// before requesting a device code from GitHub.
+#[tauri::command]
+pub async fn github_begin(app: AppHandle) -> Result<GitHubAuthChallenge, String> {
+    let state = app.state::<Arc<GitHubAuthManager>>().inner().clone();
+    let attempt = state.invalidate();
+    {
+        let _guard = state.vault_gate.lock().await;
+        read_credential().await.map_err(public_error)?;
+    }
+    let http = GithubOAuthHttp::new().map_err(public_error)?;
+    let challenge = http.begin(unix_now()).await.map_err(public_error)?;
+    if !state.active(attempt) {
+        return Err("GitHub sign-in was cancelled.".into());
+    }
+    let display = GitHubAuthChallenge {
+        user_code: challenge.session.user_code.clone(),
+        verification_uri: challenge.session.verification_uri,
+        expires_at: challenge.session.expires_at,
+    };
+
+    let app_for_poll = app.clone();
+    tauri::async_runtime::spawn(async move {
+        poll_authorization(app_for_poll, state, attempt, http, challenge).await;
+    });
+    publish(&app, "pending");
+    Ok(display)
+}
+
+async fn poll_authorization(
+    app: AppHandle,
+    state: Arc<GitHubAuthManager>,
+    attempt: u64,
+    http: GithubOAuthHttp,
+    challenge: crate::github_oauth_wire::DeviceChallenge,
+) {
+    let mut session = challenge.session;
+    loop {
+        if !state.active(attempt) {
+            return;
+        }
+        match session.next_poll(unix_now()) {
+            PollDecision::WaitSeconds(seconds) => {
+                tokio::select! {
+                    () = tokio::time::sleep(Duration::from_secs(seconds)) => {}
+                    () = state.wake.notified() => {}
+                }
+                continue;
+            }
+            PollDecision::Stop(phase) => {
+                publish(&app, match phase {
+                    DevicePhase::Denied => "denied",
+                    DevicePhase::Expired => "expired",
+                    DevicePhase::Cancelled => "cancelled",
+                    _ => "failed",
+                });
+                return;
+            }
+            PollDecision::Ready => {}
+        }
+        if !state.active(attempt) {
+            return;
+        }
+        let reply = match http.poll(challenge.device_code()).await {
+            Ok(value) => value,
+            Err(_) => {
+                if state.active(attempt) {
+                    publish(&app, "failed");
+                }
+                return;
+            }
+        };
+        if !state.active(attempt) {
+            return;
+        }
+        match reply {
+            PollReply::State(response) => {
+                if session.receive(response, unix_now()) != DevicePhase::AwaitingUser {
+                    publish(&app, match response {
+                        DeviceResponse::AccessDenied => "denied",
+                        DeviceResponse::ExpiredToken => "expired",
+                        _ => "failed",
+                    });
+                    return;
+                }
+            }
+            PollReply::Granted(lease) => {
+                if session.receive(DeviceResponse::Authorized, unix_now())
+                    != DevicePhase::Authorized
+                {
+                    publish(&app, "expired");
+                    return;
+                }
+                let _guard = state.vault_gate.lock().await;
+                if !state.active(attempt) {
+                    return;
+                }
+                let outcome = match CredentialRecord::from_lease(lease, unix_now()) {
+                    Ok(record) => store_credential(record).await,
+                    Err(error) => Err(error),
+                };
+                if state.active(attempt) {
+                    publish(&app, if outcome.is_ok() { "connected" } else { "failed" });
+                }
+                return;
+            }
+        }
+    }
+}
+
+#[tauri::command]
+pub fn github_cancel(app: AppHandle) {
+    cancel_pending(&app);
+}
+
+#[tauri::command]
+pub async fn github_disconnect(app: AppHandle) -> Result<(), String> {
+    let state = app.state::<Arc<GitHubAuthManager>>().inner().clone();
+    state.invalidate();
+    let _guard = state.vault_gate.lock().await;
+    delete_credential().await.map_err(public_error)?;
+    publish(&app, "disconnected");
+    Ok(())
+}
+
+/// Native-only accessor for the upcoming Actions/runner REST collector.
+/// Handles both tokens as a single rotated keychain credential generation.
+/// This method is NEVER registered as a Tauri JS command.
+#[allow(dead_code)]
+pub async fn github_access_token(app: &AppHandle) -> Result<String, String> {
+    let state = app.state::<Arc<GitHubAuthManager>>().inner().clone();
+    let _guard = state.vault_gate.lock().await;
+    let current = read_credential()
+        .await
+        .map_err(public_error)?
+        .ok_or_else(|| public_error(NativeAuthError::NoCredential))?;
+    let expiration = TokenExpiration {
+        access_expires_at: current.access_expires_at,
+        refresh_expires_at: current.refresh_expires_at,
+    };
+    match expiration.decide(unix_now(), 300) {
+        TokenAction::UseAccessToken => Ok(current.access_token),
+        TokenAction::Reauthorize => Err(public_error(NativeAuthError::Expired)),
+        TokenAction::Refresh => {
+            let http = GithubOAuthHttp::new().map_err(public_error)?;
+            let lease = http
+                .refresh(&current.refresh_token)
+                .await
+                .map_err(public_error)?;
+            let rotated =
+                CredentialRecord::from_lease(lease, unix_now()).map_err(public_error)?;
+            // Replacing the entire token pair in one OS credential entry is
+            // essential: GitHub invalidates the old refresh token on use.
+            store_credential(rotated)
+                .await
+                .map_err(public_error)?;
+            let next = read_credential().await.map_err(public_error)?;
+            next.map(|record| record.access_token)
+                .ok_or_else(|| public_error(NativeAuthError::KeychainUnavailable))
+        }
+    }
+}
+
+#[tauri::command]
+pub fn github_open_device_page() -> Result<(), String> {
+    // Not user-controlled; no shell and no OAuth client secret.
+    let url = "https://github.com/login/device";
+    #[cfg(target_os = "linux")]
+    let mut open = std::process::Command::new("xdg-open");
+    #[cfg(target_os = "macos")]
+    let mut open = std::process::Command::new("open");
+    #[cfg(target_os = "windows")]
+    let mut open = std::process::Command::new("explorer");
+    open.arg(url)
+        .spawn()
+        .map(|_| ())
+        .map_err(|_| "Cannot open the GitHub authorization page.".into())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn all_auth_failures_are_redacted_and_actionable() {
+        let errors = [
+            NativeAuthError::Network,
+            NativeAuthError::HttpStatus(403),
+            NativeAuthError::HttpStatus(429),
+            NativeAuthError::Rejected,
+            NativeAuthError::BadResponse,
+            NativeAuthError::KeychainUnavailable,
+            NativeAuthError::CorruptCredential,
+            NativeAuthError::NoCredential,
+            NativeAuthError::Expired,
+        ];
+        for error in errors {
+            let text = public_error(error);
+            assert!(!text.is_empty());
+            assert!(!text.contains("ghu_"));
+            assert!(!text.contains("ghr_"));
+            assert!(!text.contains(TOKEN_URL));
+        }
+    }
+
+    #[test]
+    fn newer_attempt_invalidates_prior_polling_generation() {
+        let manager = GitHubAuthManager::default();
+        let first = manager.invalidate();
+        assert!(manager.active(first));
+        let next = manager.invalidate();
+        assert!(!manager.active(first));
+        assert!(manager.active(next));
+    }
+}

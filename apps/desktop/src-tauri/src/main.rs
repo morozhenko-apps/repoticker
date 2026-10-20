@@ -4,6 +4,7 @@ mod app_icon;
 // tests. Runtime HTTP and OS secret storage will enable it in production.
 mod github_oauth_wire;
 mod github_native;
+mod github_session;
 
 use repoticker_core::{
     git::{self, GitError, OperationOutcome, RepoSnapshot},
@@ -673,6 +674,7 @@ fn save_settings(app: AppHandle, roots: Vec<String>, language: String) -> Result
 
 #[tauri::command]
 fn close_settings(app: AppHandle) -> Result<(), String> {
+    github_session::cancel_pending(&app);
     let window = app
         .get_webview_window("settings")
         .ok_or_else(|| "Settings window is unavailable".to_owned())?;
@@ -749,6 +751,7 @@ fn main() {
 
     tauri::Builder::default()
         .manage(OperationLock::default())
+        .manage(std::sync::Arc::new(github_session::GitHubAuthManager::default()))
         .setup(|app| {
             #[cfg(target_os = "linux")]
             {
@@ -848,6 +851,11 @@ fn main() {
         })
         .invoke_handler(tauri::generate_handler![
             get_snapshot,
+            github_session::github_auth_status,
+            github_session::github_begin,
+            github_session::github_cancel,
+            github_session::github_disconnect,
+            github_session::github_open_device_page,
             get_about_info,
             open_actions_job,
             show_usage_popup,

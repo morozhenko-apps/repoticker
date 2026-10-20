@@ -762,3 +762,47 @@ Remaining physical acceptance:
   positions must persist after Hide/Open and full restart.
 - [ ] Repos drawer expansion and collapse still work independently.
   Counters/buttons keep existing layout and styling.
+
+
+## KDE hover balloon-only acceptance and missing native diagnostics (2026-10-20)
+
+**User requirement clarified by physical review:** `ⓘ` is a **non-interactive
+hover tooltip**, not an independently closable popover. The balloon appears
+only while mouse is over the `ⓘ` icon and hides on icon `mouseleave`; keyboard
+focus remains available for accessibility. No close button, click-to-pin,
+popup hover retention, or input capture. Preserve native relative-pointer
+drag, three indicators and four action buttons without resizing the main
+card on usage hover.
+
+**Code-only candidate:** `2bc4665` replaces the previous popup state
+machine (popupHovered/closeGrace, click-to-pin and extra Tauri events) with
+direct icon mouseenter/mouseleave control. It removes the separate popup's
+close button and interaction handlers. `96c5a75` makes the native
+Wayland balloon pointer-pass-through and non-focusable, and always logs
+the actual native-versus-Tauri fallback mode at startup. The balloon
+is still a separately rendered surface because the 122px main Wayland
+surface cannot contain an overflow tooltip above its top boundary.
+
+**Do not guess the main-card gap root cause:** the user launched with
+`REPOTICKER_UI_DEBUG=1`, but the prior grep matched no
+`GTK geometry`, `layer:` or `relative drag` lines. One plausible
+explanation is that Layer Shell is *not enabled* in the actual KDE
+session and the OS displays the regular Tauri fallback window. This
+has not been proven. On startup, `RepoTicker surface mode=` now reports
+`gtk-layer-shell` or `tauri-fallback`, plus XDG session type,
+WAYLAND_DISPLAY presence and GDK backend. If fallback is confirmed,
+diagnose/fix the standard Tauri window's minimum height and position
+persistence rather than changing the GTK Layer Shell geometry.
+
+**Physical acceptance still open:**
+- [ ] `ⓘ` balloon shows only during icon hover and immediately disappears
+  on leaving the icon. No cross or pinned state, input remains on icon.
+- [ ] Record actual `RepoTicker surface mode=` and confirm which GTK/Tauri
+  geometry implementation is active on Alcotester.
+- [ ] Main card is exactly 390x122 in compact mode with **no empty gap**;
+  native drag moves immediately and position persists across Hide/Open
+  and process restart.
+- [ ] Popup stays aligned to the icon with a content-sized height,
+  repositions with the main card on the same screen.
+- [ ] Repos expansion/collapse retains its independent 510px height.
+- [ ] Final Node/Rust/native Linux CI green and KDE physical acceptance.

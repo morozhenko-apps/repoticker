@@ -806,3 +806,39 @@ persistence rather than changing the GTK Layer Shell geometry.
   repositions with the main card on the same screen.
 - [ ] Repos expansion/collapse retains its independent 510px height.
 - [ ] Final Node/Rust/native Linux CI green and KDE physical acceptance.
+
+
+## KDE tooltip-only semantics and backend-detection gate (2026-10-20)
+
+User clarified that the existing `ⓘ` indicator requires a **classic
+hover-only balloon**: popup shown while pointer is on the icon, hidden
+immediately when leaving the icon, no X close button, no click-to-pin,
+no independent popup hover/focus ownership and no change to card size.
+
+Implementation candidate on `dev`:
+- `2bc4665`: replace the sticky cross-WebView hover state, focus/click
+  pin control, global usage hover events and close button with direct
+  icon mouseenter/mouseleave semantics. The popup remains data-only.
+- `96c5a75`: GTK tooltip uses KeyboardMode::None and a pass-through
+  GDK surface so it does not steal the icon's mouse events. Startup
+  always reports `RepoTicker surface mode=gtk-layer-shell|tauri-fallback`.
+- `9cfbbdd`: on Linux non-Layer Shell fallback, report main window
+  logical-requested 390x122, actual inner/outer sizes, position and
+  runtime move/resize events when `REPOTICKER_UI_DEBUG=1` is set.
+- Code Preflight: https://github.com/morozhenko-apps/repoticker/actions/runs/39486122317
+
+The screenshot still shows a large blank area at top of the main card,
+and the user reports that repositioning does not work as it did after
+the native relative-pointer repair. Do **not** infer GTK geometry root
+cause merely from screenshot. Earlier `REPOTICKER_UI_DEBUG` logs
+contained **no native GTK messages**, a strong clue the user could be
+on the regular Tauri window path. Inspect the new startup mode log,
+`XDG_SESSION_TYPE`, `WAYLAND_DISPLAY`, `GDK_BACKEND`, and distinguish
+installed package processes from the `cargo run` process. If the
+fallback path is confirmed, fix *that path's* size constraints/position
+persistence (or correct the GDK session configuration), not the
+working native Layer Shell drag algorithm.
+
+**Still pending:** CI, physical KDE tooltip lifetime, exact compact
+allocation 390x122, no gap, smooth drag, persistent position across
+Hide/Open and restart. Issues #2/#3 stay open; v0.1.0/main unchanged.

@@ -46,7 +46,11 @@ const githubFailureLabels = Object.freeze({
   credential_store: "Authorization reached the system wallet, but KWallet/Secret Service could not store the token.",
   invalid_credential: "Stored credential is invalid. Disconnect and reconnect.",
   not_connected: "GitHub credentials were not found.",
-  expired: "GitHub authorization expired."
+  expired: "GitHub authorization expired.",
+  client_credentials: "GitHub App client credentials were rejected.",
+  grant_type: "GitHub does not accept this device authorization method.",
+  unverified_email: "Verify the primary email address on your GitHub account.",
+  github_rejected: "GitHub rejected this device code. Start a new authorization."
 });
 
 async function refreshGithub() {

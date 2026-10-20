@@ -18,6 +18,10 @@ const MAX_OAUTH_RESPONSE_BYTES: usize = 8192;
 const KEYRING_SERVICE: &str = "com.morozhenko.repoticker.github";
 const KEYRING_USER: &str = "github-app-user-token-v1";
 
+fn device_challenge_fields() -> [(&'static str, &'static str); 1] {
+    [("client_id", CLIENT_ID)]
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NativeAuthError {
     Network,
@@ -185,7 +189,7 @@ impl GithubOAuthHttp {
         let body = self
             .submit(
                 DEVICE_CODE_URL,
-                &[("client_id", CLIENT_ID)],
+                &device_challenge_fields(),
             )
             .await?;
         parse_device_challenge(&body, now).map_err(|_| NativeAuthError::BadResponse)
@@ -239,11 +243,9 @@ mod tests {
 
     #[test]
     fn github_app_device_challenge_requests_only_its_public_client_id() {
-        // GitHub App permissions are controlled by App registration, not
-        // OAuth App's requested scope; do not ask for an extra scope.
-        let source = include_str!("github_native.rs");
-        assert!(!source.contains("offline_access"));
-        assert!(source.contains("&[("));
+        // GitHub App permissions are controlled by App registration.
+        // Device code request carries only the public Client ID.
+        assert_eq!(device_challenge_fields(), [("client_id", CLIENT_ID)]);
     }
 
     #[test]

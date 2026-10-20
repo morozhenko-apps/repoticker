@@ -71,3 +71,27 @@ event coordinate behavior. Do not treat them as physical acceptance.
 A replacement must use a motion source independent of the moving
 surface, test button release/cancel/Escape and loss of focus, and verify
 convergence across GTK frame presentation, not just IPC completion.
+
+## Native relative-pointer-v1 implementation (awaiting KDE acceptance)
+
+A native GTK3/GDK Wayland bridge at
+`apps/desktop/src-tauri/native/wayland_relative_drag.c` uses the protocol
+extension on the existing GDK display and pointer, with no socket reader or
+manual event queue dispatch. The Rust callback accumulates subpixel motion
+before updating compositor-owned bottom/right margins. The JS client only
+serializes gesture start/end and pointer-capture release; it never computes
+a movement correction from a changing WebView coordinate frame.
+
+The `tests/native-drag.test.mjs` suite exercises the actual gesture
+controller, including early release, ordering of slow native start/stop,
+quick repeated gestures, unrelated pointers and unsupported protocol
+handling. Additional source assertions prevent reintroduction of the
+legacy JS move IPC. CI compiles the native Wayland C bridge on Linux,
+but does not have a graphical KWin runtime to exercise its event delivery.
+
+Physical acceptance still needs confirmation that KWin emits
+`relative_motion` under an implicit button grab while the Layer Shell
+surface moves. Error paths must not leave drag active; Save/Hide/restart
+must persist the last applied margins with no regression to card geometry
+or transparent rounded corners. Do not classify the bug as fixed without
+that runtime evidence.

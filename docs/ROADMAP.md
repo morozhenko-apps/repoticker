@@ -228,9 +228,10 @@ system cursor during card dragging; do not implement browser Pointer Lock.
 
 - [x] Read compositor protocol and GDK Wayland ownership APIs; confirm
   selected architectural contract in SSOT.
-- [ ] Implement native bridge and Linux build requirements in a **code-only**
-  commit; delete legacy screen/client movement path and native IPC.
-- [ ] Add native state and JS gesture regressions (same code commit).
+- [x] Implement native bridge and Linux build requirements in a **code-only**
+  commit (`b5c9ba9`, formatting fix `e3f5b21`); remove legacy WebView
+  screen/client movement path and delta-based native IPC.
+- [x] Add native state and JS gesture regressions (same code commit).
 - [ ] Run the **final stable gate once**: Rust fmt, core tests, Clippy,
   JS/Node tests, Python release tests and full Linux desktop cargo check.
   The desktop check must compile the generated Wayland bridge.
@@ -239,3 +240,19 @@ system cursor during card dragging; do not implement browser Pointer Lock.
   unsupported-protocol errors and any multi-display behavior.
 - [ ] Only after acceptance, close Issue #2 and consider the next package
   version. Windows and macOS builds remain isolated from Linux bridge.
+
+Implementation details: the C bridge uses borrowed GDK `wl_display` and
+`wl_pointer`, binds the relative-pointer-v1 manager through GDK's registry
+queue, receives physical deltas on GTK's main thread, and calls Rust through
+an FFI callback to adjust layer margins. It preserves fractional motion,
+normal cursor visibility, existing position persistence and the 390x122
+compact card. Linux build.rs generates the protocol C glue via Wayland
+scanner; CI/release Linux jobs install the platform dependencies. The
+non-Linux Tauri native-drag path remains unchanged. Existing JS
+anchor-error tests were deleted because they no longer exercise production
+logic; native gesture lifecycle tests exercise current code.
+
+Physical limitations to verify: the extension is only available while the
+compositor supplies pointer focus and a proper implicit grab. A compositor
+that does not advertise the extension returns a visible drag error rather
+than silently re-enabling jitter-prone client-coordinate dragging.

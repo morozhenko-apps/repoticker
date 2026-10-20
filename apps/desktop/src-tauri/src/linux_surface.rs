@@ -248,7 +248,8 @@ fn install_usage_surface(
     usage.set_anchor(Edge::Bottom, true);
     usage.set_anchor(Edge::Right, true);
     usage.set_exclusive_zone(-1);
-    usage.set_keyboard_mode(KeyboardMode::OnDemand);
+    // A balloon is presentational: it must not steal focus from its anchor.
+    usage.set_keyboard_mode(KeyboardMode::None);
     USAGE.with(|state| *state.borrow_mut() = Some(usage));
     USAGE_CONTENT.with(|state| *state.borrow_mut() = Some(box_view));
     USAGE_VIEWPORT.with(|state| *state.borrow_mut() = Some(viewport));
@@ -303,6 +304,11 @@ pub fn show_usage(app: &AppHandle) -> Result<(), String> {
     on_usage_main(app, |window| {
         anchor_usage(window);
         window.show_all();
+        // Pointer input must stay on the card. The native popup may be
+        // visually above the card, but must never hold a pointer grab.
+        if let Some(gdk_window) = window.window() {
+            gdk_window.set_pass_through(true);
+        }
     })
 }
 

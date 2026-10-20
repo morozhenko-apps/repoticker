@@ -454,13 +454,6 @@ fn hide_usage_popup(app: AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn dismiss_usage_popup(app: AppHandle) -> Result<(), String> {
-    hide_usage_popup(app.clone())?;
-    app.emit("repoticker-usage-dismiss", ())
-        .map_err(|error| error.to_string())
-}
-
-#[tauri::command]
 async fn resize_usage_popup(app: AppHandle, height: i32) -> Result<(), String> {
     #[cfg(target_os = "linux")]
     if linux_surface::enabled() {
@@ -728,6 +721,19 @@ fn main() {
             #[cfg(target_os = "linux")]
             {
                 linux_surface::install(app)?;
+                // This line is always emitted so user logs distinguish the
+                // native KDE Layer Shell path from Tauri/X11 fallback.
+                eprintln!(
+                    "RepoTicker surface mode={} session={} wayland_display={} gdk_backend={}",
+                    if linux_surface::enabled() {
+                        "gtk-layer-shell"
+                    } else {
+                        "tauri-fallback"
+                    },
+                    std::env::var("XDG_SESSION_TYPE").unwrap_or_else(|_| "unknown".to_owned()),
+                    std::env::var_os("WAYLAND_DISPLAY").is_some(),
+                    std::env::var("GDK_BACKEND").unwrap_or_else(|_| "default".to_owned()),
+                );
                 linux_tray::install(app)?;
             }
 
@@ -799,7 +805,6 @@ fn main() {
             open_actions_job,
             show_usage_popup,
             hide_usage_popup,
-            dismiss_usage_popup,
             resize_usage_popup,
             open_project_website,
             add_root,

@@ -58,3 +58,10 @@ test("hover controls balloon lifetime, never clicks, pins or popup hover", () =>
   assert.doesNotMatch(read("../apps/desktop/ui/quota.html"), /<button|quota-close/);
   assert.match(read("../apps/desktop/ui/quota.css"), /pointer-events:none/);
 });
+
+test("native tooltip ignores pointer/focus and reports the actual surface backend", () => {
+  assert.match(native, /set_keyboard_mode\(KeyboardMode::None\)/);
+  assert.match(native, /set_pass_through\(true\)/);
+  assert.doesNotMatch(read("../apps/desktop/src-tauri/src/main.rs"), /fn dismiss_usage_popup/);
+  assert.match(read("../apps/desktop/src-tauri/src/main.rs"), /RepoTicker surface mode=/);
+});

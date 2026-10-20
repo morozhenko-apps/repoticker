@@ -965,6 +965,8 @@ and the existing balloon still reports monitoring unavailable. The
 native-only `github_access_token` method is intentionally NOT a Tauri
 command.
 
+**Final CI completed successfully:** [Preflight #39496339110](https://github.com/morozhenko-apps/repoticker/actions/runs/39496339110), code SHA `487a47a`. Rust format, core tests/Clippy, Node/UI and native Linux desktop compilation passed (4/4). No physical KWallet approval or live GitHub API collection is implied.
+
 **Next physical acceptance:** GitHub account Device Flow on Alcotester
 using the publisher App, unlocked KWallet/Secret Service, denial,
 cancellation, forced token expiry/re-auth, refresh, Disconnect, and

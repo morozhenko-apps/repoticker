@@ -1,5 +1,6 @@
 import { nextCardView, pullReadyCommitCount } from "./view.mjs";
 import { createNativeDragGesture } from "./native-drag.mjs";
+import { buildQuotaDetails } from "./quota-details.mjs";
 
 const emptySnapshot = {
   roots: [], repositories: [], errors: [],
@@ -28,7 +29,7 @@ function armAutoHide() {
   cancelAutoHide();
   // Only the compact card is transient. An open Repos drawer must never
   // disappear while users inspect repositories or perform operations.
-  if (!cardVisible || view !== "compact") return;
+  if (!cardVisible || view !== "compact" || quotaExpanded) return;
   idleTimer = setTimeout(async () => {
     try { await invoke("hide_card"); resetView(); }
     catch (error) { showError(error); }
@@ -145,15 +146,112 @@ function updateActionState() {
     ? eligible + " commits eligible for fast-forward (clean upstream branches)"
     : "No branches eligible for safe pull. Run Fetch to refresh remote refs.";
 }
+/* The existing usage tooltip expands upward inside the same Wayland card.
+ * Status counters are untouched; only the native surface gains space.
+ */
+const quotaAnchor = document.querySelector(".quota-anchor");
+let quotaExpanded = false;
+let quotaWanted = false;
+let quotaQueue = Promise.resolve();
+
+function resetQuota() {
+  quotaWanted = false;
+  quotaExpanded = false;
+  quotaAnchor.dataset.open = "false";
+  quotaAnchor.setAttribute("aria-expanded", "false");
+}
+
+function setQuotaOpen(wanted) {
+  quotaWanted = wanted;
+  quotaQueue = quotaQueue.then(async () => {
+    if (!cardVisible) { resetQuota(); return; }
+    if (quotaWanted && !quotaExpanded) {
+      if (view === "compact") {
+        await invoke("set_card_view", { view: "quota" });
+        if (!cardVisible || !quotaWanted) {
+          if (cardVisible) await invoke("set_card_view", { view: "compact" });
+          return;
+        }
+        byId("card").dataset.view = "quota";
+      }
+      quotaExpanded = true;
+      quotaAnchor.dataset.open = "true";
+      quotaAnchor.setAttribute("aria-expanded", "true");
+      cancelAutoHide();
+    } else if (!quotaWanted && quotaExpanded) {
+      quotaExpanded = false;
+      quotaAnchor.dataset.open = "false";
+      quotaAnchor.setAttribute("aria-expanded", "false");
+      if (view === "compact") {
+        await invoke("set_card_view", { view: "compact" });
+        byId("card").dataset.view = "compact";
+      }
+      armAutoHide();
+    }
+  }).catch(showError);
+  return quotaQueue;
+}
+
+quotaAnchor.addEventListener("mouseenter", () => { void setQuotaOpen(true); });
+quotaAnchor.addEventListener("mouseleave", () => {
+  if (!quotaAnchor.contains(document.activeElement)) void setQuotaOpen(false);
+});
+quotaAnchor.addEventListener("focusin", () => { void setQuotaOpen(true); });
+quotaAnchor.addEventListener("focusout", event => {
+  if (!quotaAnchor.contains(event.relatedTarget) && !quotaAnchor.matches(":hover")) {
+    void setQuotaOpen(false);
+  }
+});
+
+function quotaLine(parent, label, value) {
+  const line = addText(parent, "span", "", "quota-line");
+  addText(line, "span", label, "quota-line-label");
+  addText(line, "span", value, "quota-line-value");
+}
+
+function renderQuotaDetails(details) {
+  const node = byId("quota-content");
+  node.replaceChildren();
+  addText(node, "span", details.status, "quota-message");
+  if (!details.connected) {
+    addText(node, "span", details.message, "quota-message");
+    return;
+  }
+  for (const section of details.sections) {
+    const block = addText(node, "span", "", "quota-section");
+    addText(block, "span", section.title, "quota-section-title");
+    for (const [label, value] of section.rows || []) quotaLine(block, label, value);
+    for (const item of section.links || []) {
+      const link = addText(block, "a", item.label, "quota-job-link");
+      link.href = item.url;
+      link.title = item.url;
+      link.rel = "noopener noreferrer";
+      link.addEventListener("click", async event => {
+        event.preventDefault();
+        try { await invoke("open_actions_job", { url: item.url }); }
+        catch (error) { showError(error); }
+      });
+    }
+    if (section.message) addText(block, "span", section.message, "quota-message");
+  }
+  addText(node, "span", details.message, "quota-message");
+}
+
 function render(next) {
   snapshot = next;
-  // No invented GitHub counters. Unknown is distinct from zero.
-  byId("runner-status").textContent = next.runners_online == null
-    ? "Runners —" : "Runners " + next.runners_online;
-  byId("ci-running").textContent = next.ci_running == null
-    ? "Running —" : "Running " + next.ci_running;
-  byId("ci-queued").textContent = next.ci_queued == null
-    ? "Queued —" : "Queued " + next.ci_queued;
+  const counts = next.runner_state?.counts;
+  const online = counts?.busy != null && counts?.idle != null
+    ? counts.busy + counts.idle : next.runners_online;
+  const running = counts?.running ?? next.ci_running;
+  const queued = counts?.queued ?? next.ci_queued;
+  // Preserve the exact three existing indicators, order and presentation.
+  byId("runner-status").textContent = online == null
+    ? "Runners —" : "Runners " + online;
+  byId("ci-running").textContent = running == null
+    ? "Running —" : "Running " + running;
+  byId("ci-queued").textContent = queued == null
+    ? "Queued —" : "Queued " + queued;
+  renderQuotaDetails(buildQuotaDetails(next.runner_state));
   const list = byId("repo-list");
   list.replaceChildren();
   if (!next.repositories.length) {
@@ -201,6 +299,7 @@ async function runGitAction(operation, repoPath = null) {
   }
 }
 function resetView() {
+  resetQuota();
   view = "compact";
   byId("card").dataset.view = "compact";
   byId("repo-drawer").hidden = true;
@@ -209,6 +308,7 @@ function resetView() {
   hideRepoMenus();
 }
 async function openView(target) {
+  if (quotaExpanded) await setQuotaOpen(false);
   const desired = nextCardView(view, target);
   if (desired === view) return;
   try {
@@ -233,6 +333,7 @@ byId("fetch-all").addEventListener("click", () => runGitAction("fetch"));
 byId("sync-all").addEventListener("click", () => runGitAction("safe_pull"));
 document.addEventListener("keydown", event => {
   if (event.key === "Escape") {
+    if (quotaExpanded) { void setQuotaOpen(false); return; }
     if (view !== "compact") openView(view);
     else byId("hide-card").click();
   }
@@ -269,6 +370,7 @@ window.__TAURI__?.event?.listen?.("repoticker-git-progress", event => {
 window.__TAURI__?.event?.listen?.("repoticker-card-hidden", () => {
   cardVisible = false;
   cancelAutoHide();
+  resetQuota();
   stopDragging();
 });
 window.__TAURI__?.event?.listen?.("repoticker-card-shown", () => {
@@ -312,7 +414,7 @@ function stopDragging(event = null) {
 
 dragSurface.addEventListener("pointerdown", event => {
   if (event.button !== 0 || !event.isPrimary ||
-      event.target.closest("button,input,select,a,[role=button]")) return;
+      event.target.closest("button,input,select,a,.quota-anchor,[role=button]")) return;
   if (!dragGesture.begin(event.pointerId)) return;
   activePointerId = event.pointerId;
   dragSurface.setPointerCapture(event.pointerId);

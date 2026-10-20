@@ -452,3 +452,111 @@ No new OS window. No changes to Git root/editor state.
 
 Rollback: documentation-only plan commit, then a code-only popup commit.
 Published v0.1.0, main, signing and RunnerRouter remain unchanged.
+
+
+## P2 GitHub App authorization decision — 2026-10-20
+
+**Owner decision:** Option A, a reusable **GitHub App** for RepoTicker.
+Use OAuth 2.0 **Device Authorization Grant** for native desktop; do not
+introduce client-secret distribution, a mandatory OAuth callback server,
+a required Cloudflare Worker or a user-managed Personal Access Token.
+
+### Public application registration (one-time owner-controlled prerequisite)
+
+Register a GitHub App named RepoTicker (or an available variant), owned
+by the product publisher, installation availability **Any account**,
+with **Enable Device Flow** and expiring user tokens enabled. Disable
+webhook delivery if no webhook event is needed in the direct REST mode.
+Minimal permissions:
+- Repository: **Actions: read** (Metadata: read is automatic).
+- Organization: **Self-hosted runners: read**.
+- Nothing writable, and no billing read requirement for basic job counts.
+
+Install this App into the organization(s) and selected repositories
+being monitored. User access tokens are the **intersection** of App
+permissions, the installation's repository selection and the signed-in
+user's own permissions. Organization runner enumeration additionally
+requires the user to have organization admin access. Non-admin users
+must still get usable repo job totals while runner inventory is marked
+unavailable; never substitute a false zero.
+
+The product publisher supplies the public **Client ID** (not numeric
+App ID, not client secret) at build/release configuration time.
+Device Flow does not require a client secret. An unconfigured developer
+build shows a helpful "GitHub App not configured" state and MUST NOT
+silently authenticate against the developer's personal account.
+The GitHub App registration and org installation are **user-owned
+external operations**; the agent must not invent a Client ID or ask
+for a private key/client secret.
+
+GitHub canonical docs:
+- https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-a-user-access-token-for-a-github-app
+- https://docs.github.com/en/apps/creating-github-apps/registering-a-github-app/registering-a-github-app
+- https://docs.github.com/en/rest/actions/self-hosted-runners
+- https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/refreshing-user-access-tokens
+
+### Native security and lifecycle contract
+
+1. Settings > GitHub > Connect begins Device Flow on native side:
+   \`POST https://github.com/login/device/code\` (Client ID only).
+   Display only \`user_code\`, \`verification_uri\`, expiration and
+   explicit "Open GitHub" / "Cancel" controls in WebView. Never expose
+   \`device_code\` or access/refresh tokens to JavaScript.
+2. Native polling uses \`POST https://github.com/login/oauth/access_token\`
+   with the grant \`urn:ietf:params:oauth:grant-type:device_code\`.
+   Honor server \`interval\`, \`slow_down\` and token expiration;
+   \`authorization_pending\` is expected, not a failure. Cancellation
+   and window close terminate active attempts. No tight polling, arbitrary
+   retry loops or leaking tokens into logs.
+3. Request \`offline_access\` to consistently obtain an expiring access
+   token and refresh token. Rotate refresh tokens atomically; old refresh
+   tokens become unusable after rotation. Refresh device-origin tokens
+   without client secret, preserving server expiration and reauthentication
+   on denied/invalid grants. Never persist them in \`config.json\`.
+4. Native HTTP with strict GitHub hosts, HTTPS only, bounded bodies,
+   conservative pagination/timeouts, meaningful \`401/403/429\` and
+   rate-limit handling, cancellation and scoped repository selection.
+   Only non-sensitive progress/connection metadata and filtered Actions
+   job summaries are passed to the WebView.
+5. OS secret store: supported Linux Secret Service/KWallet integration,
+   Windows Credential Manager, macOS Keychain, via a maintained native
+   cross-platform credential library. Fail closed if the store is
+   unavailable or locked. No plaintext fallback, custom password file,
+   environment token or JS localStorage.
+6. On Disconnect, revoke/invalidate when supported, remove local
+   token material and clear all cached authenticated statistics. Do not
+   claim remote revocation success when its API cannot be called.
+7. Account/org selection must be explicit, portable and changeable.
+   A selected organization is not hard-coded to morozhenko-apps.
+   The existing Worker URL setting remains optional and unused in
+   the direct GitHub App path.
+
+### Implementation stages and validation
+
+- [ ] **A1:** Native-independent Device Flow state machine in Rust core;
+  redaction-safe error types and deterministic tests for pending, slowdown,
+  denial, expiry, cancellation, rotated token state. No credentials/network.
+- [ ] **A2:** Native authenticated GitHub HTTP and OS credential-store
+  adapters, real Device Flow and refresh, using a maintained library.
+  Commit updated \`Cargo.lock\` with new dependencies. Never bypass
+  \`--locked\` release source reproducibility.
+- [ ] **A3:** Settings controls for connecting, authorization status,
+  choosing organization/selected repositories/all accessible scope and
+  disconnect. Keep the 3 compact counters and existing quota popup intact.
+- [ ] **A4:** Native collector and snapshot integration; adaptive ETag/
+  rate-limit-aware refresh, jobs across self-hosted and GitHub-hosted lanes,
+  independent runner inventory access, explicit partial coverage.
+- [ ] **A5:** Final stable CI gate once after planned changes; KDE physical
+  acceptance with actual GitHub App installation/user grant, expiration,
+  403 on runner inventory, rate-limit and complete disconnection. Do not
+  close Wayland drag #2 by inference or publish new v0.1.x without tests.
+
+**Rollback:** steps in independent code commits, documentation in separate
+docs-only commits. The public v0.1.0 tag, main branch and production
+RunnerRouter stay unchanged. Until the publisher registers the App and
+provides its public Client ID, the live OAuth connection cannot be exercised.
+
+**Avoided design:** an ephemeral localhost OAuth callback or browser
+auth flow requiring bundled GitHub client secret. GitHub's supported
+Device Flow is more appropriate for an untrusted native client and
+requires no third-party authentication relay.

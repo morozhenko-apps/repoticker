@@ -741,6 +741,8 @@ The actual root causes in the usage overlay:
 3. Frontend-only pointerleave propagation could leave popup visible
    if the global event was lost or the focus state diverged.
 
+**CI:** [Preflight #39483808697](https://github.com/morozhenko-apps/repoticker/actions/runs/39483808697) completed **SUCCESS 4/4** for implementation SHA `111cb45` (Rust fmt/core/Clippy, Node/UI tests, Linux desktop compile, aggregate gate). This does NOT replace KDE Wayland physical acceptance.
+
 **Code commit `111cb45`** measures intrinsic row content through a
 pure capped height function, fixes popup sizing at 118..320, explicitly
 selects the actual GDK monitor of the displayed primary card before

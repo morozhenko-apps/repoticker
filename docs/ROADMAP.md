@@ -637,3 +637,48 @@ numeric App ID `5399579`, public Client ID
 App ID. The App's actual installed repository selection/permission list
 must still be confirmed before real API acceptance. Client secret and
 private key must not be generated or copied into the desktop bundle.
+
+
+## P2 compact card geometry regression after quota popup (2026-10-20)
+
+After native relative-pointer-v1 drag was physically confirmed smooth, the
+user retested the inline `ⓘ` Actions limits popup and reported a
+regression: a blank GTK/WebKit gap reappeared and the card's expected
+position was not retained on open/close. This blocks accepting both
+[Issue #2](https://github.com/morozhenko-apps/repoticker/issues/2)
+and the [quota popup issue #3](https://github.com/morozhenko-apps/repoticker/issues/3).
+
+Source inspection isolated two broken resizing contracts:
+- `linux_surface::resize` used to release the inner WebView container's
+  requested size to `(-1,-1)` despite a fixed outer 390×height viewport.
+  This is compatible with the earlier confirmed cause of a top blank area
+  (GTK honoring a larger WebView requisition despite 122px compact card).
+- It also updated `CARD_HEIGHT` optimistically before GTK applied the
+  resize; the Tauri IPC response did not wait for GTK. Hover/toggle/Hide
+  could therefore run with the old native allocation under the new UI state.
+
+**Code-only corrections under validation**:
+- `801c74f`: hold the GTK viewport and nested Tauri WebView container
+  at matching 390×requested-height sizes; apply resizing and cached height
+  only on GTK main thread; restore the same saved bottom/right Layer Shell
+  margins after each height change; await the GTK callback before resolving
+  UI `set_card_view`. Exclude popup content from window drag activation.
+- `a7c3f59`: preserve old bottom-anchored resize behavior for ordinary
+  non-Layer-Shell platforms when reopening in compact mode.
+- Code Preflight: https://github.com/morozhenko-apps/repoticker/actions/runs/39477078873
+
+**Acceptance (still open)**:
+- [ ] GTK 390×122 compact allocation contains no empty extra height and
+  the embedded WebView fills the allocated native viewport.
+- [ ] `ⓘ` popup opens/closes without repositioning status strip or
+  losing the bottom/right user anchor, compact and Repos open.
+- [ ] Repos expansion/collapse does not change persisted margins.
+- [ ] Drag a card, release, Hide/Open, restart process; card reopens at
+  same margins and remains smooth on actual KDE Wayland.
+- [ ] Confirm `card_bottom_margin/card_right_margin` saved in config
+  match GTK diagnostic margins on every toggle. Do not mark solved based
+  on CI or code inspection alone.
+
+No mandatory RunnerRouter, client secret or new Cloudflare deployment.
+GitHub App is installed by the publisher, but native Device Flow remains
+a separate pending integration. Published v0.1.0 / main stay unchanged.

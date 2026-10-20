@@ -371,6 +371,28 @@ async fn perform_git_action(
         .map_err(|err| err.to_string())?
 }
 
+/// Preserve the bottom edge when resizing a regular Tauri popup.
+fn resize_unmanaged_card(window: &tauri::WebviewWindow, height: f64) -> Result<(), String> {
+    let before_position = window.outer_position().ok();
+    let before_size = window.outer_size().ok();
+    window
+        .set_size(tauri::LogicalSize::new(390.0, height))
+        .map_err(|err| format!("Cannot resize card: {err}"))?;
+
+    if let (Some(position), Some(size)) = (before_position, before_size) {
+        let scale = window.scale_factor().unwrap_or(1.0);
+        let new_physical_height = (height * scale).round() as i64;
+        let bottom = i64::from(position.y) + i64::from(size.height);
+        let top = bottom - new_physical_height;
+        if let Ok(top) = i32::try_from(top) {
+            // Position changes are unsupported by some Wayland compositors.
+            // Keep the popup usable even if the request is rejected.
+            let _ = window.set_position(tauri::PhysicalPosition::new(position.x, top));
+        }
+    }
+    Ok(())
+}
+
 /// The card grows upward from its previous bottom edge when the platform
 /// permits setting window coordinates. Wayland compositors may deny it.
 #[tauri::command]
@@ -391,24 +413,7 @@ async fn set_card_view(app: AppHandle, view: String) -> Result<(), String> {
         return linux_surface::resize(app, height as i32).await;
     }
 
-    let before_position = window.outer_position().ok();
-    let before_size = window.outer_size().ok();
-    window
-        .set_size(tauri::LogicalSize::new(390.0, height))
-        .map_err(|err| format!("Cannot resize card: {err}"))?;
-
-    if let (Some(position), Some(size)) = (before_position, before_size) {
-        let scale = window.scale_factor().unwrap_or(1.0);
-        let new_physical_height = (height * scale).round() as i64;
-        let bottom = i64::from(position.y) + i64::from(size.height);
-        let top = bottom - new_physical_height;
-        if let Ok(top) = i32::try_from(top) {
-            // Position changes are unsupported by some Wayland compositors.
-            // The card must remain functional if this request is rejected.
-            let _ = window.set_position(tauri::PhysicalPosition::new(position.x, top));
-        }
-    }
-    Ok(())
+    resize_unmanaged_card(&window, height)
 }
 
 #[tauri::command]
@@ -446,7 +451,9 @@ fn show_compact_card(app: &AppHandle) {
 
     // Non-layer-shell platforms retain the existing compact geometry.
     if let Some(window) = app.get_webview_window("main") {
-        let _ = window.set_size(tauri::LogicalSize::new(390.0, 122.0));
+        if let Err(error) = resize_unmanaged_card(&window, 122.0) {
+            eprintln!("RepoTicker compact resize: {error}");
+        }
         let _ = app.emit("repoticker-reset-view", ());
         let _ = window.show();
         let _ = window.set_focus();

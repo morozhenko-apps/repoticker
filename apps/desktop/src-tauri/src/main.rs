@@ -1,5 +1,8 @@
 //! RepoTicker desktop: local-only roots, Git provider and tray card.
 mod app_icon;
+// The OAuth wire parser is a protocol-stage artifact, exercised in native
+// tests. Runtime HTTP and OS secret storage will enable it in production.
+#[cfg(test)]
 mod github_oauth_wire;
 
 use repoticker_core::{

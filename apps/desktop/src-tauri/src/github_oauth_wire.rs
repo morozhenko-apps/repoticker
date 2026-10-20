@@ -66,8 +66,7 @@ fn object(input: &str) -> Result<Value, WireError> {
     if input.len() > MAX_JSON_BYTES {
         return Err(WireError::InvalidServerResponse);
     }
-    let value: Value =
-        serde_json::from_str(input).map_err(|_| WireError::InvalidServerResponse)?;
+    let value: Value = serde_json::from_str(input).map_err(|_| WireError::InvalidServerResponse)?;
     if !value.is_object() {
         return Err(WireError::InvalidServerResponse);
     }
@@ -75,9 +74,7 @@ fn object(input: &str) -> Result<Value, WireError> {
 }
 
 fn valid_ascii_token(value: &str, max_len: usize) -> bool {
-    !value.is_empty()
-        && value.len() <= max_len
-        && value.bytes().all(|byte| byte.is_ascii_graphic())
+    !value.is_empty() && value.len() <= max_len && value.bytes().all(|byte| byte.is_ascii_graphic())
 }
 
 pub fn parse_device_challenge(input: &str, started_at: u64) -> Result<DeviceChallenge, WireError> {
@@ -181,16 +178,24 @@ mod tests {
     #[test]
     fn known_device_errors_are_mapped_without_leaking_server_text() {
         for (code, expected) in [
-            ("authorization_pending", DeviceResponse::AuthorizationPending),
+            (
+                "authorization_pending",
+                DeviceResponse::AuthorizationPending,
+            ),
             ("slow_down", DeviceResponse::SlowDown),
             ("access_denied", DeviceResponse::AccessDenied),
             ("expired_token", DeviceResponse::ExpiredToken),
         ] {
             let wire = format!(r#"{{"error":"{code}","error_description":"sensitive"}}"#);
-            assert!(matches!(parse_token_reply(&wire), Ok(PollReply::State(response)) if response == expected));
+            assert!(
+                matches!(parse_token_reply(&wire), Ok(PollReply::State(response)) if response == expected)
+            );
         }
         let mut session = parse_device_challenge(r#"{"device_code":"one","user_code":"ABCD-EFGH","verification_uri":"https://github.com/login/device","expires_in":900,"interval":5}"#, 1000).unwrap().session;
-        assert_eq!(session.receive(DeviceResponse::AccessDenied, 1010), DevicePhase::Denied);
+        assert_eq!(
+            session.receive(DeviceResponse::AccessDenied, 1010),
+            DevicePhase::Denied
+        );
     }
 
     #[test]
@@ -215,6 +220,17 @@ mod tests {
         ] {
             assert!(parse_token_reply(&bad).is_err());
         }
+    }
+
+    #[test]
+    fn oauth_destinations_and_publisher_client_id_are_fixed() {
+        assert_eq!(CLIENT_ID, "Iv23liyFAFdT7NCSkpIj");
+        assert_eq!(DEVICE_CODE_URL, "https://github.com/login/device/code");
+        assert_eq!(TOKEN_URL, "https://github.com/login/oauth/access_token");
+        assert_eq!(
+            DEVICE_GRANT_TYPE,
+            "urn:ietf:params:oauth:grant-type:device_code"
+        );
     }
 
     #[test]

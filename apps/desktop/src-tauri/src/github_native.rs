@@ -10,8 +10,8 @@ use reqwest::{header, redirect::Policy, Client};
 use serde::{Deserialize, Serialize};
 
 use crate::github_oauth_wire::{
-    parse_device_challenge, parse_token_reply, DeviceChallenge, PollReply, TokenLease,
-    CLIENT_ID, DEVICE_CODE_URL, DEVICE_GRANT_TYPE, TOKEN_URL,
+    parse_device_challenge, parse_token_reply, DeviceChallenge, PollReply, TokenLease, CLIENT_ID,
+    DEVICE_CODE_URL, DEVICE_GRANT_TYPE, TOKEN_URL,
 };
 
 const MAX_OAUTH_RESPONSE_BYTES: usize = 8192;
@@ -142,7 +142,11 @@ impl GithubOAuthHttp {
         Ok(Self { client })
     }
 
-    async fn submit(&self, url: &'static str, form: &[(&str, &str)]) -> Result<String, NativeAuthError> {
+    async fn submit(
+        &self,
+        url: &'static str,
+        form: &[(&str, &str)],
+    ) -> Result<String, NativeAuthError> {
         // Both endpoints are compile-time constants, never user-provided URLs.
         if url != DEVICE_CODE_URL && url != TOKEN_URL {
             return Err(NativeAuthError::BadResponse);

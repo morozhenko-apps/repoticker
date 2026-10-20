@@ -21,7 +21,7 @@ use tokio::sync::{Mutex, Notify};
 
 use crate::{
     github_native::{CredentialRecord, GithubOAuthHttp, NativeAuthError, NativeCredentialStore},
-    github_oauth_wire::{PollReply, TOKEN_URL},
+    github_oauth_wire::PollReply,
 };
 
 #[derive(Default)]
@@ -172,7 +172,7 @@ async fn poll_authorization(
     http: GithubOAuthHttp,
     challenge: crate::github_oauth_wire::DeviceChallenge,
 ) {
-    let mut session = challenge.session;
+    let mut session = challenge.session.clone();
     loop {
         if !state.active(attempt) {
             return;
@@ -186,12 +186,15 @@ async fn poll_authorization(
                 continue;
             }
             PollDecision::Stop(phase) => {
-                publish(&app, match phase {
-                    DevicePhase::Denied => "denied",
-                    DevicePhase::Expired => "expired",
-                    DevicePhase::Cancelled => "cancelled",
-                    _ => "failed",
-                });
+                publish(
+                    &app,
+                    match phase {
+                        DevicePhase::Denied => "denied",
+                        DevicePhase::Expired => "expired",
+                        DevicePhase::Cancelled => "cancelled",
+                        _ => "failed",
+                    },
+                );
                 return;
             }
             PollDecision::Ready => {}
@@ -214,11 +217,14 @@ async fn poll_authorization(
         match reply {
             PollReply::State(response) => {
                 if session.receive(response, unix_now()) != DevicePhase::AwaitingUser {
-                    publish(&app, match response {
-                        DeviceResponse::AccessDenied => "denied",
-                        DeviceResponse::ExpiredToken => "expired",
-                        _ => "failed",
-                    });
+                    publish(
+                        &app,
+                        match response {
+                            DeviceResponse::AccessDenied => "denied",
+                            DeviceResponse::ExpiredToken => "expired",
+                            _ => "failed",
+                        },
+                    );
                     return;
                 }
             }
@@ -238,7 +244,14 @@ async fn poll_authorization(
                     Err(error) => Err(error),
                 };
                 if state.active(attempt) {
-                    publish(&app, if outcome.is_ok() { "connected" } else { "failed" });
+                    publish(
+                        &app,
+                        if outcome.is_ok() {
+                            "connected"
+                        } else {
+                            "failed"
+                        },
+                    );
                 }
                 return;
             }
@@ -285,13 +298,10 @@ pub async fn github_access_token(app: &AppHandle) -> Result<String, String> {
                 .refresh(&current.refresh_token)
                 .await
                 .map_err(public_error)?;
-            let rotated =
-                CredentialRecord::from_lease(lease, unix_now()).map_err(public_error)?;
+            let rotated = CredentialRecord::from_lease(lease, unix_now()).map_err(public_error)?;
             // Replacing the entire token pair in one OS credential entry is
             // essential: GitHub invalidates the old refresh token on use.
-            store_credential(rotated)
-                .await
-                .map_err(public_error)?;
+            store_credential(rotated).await.map_err(public_error)?;
             let next = read_credential().await.map_err(public_error)?;
             next.map(|record| record.access_token)
                 .ok_or_else(|| public_error(NativeAuthError::KeychainUnavailable))
@@ -337,7 +347,7 @@ mod tests {
             assert!(!text.is_empty());
             assert!(!text.contains("ghu_"));
             assert!(!text.contains("ghr_"));
-            assert!(!text.contains(TOKEN_URL));
+            assert!(!text.contains(crate::github_oauth_wire::TOKEN_URL));
         }
     }
 

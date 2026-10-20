@@ -1,9 +1,7 @@
 //! RepoTicker desktop: local-only roots, Git provider and tray card.
 mod app_icon;
-// The OAuth wire parser is a protocol-stage artifact, exercised in native
-// tests. Runtime HTTP and OS secret storage will enable it in production.
-mod github_oauth_wire;
 mod github_native;
+mod github_oauth_wire;
 mod github_session;
 
 use repoticker_core::{
@@ -751,7 +749,9 @@ fn main() {
 
     tauri::Builder::default()
         .manage(OperationLock::default())
-        .manage(std::sync::Arc::new(github_session::GitHubAuthManager::default()))
+        .manage(std::sync::Arc::new(
+            github_session::GitHubAuthManager::default(),
+        ))
         .setup(|app| {
             #[cfg(target_os = "linux")]
             {

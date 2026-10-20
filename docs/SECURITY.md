@@ -30,6 +30,10 @@ only publicly visible verification code and timing metadata. The future
 native HTTP adapter owns device_code and tokens, and all credentials must
 be persisted exclusively through OS credential storage. No plaintext
 fallback, token in logs, WebView, settings JSON, URL or error strings.
-Only read-only Actions and organization self-hosted-runner permissions
-are permitted for CI monitoring. A runner-inventory 403 must not mask
+Future-oriented read-only scope may include Actions, Checks,
+Commit statuses, Pull requests, Contents and Deployments at repository
+level plus organization Self-hosted runners. Organization
+Administration:read and Account Plan:read are separately considered for
+billing endpoints, not silently treated as required for job monitoring.
+None of these permissions authorizes modifying Actions runs or repositories. A runner-inventory 403 must not mask
 permitted repository jobs. No requirement to deploy RunnerRouter.

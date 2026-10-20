@@ -14,9 +14,26 @@ Settings:
 - Expire user authorization tokens: enabled.
 - Enable Device Flow: enabled.
 - Webhooks: disabled for the direct REST mode.
-- Repository permissions: Actions, Read-only; Metadata is implicit.
-- Organization permissions: Self-hosted runners, Read-only.
-- All unrelated repository/organization permissions: No access.
+- Repository permissions for the planned read-only CI/Git companion:
+  - Actions: Read-only (runs/jobs/logs/artifacts/workflows/cache).
+  - Checks: Read-only (check runs and suites on commits/PRs).
+  - Commit statuses: Read-only (external CI status contexts).
+  - Pull requests: Read-only (PR context and checks).
+  - Contents: Read-only (commits, workflow sources, tags and releases).
+  - Deployments: Read-only (deployment/environment status).
+  - Metadata: implicit Read-only.
+- Organization permissions: Self-hosted runners: Read-only.
+- **Additional opt-in permissions for accurate billing/limits:**
+  Organization Administration: Read-only (organization billed usage,
+  Actions cache/plan configuration; requires sufficient user/org rights);
+  Account Plan: Read-only (individual account billed usage). These are
+  broader privacy/administrative scopes, so enable with clear user
+  approval and product explanation. Do not request them merely to count
+  queued/running jobs.
+- All remaining repository/organization/account permissions: No access.
+  In particular, Actions Write, Administration Write, Contents Write,
+  Pull requests Write, runner management Write, Secrets Write and
+  Workflows Write are NOT approved for current/future read-only monitoring.
 - Installation eligibility: Any account.
 - OAuth callback URL: not required for Device Flow. Do not create a
   pretend callback endpoint or distribute the GitHub App client secret.
@@ -63,3 +80,47 @@ Reference:
 https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-a-user-access-token-for-a-github-app
 https://docs.github.com/en/apps/creating-github-apps/registering-a-github-app/registering-a-github-app
 https://docs.github.com/en/rest/actions/self-hosted-runners
+
+## Future-readiness review and permission upgrade policy (2026-10-20)
+
+This matrix covers current user-approved features and the P2-P4 roadmap:
+read-only CI jobs, self-hosted runner status, PR/check/commit context,
+tag/release/deployment metadata, cache/usage hints, optional webhook
+relay, and local Git fetch/fast-forward operations. None of the latter
+requires any GitHub API write permission: local Git uses the user's
+existing Git credential helper separately from GitHub App auth.
+
+For a later **optional Hybrid relay**, workflow_run and workflow_job
+webhook subscriptions use existing Actions:read. Push subscriptions
+can use existing Contents:read. Webhook delivery requires a separate
+endpoint, signature validation and opt-in; enabling these permissions
+does NOT deploy the relay or turn on webhooks automatically.
+
+If a future product explicitly adds rerunning/cancelling/dispatching
+workflow jobs, that is a DIFFERENT trust boundary requiring
+Actions:write, UI confirmation and deliberate installation re-approval.
+Likewise remotely opening/merging a pull request, publishing releases,
+writing files or managing runners requires write permissions; do not
+pre-authorize speculative mutation merely to save a Settings visit.
+
+IMPORTANT: when the App publisher adds any new repository or
+organization permission later, **each existing installation owner must
+approve** the change before it becomes effective. New account-level
+permissions require user reauthorization. This is a security feature
+and cannot be bypassed by a broad initial permission list.
+
+Read-only permission choices apply to all installations of the
+publisher-owned GitHub App. Consequently an optional billing-related
+Organization Administration:read is **not per-installation optional
+merely because the RepoTicker UI hides billing**: enable it globally
+only if broad administrative visibility is acceptable to future users,
+or defer it until dedicated billing support is ready. User ownership
+or admin rights are still required on individual endpoints. If
+permissions are denied, show "Unavailable", not "0" or an invented
+plan quota.
+
+References:
+https://docs.github.com/en/rest/authentication/permissions-required-for-github-apps
+https://docs.github.com/en/rest/billing/usage
+https://docs.github.com/en/rest/actions/self-hosted-runners
+https://docs.github.com/en/apps/maintaining-github-apps/modifying-a-github-app-registration

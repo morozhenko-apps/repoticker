@@ -560,3 +560,34 @@ Device Flow is more appropriate for an untrusted native client and
 requires no third-party authentication relay.
 
 GitHub App registration and deployment steps: [GitHub App guide](GITHUB_APP.md).
+
+## Forward-looking GitHub App read permissions audit — 2026-10-20
+
+Before registration, review [docs/GITHUB_APP.md](GITHUB_APP.md) as
+the registration source of truth. The original A1 design specified only
+Actions:read and organization Self-hosted runners:read, enough for
+current job counts but *not* all planned read-side features.
+
+**Read-only near-term bundle:** repository Actions, Checks, Commit
+statuses, Pull requests, Contents, Deployments; organization Self-hosted
+runners. Metadata:read is implied. This supports optional PR/commit
+checks and releases/deployments without asking existing installers to
+approve additional permissions for each new read-only feature.
+
+**Admin/usage decision:** billed usage for organizations requires
+Organization Administration:read; per-user billing requires Account
+Plan:read, where the enhanced billing API is available. Requesting
+Administration:read has a materially broader administrative visibility
+footprint and may deter organizational installation. It cannot be
+opted in solely in desktop UI if the publisher App globally requests
+that scope. Product owner should approve that trade-off before
+publishing the App to "Any account".
+
+**Deliberately not requested:** Actions:write (workflow dispatch,
+rerun, cancel), repo Contents/PR/Deployments:write and any runner/
+organization administration write. Optional background local safe
+pull requires no additional GitHub App write permission.
+
+GitHub requires installed organizations to approve new
+repository/organization scopes, and authorized users to approve new
+account scopes; upgrades cannot legitimately avoid renewed consent.

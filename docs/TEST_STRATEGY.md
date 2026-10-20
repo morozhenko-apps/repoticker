@@ -57,3 +57,17 @@ a fixture with the correct passphrase and reject an incorrect passphrase.
 The provisioning flow invokes verification before either GitHub signing
 Secret write; a source contract test protects this ordering. No local
 production keyring is needed. [Preflight #39333453214](https://github.com/morozhenko-apps/repoticker/actions/runs/39333453214) completed successfully, including the stable Rust/UI/release suites and desktop compile gate.
+
+## KDE drag acceptance failure (2026-10-20)
+
+The `clientX/clientY` controller unit tests and Preflight
+[#39335945391](https://github.com/morozhenko-apps/repoticker/actions/runs/39335945391)
+passed. On Alcotester KDE Wayland, the same controller still produced
+jitter and large correction spikes while the GTK surface stayed at
+`390x122`. Thus the unit tests validated the local algorithm in a
+mocked coordinate frame but did not validate the compositor's actual
+event coordinate behavior. Do not treat them as physical acceptance.
+
+A replacement must use a motion source independent of the moving
+surface, test button release/cancel/Escape and loss of focus, and verify
+convergence across GTK frame presentation, not just IPC completion.

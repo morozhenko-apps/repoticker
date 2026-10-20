@@ -145,11 +145,46 @@ APT package remain immutable throughout.
   Layer Shell margin update actually executed before resolving the IPC.
 - [x] Add deterministic JS controller tests for anchor convergence, serial
   IPC, pending persistence, cancellation and stale activation.
-- [ ] Confirm the final Preflight Rust/JS/Python/desktop compile gate for
-  implementation commit `2deaf46` (CI run #39335945391).
+- [x] Confirm the final Preflight Rust/JS/Python/desktop compile gate for
+  implementation commit `2deaf46` ([CI run #39335945391](https://github.com/morozhenko-apps/repoticker/actions/runs/39335945391) succeeded).
 - [ ] Physically verify smooth dragging on Alcotester KDE Wayland in
   both directions and across Hide/Open and restart; do not close Issue #2
   before acceptance.
 - [ ] Confirm 390x122 compact geometry, transparent rounded corners and
   persisted bottom/right margin fields remain unchanged. No update of the
   published APT package until the next separately tagged release.
+
+## Wayland drag: v0.1.0-dev local-coordinate fix rejected in KDE acceptance (2026-10-20)
+
+**Status: OPEN, not accepted.** Alcotester physically tested the candidate
+at commit `4a7b0f0`. Drag jitter decreased, but did not disappear. The
+new `clientX/clientY` anchor continues to produce spuriously large
+corrections (e.g. `(-133,+22)`, `(+114,+17)`, `(-115,-14)`) while
+the GTK allocated size stays exactly `390x122`. Fast/slow GTK resize or
+layout reallocation is therefore not the observed source of those jolts.
+
+**Root design limitation:** both `screenX/Y` and `clientX/Y` are samples
+derived from a moving Wayland surface. The GTK-main-thread completion
+acknowledgment only means `set_layer_shell_margin` was invoked; it does NOT
+mean KWin has committed/presented the new layer surface position to WebKit.
+Consequently serial IPC and local grab-anchor corrections cannot eliminate
+coordinate/commit feedback. More thresholds, sleeps, or arbitrary event
+filtering are not acceptable corrections.
+
+**Architectural decision required before replacing this input contract:**
+- Standard WebKitGTK **Pointer Lock API**: explicit lock only during drag;
+  `movementX/movementY` are compositor-backed relative deltas, independent
+  of moving surface coordinates. The native pointer is hidden while locked
+  and Escape releases lock. Could draw a temporary synthetic drag cursor
+  over the card to preserve the user's point-of-grab visual cue. Verify
+  KWin/WebKit support and pointer release/permission paths in a real device.
+- **Native Wayland relative-pointer-v1 protocol** in GTK integration:
+  receive movement deltas separately from the WebView's local coordinate
+  frame. Preserves the normal visible cursor, but adds protocol/session
+  handling and substantial Wayland-specific lifecycle and input-seat
+  complexity; needs direct KWin acceptance.
+
+Both retain Layer Shell bottom/right margins, exact compact geometry and
+transparency; no global input capture or X11 assumptions. Do not change
+the input contract until the user chooses the UX/architecture tradeoff.
+The published v0.1.0 and `main` remain unchanged. Issue #2 stays open.

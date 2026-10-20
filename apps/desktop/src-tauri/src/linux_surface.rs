@@ -217,7 +217,9 @@ fn install_usage_surface(
             usage.set_visual(Some(&visual));
         }
         let css = gtk::CssProvider::new();
-        css.load_from_data(b"window.repoticker-usage { background-color: transparent; background-image: none; }")?;
+        css.load_from_data(
+            b"window.repoticker-usage { background-color: transparent; background-image: none; }",
+        )?;
         gtk::StyleContext::add_provider_for_screen(
             &screen, &css, gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
         );

@@ -421,14 +421,14 @@ fn show_usage_popup(app: AppHandle) -> Result<(), String> {
     if linux_surface::enabled() {
         linux_surface::show_usage(&app)?;
     } else {
-        let card = app.get_webview_window("main")
+        let card = app
+            .get_webview_window("main")
             .ok_or_else(|| "Card unavailable".to_owned())?;
         let popup = app.get_webview_window("usage")
             .ok_or_else(|| "Usage popup unavailable".to_owned())?;
         if let (Ok(position), Ok(size)) = (card.outer_position(), card.outer_size()) {
             let outer = popup.outer_size().map_err(|error| error.to_string())?;
-            let x = i64::from(position.x) + i64::from(size.width)
-                - i64::from(outer.width) - 5;
+            let x = i64::from(position.x) + i64::from(size.width) - i64::from(outer.width) - 5;
             let y = i64::from(position.y) - i64::from(outer.height) + 8;
             if let (Ok(x), Ok(y)) = (i32::try_from(x), i32::try_from(y)) {
                 let _ = popup.set_position(tauri::PhysicalPosition::new(x, y));
@@ -446,7 +446,8 @@ fn hide_usage_popup(app: AppHandle) -> Result<(), String> {
     if linux_surface::enabled() {
         return linux_surface::hide_usage(&app);
     }
-    let popup = app.get_webview_window("usage")
+    let popup = app
+        .get_webview_window("usage")
         .ok_or_else(|| "Usage popup unavailable".to_owned())?;
     popup.hide().map_err(|error| error.to_string())
 }
@@ -457,9 +458,11 @@ async fn resize_usage_popup(app: AppHandle, height: i32) -> Result<(), String> {
     if linux_surface::enabled() {
         return linux_surface::resize_usage(app, height).await;
     }
-    let popup = app.get_webview_window("usage")
+    let popup = app
+        .get_webview_window("usage")
         .ok_or_else(|| "Usage popup unavailable".to_owned())?;
-    popup.set_size(tauri::LogicalSize::new(340.0, f64::from(height)))
+    popup
+        .set_size(tauri::LogicalSize::new(340.0, f64::from(height)))
         .map_err(|error| error.to_string())
 }
 

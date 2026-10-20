@@ -138,3 +138,13 @@ installed on all desired repositories, all read-only scopes were approved
 or that any end user has completed authorization. Those are independent
 runtime gates. The app secret/private key is never required for desktop
 device authorization.
+
+## Protocol implementation status (2026-10-20)
+
+The GitHub App public Client ID and the strict Device Flow response
+validation now exist in `apps/desktop/src-tauri/src/github_oauth_wire.rs`
+and are checked in native Rust tests. This module is **test-only** while
+the encrypted OS credential store and outbound TLS client are absent.
+Raw access/refresh/device token strings are not sent to a WebView or
+logged. A native runtime sign-in command must not be made available
+until token storage, refresh and cancellation are implemented.

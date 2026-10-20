@@ -32,9 +32,20 @@
     <div id="roots-list" class="roots-list"></div>
   </section>
   <section class="block github">
-    <div class="section-heading"><h2>GitHub &amp; Relay</h2><span class="hint">Not connected yet</span></div>
+    <div class="section-heading"><h2>GitHub &amp; Relay</h2><span id="github-connection-indicator" class="hint">Not connected</span></div>
+    <div class="github-auth-controls">
+      <button id="github-connect" type="button">Connect GitHub</button>
+      <button id="github-disconnect" type="button" hidden>Disconnect</button>
+      <span id="github-auth-message" class="hint" role="status" aria-live="polite">Uses secure device authorization.</span>
+    </div>
+    <div id="github-device-flow" class="github-device-flow" hidden>
+      <span>Enter this code on GitHub:</span>
+      <strong id="github-user-code" class="github-user-code"></strong>
+      <button id="github-open-device" type="button">Open GitHub</button>
+      <button id="github-cancel-device" type="button">Cancel</button>
+    </div>
     <div class="github-grid">
-      <label>GitHub account<input disabled placeholder="Not connected"></label>
+      <label>GitHub authorization<input id="github-account-status" disabled value="Not connected"></label>
       <label>Connection mode<select disabled><option>Simple polling</option><option>Hybrid webhook relay</option></select></label>
       <label class="worker-label">Worker URL<input disabled placeholder="https://your-worker.example"></label>
     </div>

@@ -6,6 +6,96 @@ const invoke = (command, args = {}) => window.__TAURI__?.core?.invoke(command, a
 let original = null;
 let draft = null;
 let saving = false;
+let githubPending = false;
+let githubConnected = false;
+
+function githubMessage(text, error = false) {
+  const element = byId("github-auth-message");
+  element.textContent = text;
+  element.classList.toggle("error", error);
+}
+
+function githubButtons() {
+  byId("github-connect").hidden = githubConnected || githubPending;
+  byId("github-disconnect").hidden = !githubConnected;
+  byId("github-device-flow").hidden = !githubPending;
+  byId("github-connection-indicator").textContent = githubPending
+    ? "Authorization pending" : githubConnected ? "Authorized" : "Not connected";
+  byId("github-account-status").value = githubConnected
+    ? "Authorized (account selection pending)" : "Not connected";
+}
+
+async function refreshGithub() {
+  try {
+    const auth = await invoke("github_auth_status");
+    githubConnected = auth.connected === true;
+    if (githubConnected) githubPending = false;
+    githubButtons();
+    if (githubConnected) githubMessage("GitHub access authorized. CI monitoring is the next stage.");
+    else if (!githubPending) githubMessage("Uses secure device authorization.");
+  } catch (error) {
+    githubButtons();
+    githubMessage(String(error), true);
+  }
+}
+
+byId("github-connect").addEventListener("click", async () => {
+  if (githubPending) return;
+  byId("github-connect").disabled = true;
+  try {
+    const challenge = await invoke("github_begin");
+    // Only a public one-time USER code may enter the WebView.
+    byId("github-user-code").textContent = challenge.userCode;
+    githubPending = true;
+    githubMessage("Waiting for approval in GitHub.");
+    githubButtons();
+  } catch (error) {
+    githubPending = false;
+    githubMessage(String(error), true);
+    githubButtons();
+  } finally {
+    byId("github-connect").disabled = false;
+  }
+});
+
+byId("github-open-device").addEventListener("click", async () => {
+  try { await invoke("github_open_device_page"); }
+  catch (error) { githubMessage(String(error), true); }
+});
+byId("github-cancel-device").addEventListener("click", async () => {
+  await invoke("github_cancel");
+  githubPending = false;
+  byId("github-user-code").textContent = "";
+  githubButtons();
+  githubMessage("Authorization cancelled.");
+});
+byId("github-disconnect").addEventListener("click", async () => {
+  try {
+    await invoke("github_disconnect");
+    githubConnected = false;
+    githubPending = false;
+    byId("github-user-code").textContent = "";
+    githubButtons();
+    githubMessage("GitHub disconnected.");
+  } catch (error) {
+    githubMessage(String(error), true);
+  }
+});
+
+window.__TAURI__?.event?.listen?.("repoticker-github-auth", async event => {
+  const status = event?.payload?.status;
+  if (status === "connected" || status === "disconnected") {
+    githubPending = false;
+    byId("github-user-code").textContent = "";
+    await refreshGithub();
+  } else if (["expired", "denied", "failed", "cancelled"].includes(status)) {
+    githubPending = false;
+    byId("github-user-code").textContent = "";
+    githubButtons();
+    githubMessage(status === "failed" ? "GitHub authorization failed. Try again."
+      : "GitHub authorization " + status + ".", status !== "cancelled");
+  }
+});
 
 function message(text, error = false) {
   byId("message").textContent = String(text);
@@ -58,6 +148,7 @@ async function refresh() {
   renderRoots();
   message("");
   updateApply();
+  await refreshGithub();
 }
 byId("add-root-form").addEventListener("submit", event => {
   event.preventDefault();

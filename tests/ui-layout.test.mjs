@@ -160,3 +160,21 @@ test("native geometry changes are serialized by GTK acknowledgment and preserve 
   assert.match(commands, /linux_surface::request_resize\(&app, 122\)/);
   assert.match(ui, /\.quota-anchor,\[role=button\]/);
 });
+
+test("GitHub Device Flow Settings never expose bearer tokens to JavaScript", () => {
+  const html = readFileSync(new URL("../apps/desktop/ui/settings.html", import.meta.url), "utf8");
+  const js = readFileSync(new URL("../apps/desktop/ui/settings.mjs", import.meta.url), "utf8");
+  const cfg = JSON.parse(readFileSync(new URL("../apps/desktop/src-tauri/tauri.conf.json", import.meta.url), "utf8"));
+  assert.match(html, /id="github-connect"/);
+  assert.match(html, /id="github-disconnect"/);
+  assert.match(html, /id="github-device-flow"[^>]*hidden/);
+  assert.match(html, /id="github-user-code"/);
+  assert.match(js, /"github_begin"/);
+  assert.match(js, /"github_auth_status"/);
+  assert.match(js, /"github_disconnect"/);
+  assert.match(js, /"github_cancel"/);
+  assert.match(js, /challenge\.userCode/);
+  assert.doesNotMatch(js, /accessToken|refreshToken|deviceCode|localStorage/);
+  assert.equal(cfg.app.windows.find(w=>w.label==="main").height, 122);
+  assert.equal(cfg.app.windows.find(w=>w.label==="settings").height, 552);
+});

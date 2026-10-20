@@ -43,14 +43,14 @@
         "title": "RepoTicker Settings",
         "url": "settings.html",
         "width": 660,
-        "height": 468,
+        "height": 552,
         "minWidth": 660,
-        "minHeight": 468,
+        "minHeight": 552,
         "visible": false,
         "resizable": false,
         "decorations": true,
         "maxWidth": 660,
-        "maxHeight": 468,
+        "maxHeight": 552,
         "maximizable": false
       },
       {

@@ -17,6 +17,7 @@ use repoticker_core::github_auth::{
 };
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager};
+use tauri_plugin_clipboard_manager::ClipboardExt;
 use tokio::sync::{Mutex, Notify};
 
 use crate::{
@@ -360,6 +361,27 @@ async fn poll_authorization(
     }
 }
 
+fn valid_user_code(code: &str) -> bool {
+    let bytes = code.as_bytes();
+    bytes.len() == 9
+        && bytes[4] == b'-'
+        && bytes.iter().enumerate().all(|(index, byte)| {
+            index == 4 || byte.is_ascii_uppercase() || byte.is_ascii_digit()
+        })
+}
+
+/// The only clipboard operation exposed to the Settings WebView.
+/// No clipboard-read permission or arbitrary OAuth token copying.
+#[tauri::command]
+pub fn github_copy_user_code(app: AppHandle, code: String) -> Result<(), String> {
+    if !valid_user_code(&code) {
+        return Err("Invalid GitHub verification code.".into());
+    }
+    app.clipboard()
+        .write_text(code)
+        .map_err(|_| "Cannot copy verification code to system clipboard.".into())
+}
+
 #[tauri::command]
 pub fn github_cancel(app: AppHandle) {
     cancel_pending(&app);
@@ -449,6 +471,23 @@ mod tests {
             assert!(!text.contains("ghu_"));
             assert!(!text.contains("ghr_"));
             assert!(!text.contains(crate::github_oauth_wire::TOKEN_URL));
+        }
+    }
+
+    #[test]
+    fn clipboard_accepts_only_public_github_user_codes() {
+        assert!(valid_user_code("ABCD-1234"));
+        assert!(valid_user_code("WDJB-MJHT"));
+        for invalid in [
+            "ABCD-123",
+            "ABCD-12345",
+            "abcd-1234",
+            "ghu_secret",
+            "ghr_secret",
+            "A-B-C-D-E",
+            "ABCD 1234",
+        ] {
+            assert!(!valid_user_code(invalid));
         }
     }
 

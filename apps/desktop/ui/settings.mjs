@@ -96,11 +96,10 @@ byId("github-copy-code").addEventListener("click", async () => {
   const code = byId("github-user-code").textContent;
   if (!githubPending || !code) return;
   try {
-    if (!navigator.clipboard?.writeText) throw new Error("Clipboard unavailable");
-    await navigator.clipboard.writeText(code);
+    await invoke("github_copy_user_code", { code });
     githubMessage("Verification code copied.");
   } catch {
-    githubMessage("Cannot access clipboard. Select the code and copy with Ctrl+C.", true);
+    githubMessage("Cannot access system clipboard. Select the code and copy with Ctrl+C.", true);
   }
 });
 

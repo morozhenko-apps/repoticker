@@ -175,7 +175,11 @@ test("GitHub Device Flow Settings never expose bearer tokens to JavaScript", () 
   assert.match(js, /"github_cancel"/);
   assert.match(js, /challenge\.userCode/);
   assert.match(html, /id="github-copy-code"/);
-  assert.match(js, /navigator\.clipboard\.writeText\(code\)/);
+  assert.match(js, /"github_copy_user_code"/);
+  assert.doesNotMatch(js, /navigator\.clipboard|plugin:clipboard-manager/);
+  const native = readFileSync(new URL("../apps/desktop/src-tauri/src/github_session.rs", import.meta.url), "utf8");
+  assert.match(native, /fn valid_user_code/);
+  assert.match(native, /clipboard\(\)\s*\.write_text\(code\)/);
   assert.match(js, /"github-check-status"/);
   assert.match(js, /"github_auth_status"/);
   assert.match(js, /githubFailureLabels/);

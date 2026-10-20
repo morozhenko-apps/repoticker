@@ -748,6 +748,7 @@ fn main() {
     configure_gdk_for_native_wayland();
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_clipboard_manager::init())
         .manage(OperationLock::default())
         .manage(std::sync::Arc::new(
             github_session::GitHubAuthManager::default(),
@@ -856,6 +857,7 @@ fn main() {
             github_session::github_cancel,
             github_session::github_disconnect,
             github_session::github_open_device_page,
+            github_session::github_copy_user_code,
             get_about_info,
             open_actions_job,
             show_usage_popup,

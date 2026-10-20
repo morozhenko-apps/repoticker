@@ -1,0 +1,36 @@
+name: Refresh native clipboard dependency lock
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - 'apps/desktop/src-tauri/Cargo.toml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: repoticker-clipboard-lock
+  cancel-in-progress: false
+
+jobs:
+  resolve:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Regenerate Cargo.lock using Cargo
+        run: cargo metadata --format-version 1 > /dev/null
+      - name: Commit only Cargo.lock
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- Cargo.lock; then
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- Cargo.lock
+          git commit -m "build: lock native clipboard-manager dependency"
+          git push origin "HEAD:dev"

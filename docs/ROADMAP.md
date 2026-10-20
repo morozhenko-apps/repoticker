@@ -665,7 +665,7 @@ Source inspection isolated two broken resizing contracts:
   UI `set_card_view`. Exclude popup content from window drag activation.
 - `a7c3f59`: preserve old bottom-anchored resize behavior for ordinary
   non-Layer-Shell platforms when reopening in compact mode.
-- Code Preflight: https://github.com/morozhenko-apps/repoticker/actions/runs/39477078873
+- [x] Code Preflight: [#39477078873](https://github.com/morozhenko-apps/repoticker/actions/runs/39477078873) green 4/4 for implementation SHA `a7c3f59`. This proves JS/Rust/Linux compile only; GTK/KWin physical acceptance is still pending.
 
 **Acceptance (still open)**:
 - [ ] GTK 390×122 compact allocation contains no empty extra height and

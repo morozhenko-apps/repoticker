@@ -232,9 +232,12 @@ system cursor during card dragging; do not implement browser Pointer Lock.
   commit (`b5c9ba9`, formatting fix `e3f5b21`); remove legacy WebView
   screen/client movement path and delta-based native IPC.
 - [x] Add native state and JS gesture regressions (same code commit).
-- [ ] Run the **final stable gate once**: Rust fmt, core tests, Clippy,
+- [x] Run the final stable gate: Rust fmt, core tests, Clippy,
   JS/Node tests, Python release tests and full Linux desktop cargo check.
-  The desktop check must compile the generated Wayland bridge.
+  The generated Wayland bridge compiled successfully in
+  [Preflight #39381563028](https://github.com/morozhenko-apps/repoticker/actions/runs/39381563028)
+  for implementation commit `e3f5b21` (all four jobs succeeded).
+  Physical KWin/GTK relative-motion delivery remains unverified.
 - [ ] On Alcotester, test KDE Wayland slow/fast movement, button release,
   cancel, Hide/Open/restart persistence, exact 390x122 geometry, corners,
   unsupported-protocol errors and any multi-display behavior.

@@ -146,10 +146,13 @@ function updateActionState() {
     ? eligible + " commits eligible for fast-forward (clean upstream branches)"
     : "No branches eligible for safe pull. Run Fetch to refresh remote refs.";
 }
-/* The existing usage tooltip expands upward inside the same Wayland card.
- * Status counters are untouched; only the native surface gains space.
+/* The quota panel is the existing ⓘ popup, now rendered INSIDE the
+ * compositor-owned card instead of escaping the 122px compact viewport.
+ * Keep the status strip and actions bottom-anchored and unchanged.
  */
 const quotaAnchor = document.querySelector(".quota-anchor");
+const quotaPanel = byId("quota-tooltip");
+const quotaStrip = quotaAnchor.parentElement;
 let quotaExpanded = false;
 let quotaWanted = false;
 let quotaQueue = Promise.resolve();
@@ -157,6 +160,7 @@ let quotaQueue = Promise.resolve();
 function resetQuota() {
   quotaWanted = false;
   quotaExpanded = false;
+  quotaPanel.hidden = true;
   quotaAnchor.dataset.open = "false";
   quotaAnchor.setAttribute("aria-expanded", "false");
 }
@@ -166,42 +170,61 @@ function setQuotaOpen(wanted) {
   quotaQueue = quotaQueue.then(async () => {
     if (!cardVisible) { resetQuota(); return; }
     if (quotaWanted && !quotaExpanded) {
+      // There is no free space above the status strip in compact mode.
+      // The same native Wayland window is enlarged before showing content.
       if (view === "compact") {
         await invoke("set_card_view", { view: "quota" });
         if (!cardVisible || !quotaWanted) {
           if (cardVisible) await invoke("set_card_view", { view: "compact" });
           return;
         }
-        byId("card").dataset.view = "quota";
       }
+      byId("repo-drawer").hidden = true;
+      byId("card").dataset.view = "quota";
+      quotaPanel.hidden = false;
       quotaExpanded = true;
       quotaAnchor.dataset.open = "true";
       quotaAnchor.setAttribute("aria-expanded", "true");
       cancelAutoHide();
     } else if (!quotaWanted && quotaExpanded) {
       quotaExpanded = false;
+      quotaPanel.hidden = true;
       quotaAnchor.dataset.open = "false";
       quotaAnchor.setAttribute("aria-expanded", "false");
-      if (view === "compact") {
+      if (cardVisible && view === "compact") {
         await invoke("set_card_view", { view: "compact" });
-        byId("card").dataset.view = "compact";
       }
-      armAutoHide();
+      if (cardVisible) {
+        byId("card").dataset.view = view;
+        byId("repo-drawer").hidden = view !== "repos";
+        armAutoHide();
+      }
     }
   }).catch(showError);
   return quotaQueue;
 }
 
+// Hover on the shared status strip bridges the gap between the icon and
+// the inline panel; focus inside panel links also keeps the popup open.
+function quotaInteractionActive() {
+  return quotaStrip.matches(":hover") || quotaPanel.matches(":hover") ||
+    quotaAnchor.contains(document.activeElement) ||
+    quotaPanel.contains(document.activeElement);
+}
+function dismissQuotaIfInactive() {
+  if (!quotaInteractionActive()) void setQuotaOpen(false);
+}
 quotaAnchor.addEventListener("mouseenter", () => { void setQuotaOpen(true); });
-quotaAnchor.addEventListener("mouseleave", () => {
-  if (!quotaAnchor.contains(document.activeElement)) void setQuotaOpen(false);
-});
 quotaAnchor.addEventListener("focusin", () => { void setQuotaOpen(true); });
-quotaAnchor.addEventListener("focusout", event => {
-  if (!quotaAnchor.contains(event.relatedTarget) && !quotaAnchor.matches(":hover")) {
-    void setQuotaOpen(false);
-  }
+quotaStrip.addEventListener("mouseleave", event => {
+  if (!quotaPanel.contains(event.relatedTarget)) dismissQuotaIfInactive();
 });
+quotaPanel.addEventListener("mouseenter", () => { void setQuotaOpen(true); });
+quotaPanel.addEventListener("mouseleave", event => {
+  if (!quotaStrip.contains(event.relatedTarget)) dismissQuotaIfInactive();
+});
+quotaAnchor.addEventListener("focusout", dismissQuotaIfInactive);
+quotaPanel.addEventListener("focusout", dismissQuotaIfInactive);
 
 function quotaLine(parent, label, value) {
   const line = addText(parent, "span", "", "quota-line");

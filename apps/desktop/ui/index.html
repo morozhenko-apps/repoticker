@@ -14,6 +14,11 @@
       <div id="repo-list" class="rows" aria-live="polite"></div>
     </section>
 
+    <section id="quota-tooltip" class="quota-tooltip" role="region" aria-label="Actions and usage details" hidden>
+      <span class="quota-title">GitHub Actions &amp; usage</span>
+      <span id="quota-content" class="quota-content">Not connected. Runner status, Actions jobs and billing limits are unavailable.</span>
+    </section>
+
     <div id="notice" role="status" aria-live="polite" hidden></div>
 
     <div class="status-strip" aria-label="GitHub Actions and runners">
@@ -22,10 +27,6 @@
       <span id="ci-queued" title="GitHub Actions is not connected">Queued —</span>
       <span class="quota-anchor" tabindex="0" aria-label="GitHub usage details" aria-controls="quota-tooltip" aria-expanded="false" data-open="false">
         <span aria-hidden="true">ⓘ</span>
-        <span id="quota-tooltip" class="quota-tooltip" role="region" aria-label="Actions and usage details">
-          <span class="quota-title">GitHub Actions &amp; usage</span>
-          <span id="quota-content" class="quota-content">Not connected. Runner status, Actions jobs and billing limits are unavailable.</span>
-        </span>
       </span>
     </div>
 

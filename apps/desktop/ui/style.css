@@ -30,8 +30,11 @@ button:focus-visible, input:focus-visible, .quota-anchor:focus-visible { outline
 
 .status-strip { flex-shrink: 0; min-height: 25px; display: flex; align-items: center; justify-content: space-around; gap: 5px; padding: 0 5px 2px; font-size: 12px; color: #7a828b; white-space: nowrap; }
 .quota-anchor { cursor: help; display: inline-flex; position: relative; font-size: 17px; outline-offset: 2px; }
-.quota-tooltip { display: none; position: absolute; right: -6px; bottom: 100%; z-index: 20; width: 330px; max-width: calc(100vw - 24px); max-height: 353px; overflow-y: auto; overscroll-behavior: contain; font-size: 13px; font-weight: 400; white-space: normal; line-height: 1.4; padding: 10px; color: CanvasText; background: Canvas; border: 1px solid color-mix(in srgb, CanvasText 25%, transparent); border-radius: 7px; box-shadow: 0 5px 20px #0004; pointer-events: auto; }
-.quota-anchor[data-open="true"] .quota-tooltip { display: block; }
+/* The existing Actions/usage panel is an IN-FLOW child of the Layer Shell
+   card, not an absolutely positioned descendant of the status icon. The
+   viewport grows upward; this panel uses that real, compositor-owned space. */
+.quota-tooltip { display: none; flex: 1 1 auto; min-height: 0; width: 100%; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; font-size: 13px; font-weight: 400; white-space: normal; line-height: 1.4; padding: 10px; margin: 0 0 6px; color: CanvasText; background: Canvas; border: 1px solid color-mix(in srgb, CanvasText 25%, transparent); border-radius: 7px; }
+.card[data-view="quota"] > .quota-tooltip:not([hidden]) { display: block; }
 .quota-content { display: flex; flex-direction: column; gap: 7px; }
 .quota-title { display: block; font-weight: 650; margin-bottom: 7px; }
 .quota-section { display: flex; flex-direction: column; gap: 3px; border-top: 1px solid #d6dce1; padding-top: 6px; }

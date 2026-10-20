@@ -706,8 +706,11 @@ accommodate usage details.
   A native drag begins by hiding the popup.
 
 **Pending acceptance:**
-- [ ] Full Linux native compile and tests for `0442b02`, CI
-  [#39480018064](https://github.com/morozhenko-apps/repoticker/actions/runs/39480018064).
+- [x] Full Linux native compile and tests for `0442b02`, CI
+  [#39480018064](https://github.com/morozhenko-apps/repoticker/actions/runs/39480018064)
+  completed successfully: Rust formatting/core/Clippy, JS model/syntax,
+  Linux desktop compilation and aggregate gate (4/4).
+  **Real KDE Layer Shell popup placement/drag remains unverified.**
 - [ ] KDE ⓘ popup is genuinely floating **above/outside** compact
   card, not growing the main 390x122 window; proper size for Not connected.
 - [ ] KDE drag without visible popup remains immediate/smooth, saved

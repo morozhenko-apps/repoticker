@@ -178,3 +178,60 @@ authorization and KWallet on Alcotester require physical acceptance.
 
 Implementation milestones and outstanding integration checks:
 [Issue #4](https://github.com/morozhenko-apps/repoticker/issues/4).
+
+## Device Flow approved in browser but not connected in app — diagnostic protocol (2026-10-21)
+
+**Physical reproduction:** on Alcotester, Settings -> Connect shows a
+valid `user_code`; `github.com/login/device` accepts it and opens
+a browser success page. Settings continues displaying the code and does
+not report `Authorized`. Retrying the consumed code shows an error
+in GitHub (this is expected: device codes are single-use). This is a
+failure of the *desktop continuation*, not proof that the user denied
+authorization.
+
+**Candidate causes, priority order:** server poll/token exchange returns
+an error that is currently discarded; the pair was granted but the
+Secret Service/KWallet credential write failed; Rust emitted a terminal
+event but the Settings WebView missed or failed to handle it; the
+background polling task stopped/timed out; the credential record
+validator rejected GitHub's response; a session was invalidated while
+the browser was in use. Do not assert one cause until the native stage
+has been observed on the user's system.
+
+**Approved nonarchitectural diagnostic correction:**
+1. Keep GitHub Device Flow, OS keyring, and public authentication
+   security boundary unchanged. No change to token storage format.
+2. Track a **sanitized native flow stage** (pending, polling,
+   awaiting approval, saving credentials, connected, denied, expired,
+   cancelled, failed), together with a fixed reason category on failure
+   (e.g. network, response validation, GitHub rejection, OS keyring
+   write). Never forward HTTP bodies, device codes, access/refresh
+   tokens or raw provider errors.
+3. Expose the current stage through the existing read-only
+   `github_auth_status` command and send matching Tauri events.
+   Settings reconciles native state when opened, refocused or when
+   user explicitly selects "Check status". It must not require
+   receiving exactly one event nor busy-poll GitHub outside the
+   server-advertised interval. Once browser verification succeeds,
+   the original one-time code must never be reused.
+4. Add a Copy code control (clipboard on an explicit user gesture).
+   Failure to access the clipboard must produce a clear error and
+   must not falsely claim copying succeeded. Only the public
+   `user_code` may be copied; it is not a bearer token.
+5. Regression tests cover native flow-state transitions and
+   sanitized failure categories, no auth secrets in JS, and local
+   state reconciliation via Settings. Do not alter native window
+   geometry, the ⓘ hover balloon or counter positions.
+6. Ask for a **fresh** GitHub device code on Alcotester and the
+   displayed final flow stage/reason after one attempt. If approved
+   but failed at keyring write, debug the OS Secret Service service
+   separately, with no raw token dumps.
+
+**Stop condition:** if this evidence establishes a material
+authorization/security boundary change, require a separate explicit
+decision. This diagnostic increment changes neither storage nor
+granted scopes.
+
+This section supersedes earlier generic statements that browser
+approval alone proves a stored connection. The existing issue is
+[Issue #4](https://github.com/morozhenko-apps/repoticker/issues/4).

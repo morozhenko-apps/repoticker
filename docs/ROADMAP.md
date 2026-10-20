@@ -259,3 +259,82 @@ Physical limitations to verify: the extension is only available while the
 compositor supplies pointer focus and a proper implicit grab. A compositor
 that does not advertise the extension returns a visible drag error rather
 than silently re-enabling jitter-prone client-coordinate dragging.
+
+
+## P2 delivery: GitHub Actions runner occupancy and queue (2026-10-20)
+
+**Mode A / priority: first GitHub integration feature.** User need:
+display how many organization self-hosted runners are busy/idle/offline,
+which jobs are executing, and how many compatible queued jobs are waiting,
+without opening GitHub Actions manually.
+
+### Architecture decision from existing product contract
+
+Default: **desktop -> authenticated GitHub REST API**, with no hosted service.
+This preserves the pre-existing Simple mode and the ability for other users
+to install RepoTicker without a Cloudflare account. GitHub REST authorization
+is scoped to each user's accounts/organizations and stored via OS secret
+storage, not inside WebView JavaScript, configuration JSON or telemetry.
+An existing private Cloudflare project, RunnerRouter, currently consumes
+signed push webhooks and reads organization runner inventory to route jobs.
+It has no monitoring or queue endpoint; it must NOT become a mandatory
+RepoTicker dependency. Optional authenticated event-source integration could
+be added later after a separate API/security decision.
+
+### Source-of-truth definitions
+
+- **Busy**: number of organization runners with `status=online` and
+  `busy=true`. **Idle**: `online` and `busy=false`. **Offline** separate.
+  Never interpret `offline` as available capacity.
+- **Running jobs**: unique jobs with `status=in_progress` assigned via
+  `runner_id` to a known organization runner. The `busy` capacity count
+  remains independently authoritative even when job details cannot be read.
+- **Queued for eligible self-hosted runners**: unique jobs with
+  `status=queued`, unassigned `runner_id`, and requested labels including
+  `self-hosted` that are a subset of a known runner's labels. Queued jobs
+  may not yet have an assigned runner/group. This is a *compatible label
+  backlog across selected visible repositories*, not GitHub's private
+  dispatcher queue. Jobs with unknown labels/groups are `unclassified`,
+  never confidently counted as zero.
+- **In progress** and **queued** are job counts, not workflow run counts.
+  A single workflow can have concurrent jobs or internal dependencies.
+  A job waiting for approval/environment is not assumed to be runner-queued.
+- **Coverage**: counts are exact only across complete, permission-accessible
+  repository and runner pagination. Capped, denied, stale or missing sources
+  mark queue/running counts `partial/unknown`, never an authoritative zero.
+  Record the last successful collection time.
+
+### Delivery stages
+
+- [ ] **Stage 1 — data model and contract tests:** pure functions for
+  runner capacity, label-compatible backlog, active job detail,
+  deduplication and incomplete/unknown states. No credentials or networking.
+  Regression fixtures must cover busy/idle/offline; queued behind an
+  in-progress workflow; GitHub-hosted exclusion; queued without labels;
+  duplicate jobs; and denied/unavailable data.
+- [ ] **Stage 2 — GitHub REST source:** native authorized GET transport,
+  bounded pagination and concurrency, per-repository active workflow/job
+  enumeration, rate limit and HTTP error handling, scoped organization.
+  No global Actions-queue endpoint exists; apply explicit coverage limits.
+- [ ] **Stage 3 — OS secret storage and enrollment:** least-privilege
+  GitHub auth flow with org self-hosted runner read and selected repo Actions
+  read. No token in JavaScript, logs, config files or publicly hosted Worker.
+- [ ] **Stage 4 — desktop projection:** actual tray/card `Runners`,
+  `Running`, `Queued`, per-runner busy/idle/offline and job links;
+  partial and stale badges; rate-limit-aware refresh when open.
+- [ ] **Stage 5 — real acceptance:** selected organization repos including
+  concurrent runner jobs, busy followed by queued, cancellation/failed
+  permissions, reconnect, no accessible repos and runner label mismatch.
+  Verify on user's Alcotester runner and another clean user configuration.
+
+### Security, scaling and rollback
+
+Read-only GitHub endpoints only. Limit repositories/runs/jobs/pages and
+propagate truncation as incomplete; do not scan the entire organization on
+every UI paint. Use ETag/conditional requests and adaptive rate-limit-aware
+refresh at the transport stage. Allow each user to select monitored
+repositories; repository enumeration must not silently include private repos.
+When reporting queue for a runner, account for runner group/access restrictions
+or conservatively label the estimate `label-compatible`. Separate code
+and docs commits. Keep `main`, public v0.1.0 and existing RunnerRouter
+unchanged until authenticated runtime and physical acceptance are complete.

@@ -730,10 +730,10 @@ fn configure_gdk_for_native_wayland() {
     // to take the Tauri/XWayland fallback: 390x200 instead of 390x122,
     // rubber-band movement, and no persisted Layer Shell margins.
     // This must run before Tauri initializes GTK, not in setup().
-    let wayland_session = std::env::var("XDG_SESSION_TYPE")
-        .is_ok_and(|value| value.eq_ignore_ascii_case("wayland"));
-    let wayland_socket = std::env::var("WAYLAND_DISPLAY")
-        .is_ok_and(|value| !value.trim().is_empty());
+    let wayland_session =
+        std::env::var("XDG_SESSION_TYPE").is_ok_and(|value| value.eq_ignore_ascii_case("wayland"));
+    let wayland_socket =
+        std::env::var("WAYLAND_DISPLAY").is_ok_and(|value| !value.trim().is_empty());
     if wayland_session && wayland_socket {
         std::env::set_var("GDK_BACKEND", "wayland");
     }

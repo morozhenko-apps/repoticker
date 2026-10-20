@@ -1,7 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  normalizeLabels, runnerLabelCompatible, summarizeRunnerState
+  normalizeLabels, runnerLabelCompatible, summarizeRunnerState,
+  classifyJobLane, isStandardGitHubHostedLabel
 } from "../apps/desktop/ui/runner-state.mjs";
 
 const runners = [
@@ -19,7 +20,7 @@ const complete = (jobs, more = {}) => summarizeRunnerState({
   checkedAt: "2026-10-20T12:00:00Z", ...more,
 });
 
-test("normalizes GitHub job label strings and runner label objects", () => {
+test("runner labels accept GitHub string and object representations", () => {
   assert.deepEqual(normalizeLabels(["SELF-HOSTED", { name: " Linux " }, "linux"]),
     ["self-hosted", "linux"]);
   assert.equal(normalizeLabels([{ something: "bad" }]), null);
@@ -27,64 +28,124 @@ test("normalizes GitHub job label strings and runner label objects", () => {
   assert.equal(runnerLabelCompatible(["ubuntu-latest"], runners[0].labels), false);
 });
 
-test("capacity counts busy, idle and offline independently of jobs", () => {
+test("GitHub-hosted labels are recognized without inventing plan capacity", () => {
+  for (const value of ["ubuntu-latest", "ubuntu-24.04", "windows-2025",
+    "macos-latest", "macos-15-intel", "ubuntu-slim"]) {
+    assert.equal(isStandardGitHubHostedLabel(value), true, value);
+  }
+  assert.equal(isStandardGitHubHostedLabel("custom-linux"), false);
+  assert.equal(classifyJobLane(job(1, "queued", ["custom-linux"])), "unknown");
+  assert.equal(classifyJobLane(job(2, "queued", ["ubuntu-latest"])), "githubHosted");
+  assert.equal(classifyJobLane(job(3, "queued", ["self-hosted", "ubuntu-latest"])), "selfHosted");
+  assert.equal(classifyJobLane(job(4, "in_progress", null, 10), new Set([10])), "selfHosted");
+});
+
+test("capacity counts busy, idle and offline independently of all jobs", () => {
   const result = complete([]);
   assert.deepEqual([result.counts.busy, result.counts.idle, result.counts.offline], [1, 1, 1]);
   assert.equal(result.runners[0].ready, false);
   assert.equal(result.runners[1].ready, true);
 });
 
-test("counts eligible queued JOBS behind running workflow, never hosted jobs or duplicates", () => {
+test("primary running/queued counters include hosted and self-hosted jobs", () => {
   const result = complete([
     job(101, "in_progress", ["self-hosted", "linux", "x64", "docker-builder"], 10),
-    job(102, "queued", ["self-hosted", "linux", "x64", "docker-builder"]),
-    job(103, "queued", ["ubuntu-24.04"]),
-    job(104, "completed", ["self-hosted", "linux", "x64", "docker-builder"]),
-    job(102, "queued", ["self-hosted", "linux", "x64", "docker-builder"]),
+    job(102, "in_progress", ["ubuntu-24.04"], null),
+    job(103, "in_progress", ["windows-2025"], null),
+    job(104, "queued", ["self-hosted", "linux", "x64", "docker-builder"]),
+    job(105, "queued", ["ubuntu-latest"]),
+    job(106, "queued", ["self-hosted", "linux", "x64", "docker-builder"]),
+    job(107, "completed", ["ubuntu-latest"]),
+    job(104, "queued", ["self-hosted", "linux", "x64", "docker-builder"]),
   ]);
-  assert.deepEqual([result.counts.running, result.counts.queued], [1, 1]);
-  assert.equal(result.coverage.queue, true);
+  assert.deepEqual([result.counts.running, result.counts.queued], [3, 3]);
+  assert.deepEqual([result.counts.runningSelfHosted, result.counts.runningGitHubHosted], [1, 2]);
+  assert.deepEqual([result.counts.queuedSelfHosted, result.counts.queuedGitHubHosted], [2, 1]);
+  assert.equal(result.counts.runningUnclassified, 0);
+  assert.equal(result.counts.queuedUnclassified, 0);
+  assert.equal(result.runningByLane.githubHosted.length, 2);
 });
 
-test("self-hosted queue without compatible runner is reported separately", () => {
+test("queue for unsupported self-hosted labels is still counted in totals", () => {
   const result = complete([
     job(201, "queued", ["self-hosted", "windows"]),
     job(202, "queued", ["self-hosted", "linux", "x64"]),
   ]);
-  assert.equal(result.counts.queued, 1);
+  assert.equal(result.counts.queued, 2);
+  assert.equal(result.counts.queuedSelfHosted, 2);
   assert.equal(result.coverage.unmatchedSelfHosted, 1);
 });
 
-test("missing job labels, permissions or pagination never become an authoritative zero", () => {
-  const unknown = complete([job(301, "queued", null)]);
-  assert.equal(unknown.counts.queued, null);
-  assert.equal(unknown.coverage.queuedUnclassified, 1);
-  const jobsDenied = complete([], { jobCoverage: false });
-  assert.equal(jobsDenied.counts.queued, null);
-  assert.equal(jobsDenied.counts.running, null);
-  assert.equal(jobsDenied.counts.busy, 1);
-  const runnersDenied = complete([], { runnerCoverage: false });
-  assert.equal(runnersDenied.counts.busy, null);
-  assert.equal(runnersDenied.counts.queued, null);
+test("missing job labels affect lane confidence but not primary counts", () => {
+  const result = complete([
+    job(301, "queued", null),
+    job(302, "in_progress", null),
+    job(303, "queued", ["custom-runner"]),
+  ]);
+  assert.equal(result.counts.queued, 2);
+  assert.equal(result.counts.running, 1);
+  assert.equal(result.counts.queuedUnclassified, 2);
+  assert.equal(result.counts.runningUnclassified, 1);
+  assert.equal(result.coverage.queuedLanes, false);
 });
 
-test("malformed or conflicting input fails closed", () => {
+test("waiting environment approval does not inflate queued jobs", () => {
+  const result = complete([
+    job(401, "waiting", ["ubuntu-latest"]),
+    job(402, "pending", null),
+    job(403, "requested", null),
+  ]);
+  assert.equal(result.counts.queued, 0);
+  assert.equal(result.counts.waiting, 3);
+});
+
+test("incomplete jobs pagination makes totals unknown, runner occupancy remains valid", () => {
+  const result = complete([job(1, "queued", ["ubuntu-latest"])], { jobCoverage: false });
+  assert.equal(result.counts.queued, null);
+  assert.equal(result.counts.running, null);
+  assert.equal(result.counts.queuedObserved, 1);
+  assert.equal(result.counts.busy, 1);
+});
+
+test("inaccessible runner inventory cannot erase complete hosted/job totals", () => {
+  const result = complete([
+    job(1, "in_progress", ["ubuntu-latest"]),
+    job(2, "in_progress", ["self-hosted", "linux"], 10),
+    job(3, "queued", ["ubuntu-latest"]),
+  ], { runnerCoverage: false });
+  assert.equal(result.counts.busy, null);
+  assert.equal(result.counts.running, 2);
+  assert.equal(result.counts.queued, 1);
+  assert.equal(result.counts.runningGitHubHosted, 1);
+});
+
+test("conflicting jobs and duplicate runner inventory fail closed", () => {
   const conflict = complete([
     job(1, "queued", ["self-hosted"]),
     job(1, "in_progress", ["self-hosted"], 10),
   ]);
   assert.equal(conflict.counts.running, null);
-  const duplicates = complete([], {
+  const duplicate = complete([], {
     runners: [...runners, { id: 10, name: "duplicate",
       status: "online", busy: false, labels: [] }],
   });
-  assert.equal(duplicates.counts.busy, null);
+  assert.equal(duplicate.counts.busy, null);
+  assert.equal(duplicate.counts.queued, 0);
 });
 
-test("does not count unassigned or hosted running jobs against organization runners", () => {
+test("all lane counts sum to the corresponding total", () => {
   const result = complete([
     job(1, "in_progress", ["ubuntu-latest"]),
-    job(2, "in_progress", ["self-hosted"], 10),
+    job(2, "in_progress", ["self-hosted", "linux"], 10),
+    job(3, "in_progress", null),
+    job(4, "queued", ["ubuntu-latest"]),
+    job(5, "queued", ["self-hosted"]),
+    job(6, "queued", null),
   ]);
-  assert.equal(result.counts.running, 1);
+  assert.equal(result.counts.running,
+    result.counts.runningSelfHosted + result.counts.runningGitHubHosted +
+      result.counts.runningUnclassified);
+  assert.equal(result.counts.queued,
+    result.counts.queuedSelfHosted + result.counts.queuedGitHubHosted +
+      result.counts.queuedUnclassified);
 });

@@ -1,6 +1,6 @@
-/** Pure projection of GitHub Actions runner capacity and visible job backlog.
- * No GitHub tokens, network activity or WebView credentials live here.
- * Raw source completeness is explicit; partial results are never presented as zero.
+/** Pure, credential-free projection of GitHub Actions jobs across repositories.
+ * Job totals and self-hosted runner occupancy have independent coverage.
+ * Missing runner inventory must never erase known hosted/total jobs.
  */
 const isObject = value => value !== null && typeof value === "object" && !Array.isArray(value);
 const label = value => typeof value === "string" ? value.trim().toLowerCase() : "";
@@ -24,7 +24,42 @@ export function runnerLabelCompatible(jobLabels, runnerLabels) {
     requested.every(item => available.includes(item)));
 }
 
-/** Coverage contains explicit booleans from the collection layer, not guesses. */
+// Only standard GitHub-hosted labels. Arbitrary custom labels and runner
+// group names cannot safely prove a job is GitHub-hosted.
+export function isStandardGitHubHostedLabel(value) {
+  return /^(?:ubuntu|windows|macos)-(?:latest|slim|[\da-z][\da-z.]*)(?:-[\w.-]+)?$/.test(label(value));
+}
+
+/** GitHub-hosted runner instances are ephemeral; the org runner inventory
+ * endpoint lists only self-hosted registrations. Keep an unknown lane.
+ */
+export function classifyJobLane(job, knownRunnerIds = new Set()) {
+  if (!isObject(job)) return "unknown";
+  if (Number.isSafeInteger(job.runner_id) && knownRunnerIds.has(job.runner_id)) {
+    return "selfHosted";
+  }
+  const labels = normalizeLabels(job.labels);
+  if (!labels?.length) return "unknown";
+  if (labels.includes("self-hosted")) return "selfHosted";
+  if (labels.some(isStandardGitHubHostedLabel)) return "githubHosted";
+  return "unknown";
+}
+
+function laneCounts(jobs, ids) {
+  const counts = { selfHosted: 0, githubHosted: 0, unclassified: 0 };
+  const details = { selfHosted: [], githubHosted: [], unclassified: [] };
+  for (const job of jobs) {
+    const lane = classifyJobLane(job, ids);
+    const target = lane === "unknown" ? "unclassified" : lane;
+    counts[target]++;
+    details[target].push(job);
+  }
+  return { counts, details };
+}
+
+/** Coverage booleans are explicit collection evidence, never inferred
+ * from the presence of an empty array.
+ */
 export function summarizeRunnerState({
   runners, jobs, runnerCoverage = false, jobCoverage = false, checkedAt = null
 }) {
@@ -67,41 +102,54 @@ export function summarizeRunnerState({
   const jobsComplete = jobCoverage === true && Array.isArray(jobs) && !malformedJob;
   const running = [];
   const queued = [];
-  const unclassified = [];
+  const waiting = [];
   const unmatched = [];
   for (const job of uniqueJobs.values()) {
-    if (job.status === "in_progress") {
-      if (Number.isSafeInteger(job.runner_id) && seenRunnerIds.has(job.runner_id)) running.push(job);
-      continue;
+    if (job.status === "in_progress") running.push(job);
+    else if (job.status === "queued") {
+      queued.push(job);
+      if (inventoryComplete && classifyJobLane(job, seenRunnerIds) === "selfHosted" &&
+        !normalizedRunners.some(runner => runnerLabelCompatible(job.labels, runner.labels))) {
+        unmatched.push(job);
+      }
+    } else if (["waiting", "pending", "requested"].includes(job.status)) {
+      waiting.push(job);
     }
-    if (job.status !== "queued") continue;
-    const labels = normalizeLabels(job.labels);
-    if (!labels) { unclassified.push(job); continue; }
-    if (!labels.includes("self-hosted")) continue;
-    if (normalizedRunners.some(runner => runnerLabelCompatible(labels, runner.labels))) queued.push(job);
-    else unmatched.push(job);
   }
+  const runningSplit = laneCounts(running, seenRunnerIds);
+  const queuedSplit = laneCounts(queued, seenRunnerIds);
   const busy = normalizedRunners.filter(runner => runner.status === "online" && runner.busy).length;
   const idle = normalizedRunners.filter(runner => runner.ready).length;
   const offline = normalizedRunners.filter(runner => runner.status === "offline").length;
-  const queueComplete = inventoryComplete && jobsComplete && unclassified.length === 0;
-  const runningComplete = inventoryComplete && jobsComplete;
+  const exact = value => jobsComplete ? value : null;
   return {
     runners: normalizedRunners,
     runningJobs: running,
     queuedJobs: queued,
+    waitingJobs: waiting,
+    runningByLane: runningSplit.details,
+    queuedByLane: queuedSplit.details,
     coverage: {
-      runners: inventoryComplete, jobs: jobsComplete, queue: queueComplete,
-      running: runningComplete,
-      queuedUnclassified: unclassified.length,
-      unmatchedSelfHosted: unmatched.length,
+      runners: inventoryComplete, jobs: jobsComplete,
+      queue: jobsComplete, running: jobsComplete,
+      runningLanes: jobsComplete && runningSplit.counts.unclassified === 0,
+      queuedLanes: jobsComplete && queuedSplit.counts.unclassified === 0,
+      queuedUnclassified: queuedSplit.counts.unclassified,
+      unmatchedSelfHosted: inventoryComplete ? unmatched.length : null,
     },
     counts: {
       busy: inventoryComplete ? busy : null,
       idle: inventoryComplete ? idle : null,
       offline: inventoryComplete ? offline : null,
-      running: runningComplete ? running.length : null,
-      queued: queueComplete ? queued.length : null,
+      running: exact(running.length),
+      queued: exact(queued.length),
+      waiting: exact(waiting.length),
+      runningSelfHosted: exact(runningSplit.counts.selfHosted),
+      runningGitHubHosted: exact(runningSplit.counts.githubHosted),
+      runningUnclassified: exact(runningSplit.counts.unclassified),
+      queuedSelfHosted: exact(queuedSplit.counts.selfHosted),
+      queuedGitHubHosted: exact(queuedSplit.counts.githubHosted),
+      queuedUnclassified: exact(queuedSplit.counts.unclassified),
       runningObserved: running.length,
       queuedObserved: queued.length,
     },

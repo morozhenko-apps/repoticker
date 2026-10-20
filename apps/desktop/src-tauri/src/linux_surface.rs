@@ -138,7 +138,9 @@ pub fn install(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
     viewport.set_size_request(390, 122);
     // The Tauri webview may advertise a much larger natural minimum.
     // Its parent viewport clips it, rather than expanding the whole layer.
-    vbox.set_size_request(-1, -1);
+    // The WebView container must have the same requested height as the
+    // Layer Shell toplevel, otherwise its natural height leaves a blank gap.
+    vbox.set_size_request(390, 122);
     viewport.add(&vbox);
     apply_size(&layer, 122);
     layer.add(&viewport);
@@ -223,30 +225,88 @@ fn on_main(
     .map_err(|err| err.to_string())
 }
 
-pub fn resize(app: AppHandle, height: i32) -> Result<(), String> {
+/// All geometry state changes happen in one GTK main-thread transaction.
+/// Height changes never alter the user-owned bottom/right Layer Shell margins.
+/// Keep the viewport AND embedded WebView container at exactly that height.
+fn apply_card_height(window: &gtk::ApplicationWindow, height: i32) -> Result<(), String> {
+    if CARD_HEIGHT.load(Ordering::Acquire) == height {
+        return Ok(());
+    }
+
+    let child = window
+        .child()
+        .ok_or_else(|| "Layer Shell viewport missing".to_owned())?;
+    let viewport = child
+        .downcast::<gtk::ScrolledWindow>()
+        .map_err(|_| "Layer Shell viewport has unexpected type".to_owned())?;
+    viewport.set_min_content_height(height);
+    viewport.set_max_content_height(height);
+    viewport.set_size_request(390, height);
+    CONTENT.with(|cell| {
+        if let Some(content) = cell.borrow().as_ref() {
+            content.set_size_request(390, height);
+        }
+    });
+
+    apply_size(window, height);
+    MARGINS.with(|state| {
+        let (bottom, right) = *state.borrow();
+        window.set_anchor(Edge::Bottom, true);
+        window.set_anchor(Edge::Right, true);
+        window.set_layer_shell_margin(Edge::Bottom, bottom);
+        window.set_layer_shell_margin(Edge::Right, right);
+        if std::env::var_os("REPOTICKER_UI_DEBUG").is_some() {
+            eprintln!(
+                "RepoTicker resize: height={height} margins=({bottom},{right}) allocated={}x{}",
+                window.allocated_width(),
+                window.allocated_height()
+            );
+        }
+    });
+    // This is the *applied* requested geometry, not a caller-side guess.
+    CARD_HEIGHT.store(height, Ordering::Release);
+    Ok(())
+}
+
+fn validate_card_height(height: i32) -> Result<(), String> {
     if !(120..=900).contains(&height) {
         return Err("Invalid card height".into());
     }
-    // A redundant resize (especially while hidden) can make KDE reconfigure
-    // the layer at a different location. Do not touch the surface when unchanged.
-    if CARD_HEIGHT.swap(height, Ordering::AcqRel) == height {
-        return Ok(());
-    }
-    on_main(&app, move |window| {
-        if let Some(child) = window.child() {
-            if let Ok(viewport) = child.downcast::<gtk::ScrolledWindow>() {
-                viewport.set_min_content_height(height);
-                viewport.set_max_content_height(height);
-                viewport.set_size_request(390, height);
-            }
+    Ok(())
+}
+
+/// Synchronous tray/hide entry points enqueue geometry on GTK's event loop.
+/// Later show/hide events are enqueued in order; no caller-side state swap.
+pub fn request_resize(app: &AppHandle, height: i32) -> Result<(), String> {
+    validate_card_height(height)?;
+    on_main(app, move |window| {
+        if let Err(error) = apply_card_height(window, height) {
+            eprintln!("RepoTicker Layer Shell resize: {error}");
         }
-        CONTENT.with(|cell| {
-            if let Some(content) = cell.borrow().as_ref() {
-                content.set_size_request(-1, -1);
-            }
-        });
-        apply_size(window, height);
     })
+}
+
+/// UI-driven changes resolve only after GTK has applied the new geometry.
+/// This prevents the WebView revealing an expanded popup in a 122px surface.
+pub async fn resize(app: AppHandle, height: i32) -> Result<(), String> {
+    validate_card_height(height)?;
+    let (send, receive) = std::sync::mpsc::sync_channel(1);
+    app.run_on_main_thread(move || {
+        let result = CARD.with(|cell| {
+            let current = cell.borrow();
+            let window = current
+                .as_ref()
+                .ok_or_else(|| "Layer Shell card missing".to_owned())?;
+            apply_card_height(window, height)
+        });
+        let _ = send.send(result);
+    })
+    .map_err(|error| error.to_string())?;
+
+    let completed = tauri::async_runtime::spawn_blocking(move || receive.recv())
+        .await
+        .map_err(|error| error.to_string())?;
+    completed.map_err(|_| "GTK card resize interrupted".to_owned())?
 }
 
 pub fn show(app: &AppHandle) -> Result<(), String> {

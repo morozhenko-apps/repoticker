@@ -374,7 +374,7 @@ async fn perform_git_action(
 /// The card grows upward from its previous bottom edge when the platform
 /// permits setting window coordinates. Wayland compositors may deny it.
 #[tauri::command]
-fn set_card_view(app: AppHandle, view: String) -> Result<(), String> {
+async fn set_card_view(app: AppHandle, view: String) -> Result<(), String> {
     let height = match view.as_str() {
         "compact" => 122.0,
         "repos" => 510.0,
@@ -388,7 +388,7 @@ fn set_card_view(app: AppHandle, view: String) -> Result<(), String> {
 
     #[cfg(target_os = "linux")]
     if linux_surface::enabled() {
-        return linux_surface::resize(app, height as i32);
+        return linux_surface::resize(app, height as i32).await;
     }
 
     let before_position = window.outer_position().ok();
@@ -419,7 +419,7 @@ fn hide_card(app: AppHandle) -> Result<(), String> {
     #[cfg(target_os = "linux")]
     if linux_surface::enabled() {
         linux_surface::hide(&app)?;
-        linux_surface::resize(app.clone(), 122)?;
+        linux_surface::request_resize(&app, 122)?;
         let _ = app.emit("repoticker-card-hidden", ());
         return Ok(());
     }
@@ -429,10 +429,14 @@ fn hide_card(app: AppHandle) -> Result<(), String> {
 }
 
 fn show_compact_card(app: &AppHandle) {
-    let _ = set_card_view(app.clone(), "compact".to_owned());
-    let _ = app.emit("repoticker-reset-view", ());
+    // On KDE the resize and show requests must be ordered on GTK's main
+    // thread before notifying WebView. Never update cached height early.
     #[cfg(target_os = "linux")]
     if linux_surface::enabled() {
+        if let Err(error) = linux_surface::request_resize(app, 122) {
+            eprintln!("RepoTicker Layer Shell compact resize: {error}");
+        }
+        let _ = app.emit("repoticker-reset-view", ());
         if let Err(error) = linux_surface::show(app) {
             eprintln!("RepoTicker Layer Shell show: {error}");
         }
@@ -440,7 +444,10 @@ fn show_compact_card(app: &AppHandle) {
         return;
     }
 
+    // Non-layer-shell platforms retain the existing compact geometry.
     if let Some(window) = app.get_webview_window("main") {
+        let _ = window.set_size(tauri::LogicalSize::new(390.0, 122.0));
+        let _ = app.emit("repoticker-reset-view", ());
         let _ = window.show();
         let _ = window.set_focus();
         let _ = app.emit("repoticker-card-shown", ());
@@ -615,7 +622,7 @@ fn toggle_card(app: &AppHandle) {
     if linux_surface::enabled() {
         if linux_surface::visible() {
             let _ = linux_surface::hide(app);
-            let _ = linux_surface::resize(app.clone(), 122);
+            let _ = linux_surface::request_resize(app, 122);
             let _ = app.emit("repoticker-card-hidden", ());
         } else {
             show_compact_card(app);

@@ -168,3 +168,21 @@ test("quota popup occupies real in-window flex space and preserves the original 
   assert.ok(ui.includes('if (cardVisible && view === "compact")'));
   assert.ok(ui.includes('function resetQuota()'));
 });
+
+test("native geometry changes are serialized by GTK acknowledgment and preserve anchor", () => {
+  const native = readFileSync(new URL("../apps/desktop/src-tauri/src/linux_surface.rs", import.meta.url), "utf8");
+  const commands = readFileSync(new URL("../apps/desktop/src-tauri/src/main.rs", import.meta.url), "utf8");
+  assert.match(native, /pub async fn resize\(app: AppHandle, height: i32\)/);
+  assert.match(native, /spawn_blocking\(move \|\| receive\.recv\(\)\)/);
+  assert.match(native, /apply_card_height\(window, height\)/);
+  assert.match(native, /content\.set_size_request\(390, height\)/);
+  assert.match(native, /vbox\.set_size_request\(390, 122\)/);
+  assert.match(native, /set_layer_shell_margin\(Edge::Bottom, bottom\)/);
+  assert.match(native, /set_layer_shell_margin\(Edge::Right, right\)/);
+  assert.match(native, /CARD_HEIGHT\.store\(height, Ordering::Release\)/);
+  assert.doesNotMatch(native, /CARD_HEIGHT\.swap\(height/);
+  assert.match(commands, /async fn set_card_view/);
+  assert.match(commands, /linux_surface::resize\(app, height as i32\)\.await/);
+  assert.match(commands, /linux_surface::request_resize\(&app, 122\)/);
+  assert.match(ui, /#quota-tooltip,\[role=button\]/);
+});

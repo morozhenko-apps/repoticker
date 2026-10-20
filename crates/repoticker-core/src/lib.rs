@@ -2,6 +2,7 @@
 
 pub mod bounded;
 pub mod git;
+pub mod github_auth;
 
 /// Remote comparison is meaningful only after a successful fetch.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

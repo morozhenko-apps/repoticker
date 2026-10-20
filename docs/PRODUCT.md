@@ -35,3 +35,30 @@ Later, an optional **Hybrid** mode may accept verified GitHub webhook hints thro
 Future settings include GitHub credentials/filters, polling intervals, notifications, configured path ignores, optional automated sync and relay URL. Such controls are not active until the respective features exist.
 
 Distribution targets are Linux amd64 DEB/AppImage and unsigned Windows x64 NSIS for the tagged v0.1.0 candidate. A configured packaging workflow is not proof of a published release or Windows OS acceptance. macOS remains disabled pending Apple signing/notarization. See [release gates](RELEASE.md) and [roadmap](ROADMAP.md).
+
+## Runner and Actions detail popup (dev, not yet connected to GitHub)
+
+The existing compact status strip retains its **three indicators in the
+same order and at their original size and location**: Runners, Running,
+Queued. The existing GitHub usage `ⓘ` tooltip now supports a detailed
+readout containing self-hosted runner availability (busy/idle/offline),
+Running/Queued totals split into self-hosted/GitHub-hosted/unclassified
+jobs, runner names and bounded direct links to validated Actions jobs.
+The tooltip still reserves usage/billing limits as *unavailable* until
+a separately authorized source is implemented; job counts must not be
+presented as billing or hosted-concurrency quotas.
+
+A 122px compact Wayland card clips a regular browser overflow tooltip.
+On opening the existing `ⓘ` popup, the application temporarily requests
+the established bottom-anchored native 510px card height and returns to
+122px on closing. The indicators stay bottom-anchored and are not
+repositioned relative to the screen. An already expanded repository drawer
+needs no extra native resize. CSS/keyboard/pointer behavior remains subject
+to KDE physical acceptance alongside drag Issue #2.
+
+**Important:** this release stage contains the tested **presentation and
+aggregation contract**, not GitHub account authorization. Until native
+GitHub REST transport/secret storage are integrated, `get_snapshot`
+continues to report unconnected counters as `—` and the popup explicitly
+shows `Not connected`. No sample values are inserted into production
+state. The published v0.1.0 package remains unchanged.

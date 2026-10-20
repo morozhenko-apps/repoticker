@@ -95,3 +95,19 @@ surface moves. Error paths must not leave drag active; Save/Hide/restart
 must persist the last applied margins with no regression to card geometry
 or transparent rounded corners. Do not classify the bug as fixed without
 that runtime evidence.
+
+## Existing usage tooltip regression contract (dev)
+
+New `tests/quota-details.test.mjs` validates the real quota view-model
+for disconnected state, partial/unknown counters, runner availability,
+running/queued lane splits, bounded safe job URLs and preservation of
+separate billing limits. `tests/ui-layout.test.mjs` asserts unchanged
+indicator order, native 510px temporary popup height, clipped
+`quota-tooltip` sizing and pointer/keyboard state hooks.
+
+The newly added read-only `open_actions_job` native command is guarded
+by a strict allowlist; never render raw API strings as HTML or treat a
+GitHub-hosted Actions job as a durable self-hosted runner registration.
+End-to-end KDE hover/focus/drag/popup acceptance remains pending.
+Native GitHub auth/source integration will require independent
+permissions, pagination, rate-limit and persistence tests.

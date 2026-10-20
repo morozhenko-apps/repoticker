@@ -432,14 +432,17 @@ No new OS window. No changes to Git root/editor state.
 
 ### Delivery and validation
 
-- [ ] Separate pure popup view-model and tests covering no data, complete
+- [x] Separate pure popup view-model and tests covering no data, complete
   lane data, incomplete data, safe job links, no secrets.
-- [ ] Extend the existing anchored DOM tooltip without moving or visually
+- [x] Extend the existing anchored DOM tooltip without moving or visually
   altering the three main counters or action bar.
-- [ ] Add native `quota` card-view height using current compositor
+- [x] Add native `quota` card-view height using current compositor
   positioning (bottom remains fixed); restore original height on close,
   Hide and Escape, including failure paths.
-- [ ] Test DOM/JS/source invariants and run one final stable Preflight.
+- [ ] Final Preflight for implementation `c623f4a`:
+  [Actions run #39424742140](https://github.com/morozhenko-apps/repoticker/actions/runs/39424742140).
+  Node UI tests, Rust check and real native popup behavior require the
+  complete final CI and KDE physical acceptance gates.
 - [ ] Physically accept mouse/keyboard tooltip behavior and compositor
   geometry on Alcotester, after Wayland drag #2 is separately verified.
 - [ ] Integrate the existing bounded collector through native authenticated

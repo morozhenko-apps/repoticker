@@ -45,3 +45,23 @@ The app must display `unknown` instead of zero or success when GitHub CI/runners
 ## Release and support boundaries
 
 Version consistency and a tracked `Cargo.lock` are release gates. A `v*` tag pointing at current `main` HEAD builds Linux DEB/AppImage and Windows NSIS; signed APT/R2 publication and GitHub Release happen only after successful builds, public readback and approved deployment. macOS is currently skipped. See [RELEASE.md](RELEASE.md), [PRODUCT.md](PRODUCT.md), [GIT_PROVIDER.md](GIT_PROVIDER.md), [RELAY.md](RELAY.md) and [ROADMAP.md](ROADMAP.md).
+
+## Existing quota tooltip integration (dev)
+
+`apps/desktop/ui/quota-details.mjs` maps a complete/partial runner-state
+snapshot to presentation-safe strings and strict GitHub Actions job URLs.
+`app.mjs` renders these into the pre-existing `quota-tooltip` child
+using DOM `textContent`; the three `status-strip` counter elements and
+ordering are not replaced. Actions job links are opened only through a
+read-only native Tauri command that validates the allowed github.com job
+URL path before launching the system browser.
+
+On Linux a separate `quota` view height is accepted by the existing
+`set_card_view` operation, using GTK Layer Shell's original bottom anchor.
+When hidden or closed, the original 122px compact surface is restored.
+The detailed popup does not require Cloudflare or RunnerRouter.
+
+The `runner_state` projection is a future native snapshot extension.
+No token, authorization flow or live GitHub reads have been added in
+this stage. Native authenticated fetch and OS secret storage are a
+separately tracked security boundary.

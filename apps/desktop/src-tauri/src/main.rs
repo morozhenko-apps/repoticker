@@ -1,5 +1,6 @@
 //! RepoTicker desktop: local-only roots, Git provider and tray card.
 mod app_icon;
+mod github_oauth_wire;
 
 use repoticker_core::{
     git::{self, GitError, OperationOutcome, RepoSnapshot},

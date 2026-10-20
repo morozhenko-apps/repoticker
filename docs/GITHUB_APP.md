@@ -1,6 +1,6 @@
 # RepoTicker GitHub App registration
 
-Status: registration and live native login are pending. The Rust core
+Status: GitHub App registered on 2026-10-20; live native login is still pending. The Rust core
 Device Flow state machine exists; it is not yet a working GitHub login.
 
 ## One-time setup by the app publisher
@@ -67,7 +67,7 @@ secret and must atomically rotate the refresh token.
 
 ## Remaining implementation and acceptance
 
-- [ ] Register the publisher app and obtain public Client ID.
+- [x] Register the publisher App under `morozhenko-apps`: public Client ID `Iv23liyFAFdT7NCSkpIj`, numeric App ID `5399579` (do not use numeric App ID in OAuth requests).
 - [ ] Native HTTPS GitHub transport, bounded responses, server interval
       timer, cancellation, token refresh and OS credential store.
 - [ ] GitHub Settings login / logout and chosen organization or repo scope.
@@ -124,3 +124,17 @@ https://docs.github.com/en/rest/authentication/permissions-required-for-github-a
 https://docs.github.com/en/rest/billing/usage
 https://docs.github.com/en/rest/actions/self-hosted-runners
 https://docs.github.com/en/apps/maintaining-github-apps/modifying-a-github-app-registration
+
+## Actual publisher registration (2026-10-20)
+
+Public App Client ID: `Iv23liyFAFdT7NCSkpIj` (usable in Device Flow).
+GitHub App ID: `5399579` (not an OAuth Client ID). Owner: `morozhenko-apps`.
+Keep the product homepage as the reserved `https://morozhenko.com/en/repoticker/`;
+the route does not yet exist in PersonalLanding and must be implemented
+and deployed before treating the homepage as publicly live.
+
+The publisher registered the App; this is not evidence that it has been
+installed on all desired repositories, all read-only scopes were approved
+or that any end user has completed authorization. Those are independent
+runtime gates. The app secret/private key is never required for desktop
+device authorization.

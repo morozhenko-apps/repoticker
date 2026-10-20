@@ -591,3 +591,42 @@ pull requires no additional GitHub App write permission.
 GitHub requires installed organizations to approve new
 repository/organization scopes, and authorized users to approve new
 account scopes; upgrades cannot legitimately avoid renewed consent.
+
+## KDE physical acceptance update and quota-popup clipping (2026-10-20)
+
+User tested native Wayland relative-pointer-v1 implementation on Alcotester:
+**normal card dragging no longer jitters**. This specifically satisfies
+smooth-motion acceptance for Issue #2, while saved position after a restart
+is still awaiting separate verification. Do not conflate the success of
+drag with the unrelated clipping of the Actions/usage popup.
+
+**Confirmed UI regression:** in the 122px compact view, the existing
+`ⓘ` Actions limits tooltip is clipped, whereas it is visible with the
+510px repository drawer open. The current tooltip is a positioned child
+of `.quota-anchor` within the bottom status strip and relies on an async
+native height change from hover. On KDE, this is insufficient to guarantee
+visible space at the time it is rendered.
+
+**Architectural UI correction:** keep a **single existing
+`quota-tooltip`**, but promote it to a flex item within the main card,
+above the status strip and below the repository drawer. When it opens,
+the same bottom-anchored native GTK surface expands to 510px, the popup
+occupies the available *in-window* area with vertical scrolling, and the
+three counters/four actions do not change order, size or on-screen
+bottom-relative placement. When Repos is already expanded, show quota
+content in that same 510px space, temporarily hiding the drawer until
+close; do not resize again. Preserve pointer/keyboard focus and Escape
+handling. Collapse correctly on Hide, focus exit and pointer exit.
+No second window, CSS overflow workaround or platform-specific offsets.
+
+- [ ] Code-only popup layout and lifecycle change, independent tests.
+- [ ] Final stable/desktop CI validation of the new code SHA.
+- [ ] KDE physical acceptance of compact/Reos hover+focus, scroll,
+  Escape, Hide/Open and no changes to three compact counters.
+
+**Publisher GitHub App created:** owner `morozhenko-apps`,
+numeric App ID `5399579`, public Client ID
+`Iv23liyFAFdT7NCSkpIj`. Device Flow must use Client ID, never numeric
+App ID. The App's actual installed repository selection/permission list
+must still be confirmed before real API acceptance. Client secret and
+private key must not be generated or copied into the desktop bundle.

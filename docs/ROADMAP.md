@@ -930,3 +930,51 @@ Next: add maintained native HTTPS and OS secret-service libraries;
 regenerate and commit `Cargo.lock` using Cargo; implement Device Flow
 and token refresh as a single fail-closed native transaction before
 exposing any connection UI. No Cloudflare Worker or OAuth client secret.
+
+
+## Native GitHub App auth implementation evidence — 2026-10-20
+
+Implementation is staged on `dev`, with the three compact indicators,
+the existing hover balloon, and native Layer Shell drag unchanged:
+
+- `a5c05ef`: native `reqwest` OAuth transport, HTTPS only, redirects
+  disabled, bounded streaming response body, sanitized errors, and
+  `keyring 4.2.0` OS secret storage (KDE Secret Service/KWallet,
+  Windows Credential Manager, macOS Keychain). Access+refresh token
+  and both expirations are a **single keyring record**.
+- `d62ad9b`: real Cargo-resolved dependency lockfile from the temporary
+  lock reconciliation workflow (not manually synthesized).
+- `dde56b7`: Native Device Flow start/poll/cancel, GitHub
+  `authorization_pending` and `slow_down` timing, expiration/denial,
+  connection events and refresh-token rotation. A single asynchronous
+  vault lock serializes refresh with logout; tokens remain native.
+- `c155d5b`: Cargo-generated direct Tokio dependency lock change.
+- `216f8cc`: Connect/Disconnect and one-time verification code
+  in the existing Settings window. Only `user_code`, fixed GitHub
+  verification URI and sanitized status pass to WebView. Config JSON
+  never stores tokens. Settings height increases independently to
+  fit the consent interaction; main compact size remains 390x122.
+- `487a47a`: correct the DeviceSession ownership error and Rust
+  formatting; remove the one-shot Cargo lockfile workflow after use.
+
+**Known incomplete work:** these code additions do not yet fetch the
+GitHub user identity, select accessible installation/repository scope
+or connect Actions jobs/runner inventory to the main three counters.
+The last two metrics remain unknown/— until authorized data is read,
+and the existing balloon still reports monitoring unavailable. The
+native-only `github_access_token` method is intentionally NOT a Tauri
+command.
+
+**Next physical acceptance:** GitHub account Device Flow on Alcotester
+using the publisher App, unlocked KWallet/Secret Service, denial,
+cancellation, forced token expiry/re-auth, refresh, Disconnect, and
+restart persistence. Cross-platform OS keystores and native settings
+layout remain unverified. Perform final CI on the final corrected SHA
+before user acceptance; do not claim green until logs confirm it.
+
+**Next engineering stage:** authenticated `api.github.com` REST,
+account/organization and repository selection, per-hosted-runner
+breakdown, bounded pagination, partial/denied coverage, and
+rate-limit-aware refresh, as tracked in
+[Issue #4](https://github.com/morozhenko-apps/repoticker/issues/4).
+No Cloudflare Worker, no client secret, and no write permissions.

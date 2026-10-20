@@ -37,3 +37,23 @@ Administration:read and Account Plan:read are separately considered for
 billing endpoints, not silently treated as required for job monitoring.
 None of these permissions authorizes modifying Actions runs or repositories. A runner-inventory 403 must not mask
 permitted repository jobs. No requirement to deploy RunnerRouter.
+
+## Native GitHub App secret storage (dev, 2026-10-20)
+
+`github_native.rs` uses a maintained native keyring adapter (Secret
+Service/KWallet, Credential Manager, Keychain) and pinned GitHub HTTPS
+OAuth endpoints with redirect suppression, body size limits and
+sanitized HTTP error types. `github_session.rs` owns Device Flow,
+cancellation epoch, per-vault serialization, refresh and Disconnect.
+No custom encryption or plaintext fallback is permitted. Device
+code, bearer and refresh token are never returned over Tauri IPC;
+only the public user verification code and aggregate connection
+status leave native Rust.
+
+Refresh and Logout are serialized to avoid racing token generations.
+Stored credentials use one OS keyring entry with a versioned JSON
+envelope; unrelated local Git remotes and existing config.json do not
+change. The runtime still requires user/KDE physical acceptance and
+negative test coverage; connecting CI/runners is a separate
+read-only REST milestone. Never treat a successful compile as a
+successful credential-store integration.

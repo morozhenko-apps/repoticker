@@ -152,3 +152,29 @@ until token storage, refresh and cancellation are implemented.
 ## Next implementation milestone
 
 [Issue #4](https://github.com/morozhenko-apps/repoticker/issues/4) tracks native HTTPS/TLS, OS-native credential persistence, Device Flow refresh/rotation, authorized read-only REST and UI acceptance. The lockfile currently contains reqwest transitively without TLS support and has no credential store implementation. Regenerate `Cargo.lock` with Cargo when adding approved dependencies. Do not expose Connect in the product until both native transport and secure OS storage are operational and tested.
+
+## Native sign-in implementation (dev, not yet physically accepted)
+
+Native GitHub App device sign-in is implemented in Rust using bounded
+HTTPS with automatic redirection disabled. The existing Settings window
+now provides Connect, a visible short user code and an explicit "Open
+GitHub" browser action, cancellation and Disconnect. Completion is
+event-driven, and only sanitized statuses are emitted. Native
+`github_access_token` is not registered for JavaScript IPC.
+
+The access/refresh token pair, expiry times and record version are
+stored together through the OS credential manager. On Linux the
+KWallet-compatible Secret Service provider must be available and
+unlocked. Failure to access it is an error, not permission to persist
+secrets in `config.json`, shell, JavaScript, logs or temporary files.
+The code checks GitHub's returned interval and `slow_down`, and rotates
+both token strings as one keyring record on refresh.
+
+The current Settings connection indicator confirms *locally persisted
+authorization*, not availability of runners/jobs or successful access
+to every selected organization. The main card's counters remain
+unavailable pending the read-only REST collector integration. Live
+authorization and KWallet on Alcotester require physical acceptance.
+
+Implementation milestones and outstanding integration checks:
+[Issue #4](https://github.com/morozhenko-apps/repoticker/issues/4).

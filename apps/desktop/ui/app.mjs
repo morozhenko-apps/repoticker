@@ -1,6 +1,5 @@
 import { nextCardView, pullReadyCommitCount } from "./view.mjs";
 import { createNativeDragGesture } from "./native-drag.mjs";
-import { buildQuotaDetails } from "./quota-details.mjs";
 
 const emptySnapshot = {
   roots: [], repositories: [], errors: [],
@@ -146,119 +145,81 @@ function updateActionState() {
     ? eligible + " commits eligible for fast-forward (clean upstream branches)"
     : "No branches eligible for safe pull. Run Fetch to refresh remote refs.";
 }
-/* The quota panel is the existing ⓘ popup, now rendered INSIDE the
- * compositor-owned card instead of escaping the 122px compact viewport.
- * Keep the status strip and actions bottom-anchored and unchanged.
+/* The usage tooltip lives in its own Wayland surface, not in the
+ * compact card's clipped 122px WebView. Never resize the main card for ⓘ.
  */
 const quotaAnchor = document.querySelector(".quota-anchor");
-const quotaPanel = byId("quota-tooltip");
-const quotaStrip = quotaAnchor.parentElement;
 let quotaExpanded = false;
 let quotaWanted = false;
+let popupHovered = false;
+let closeGrace = null;
 let quotaQueue = Promise.resolve();
 
+function cancelQuotaGrace() {
+  if (closeGrace !== null) { clearTimeout(closeGrace); closeGrace = null; }
+}
 function resetQuota() {
+  cancelQuotaGrace();
   quotaWanted = false;
   quotaExpanded = false;
-  quotaPanel.hidden = true;
+  popupHovered = false;
   quotaAnchor.dataset.open = "false";
   quotaAnchor.setAttribute("aria-expanded", "false");
+  void invoke("hide_usage_popup").catch(() => {});
 }
-
 function setQuotaOpen(wanted) {
   quotaWanted = wanted;
+  cancelQuotaGrace();
   quotaQueue = quotaQueue.then(async () => {
-    if (!cardVisible) { resetQuota(); return; }
+    if (!cardVisible) return;
     if (quotaWanted && !quotaExpanded) {
-      // There is no free space above the status strip in compact mode.
-      // The same native Wayland window is enlarged before showing content.
-      if (view === "compact") {
-        await invoke("set_card_view", { view: "quota" });
-        if (!cardVisible || !quotaWanted) {
-          if (cardVisible) await invoke("set_card_view", { view: "compact" });
-          return;
-        }
+      await invoke("show_usage_popup");
+      if (!quotaWanted || !cardVisible) {
+        await invoke("hide_usage_popup");
+        return;
       }
-      byId("repo-drawer").hidden = true;
-      byId("card").dataset.view = "quota";
-      quotaPanel.hidden = false;
       quotaExpanded = true;
       quotaAnchor.dataset.open = "true";
       quotaAnchor.setAttribute("aria-expanded", "true");
       cancelAutoHide();
     } else if (!quotaWanted && quotaExpanded) {
+      await invoke("hide_usage_popup");
       quotaExpanded = false;
-      quotaPanel.hidden = true;
       quotaAnchor.dataset.open = "false";
       quotaAnchor.setAttribute("aria-expanded", "false");
-      if (cardVisible && view === "compact") {
-        await invoke("set_card_view", { view: "compact" });
-      }
-      if (cardVisible) {
-        byId("card").dataset.view = view;
-        byId("repo-drawer").hidden = view !== "repos";
-        armAutoHide();
-      }
+      armAutoHide();
     }
   }).catch(showError);
   return quotaQueue;
 }
-
-// Hover on the shared status strip bridges the gap between the icon and
-// the inline panel; focus inside panel links also keeps the popup open.
-function quotaInteractionActive() {
-  return quotaStrip.matches(":hover") || quotaPanel.matches(":hover") ||
-    quotaAnchor.contains(document.activeElement) ||
-    quotaPanel.contains(document.activeElement);
-}
-function dismissQuotaIfInactive() {
-  if (!quotaInteractionActive()) void setQuotaOpen(false);
+function maybeDismissQuota() {
+  if (!quotaAnchor.matches(":hover") && !popupHovered &&
+      !quotaAnchor.contains(document.activeElement)) {
+    void setQuotaOpen(false);
+  }
 }
 quotaAnchor.addEventListener("mouseenter", () => { void setQuotaOpen(true); });
 quotaAnchor.addEventListener("focusin", () => { void setQuotaOpen(true); });
-quotaStrip.addEventListener("mouseleave", event => {
-  if (!quotaPanel.contains(event.relatedTarget)) dismissQuotaIfInactive();
+quotaAnchor.addEventListener("click", () => {
+  void setQuotaOpen(!quotaExpanded);
 });
-quotaPanel.addEventListener("mouseenter", () => { void setQuotaOpen(true); });
-quotaPanel.addEventListener("mouseleave", event => {
-  if (!quotaStrip.contains(event.relatedTarget)) dismissQuotaIfInactive();
+quotaAnchor.addEventListener("focusout", maybeDismissQuota);
+document.addEventListener("mouseleave", () => {
+  cancelQuotaGrace();
+  // Brief event-transfer grace between two independent Wayland surfaces.
+  closeGrace = setTimeout(() => {
+    closeGrace = null;
+    maybeDismissQuota();
+  }, 180);
 });
-quotaAnchor.addEventListener("focusout", dismissQuotaIfInactive);
-quotaPanel.addEventListener("focusout", dismissQuotaIfInactive);
-
-function quotaLine(parent, label, value) {
-  const line = addText(parent, "span", "", "quota-line");
-  addText(line, "span", label, "quota-line-label");
-  addText(line, "span", value, "quota-line-value");
-}
-
-function renderQuotaDetails(details) {
-  const node = byId("quota-content");
-  node.replaceChildren();
-  addText(node, "span", details.status, "quota-message");
-  if (!details.connected) {
-    addText(node, "span", details.message, "quota-message");
-    return;
-  }
-  for (const section of details.sections) {
-    const block = addText(node, "span", "", "quota-section");
-    addText(block, "span", section.title, "quota-section-title");
-    for (const [label, value] of section.rows || []) quotaLine(block, label, value);
-    for (const item of section.links || []) {
-      const link = addText(block, "a", item.label, "quota-job-link");
-      link.href = item.url;
-      link.title = item.url;
-      link.rel = "noopener noreferrer";
-      link.addEventListener("click", async event => {
-        event.preventDefault();
-        try { await invoke("open_actions_job", { url: item.url }); }
-        catch (error) { showError(error); }
-      });
-    }
-    if (section.message) addText(block, "span", section.message, "quota-message");
-  }
-  addText(node, "span", details.message, "quota-message");
-}
+window.__TAURI__?.event?.listen?.("repoticker-usage-hover", event => {
+  popupHovered = event.payload === true;
+  if (popupHovered) cancelQuotaGrace();
+  else maybeDismissQuota();
+});
+window.__TAURI__?.event?.listen?.("repoticker-usage-dismiss", () => {
+  void setQuotaOpen(false);
+});
 
 function render(next) {
   snapshot = next;
@@ -274,7 +235,7 @@ function render(next) {
     ? "Running —" : "Running " + running;
   byId("ci-queued").textContent = queued == null
     ? "Queued —" : "Queued " + queued;
-  renderQuotaDetails(buildQuotaDetails(next.runner_state));
+
   const list = byId("repo-list");
   list.replaceChildren();
   if (!next.repositories.length) {
@@ -437,7 +398,7 @@ function stopDragging(event = null) {
 
 dragSurface.addEventListener("pointerdown", event => {
   if (event.button !== 0 || !event.isPrimary ||
-      event.target.closest("button,input,select,a,.quota-anchor,#quota-tooltip,[role=button]")) return;
+      event.target.closest("button,input,select,a,.quota-anchor,[role=button]")) return;
   if (!dragGesture.begin(event.pointerId)) return;
   activePointerId = event.pointerId;
   dragSurface.setPointerCapture(event.pointerId);

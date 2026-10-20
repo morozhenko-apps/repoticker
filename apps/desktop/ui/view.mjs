@@ -2,7 +2,6 @@
 export const CARD_HEIGHT = Object.freeze({
   compact: 122,
   repos: 510,
-  quota: 510,
   settings: 318
 });
 

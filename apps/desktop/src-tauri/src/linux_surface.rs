@@ -18,6 +18,9 @@ use tauri::{App, AppHandle, Manager};
 
 thread_local! {
     static CARD: RefCell<Option<gtk::ApplicationWindow>> = const { RefCell::new(None) };
+    static USAGE: RefCell<Option<gtk::ApplicationWindow>> = const { RefCell::new(None) };
+    static USAGE_CONTENT: RefCell<Option<gtk::Box>> = const { RefCell::new(None) };
+    static USAGE_VIEWPORT: RefCell<Option<gtk::ScrolledWindow>> = const { RefCell::new(None) };
     static CONTENT: RefCell<Option<gtk::Box>> = const { RefCell::new(None) };
     static MARGINS: RefCell<(i32, i32)> = const { RefCell::new((46, 10)) };
     static FRACTIONAL_MOTION: RefCell<(f64, f64)> = const { RefCell::new((0.0, 0.0)) };
@@ -26,6 +29,11 @@ thread_local! {
 static ENABLED: AtomicBool = AtomicBool::new(false);
 static VISIBLE: AtomicBool = AtomicBool::new(false);
 static CARD_HEIGHT: AtomicI32 = AtomicI32::new(122);
+static USAGE_HEIGHT: AtomicI32 = AtomicI32::new(160);
+const USAGE_WIDTH: i32 = 340;
+const CARD_WIDTH: i32 = 390;
+const COMPACT_HEIGHT: i32 = 122;
+const USAGE_OVERLAP: i32 = 8;
 static DRAG_ACTIVE: AtomicBool = AtomicBool::new(false);
 static DRAG_MOVED: AtomicBool = AtomicBool::new(false);
 
@@ -142,7 +150,7 @@ pub fn install(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
     // Layer Shell toplevel, otherwise its natural height leaves a blank gap.
     vbox.set_size_request(390, 122);
     viewport.add(&vbox);
-    apply_size(&layer, 122);
+    apply_size(&layer, CARD_WIDTH, COMPACT_HEIGHT);
     layer.add(&viewport);
 
     layer.init_layer_shell();
@@ -174,6 +182,7 @@ pub fn install(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
     }
     CARD.with(|cell| *cell.borrow_mut() = Some(layer));
     CONTENT.with(|cell| *cell.borrow_mut() = Some(vbox));
+    install_usage_surface(app, &application)?;
     // Protocol discovery is asynchronous and uses GDK's own event loop.
     // The surface is functional even if this compositor omits the extension;
     // attempting drag will report the missing native input capability.
@@ -184,16 +193,154 @@ pub fn install(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+/// A distinct transparent Layer Shell surface anchored immediately ABOVE
+/// the compact card. WebKit content can never escape a 122px Wayland surface,
+/// so an HTML tooltip in the main WebView was fundamentally wrong.
+fn install_usage_surface(
+    app: &mut App,
+    application: &gtk::Application,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let webview = app
+        .get_webview_window("usage")
+        .ok_or("Usage window is missing")?;
+    let old = webview.gtk_window()?;
+    let box_view = webview.default_vbox()?;
+    let _ = webview.hide();
+    old.remove(&box_view);
+
+    let usage = gtk::ApplicationWindow::new(application);
+    usage.set_decorated(false);
+    usage.set_resizable(true);
+    usage.set_app_paintable(true);
+    if let Some(screen) = gtk::prelude::WidgetExt::screen(&usage) {
+        if let Some(visual) = screen.rgba_visual() {
+            usage.set_visual(Some(&visual));
+        }
+        let css = gtk::CssProvider::new();
+        css.load_from_data(b"window.repoticker-usage { background-color: transparent; background-image: none; }")?;
+        gtk::StyleContext::add_provider_for_screen(
+            &screen, &css, gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+        );
+    }
+    usage.style_context().add_class("repoticker-usage");
+    let viewport = gtk::ScrolledWindow::new(None::<&gtk::Adjustment>, None::<&gtk::Adjustment>);
+    viewport.set_policy(gtk::PolicyType::Never, gtk::PolicyType::Never);
+    viewport.set_propagate_natural_height(false);
+    viewport.set_propagate_natural_width(false);
+    let height = USAGE_HEIGHT.load(Ordering::Acquire);
+    viewport.set_min_content_height(height);
+    viewport.set_max_content_height(height);
+    viewport.set_min_content_width(USAGE_WIDTH);
+    viewport.set_max_content_width(USAGE_WIDTH);
+    viewport.set_size_request(USAGE_WIDTH, height);
+    box_view.set_size_request(USAGE_WIDTH, height);
+    viewport.add(&box_view);
+    apply_size(&usage, USAGE_WIDTH, height);
+    usage.add(&viewport);
+
+    usage.init_layer_shell();
+    usage.set_namespace("repoticker-usage");
+    usage.set_layer(Layer::Overlay);
+    usage.set_anchor(Edge::Bottom, true);
+    usage.set_anchor(Edge::Right, true);
+    usage.set_exclusive_zone(-1);
+    usage.set_keyboard_mode(KeyboardMode::OnDemand);
+    USAGE.with(|state| *state.borrow_mut() = Some(usage));
+    USAGE_CONTENT.with(|state| *state.borrow_mut() = Some(box_view));
+    USAGE_VIEWPORT.with(|state| *state.borrow_mut() = Some(viewport));
+    Ok(())
+}
+
+fn on_usage_main(
+    app: &AppHandle,
+    action: impl FnOnce(&gtk::ApplicationWindow) + Send + 'static,
+) -> Result<(), String> {
+    app.run_on_main_thread(move || {
+        USAGE.with(|state| {
+            if let Some(window) = state.borrow().as_ref() {
+                action(window);
+            }
+        });
+    })
+    .map_err(|error| error.to_string())
+}
+
+/// The origin of truth is the card's margins, not an inferred absolute
+/// pointer coordinate or its transient expanded-window allocation.
+fn anchor_usage(window: &gtk::ApplicationWindow) {
+    MARGINS.with(|state| {
+        let (bottom, right) = *state.borrow();
+        window.set_layer_shell_margin(
+            Edge::Bottom,
+            bottom.saturating_add(COMPACT_HEIGHT - USAGE_OVERLAP),
+        );
+        window.set_layer_shell_margin(Edge::Right, right.saturating_add(5));
+    });
+}
+
+pub fn show_usage(app: &AppHandle) -> Result<(), String> {
+    if !VISIBLE.load(Ordering::Acquire) {
+        return Err("Card is hidden".into());
+    }
+    on_usage_main(app, |window| {
+        anchor_usage(window);
+        window.show_all();
+    })
+}
+
+pub fn hide_usage(app: &AppHandle) -> Result<(), String> {
+    on_usage_main(app, |window| window.hide())
+}
+
+pub async fn resize_usage(app: AppHandle, height: i32) -> Result<(), String> {
+    if !(110..=368).contains(&height) {
+        return Err("Invalid usage popup height".into());
+    }
+    let (send, receive) = std::sync::mpsc::sync_channel(1);
+    app.run_on_main_thread(move || {
+        let result = USAGE.with(|state| {
+            let current = state.borrow();
+            let window = current
+                .as_ref()
+                .ok_or_else(|| "Usage popup is unavailable".to_owned())?;
+            if USAGE_HEIGHT.load(Ordering::Acquire) != height {
+                USAGE_VIEWPORT.with(|state| {
+                    if let Some(viewport) = state.borrow().as_ref() {
+                        viewport.set_min_content_height(height);
+                        viewport.set_max_content_height(height);
+                        viewport.set_size_request(USAGE_WIDTH, height);
+                    }
+                });
+                USAGE_CONTENT.with(|state| {
+                    if let Some(content) = state.borrow().as_ref() {
+                        content.set_size_request(USAGE_WIDTH, height);
+                    }
+                });
+                apply_size(window, USAGE_WIDTH, height);
+                USAGE_HEIGHT.store(height, Ordering::Release);
+            }
+            anchor_usage(window);
+            Ok(())
+        });
+        let _ = send.send(result);
+    })
+    .map_err(|error| error.to_string())?;
+    let completed = tauri::async_runtime::spawn_blocking(move || receive.recv())
+        .await
+        .map_err(|error| error.to_string())?;
+    completed.map_err(|_| "GTK usage popup resize interrupted".to_owned())?
+}
+
 /// Set *both* minimum and maximum hints. GTK's default size and widget
 /// size requests alone cannot shrink a toplevel below WebKit's requisition.
 /// The compositor ultimately owns the allocation on Wayland.
-fn apply_size(window: &gtk::ApplicationWindow, height: i32) {
+fn apply_size(window: &gtk::ApplicationWindow, width: i32, height: i32) {
     let size = Geometry::new(
-        390,
+        width,
         height,
-        390,
+        width,
         height,
-        390,
+        width,
         height,
         1,
         1,
@@ -206,8 +353,8 @@ fn apply_size(window: &gtk::ApplicationWindow, height: i32) {
         Some(&size),
         WindowHints::MIN_SIZE | WindowHints::MAX_SIZE,
     );
-    window.set_default_size(390, height);
-    window.resize(390, height);
+    window.set_default_size(width, height);
+    window.resize(width, height);
 }
 
 fn on_main(
@@ -248,7 +395,7 @@ fn apply_card_height(window: &gtk::ApplicationWindow, height: i32) -> Result<(),
         }
     });
 
-    apply_size(window, height);
+    apply_size(window, CARD_WIDTH, height);
     MARGINS.with(|state| {
         let (bottom, right) = *state.borrow();
         window.set_anchor(Edge::Bottom, true);
@@ -311,6 +458,7 @@ pub async fn resize(app: AppHandle, height: i32) -> Result<(), String> {
 
 pub fn show(app: &AppHandle) -> Result<(), String> {
     VISIBLE.store(true, Ordering::Release);
+    hide_usage(app)?;
     on_main(app, |window| {
         MARGINS.with(|stored| {
             let (bottom, right) = *stored.borrow();
@@ -333,6 +481,7 @@ pub fn show(app: &AppHandle) -> Result<(), String> {
 
 pub fn hide(app: &AppHandle) -> Result<(), String> {
     VISIBLE.store(false, Ordering::Release);
+    hide_usage(app)?;
     // Drop motion immediately, before GTK receives another pointer packet.
     cancel_drag(app)?;
     on_main(app, |window| window.hide())
@@ -371,6 +520,7 @@ pub fn cancel_drag(app: &AppHandle) -> Result<(), String> {
 }
 
 pub async fn start_drag(app: &AppHandle) -> Result<(), String> {
+    hide_usage(app)?;
     let (send, receive) = std::sync::mpsc::sync_channel(1);
     on_main(app, move |_| {
         let result = if !VISIBLE.load(Ordering::Acquire) {

@@ -400,7 +400,6 @@ async fn set_card_view(app: AppHandle, view: String) -> Result<(), String> {
     let height = match view.as_str() {
         "compact" => 122.0,
         "repos" => 510.0,
-        "quota" => 510.0,
         "settings" => 318.0,
         _ => return Err("Unknown card view".into()),
     };
@@ -417,6 +416,54 @@ async fn set_card_view(app: AppHandle, view: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn show_usage_popup(app: AppHandle) -> Result<(), String> {
+    #[cfg(target_os = "linux")]
+    if linux_surface::enabled() {
+        linux_surface::show_usage(&app)?;
+    } else {
+        let card = app.get_webview_window("main")
+            .ok_or_else(|| "Card unavailable".to_owned())?;
+        let popup = app.get_webview_window("usage")
+            .ok_or_else(|| "Usage popup unavailable".to_owned())?;
+        if let (Ok(position), Ok(size)) = (card.outer_position(), card.outer_size()) {
+            let outer = popup.outer_size().map_err(|error| error.to_string())?;
+            let x = i64::from(position.x) + i64::from(size.width)
+                - i64::from(outer.width) - 5;
+            let y = i64::from(position.y) - i64::from(outer.height) + 8;
+            if let (Ok(x), Ok(y)) = (i32::try_from(x), i32::try_from(y)) {
+                let _ = popup.set_position(tauri::PhysicalPosition::new(x, y));
+            }
+        }
+        popup.show().map_err(|error| error.to_string())?;
+    }
+    let _ = app.emit_to("usage", "repoticker-usage-shown", ());
+    Ok(())
+}
+
+#[tauri::command]
+fn hide_usage_popup(app: AppHandle) -> Result<(), String> {
+    #[cfg(target_os = "linux")]
+    if linux_surface::enabled() {
+        return linux_surface::hide_usage(&app);
+    }
+    let popup = app.get_webview_window("usage")
+        .ok_or_else(|| "Usage popup unavailable".to_owned())?;
+    popup.hide().map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+async fn resize_usage_popup(app: AppHandle, height: i32) -> Result<(), String> {
+    #[cfg(target_os = "linux")]
+    if linux_surface::enabled() {
+        return linux_surface::resize_usage(app, height).await;
+    }
+    let popup = app.get_webview_window("usage")
+        .ok_or_else(|| "Usage popup unavailable".to_owned())?;
+    popup.set_size(tauri::LogicalSize::new(340.0, f64::from(height)))
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
 fn hide_card(app: AppHandle) -> Result<(), String> {
     let window = app
         .get_webview_window("main")
@@ -428,12 +475,14 @@ fn hide_card(app: AppHandle) -> Result<(), String> {
         let _ = app.emit("repoticker-card-hidden", ());
         return Ok(());
     }
+    let _ = hide_usage_popup(app.clone());
     window.hide().map_err(|err| err.to_string())?;
     let _ = app.emit("repoticker-card-hidden", ());
     Ok(())
 }
 
 fn show_compact_card(app: &AppHandle) {
+    let _ = hide_usage_popup(app.clone());
     // On KDE the resize and show requests must be ordered on GTK's main
     // thread before notifying WebView. Never update cached height early.
     #[cfg(target_os = "linux")]
@@ -713,6 +762,10 @@ fn main() {
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
+                if window.label() == "usage" {
+                    let _ = hide_usage_popup(window.app_handle().clone());
+                    return;
+                }
                 if window.label() == "settings" || window.label() == "about" {
                     let _ = window.hide();
                     return;
@@ -720,7 +773,7 @@ fn main() {
                 #[cfg(target_os = "linux")]
                 if linux_surface::enabled() {
                     let _ = linux_surface::hide(window.app_handle());
-                    let _ = linux_surface::resize(window.app_handle().clone(), 122);
+                    let _ = linux_surface::request_resize(window.app_handle(), 122);
                 } else {
                     let _ = window.hide();
                 }
@@ -733,6 +786,9 @@ fn main() {
             get_snapshot,
             get_about_info,
             open_actions_job,
+            show_usage_popup,
+            hide_usage_popup,
+            resize_usage_popup,
             open_project_website,
             add_root,
             remove_root,

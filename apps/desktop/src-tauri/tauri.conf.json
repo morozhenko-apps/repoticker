@@ -22,6 +22,23 @@
         "transparent": true
       },
       {
+        "label": "usage",
+        "title": "RepoTicker GitHub Actions",
+        "url": "quota.html",
+        "width": 340,
+        "height": 160,
+        "minWidth": 340,
+        "minHeight": 110,
+        "maxWidth": 340,
+        "maxHeight": 368,
+        "visible": false,
+        "resizable": true,
+        "decorations": false,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "transparent": true
+      },
+      {
         "label": "settings",
         "title": "RepoTicker Settings",
         "url": "settings.html",

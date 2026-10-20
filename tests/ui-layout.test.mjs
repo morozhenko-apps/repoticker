@@ -61,7 +61,7 @@ test("successes do not create logs, errors remain visible and check is green", (
   assert.match(css, /\.repo-delta\.is-current \{[^}]*color: #159947/s);
   assert.match(css, /\.repo-name \{[^}]*font-weight: 400/s);
   assert.match(html, /class="quota-anchor" tabindex="0"/);
-  assert.match(css, /\.card\[data-view="quota"\] > \.quota-tooltip:not\(\[hidden\]\)/);
+  assert.doesNotMatch(html, /id="quota-tooltip"/);
 });
 
 test("native progress reports are in rows with translucent fills and bulk button percentages", () => {
@@ -123,24 +123,13 @@ test("popup is transparent and persists native anchor after manual movement", ()
   assert.equal(tauri.app.windows.find(w => w.label === "main").transparent, true);
   assert.match(ui, /"stop_card_drag"/);
   assert.match(ui, /quotaExpanded/);
-  assert.match(ui, /"set_card_view", \{ view: "quota" \}/);
-  assert.match(ui, /byId\("card"\)\.dataset\.view = "quota"/);
-  assert.match(ui, /byId\("card"\)\.dataset\.view = view/);
-  assert.match(ui, /renderQuotaDetails\(buildQuotaDetails\(next.runner_state\)\)/);
-  assert.match(css, /\.quota-tooltip \{[^}]*flex: 1 1 auto/s);
-  assert.match(css, /\.quota-tooltip \{[^}]*min-height: 0/s);
-  assert.doesNotMatch(css, /\.quota-tooltip \{[^}]*position: absolute/s);
-  assert.match(html, /id="quota-tooltip"[^>]*hidden/);
-  assert.ok(html.indexOf('id="repo-drawer"') < html.indexOf('id="quota-tooltip"'));
-  assert.ok(html.indexOf('id="quota-tooltip"') < html.indexOf('class="status-strip"'));
-  assert.match(ui, /quotaPanel\.hidden = false/);
-  assert.match(ui, /quotaPanel\.hidden = true/);
-  assert.match(ui, /byId\("repo-drawer"\)\.hidden = true/);
-  assert.match(html, /id="quota-content"/);
+  assert.match(ui, /"show_usage_popup"/);
+  assert.match(ui, /"hide_usage_popup"/);
+  assert.doesNotMatch(html, /id="quota-tooltip"/);
   const viewSource = readFileSync(new URL("../apps/desktop/ui/view.mjs", import.meta.url), "utf8");
   const nativeSource = readFileSync(new URL("../apps/desktop/src-tauri/src/main.rs", import.meta.url), "utf8");
-  assert.match(viewSource, /quota: 510/);
-  assert.match(nativeSource, /"quota" => 510\.0/);
+  assert.doesNotMatch(viewSource, /quota: 510/);
+  assert.doesNotMatch(nativeSource, /"quota" => 510\.0/);
   assert.match(ui, /dragGesture\.end/);
 });
 
@@ -152,21 +141,6 @@ test("tray About uses real package version, icon and author", () => {
   assert.match(about, /id="author"/);
   assert.match(js, /"get_about_info"/);
   assert.match(js, /"open_project_website"/);
-});
-
-test("quota popup occupies real in-window flex space and preserves the original strip", () => {
-  const statusStrip = html.slice(html.indexOf('<div class="status-strip"'), html.indexOf('</nav>'));
-  assert.match(statusStrip, /id="runner-status"[\s\S]*id="ci-running"[\s\S]*id="ci-queued"/);
-  assert.equal((html.match(/id="quota-tooltip"/g) || []).length, 1);
-  assert.ok(html.indexOf('id="quota-tooltip"') < html.indexOf('class="status-strip"'));
-  assert.ok(css.includes('.card[data-view="quota"] > .quota-tooltip:not([hidden])'));
-  assert.ok(ui.includes('quotaStrip.addEventListener("mouseleave"'));
-  assert.ok(ui.includes('quotaPanel.addEventListener("mouseenter"'));
-  assert.ok(ui.includes('quotaPanel.addEventListener("mouseleave"'));
-  assert.ok(ui.includes('quotaPanel.contains(document.activeElement)'));
-  assert.ok(ui.includes('byId("repo-drawer").hidden = view !== "repos"'));
-  assert.ok(ui.includes('if (cardVisible && view === "compact")'));
-  assert.ok(ui.includes('function resetQuota()'));
 });
 
 test("native geometry changes are serialized by GTK acknowledgment and preserve anchor", () => {
@@ -184,5 +158,5 @@ test("native geometry changes are serialized by GTK acknowledgment and preserve 
   assert.match(commands, /async fn set_card_view/);
   assert.match(commands, /linux_surface::resize\(app, height as i32\)\.await/);
   assert.match(commands, /linux_surface::request_resize\(&app, 122\)/);
-  assert.match(ui, /#quota-tooltip,\[role=button\]/);
+  assert.match(ui, /\.quota-anchor,\[role=button\]/);
 });

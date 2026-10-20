@@ -38,16 +38,23 @@ test("usage height is based on content rows, never viewport scrollHeight", () =>
   const quotaJs = read("../apps/desktop/ui/quota.mjs");
   assert.doesNotMatch(quotaJs, /root\.scrollHeight/);
   assert.match(quotaJs, /root\.children\]\.map\(child => child\.scrollHeight\)/);
-  assert.match(quotaJs, /dismiss_usage_popup/);
-  assert.match(read("../apps/desktop/ui/quota.html"), /class="quota-close"/);
+  assert.doesNotMatch(quotaJs, /dismiss_usage_popup|repoticker-usage-hover/);
+  assert.doesNotMatch(read("../apps/desktop/ui/quota.html"), /class="quota-close"/);
 });
 test("usage overlay follows the same physical monitor as the main Layer Shell card", () => {
   assert.match(native, /monitor_at_window\(&gdk_window\)/);
   assert.match(native, /window\.set_monitor\(&monitor\)/);
   assert.match(native, /fn anchor_usage/);
-  assert.match(read("../apps/desktop/src-tauri/src/main.rs"), /fn dismiss_usage_popup/);
-  assert.match(ui, /"repoticker-usage-dismiss"/);
+  assert.match(ui, /"hide_usage_popup"/);
   const usage = conf.app.windows.find(w=>w.label==="usage");
   assert.equal(usage.height,118);
   assert.equal(usage.maxHeight,320);
+});
+
+test("hover controls balloon lifetime, never clicks, pins or popup hover", () => {
+  assert.match(ui, /quotaAnchor\.addEventListener\("mouseenter"/);
+  assert.match(ui, /quotaAnchor\.addEventListener\("mouseleave"/);
+  assert.doesNotMatch(ui, /popupHovered|closeGrace|quotaAnchor\.addEventListener\("click"/);
+  assert.doesNotMatch(read("../apps/desktop/ui/quota.html"), /<button|quota-close/);
+  assert.match(read("../apps/desktop/ui/quota.css"), /pointer-events:none/);
 });

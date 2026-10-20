@@ -55,17 +55,4 @@ async function refresh() {
   }
 }
 window.__TAURI__?.event?.listen?.("repoticker-usage-shown", refresh);
-function dismiss() {
-  // The native side hides the GTK layer *before* reporting dismissal to
-  // the compact card. This works even if the card's WebView loses focus.
-  void invoke("dismiss_usage_popup").catch(() => {});
-}
-document.querySelector(".quota-close").addEventListener("click", dismiss);
-document.addEventListener("pointerenter", () => {
-  void window.__TAURI__?.event?.emit?.("repoticker-usage-hover", true);
-});
-document.addEventListener("pointerleave", dismiss);
-document.addEventListener("keydown", event => {
-  if (event.key === "Escape") dismiss();
-});
 refresh();

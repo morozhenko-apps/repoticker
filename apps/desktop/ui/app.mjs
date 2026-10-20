@@ -145,34 +145,28 @@ function updateActionState() {
     ? eligible + " commits eligible for fast-forward (clean upstream branches)"
     : "No branches eligible for safe pull. Run Fetch to refresh remote refs.";
 }
-/* The usage tooltip lives in its own Wayland surface, not in the
- * compact card's clipped 122px WebView. Never resize the main card for ⓘ.
- */
+
+/* Strict ⓘ hover balloon: no click-to-pin, no independent hover state,
+ * no keyboard focus stealing, and no GTK resize of the main card. */
 const quotaAnchor = document.querySelector(".quota-anchor");
 let quotaExpanded = false;
 let quotaWanted = false;
-let popupHovered = false;
-let closeGrace = null;
 let quotaQueue = Promise.resolve();
 
-function cancelQuotaGrace() {
-  if (closeGrace !== null) { clearTimeout(closeGrace); closeGrace = null; }
-}
 function resetQuota() {
-  cancelQuotaGrace();
   quotaWanted = false;
   quotaExpanded = false;
-  popupHovered = false;
   quotaAnchor.dataset.open = "false";
   quotaAnchor.setAttribute("aria-expanded", "false");
   void invoke("hide_usage_popup").catch(() => {});
 }
+
 function setQuotaOpen(wanted) {
   quotaWanted = wanted;
-  cancelQuotaGrace();
   quotaQueue = quotaQueue.then(async () => {
-    if (!cardVisible) return;
-    if (quotaWanted && !quotaExpanded) {
+    if (!cardVisible) { resetQuota(); return; }
+    if (quotaWanted === quotaExpanded) return;
+    if (quotaWanted) {
       await invoke("show_usage_popup");
       if (!quotaWanted || !cardVisible) {
         await invoke("hide_usage_popup");
@@ -182,51 +176,26 @@ function setQuotaOpen(wanted) {
       quotaAnchor.dataset.open = "true";
       quotaAnchor.setAttribute("aria-expanded", "true");
       cancelAutoHide();
-    } else if (!quotaWanted && quotaExpanded) {
+    } else {
       await invoke("hide_usage_popup");
       quotaExpanded = false;
       quotaAnchor.dataset.open = "false";
       quotaAnchor.setAttribute("aria-expanded", "false");
       armAutoHide();
     }
-  }).catch(showError);
+  }).catch(error => {
+    quotaExpanded = false;
+    quotaAnchor.dataset.open = "false";
+    quotaAnchor.setAttribute("aria-expanded", "false");
+    showError(error);
+  });
   return quotaQueue;
 }
-function maybeDismissQuota() {
-  if (!quotaAnchor.matches(":hover") && !popupHovered &&
-      !quotaAnchor.contains(document.activeElement)) {
-    void setQuotaOpen(false);
-  }
-}
+
 quotaAnchor.addEventListener("mouseenter", () => { void setQuotaOpen(true); });
+quotaAnchor.addEventListener("mouseleave", () => { void setQuotaOpen(false); });
 quotaAnchor.addEventListener("focusin", () => { void setQuotaOpen(true); });
-quotaAnchor.addEventListener("click", () => {
-  void setQuotaOpen(!quotaExpanded);
-});
-quotaAnchor.addEventListener("focusout", maybeDismissQuota);
-document.addEventListener("mouseleave", () => {
-  cancelQuotaGrace();
-  // Brief event-transfer grace between two independent Wayland surfaces.
-  closeGrace = setTimeout(() => {
-    closeGrace = null;
-    maybeDismissQuota();
-  }, 180);
-});
-window.__TAURI__?.event?.listen?.("repoticker-usage-hover", event => {
-  popupHovered = event.payload === true;
-  if (popupHovered) cancelQuotaGrace();
-  else maybeDismissQuota();
-});
-window.__TAURI__?.event?.listen?.("repoticker-usage-dismiss", () => {
-  popupHovered = false;
-  void setQuotaOpen(false);
-});
-document.addEventListener("pointerdown", event => {
-  if (quotaExpanded && !quotaAnchor.contains(event.target)) {
-    popupHovered = false;
-    void setQuotaOpen(false);
-  }
-});
+quotaAnchor.addEventListener("focusout", () => { void setQuotaOpen(false); });
 
 function render(next) {
   snapshot = next;

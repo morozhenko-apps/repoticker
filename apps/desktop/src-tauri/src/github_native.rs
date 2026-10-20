@@ -185,7 +185,7 @@ impl GithubOAuthHttp {
         let body = self
             .submit(
                 DEVICE_CODE_URL,
-                &[("client_id", CLIENT_ID), ("scope", "offline_access")],
+                &[("client_id", CLIENT_ID)],
             )
             .await?;
         parse_device_challenge(&body, now).map_err(|_| NativeAuthError::BadResponse)
@@ -235,6 +235,15 @@ mod tests {
             access_expires_at: 10_000,
             refresh_expires_at: 20_000,
         }
+    }
+
+    #[test]
+    fn github_app_device_challenge_requests_only_its_public_client_id() {
+        // GitHub App permissions are controlled by App registration, not
+        // OAuth App's requested scope; do not ask for an extra scope.
+        let source = include_str!("github_native.rs");
+        assert!(!source.contains("offline_access"));
+        assert!(source.contains("&[("));
     }
 
     #[test]

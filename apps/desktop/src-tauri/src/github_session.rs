@@ -301,17 +301,19 @@ async fn poll_authorization(
                     publish(&app, "awaiting_approval");
                     continue;
                 }
-                {
-                    publish(
-                        &app,
-                        match response {
-                            DeviceResponse::AccessDenied => "denied",
-                            DeviceResponse::ExpiredToken => "expired",
-                            _ => "failed",
-                        },
-                    );
-                    return;
-                }
+                let (phase, reason) = match response {
+                    DeviceResponse::AccessDenied => ("denied", None),
+                    DeviceResponse::ExpiredToken => ("expired", None),
+                    DeviceResponse::IncorrectClientCredentials => {
+                        ("failed", Some("client_credentials"))
+                    }
+                    DeviceResponse::UnsupportedGrantType => ("failed", Some("grant_type")),
+                    DeviceResponse::UnverifiedUserEmail => ("failed", Some("unverified_email")),
+                    DeviceResponse::UnknownFailure => ("failed", Some("github_rejected")),
+                    _ => ("failed", Some("invalid_response")),
+                };
+                publish_with_reason(&app, phase, reason);
+                return;
             }
             PollReply::Granted(lease) => {
                 if session.receive(DeviceResponse::Authorized, unix_now())
@@ -432,6 +434,18 @@ mod tests {
             assert!(!text.contains("ghu_"));
             assert!(!text.contains("ghr_"));
             assert!(!text.contains(crate::github_oauth_wire::TOKEN_URL));
+        }
+    }
+
+    #[test]
+    fn terminal_auth_codes_do_not_expose_provider_response_bodies() {
+        for reason in [
+            "client_credentials",
+            "grant_type",
+            "unverified_email",
+            "github_rejected",
+        ] {
+            assert!(reason.bytes().all(|byte| byte.is_ascii_lowercase() || byte == b'_'));
         }
     }
 

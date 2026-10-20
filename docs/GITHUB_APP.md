@@ -248,8 +248,9 @@ approval alone proves a stored connection. The existing issue is
   to client_id only; distinguish known server rejection categories
   and cover request fields in tests.
 - `cf82781e`: finish user-facing error reason strings in Settings.
-- Preflight: https://github.com/morozhenko-apps/repoticker/actions/runs/39513567419
-  (completion to be recorded separately).
+- Final code gate: [Preflight #39513954626](https://github.com/morozhenko-apps/repoticker/actions/runs/39513954626)
+  on SHA `8734947`; completion/physical confirmation still pending.
+  Earlier temporary CI runs were superseded by formatting corrections.
 
 **Current status:** physical root cause NOT confirmed yet. A fresh
 authorization attempt must supply the final fixed phase/reason (or

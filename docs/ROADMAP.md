@@ -722,3 +722,41 @@ accommodate usage details.
 
 No public release or branch merge until issues #2/#3 physically pass.
 This is a separately documented UX change, not OAuth integration.
+
+## KDE second-surface usage overlay follow-up (2026-10-20)
+
+Latest physical screenshot after `0442b02`: usage popup did not
+dismiss and reached near-max height, positioned to the side rather than
+above the compact card; the primary card still shows unexplained empty
+space. This is **not accepted** (Issue #3 and remaining Issue #2).
+
+The actual root causes in the usage overlay:
+1. `quota.mjs` measured the total `scrollHeight` of an expanding
+   `flex:1` container, making popup height a function of its previous
+   allocated height. This can escalate to 368px regardless of content.
+2. `gtk-layer-shell` originally left popup `monitor=NULL`, allowing
+   KWin to pick an output different from the main card. The two
+   windows cannot share a meaningful margin coordinate system without
+   selecting the same output.
+3. Frontend-only pointerleave propagation could leave popup visible
+   if the global event was lost or the focus state diverged.
+
+**Code commit `111cb45`** measures intrinsic row content through a
+pure capped height function, fixes popup sizing at 118..320, explicitly
+selects the actual GDK monitor of the displayed primary card before
+showing the secondary Layer Shell window, and adds a native guaranteed
+dismissal pathway, outside-click/Escape and a close button. This
+**does not change native drag pointer input**. CI evidence:
+https://github.com/morozhenko-apps/repoticker/actions/runs/39483808697
+
+Remaining physical acceptance:
+- [ ] Popup for Not connected is *short* and horizontally aligned above
+  the main card, on the **same monitor**.
+- [ ] Hover exit, close X, Escape, outside click and Hide must all
+  reliably close the secondary surface without focus/hover races.
+- [ ] GTK card must allocate exactly 390x122 in compact mode with
+  no blank top gap; do not claim fixed until GTK logs support it.
+- [ ] Drag motion should be immediate, without rubber-band lag, and
+  positions must persist after Hide/Open and full restart.
+- [ ] Repos drawer expansion and collapse still work independently.
+  Counters/buttons keep existing layout and styling.

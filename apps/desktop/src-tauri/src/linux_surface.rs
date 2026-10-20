@@ -29,7 +29,7 @@ thread_local! {
 static ENABLED: AtomicBool = AtomicBool::new(false);
 static VISIBLE: AtomicBool = AtomicBool::new(false);
 static CARD_HEIGHT: AtomicI32 = AtomicI32::new(122);
-static USAGE_HEIGHT: AtomicI32 = AtomicI32::new(160);
+static USAGE_HEIGHT: AtomicI32 = AtomicI32::new(118);
 const USAGE_WIDTH: i32 = 340;
 const CARD_WIDTH: i32 = 390;
 const COMPACT_HEIGHT: i32 = 122;
@@ -272,6 +272,20 @@ fn on_usage_main(
 /// The origin of truth is the card's margins, not an inferred absolute
 /// pointer coordinate or its transient expanded-window allocation.
 fn anchor_usage(window: &gtk::ApplicationWindow) {
+    // Independent Layer Shell surfaces may be placed on different outputs.
+    // Pin usage to the exact GDK monitor currently hosting the card.
+    CARD.with(|state| {
+        if let Some(card) = state.borrow().as_ref() {
+            if let Some(gdk_window) = card.window() {
+                let display = gdk_window.display();
+                if let Some(monitor) = display.monitor_at_window(&gdk_window) {
+                    if window.monitor().as_ref() != Some(&monitor) {
+                        window.set_monitor(&monitor);
+                    }
+                }
+            }
+        }
+    });
     MARGINS.with(|state| {
         let (bottom, right) = *state.borrow();
         window.set_layer_shell_margin(
@@ -297,7 +311,7 @@ pub fn hide_usage(app: &AppHandle) -> Result<(), String> {
 }
 
 pub async fn resize_usage(app: AppHandle, height: i32) -> Result<(), String> {
-    if !(110..=368).contains(&height) {
+    if !(118..=320).contains(&height) {
         return Err("Invalid usage popup height".into());
     }
     let (send, receive) = std::sync::mpsc::sync_channel(1);

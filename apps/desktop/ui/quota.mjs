@@ -1,4 +1,5 @@
 import { buildQuotaDetails } from "./quota-details.mjs";
+import { usageHeight } from "./quota-size.mjs";
 
 const byId = id => document.getElementById(id);
 const invoke = (name, args = {}) => window.__TAURI__.core.invoke(name, args);
@@ -40,9 +41,9 @@ function paint(details) {
   }
   // Small for disconnected state, expands only this *separate* popup when
   // there are more details. Main card always stays 390x122.
-  const title = document.querySelector(".quota-title");
-  const targetHeight = Math.max(110, Math.min(368,
-    Math.ceil(title.offsetHeight + root.scrollHeight + 45)));
+  const title = document.querySelector(".quota-header");
+  const actualRows = [...root.children].map(child => child.scrollHeight);
+  const targetHeight = usageHeight(title.offsetHeight, actualRows);
   void invoke("resize_usage_popup", { height: targetHeight }).catch(() => {});
 }
 async function refresh() {
@@ -54,16 +55,17 @@ async function refresh() {
   }
 }
 window.__TAURI__?.event?.listen?.("repoticker-usage-shown", refresh);
+function dismiss() {
+  // The native side hides the GTK layer *before* reporting dismissal to
+  // the compact card. This works even if the card's WebView loses focus.
+  void invoke("dismiss_usage_popup").catch(() => {});
+}
+document.querySelector(".quota-close").addEventListener("click", dismiss);
 document.addEventListener("pointerenter", () => {
   void window.__TAURI__?.event?.emit?.("repoticker-usage-hover", true);
 });
-document.addEventListener("pointerleave", () => {
-  void window.__TAURI__?.event?.emit?.("repoticker-usage-hover", false);
-});
+document.addEventListener("pointerleave", dismiss);
 document.addEventListener("keydown", event => {
-  if (event.key === "Escape") {
-    void window.__TAURI__?.event?.emit?.("repoticker-usage-dismiss");
-    void invoke("hide_usage_popup");
-  }
+  if (event.key === "Escape") dismiss();
 });
 refresh();

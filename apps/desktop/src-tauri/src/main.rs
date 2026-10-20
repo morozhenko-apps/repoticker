@@ -454,6 +454,13 @@ fn hide_usage_popup(app: AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn dismiss_usage_popup(app: AppHandle) -> Result<(), String> {
+    hide_usage_popup(app.clone())?;
+    app.emit("repoticker-usage-dismiss", ())
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
 async fn resize_usage_popup(app: AppHandle, height: i32) -> Result<(), String> {
     #[cfg(target_os = "linux")]
     if linux_surface::enabled() {
@@ -792,6 +799,7 @@ fn main() {
             open_actions_job,
             show_usage_popup,
             hide_usage_popup,
+            dismiss_usage_popup,
             resize_usage_popup,
             open_project_website,
             add_root,

@@ -218,7 +218,14 @@ window.__TAURI__?.event?.listen?.("repoticker-usage-hover", event => {
   else maybeDismissQuota();
 });
 window.__TAURI__?.event?.listen?.("repoticker-usage-dismiss", () => {
+  popupHovered = false;
   void setQuotaOpen(false);
+});
+document.addEventListener("pointerdown", event => {
+  if (quotaExpanded && !quotaAnchor.contains(event.target)) {
+    popupHovered = false;
+    void setQuotaOpen(false);
+  }
 });
 
 function render(next) {

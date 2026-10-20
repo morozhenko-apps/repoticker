@@ -1,6 +1,6 @@
 # RepoTicker GitHub App registration
 
-Status: GitHub App registered on 2026-10-20; live native login is still pending. The Rust core
+Status: GitHub App registered and installed by the publisher on 2026-10-20; live native login is still pending. The Rust core
 Device Flow state machine exists; it is not yet a working GitHub login.
 
 ## One-time setup by the app publisher
@@ -148,3 +148,7 @@ the encrypted OS credential store and outbound TLS client are absent.
 Raw access/refresh/device token strings are not sent to a WebView or
 logged. A native runtime sign-in command must not be made available
 until token storage, refresh and cancellation are implemented.
+
+## Next implementation milestone
+
+[Issue #4](https://github.com/morozhenko-apps/repoticker/issues/4) tracks native HTTPS/TLS, OS-native credential persistence, Device Flow refresh/rotation, authorized read-only REST and UI acceptance. The lockfile currently contains reqwest transitively without TLS support and has no credential store implementation. Regenerate `Cargo.lock` with Cargo when adding approved dependencies. Do not expose Connect in the product until both native transport and secure OS storage are operational and tested.

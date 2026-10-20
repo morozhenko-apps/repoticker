@@ -1,5 +1,15 @@
 # Roadmap and delivery evidence
 
+## Verified current status (2026-10-20)
+
+The user physically accepted the current `dev` version on Alcotester:
+normal startup produced `RepoTicker surface mode=gtk-layer-shell session=wayland wayland_display=true gdk_backend=wayland`, with no manual `GDK_BACKEND` override. The compact hover-only Actions balloon, native drag and gap-free card are accepted. [Issue #2](https://github.com/morozhenko-apps/repoticker/issues/2) and [Issue #3](https://github.com/morozhenko-apps/repoticker/issues/3) have been closed.
+
+This is acceptance of the KDE dev build only, not the published `v0.1.0` or other OS installers. Earlier dated “pending/failed” notes below record historical checkpoints and are superseded by this section.
+
+**Next implementation:** [Issue #4](https://github.com/morozhenko-apps/repoticker/issues/4) — GitHub App native HTTPS/TLS, OS keyring, Device Flow lifecycle and read-only runner/jobs status. Existing policy and JSON contract tests do not constitute a working login. Cargo must regenerate `Cargo.lock` when TLS/credential dependencies are added. Never expose tokens to the WebView or plaintext configuration.
+
+
 This document separates **implemented source code**, **verified tests**, **physical acceptance** and **future development**. A checked item does not imply every operating system or public distribution channel is accepted. No delivery date is promised.
 
 Evidence snapshot: 2026-10-19, `v0.1.0` published from `21f3b61d9774b931b57a4e3c83f61b2bcf2bb0ee`. [Release workflow #39319748009](https://github.com/morozhenko-apps/repoticker/actions/runs/39319748009) completed successfully on attempt 3; signed APT/R2 publication and GitHub Release succeeded. This is not independent end-user APT acceptance.
@@ -23,7 +33,7 @@ Evidence snapshot: 2026-10-19, `v0.1.0` published from `21f3b61d9774b931b57a4e3c
 
 ### Not yet accepted or unfinished
 
-- [ ] Close the [Wayland dragging jitter regression (#2)](https://github.com/morozhenko-apps/repoticker/issues/2) without regressing anchoring or compact sizing.
+- [x] Close [Wayland dragging jitter regression (#2)](https://github.com/morozhenko-apps/repoticker/issues/2) following Alcotester acceptance (2026-10-20).
 - [ ] Physically accept tray/card behavior across monitors, scaling, panel arrangements, focus, screen bounds, hide/reopen and supported desktop environments.
 - [x] Confirm tagged Linux DEB/AppImage and Windows NSIS build jobs, canonical artifacts and checksums; physical Windows runtime testing remains outstanding.
 - [x] Confirm protected signing job, R2 upload/public readback and [public GitHub Release v0.1.0](https://github.com/morozhenko-apps/repoticker/releases/tag/v0.1.0).
@@ -34,7 +44,7 @@ Evidence snapshot: 2026-10-19, `v0.1.0` published from `21f3b61d9774b931b57a4e3c
 
 ## P1 — Git provider hardening and Linux usability
 
-- [ ] Replace drag feedback/coordinate loop on KDE Wayland with smooth stable motion; add focused regression coverage.
+- [x] Replace drag feedback with native relative-pointer-v1; regression tests and KDE user acceptance completed (2026-10-20).
 - [ ] Cancel/timeout long-running Git processes and SSH prompts without unsafe state changes.
 - [ ] Strengthen concurrent external Git client interference, staged changes, linked worktrees, multiple remotes, submodules, hooks and adversarial configuration coverage.
 - [ ] Configurable ignore paths beyond built-in exclusions; better discovery semantics without unexpected recursive scans.

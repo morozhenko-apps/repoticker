@@ -24,7 +24,7 @@ Config persistence currently uses JSON writes without atomic rename/migration; c
 
 ## Presentation boundaries
 
-Linux uses `ksni` StatusNotifierItem because the relevant Tauri tray click callback does not satisfy the desired Linux activation semantics. On KDE Wayland, GTK Layer Shell supplies bottom/right anchors, while generic unsupported environments fall back to a frameless Tauri surface. The published v0.1.0 Wayland drag path visibly jitters. After KDE acceptance rejected the WebView-local correction, dev now uses a GTK3 Wayland native bridge bound to GDK's own `wl_pointer` and `zwp_relative_pointer_v1`. Device-relative deltas reach GTK's main thread directly and change Layer Shell margins without JS motion IPC. JS handles pointer-capture start/stop only; it never supplies screen/client movement coordinates. Runtime KDE acceptance is pending; [Issue #2](https://github.com/morozhenko-apps/repoticker/issues/2) stays open. No macOS UI/installer acceptance is implied by icon assets or source compatibility.
+Linux uses `ksni` StatusNotifierItem because the relevant Tauri tray click callback does not satisfy the desired Linux activation semantics. On KDE Wayland, GTK Layer Shell supplies bottom/right anchors, while generic unsupported environments fall back to a frameless Tauri surface. The published v0.1.0 Wayland drag path visibly jitters. After KDE acceptance rejected the WebView-local correction, dev now uses a GTK3 Wayland native bridge bound to GDK's own `wl_pointer` and `zwp_relative_pointer_v1`. Device-relative deltas reach GTK's main thread directly and change Layer Shell margins without JS motion IPC. JS handles pointer-capture start/stop only; it never supplies screen/client movement coordinates. KDE Wayland acceptance was confirmed in the current `dev` build on 2026-10-20, and [Issue #2](https://github.com/morozhenko-apps/repoticker/issues/2) is closed. The older published `v0.1.0` remains unchanged. No macOS UI/installer acceptance is implied by icon assets or source compatibility.
 
 The app must display `unknown` instead of zero or success when GitHub CI/runners/quota data are not available. Direct Actions URLs may be opened only following a user action and validated according to the security contract.
 
@@ -46,48 +46,10 @@ The app must display `unknown` instead of zero or success when GitHub CI/runners
 
 Version consistency and a tracked `Cargo.lock` are release gates. A `v*` tag pointing at current `main` HEAD builds Linux DEB/AppImage and Windows NSIS; signed APT/R2 publication and GitHub Release happen only after successful builds, public readback and approved deployment. macOS is currently skipped. See [RELEASE.md](RELEASE.md), [PRODUCT.md](PRODUCT.md), [GIT_PROVIDER.md](GIT_PROVIDER.md), [RELAY.md](RELAY.md) and [ROADMAP.md](ROADMAP.md).
 
-## Existing quota tooltip integration (dev)
+## Accepted native Actions hover balloon (dev)
 
-`apps/desktop/ui/quota-details.mjs` maps a complete/partial runner-state
-snapshot to presentation-safe strings and strict GitHub Actions job URLs.
-`app.mjs` renders these into the pre-existing `quota-tooltip` child
-using DOM `textContent`; the three `status-strip` counter elements and
-ordering are not replaced. Actions job links are opened only through a
-read-only native Tauri command that validates the allowed github.com job
-URL path before launching the system browser.
+The existing three counters and four buttons are unchanged. The ⓘ hover-only tooltip is hosted by a separate non-focusable, pointer-pass-through GTK Layer Shell overlay on KDE Wayland. It aligns with the main card's monitor and saved bottom/right margins, floats 12px above the compact 390x122 card, and does not resize it. The disconnected state has a compact 118px height; future rich content is independently measured and capped at 320px. The balloon has no close button, click-to-pin behavior or autonomous hover retention.
 
-On Linux a separate `quota` view height is accepted by the existing
-`set_card_view` operation, using GTK Layer Shell's original bottom anchor.
-When hidden or closed, the original 122px compact surface is restored.
-The detailed popup does not require Cloudflare or RunnerRouter.
+Physical KDE acceptance occurred on 2026-10-20 after the process automatically selected `GDK_BACKEND=wayland` before GTK initialization. The previous external `GDK_BACKEND=x11` forced Tauri fallback, yielding a 390x200 window and causing the blank gap/rubbery drag. Issues #2 and #3 are closed for this dev build; packaging and other-desktop acceptance are separate.
 
-The `runner_state` projection is a future native snapshot extension.
-No token, authorization flow or live GitHub reads have been added in
-this stage. Native authenticated fetch and OS secret storage are a
-separately tracked security boundary.
-
-## Native Actions usage overlay (dev, KDE acceptance pending)
-
-The initial single-WebView quota tooltip was an architecture mismatch
-on Wayland: a DOM element cannot visibly escape the compositor's 122px
-main surface. A 510px in-flow expansion clipped less but changed the
-main window's height and visual movement, and the user rejected it.
-
-The candidate overlay now has a separate `usage` Tauri WebView
-(`apps/desktop/ui/quota.html`, `quota.mjs`, `quota.css`) backed on KDE
-Wayland by its own transparent GTK3 Layer Shell window using
-`Layer::Overlay`. It shares only logical margins with the primary card,
-not the WebView's geometry allocation. The main card never requests
-`quota` mode. The dedicated usage surface can resize to its own
-bounded content, float above the main compact card, and scroll details.
-On other platforms a separate managed Tauri window handles the popup.
-Neither mode requests a Cloudflare Worker.
-
-Relative-pointer-v1 input still belongs exclusively to the main
-surface. The popup is hidden when the main card is hidden or a drag
-begins. The overlay's pointer transfer grace is for crossing between
-independent native surfaces, not for retrying network or dispatch work.
-
-This architecture is a build-validated *candidate* until KDE physical
-acceptance. No source-level unit tests can prove native surface
-allocation, compositor placement or the perceived smoothness of drag.
+**GitHub authorization** is still disconnected. The App is registered and installed; native policy and response models are test-only. [Issue #4](https://github.com/morozhenko-apps/repoticker/issues/4) tracks maintained HTTPS/TLS transport, OS credential store, Device Flow refresh and read-only REST. No WebView secrets, new Worker or OAuth client secret.

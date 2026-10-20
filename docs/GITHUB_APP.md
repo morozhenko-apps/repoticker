@@ -220,8 +220,11 @@ has been observed on the user's system.
    `user_code` may be copied; it is not a bearer token.
 5. Regression tests cover native flow-state transitions and
    sanitized failure categories, no auth secrets in JS, and local
-   state reconciliation via Settings. Do not alter native window
-   geometry, the ⓘ hover balloon or counter positions.
+   state reconciliation via Settings. The GitHub App device challenge
+   now sends only its public Client ID, as documented by GitHub; the
+   extra OAuth App-style scope parameter has been removed. Do not
+   alter native window geometry, the ⓘ hover balloon or counter
+   positions.
 6. Ask for a **fresh** GitHub device code on Alcotester and the
    displayed final flow stage/reason after one attempt. If approved
    but failed at keyring write, debug the OS Secret Service service
@@ -235,3 +238,21 @@ granted scopes.
 This section supersedes earlier generic statements that browser
 approval alone proves a stored connection. The existing issue is
 [Issue #4](https://github.com/morozhenko-apps/repoticker/issues/4).
+
+
+**Implemented diagnostic increment on `dev`:**
+- `c802b835` adds native flow stages, sanitized failure codes,
+  read-only reconciliation of `github_auth_status`, focus/manual
+  status refresh and Copy code. No token leaves the Rust boundary.
+- `3093d3d`, `e125d7e`: correct Device Flow's GitHub App request
+  to client_id only; distinguish known server rejection categories
+  and cover request fields in tests.
+- `cf82781e`: finish user-facing error reason strings in Settings.
+- Preflight: https://github.com/morozhenko-apps/repoticker/actions/runs/39513567419
+  (completion to be recorded separately).
+
+**Current status:** physical root cause NOT confirmed yet. A fresh
+authorization attempt must supply the final fixed phase/reason (or
+safe diagnostic lines) to decide whether the problem is GitHub
+exchange, missing Tauri event, or KDE Secret Service/KWallet write.
+Do not retry a previously approved one-time code.

@@ -257,3 +257,20 @@ authorization attempt must supply the final fixed phase/reason (or
 safe diagnostic lines) to decide whether the problem is GitHub
 exchange, missing Tauri event, or KDE Secret Service/KWallet write.
 Do not retry a previously approved one-time code.
+
+
+## Native clipboard requirement for device-code Copy button
+
+On WebKitGTK the async `navigator.clipboard` API is not consistently
+available under Tauri origins. The Settings Copy code action must not
+claim success while failing to copy a valid GitHub `user_code`.
+
+Use Tauri's maintained cross-platform clipboard-manager **Rust plugin**,
+but do not grant generic clipboard JS permissions. Expose only the
+native `github_copy_user_code` command, which accepts a validated
+upper-case alphanumeric/hyphenated **public user code** (never an
+access/refresh/device token) and writes it using native clipboard API.
+Do not expose any native clipboard-read command. On failure return
+only a generic non-sensitive message. Keep normal browser clipboard
+permissions unchanged. Reconcile `Cargo.lock` with actual Cargo (not
+by hand) and delete the one-shot dependency resolver afterward.

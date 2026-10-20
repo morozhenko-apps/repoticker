@@ -2,8 +2,8 @@
 mod app_icon;
 // The OAuth wire parser is a protocol-stage artifact, exercised in native
 // tests. Runtime HTTP and OS secret storage will enable it in production.
-#[cfg(test)]
 mod github_oauth_wire;
+mod github_native;
 
 use repoticker_core::{
     git::{self, GitError, OperationOutcome, RepoSnapshot},

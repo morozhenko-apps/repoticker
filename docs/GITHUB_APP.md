@@ -274,3 +274,15 @@ Do not expose any native clipboard-read command. On failure return
 only a generic non-sensitive message. Keep normal browser clipboard
 permissions unchanged. Reconcile `Cargo.lock` with actual Cargo (not
 by hand) and delete the one-shot dependency resolver afterward.
+
+
+**Implementation:** `580430d` registers
+`tauri-plugin-clipboard-manager` on the Rust side and exposes only
+the native `github_copy_user_code` Tauri command after validating
+the exact eight-character `XXXX-XXXX` code pattern. The Settings
+WebView receives no clipboard read/write plugin capability and no
+direct plugin IPC invocation. `navigator.clipboard` was removed from
+the code path. Native clipboard write failures are visible to the
+user without exposing OS errors. Cargo lockfile resolver:
+https://github.com/morozhenko-apps/repoticker/actions/runs/39514478519
+(temporary workflow; remove after Cargo.lock is committed).

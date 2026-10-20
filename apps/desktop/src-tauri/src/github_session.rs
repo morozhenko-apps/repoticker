@@ -62,11 +62,17 @@ impl GitHubAuthManager {
     }
 
     fn progress(&self) -> AuthProgress {
-        *self.progress.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
+        *self
+            .progress
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
     }
 
     fn set_progress(&self, next: AuthProgress) -> bool {
-        let mut progress = self.progress.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+        let mut progress = self
+            .progress
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
         if progress.phase == next.phase && progress.reason == next.reason {
             return false;
         }
@@ -132,7 +138,9 @@ fn reason_category(error: NativeAuthError) -> &'static str {
     match error {
         NativeAuthError::Network => "network",
         NativeAuthError::HttpStatus(429) => "rate_limit",
-        NativeAuthError::HttpStatus(401 | 403) | NativeAuthError::Rejected => "authorization_rejected",
+        NativeAuthError::HttpStatus(401 | 403) | NativeAuthError::Rejected => {
+            "authorization_rejected"
+        }
         NativeAuthError::HttpStatus(_) => "http_status",
         NativeAuthError::BadResponse => "invalid_response",
         NativeAuthError::KeychainUnavailable => "credential_store",
@@ -142,13 +150,12 @@ fn reason_category(error: NativeAuthError) -> &'static str {
     }
 }
 
-fn publish_with_reason(
-    app: &AppHandle,
-    status: &'static str,
-    reason: Option<&'static str>,
-) {
+fn publish_with_reason(app: &AppHandle, status: &'static str, reason: Option<&'static str>) {
     if let Some(state) = app.try_state::<Arc<GitHubAuthManager>>() {
-        if !state.set_progress(AuthProgress { phase: status, reason }) {
+        if !state.set_progress(AuthProgress {
+            phase: status,
+            reason,
+        }) {
             return;
         }
     }
@@ -201,8 +208,16 @@ pub async fn github_auth_status(app: AppHandle) -> Result<GitHubAuthStatus, Stri
     Ok(GitHubAuthStatus {
         connected: valid.is_some(),
         expires_at: valid.as_ref().map(|c| c.access_expires_at),
-        phase: if valid.is_some() { "connected" } else { progress.phase },
-        reason: if valid.is_some() { None } else { progress.reason },
+        phase: if valid.is_some() {
+            "connected"
+        } else {
+            progress.phase
+        },
+        reason: if valid.is_some() {
+            None
+        } else {
+            progress.reason
+        },
     })
 }
 
@@ -445,7 +460,9 @@ mod tests {
             "unverified_email",
             "github_rejected",
         ] {
-            assert!(reason.bytes().all(|byte| byte.is_ascii_lowercase() || byte == b'_'));
+            assert!(reason
+                .bytes()
+                .all(|byte| byte.is_ascii_lowercase() || byte == b'_'));
         }
     }
 
@@ -467,9 +484,15 @@ mod tests {
             reason: Some(reason_category(NativeAuthError::KeychainUnavailable)),
         }));
         assert_eq!(state.progress().reason, Some("credential_store"));
-        assert_eq!(reason_category(NativeAuthError::BadResponse), "invalid_response");
+        assert_eq!(
+            reason_category(NativeAuthError::BadResponse),
+            "invalid_response"
+        );
         assert_eq!(reason_category(NativeAuthError::Network), "network");
-        assert_eq!(reason_category(NativeAuthError::Rejected), "authorization_rejected");
+        assert_eq!(
+            reason_category(NativeAuthError::Rejected),
+            "authorization_rejected"
+        );
     }
 
     #[test]

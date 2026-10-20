@@ -65,3 +65,29 @@ The `runner_state` projection is a future native snapshot extension.
 No token, authorization flow or live GitHub reads have been added in
 this stage. Native authenticated fetch and OS secret storage are a
 separately tracked security boundary.
+
+## Native Actions usage overlay (dev, KDE acceptance pending)
+
+The initial single-WebView quota tooltip was an architecture mismatch
+on Wayland: a DOM element cannot visibly escape the compositor's 122px
+main surface. A 510px in-flow expansion clipped less but changed the
+main window's height and visual movement, and the user rejected it.
+
+The candidate overlay now has a separate `usage` Tauri WebView
+(`apps/desktop/ui/quota.html`, `quota.mjs`, `quota.css`) backed on KDE
+Wayland by its own transparent GTK3 Layer Shell window using
+`Layer::Overlay`. It shares only logical margins with the primary card,
+not the WebView's geometry allocation. The main card never requests
+`quota` mode. The dedicated usage surface can resize to its own
+bounded content, float above the main compact card, and scroll details.
+On other platforms a separate managed Tauri window handles the popup.
+Neither mode requests a Cloudflare Worker.
+
+Relative-pointer-v1 input still belongs exclusively to the main
+surface. The popup is hidden when the main card is hidden or a drag
+begins. The overlay's pointer transfer grace is for crossing between
+independent native surfaces, not for retrying network or dispatch work.
+
+This architecture is a build-validated *candidate* until KDE physical
+acceptance. No source-level unit tests can prove native surface
+allocation, compositor placement or the perceived smoothness of drag.

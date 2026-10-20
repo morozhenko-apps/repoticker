@@ -682,3 +682,40 @@ Source inspection isolated two broken resizing contracts:
 No mandatory RunnerRouter, client secret or new Cloudflare deployment.
 GitHub App is installed by the publisher, but native Device Flow remains
 a separate pending integration. Published v0.1.0 / main stay unchanged.
+
+## Usage panel architecture reversal after failed KDE acceptance (2026-10-20)
+
+Physical feedback rejected the earlier in-card, 510px Actions usage popup:
+the "ⓘ" hover opened an oversized mostly empty window instead of an
+overlay and the primary card appeared to regain rubbery/clothy motion.
+The three status indicators and action buttons must never move to
+accommodate usage details.
+
+**Candidate code-only change:**
+- `52af99a`: add a dedicated 340px-wide transparent Tauri WebView
+  (`usage`, `quota.html`) reparented into its own GTK Layer Shell
+  `Layer::Overlay` window on KDE Wayland. The popup is anchored relative
+  to the main card's actual persisted bottom/right margins. Its height
+  is bounded and scrollable, separately from the primary card.
+- `0442b02`: Rust formatting correction after CI.
+- Showing and hiding `ⓘ` now uses dedicated usage window commands;
+  **never** the main card's `set_card_view`/height. Repos can still
+  deliberately grow the main window independently.
+- Gesture and popup movement events do not use WebView screen/client
+  coordinates. Native relative-pointer-v1 main drag remains in place.
+  A native drag begins by hiding the popup.
+
+**Pending acceptance:**
+- [ ] Full Linux native compile and tests for `0442b02`, CI
+  [#39480018064](https://github.com/morozhenko-apps/repoticker/actions/runs/39480018064).
+- [ ] KDE ⓘ popup is genuinely floating **above/outside** compact
+  card, not growing the main 390x122 window; proper size for Not connected.
+- [ ] KDE drag without visible popup remains immediate/smooth, saved
+  margins survive Hide/Open, Repos and full restart.
+- [ ] Tray count and actions remain fixed, no blank GTK area in compact;
+  physical evidence of actual window allocation may be required.
+- [ ] Popup keyboard focus, Escape, pointer entry/exit, placement and
+  close with Hide. No separate taskbar icon or focus stealing.
+
+No public release or branch merge until issues #2/#3 physically pass.
+This is a separately documented UX change, not OAuth integration.

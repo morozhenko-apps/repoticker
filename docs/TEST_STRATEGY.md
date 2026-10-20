@@ -111,3 +111,19 @@ GitHub-hosted Actions job as a durable self-hosted runner registration.
 End-to-end KDE hover/focus/drag/popup acceptance remains pending.
 Native GitHub auth/source integration will require independent
 permissions, pagination, rate-limit and persistence tests.
+
+## Native usage overlay contracts (dev)
+
+`tests/quota-surface.test.mjs` asserts that main is configured at
+390x122; the `usage` Tauri window is independent; and the native
+Wayland bridge anchors a Layer::Overlay window by the persisted margins
+rather than resizing the main card on ⓘ hover. The existing quota
+presentation model tests still cover sanitized job links, partial
+coverage and disconnected state. The old tests that endorsed an
+in-flow 510px quota surface were removed as obsolete.
+
+Runtime KDE acceptance must compare main GTK `requested/allocated`
+geometry and `card_bottom_margin/card_right_margin` before/after
+opening usage, Repos and Hide/Open, plus persistence over process
+restart and visible cursor/drag smoothness. The display server's
+allocation cannot be inferred from JS source tests or Linux compile.

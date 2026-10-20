@@ -21,3 +21,15 @@ RepoTicker intentionally does not require a proprietary backend or paid service.
 ## Reporting
 
 Please use GitHub's private vulnerability reporting mechanism if enabled, or contact the maintainer privately instead of publishing exploit details in a public issue. No security assurance is claimed for the unfinished relay placeholder.
+
+## GitHub App Device Flow (under implementation)
+
+Native Device Flow has no client secret; GitHub public Client ID is
+publisher-controlled build metadata. The pure Rust core authorizer handles
+only publicly visible verification code and timing metadata. The future
+native HTTP adapter owns device_code and tokens, and all credentials must
+be persisted exclusively through OS credential storage. No plaintext
+fallback, token in logs, WebView, settings JSON, URL or error strings.
+Only read-only Actions and organization self-hosted-runner permissions
+are permitted for CI monitoring. A runner-inventory 403 must not mask
+permitted repository jobs. No requirement to deploy RunnerRouter.

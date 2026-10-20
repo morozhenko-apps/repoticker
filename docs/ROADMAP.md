@@ -533,9 +533,7 @@ GitHub canonical docs:
 
 ### Implementation stages and validation
 
-- [ ] **A1:** Native-independent Device Flow state machine in Rust core;
-  redaction-safe error types and deterministic tests for pending, slowdown,
-  denial, expiry, cancellation, rotated token state. No credentials/network.
+- [x] **A1 implemented (CI pending):** Pure Rust Device Flow lifecycle and expiry policy, commit 78fecb4, with tests for pending/slowdown, denial, cancellation, phishing URL and refresh. No credentials/network. Preflight: https://github.com/morozhenko-apps/repoticker/actions/runs/39438762603.
 - [ ] **A2:** Native authenticated GitHub HTTP and OS credential-store
   adapters, real Device Flow and refresh, using a maintained library.
   Commit updated \`Cargo.lock\` with new dependencies. Never bypass
@@ -560,3 +558,5 @@ provides its public Client ID, the live OAuth connection cannot be exercised.
 auth flow requiring bundled GitHub client secret. GitHub's supported
 Device Flow is more appropriate for an untrusted native client and
 requires no third-party authentication relay.
+
+GitHub App registration and deployment steps: [GitHub App guide](GITHUB_APP.md).

@@ -343,4 +343,3 @@ pub async fn stop_drag(app: &AppHandle) -> Result<(), String> {
         .map_err(|error| error.to_string())?;
     completed.map_err(|_| "GTK relative drag cleanup interrupted".to_owned())?
 }
-

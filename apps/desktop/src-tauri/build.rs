@@ -6,10 +6,7 @@ fn execute(name: &str, args: &[&str]) -> String {
         .output()
         .unwrap_or_else(|error| panic!("Cannot execute {name}: {error}"));
     if !result.status.success() {
-        panic!(
-            "{name} failed: {}",
-            String::from_utf8_lossy(&result.stderr)
-        );
+        panic!("{name} failed: {}", String::from_utf8_lossy(&result.stderr));
     }
     String::from_utf8(result.stdout)
         .unwrap_or_else(|error| panic!("{name} printed invalid UTF-8: {error}"))

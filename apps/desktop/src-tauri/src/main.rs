@@ -378,6 +378,7 @@ fn set_card_view(app: AppHandle, view: String) -> Result<(), String> {
     let height = match view.as_str() {
         "compact" => 122.0,
         "repos" => 510.0,
+        "quota" => 510.0,
         "settings" => 318.0,
         _ => return Err("Unknown card view".into()),
     };
@@ -491,6 +492,47 @@ fn open_project_website() -> Result<(), String> {
         .spawn()
         .map(|_| ())
         .map_err(|error| format!("Cannot open website: {error}"))
+}
+
+/// Open an allowlisted GitHub Actions job in the user's web browser.
+#[tauri::command]
+fn open_actions_job(url: String) -> Result<(), String> {
+    let path = url
+        .strip_prefix("https://github.com/")
+        .ok_or_else(|| "Untrusted GitHub Actions URL".to_owned())?;
+    if path.contains(['?', '#', '@']) || path.contains("//") {
+        return Err("Untrusted GitHub Actions URL".into());
+    }
+    let parts: Vec<_> = path.trim_end_matches('/').split('/').collect();
+    let safe_name = |s: &str| {
+        !s.is_empty()
+            && s != "."
+            && s != ".."
+            && s.bytes()
+                .all(|ch| ch.is_ascii_alphanumeric() || b"_.-".contains(&ch))
+    };
+    if parts.len() != 7
+        || !safe_name(parts[0])
+        || !safe_name(parts[1])
+        || parts[2] != "actions"
+        || parts[3] != "runs"
+        || parts[5] != "job"
+        || !parts[4].bytes().all(|ch| ch.is_ascii_digit())
+        || !parts[6].bytes().all(|ch| ch.is_ascii_digit())
+    {
+        return Err("Untrusted GitHub Actions URL".into());
+    }
+    #[cfg(target_os = "linux")]
+    let mut command = std::process::Command::new("xdg-open");
+    #[cfg(target_os = "macos")]
+    let mut command = std::process::Command::new("open");
+    #[cfg(target_os = "windows")]
+    let mut command = std::process::Command::new("explorer");
+    command
+        .arg(url)
+        .spawn()
+        .map(|_| ())
+        .map_err(|error| format!("Cannot open GitHub Actions job: {error}"))
 }
 
 #[tauri::command]
@@ -676,6 +718,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             get_snapshot,
             get_about_info,
+            open_actions_job,
             open_project_website,
             add_root,
             remove_root,

@@ -20,9 +20,12 @@
       <span id="runner-status" title="Runner availability is not connected">Runners —</span>
       <span id="ci-running" title="GitHub Actions is not connected">Running —</span>
       <span id="ci-queued" title="GitHub Actions is not connected">Queued —</span>
-      <span class="quota-anchor" tabindex="0" aria-label="GitHub usage details" aria-describedby="quota-tooltip">
+      <span class="quota-anchor" tabindex="0" aria-label="GitHub usage details" aria-controls="quota-tooltip" aria-expanded="false" data-open="false">
         <span aria-hidden="true">ⓘ</span>
-        <span id="quota-tooltip" class="quota-tooltip" role="tooltip">GitHub Actions minutes are not available until billing permissions are granted. Self-hosted runner status does not measure CPU or RAM.</span>
+        <span id="quota-tooltip" class="quota-tooltip" role="region" aria-label="Actions and usage details">
+          <span class="quota-title">GitHub Actions &amp; usage</span>
+          <span id="quota-content" class="quota-content">Not connected. Runner status, Actions jobs and billing limits are unavailable.</span>
+        </span>
       </span>
     </div>
 

@@ -26,6 +26,10 @@ test("four main operations are at the bottom without an extra heading", () => {
   assert.match(html, /id="ci-running"/);
   assert.match(html, /id="ci-queued"/);
   assert.match(html, /id="runner-status"/);
+  const strip = html.slice(html.indexOf('class="status-strip"'), html.indexOf('class="actions"'));
+  assert.ok(strip.indexOf('id="runner-status"') < strip.indexOf('id="ci-running"'));
+  assert.ok(strip.indexOf('id="ci-running"') < strip.indexOf('id="ci-queued"'));
+  assert.ok(strip.indexOf('id="ci-queued"') < strip.indexOf('class="quota-anchor"'));
 });
 
 test("repeating Repos collapses to compact; new open always resets", () => {
@@ -57,7 +61,7 @@ test("successes do not create logs, errors remain visible and check is green", (
   assert.match(css, /\.repo-delta\.is-current \{[^}]*color: #159947/s);
   assert.match(css, /\.repo-name \{[^}]*font-weight: 400/s);
   assert.match(html, /class="quota-anchor" tabindex="0"/);
-  assert.match(css, /\.quota-anchor:hover \.quota-tooltip/);
+  assert.match(css, /\.quota-anchor\[data-open="true"\] \.quota-tooltip/);
 });
 
 test("native progress reports are in rows with translucent fills and bulk button percentages", () => {
@@ -118,6 +122,15 @@ test("popup is transparent and persists native anchor after manual movement", ()
   const tauri = JSON.parse(readFileSync(new URL("../apps/desktop/src-tauri/tauri.conf.json", import.meta.url), "utf8"));
   assert.equal(tauri.app.windows.find(w => w.label === "main").transparent, true);
   assert.match(ui, /"stop_card_drag"/);
+  assert.match(ui, /quotaExpanded/);
+  assert.match(ui, /"set_card_view", \{ view: "quota" \}/);
+  assert.match(ui, /renderQuotaDetails\(buildQuotaDetails\(next.runner_state\)\)/);
+  assert.match(css, /\.quota-tooltip \{[^}]*max-height: 353px/s);
+  assert.match(html, /id="quota-content"/);
+  const viewSource = readFileSync(new URL("../apps/desktop/ui/view.mjs", import.meta.url), "utf8");
+  const nativeSource = readFileSync(new URL("../apps/desktop/src-tauri/src/main.rs", import.meta.url), "utf8");
+  assert.match(viewSource, /quota: 510/);
+  assert.match(nativeSource, /"quota" => 510\.0/);
   assert.match(ui, /dragGesture\.end/);
 });
 

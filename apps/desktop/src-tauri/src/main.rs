@@ -510,6 +510,16 @@ fn show_compact_card(app: &AppHandle) {
         let _ = app.emit("repoticker-reset-view", ());
         let _ = window.show();
         let _ = window.set_focus();
+        #[cfg(target_os = "linux")]
+        if std::env::var_os("REPOTICKER_UI_DEBUG").is_some() {
+            eprintln!(
+                "RepoTicker fallback geometry: requested=390x122 outer={:?} inner={:?} position={:?} scale={:?}",
+                window.outer_size(),
+                window.inner_size(),
+                window.outer_position(),
+                window.scale_factor()
+            );
+        }
         let _ = app.emit("repoticker-card-shown", ());
     }
 }
@@ -777,6 +787,21 @@ fn main() {
             Ok(())
         })
         .on_window_event(|window, event| {
+            #[cfg(target_os = "linux")]
+            if !linux_surface::enabled()
+                && window.label() == "main"
+                && std::env::var_os("REPOTICKER_UI_DEBUG").is_some()
+            {
+                match event {
+                    tauri::WindowEvent::Resized(size) => {
+                        eprintln!("RepoTicker fallback resized: {size:?}");
+                    }
+                    tauri::WindowEvent::Moved(position) => {
+                        eprintln!("RepoTicker fallback moved: {position:?}");
+                    }
+                    _ => {}
+                }
+            }
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
                 if window.label() == "usage" {

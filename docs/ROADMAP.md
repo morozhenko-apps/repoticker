@@ -386,3 +386,65 @@ Counting rules:
 Do not auto-enroll every private repository without authorization:
 "all accessible" is an explicit scope choice, and coverage reflects
 the selected visibility and GitHub API permissions.
+
+
+## P2 UI integration: existing usage tooltip (2026-10-20)
+
+**Mode A; user-approved invariant:** the existing status-strip indicators,
+their labels/order, typography, size and relative/bottom-anchored position
+must remain unchanged. Put all lane/job/runner detail inside the **existing**
+`ⓘ` GitHub usage/limits popup (`quota-anchor`/`quota-tooltip`), rather
+than creating an extra section, fourth counter or new window.
+
+### Why the existing tooltip requires temporary native resizing
+
+Current compact Layer Shell card is 390x122 and its rounded `.card` root
+uses `overflow:hidden`. A long tooltip positioned above `quota-anchor`
+is clipped, so CSS-only expansion cannot show the information. While this
+popup is open, request `set_card_view("quota")` (same 510px
+bottom-anchored Layer Shell surface as the repository drawer), preserving
+the status strip and four actions at the same screen positions. Use an
+internally scrollable quota tooltip above the existing icon. Collapse
+back to `compact` on pointer leave, focus exit, Escape or Hide; when
+repository drawer is already expanded, avoid another native resize.
+No new OS window. No changes to Git root/editor state.
+
+### Popup data contract
+
+- Existing three strip fields stay `Runners`, `Running`, `Queued`.
+  `Running` and `Queued` represent **total** jobs across selected repos.
+  `Runners` retains its current online-runner meaning.
+- Popup reuses the existing usage guidance, then shows capacity
+  (`online/busy/idle/offline`), two job lane breakdowns
+  (`self-hosted/GitHub-hosted/unclassified`), visible runner statuses,
+  a bounded set of safe links to active GitHub Actions jobs and `checkedAt`.
+- Explicit partial/unknown, not fabricated zero, when sources have gaps.
+  Render strings with `textContent`, validate HTTPS github.com Action
+  links, and never render secret/token data. Details can be read with
+  pointer hover and keyboard focus.
+- The **native get_snapshot** may initially lack `runner_state` because
+  GitHub login / native REST transport is not yet connected. The popup
+  must then show an accurate `Not connected` explanation, with no fake
+  metrics or disabled-but-clickable controls. Existing numeric strips remain
+  `—` until authorized source succeeds.
+- The popup does not infer billing minutes/quota from runner job counts.
+  Retain separate "Usage limits: unavailable without permissions" wording.
+
+### Delivery and validation
+
+- [ ] Separate pure popup view-model and tests covering no data, complete
+  lane data, incomplete data, safe job links, no secrets.
+- [ ] Extend the existing anchored DOM tooltip without moving or visually
+  altering the three main counters or action bar.
+- [ ] Add native `quota` card-view height using current compositor
+  positioning (bottom remains fixed); restore original height on close,
+  Hide and Escape, including failure paths.
+- [ ] Test DOM/JS/source invariants and run one final stable Preflight.
+- [ ] Physically accept mouse/keyboard tooltip behavior and compositor
+  geometry on Alcotester, after Wayland drag #2 is separately verified.
+- [ ] Integrate the existing bounded collector through native authenticated
+  GitHub REST plus OS secret storage in a **separate** stage; do not
+  connect to private RunnerRouter and do not ask users to deploy a Worker.
+
+Rollback: documentation-only plan commit, then a code-only popup commit.
+Published v0.1.0, main, signing and RunnerRouter remain unchanged.

@@ -187,10 +187,7 @@ impl GithubOAuthHttp {
 
     pub async fn begin(&self, now: u64) -> Result<DeviceChallenge, NativeAuthError> {
         let body = self
-            .submit(
-                DEVICE_CODE_URL,
-                &device_challenge_fields(),
-            )
+            .submit(DEVICE_CODE_URL, &device_challenge_fields())
             .await?;
         parse_device_challenge(&body, now).map_err(|_| NativeAuthError::BadResponse)
     }

@@ -61,11 +61,11 @@ test("denied repository cannot convert a partial queue to zero", async () => {
   });
   assert.equal(snapshot.counts.busy, 1);
   assert.equal(snapshot.counts.queued, null);
-  assert.equal(snapshot.counts.queuedObserved, 1);
+  assert.equal(snapshot.counts.queuedObserved, 2);
   assert.deepEqual(snapshot.errors, [{ scope: "org/second", reason: "unavailable" }]);
 });
 
-test("denied runner inventory prevents capacity and backlog precision", async () => {
+test("denied runner inventory keeps complete hosted job totals", async () => {
   const snapshot = await collectRunnerState({
     ...config,
     get: async path => {
@@ -74,7 +74,7 @@ test("denied runner inventory prevents capacity and backlog precision", async ()
     },
   });
   assert.equal(snapshot.counts.busy, null);
-  assert.equal(snapshot.counts.queued, null);
+  assert.equal(snapshot.counts.queued, 3);
   assert.equal(snapshot.errors[0].scope, "runners");
 });
 

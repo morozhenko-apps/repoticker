@@ -622,9 +622,10 @@ No second window, CSS overflow workaround or platform-specific offsets.
 - [x] Code-only popup layout and lifecycle change and source tests:
   `09c3107` (UI) plus `c2f824b` (test fix). The tooltip is now
   an in-flow flex child, not an absolute child of the status icon.
-- [ ] Final desktop CI: [Preflight #39470123745](https://github.com/morozhenko-apps/repoticker/actions/runs/39470123745)
-  for SHA `c2f824b` (Node/Rust/desktop jobs already passed; aggregate gate
-  completion pending at this documentation snapshot).
+- [x] Final desktop CI: [Preflight #39470123745](https://github.com/morozhenko-apps/repoticker/actions/runs/39470123745)
+  for SHA `c2f824b`: Node/UI model, Rust formatting/tests/Clippy,
+  native Linux desktop compilation and aggregate gate all succeeded.
+  Physical KDE popup acceptance is still outstanding.
 - [ ] Physical KDE verification tracked in
   [Issue #3](https://github.com/morozhenko-apps/repoticker/issues/3):
   compact/Repos hover+focus, scrolling, Escape, Hide/Open and unchanged

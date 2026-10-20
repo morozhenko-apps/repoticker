@@ -494,9 +494,10 @@ fn open_project_website() -> Result<(), String> {
 }
 
 #[tauri::command]
-fn start_card_drag(app: AppHandle) -> Result<bool, String> {
+async fn start_card_drag(app: AppHandle) -> Result<bool, String> {
     #[cfg(target_os = "linux")]
     if linux_surface::enabled() {
+        linux_surface::start_drag(&app).await?;
         return Ok(true);
     }
     let window = app
@@ -507,23 +508,12 @@ fn start_card_drag(app: AppHandle) -> Result<bool, String> {
 }
 
 #[tauri::command]
-fn persist_card_position(app: AppHandle) -> Result<(), String> {
+async fn stop_card_drag(app: AppHandle) -> Result<(), String> {
     #[cfg(target_os = "linux")]
     if linux_surface::enabled() {
-        return linux_surface::persist(&app);
+        return linux_surface::stop_drag(&app).await;
     }
     let _ = app;
-    Ok(())
-}
-
-#[tauri::command]
-async fn move_card(app: AppHandle, dx: i32, dy: i32) -> Result<(), String> {
-    #[cfg(target_os = "linux")]
-    if linux_surface::enabled() {
-        // Acknowledge only after the GTK update has actually executed.
-        return linux_surface::shift(&app, dx, dy).await;
-    }
-    let _ = (app, dx, dy);
     Ok(())
 }
 
@@ -694,8 +684,7 @@ fn main() {
             save_settings,
             close_settings,
             start_card_drag,
-            move_card,
-            persist_card_position,
+            stop_card_drag,
             perform_git_action,
             set_card_view,
             hide_card

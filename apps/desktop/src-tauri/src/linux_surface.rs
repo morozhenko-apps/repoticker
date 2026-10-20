@@ -8,17 +8,26 @@ use std::{
     cell::RefCell,
     sync::atomic::{AtomicBool, AtomicI32, Ordering},
 };
+
+unsafe extern "C" {
+    fn repoticker_relative_init(callback: extern "C" fn(f64, f64)) -> i32;
+    fn repoticker_relative_begin() -> i32;
+    fn repoticker_relative_end();
+}
 use tauri::{App, AppHandle, Manager};
 
 thread_local! {
     static CARD: RefCell<Option<gtk::ApplicationWindow>> = const { RefCell::new(None) };
     static CONTENT: RefCell<Option<gtk::Box>> = const { RefCell::new(None) };
     static MARGINS: RefCell<(i32, i32)> = const { RefCell::new((46, 10)) };
+    static FRACTIONAL_MOTION: RefCell<(f64, f64)> = const { RefCell::new((0.0, 0.0)) };
 }
 
 static ENABLED: AtomicBool = AtomicBool::new(false);
 static VISIBLE: AtomicBool = AtomicBool::new(false);
 static CARD_HEIGHT: AtomicI32 = AtomicI32::new(122);
+static DRAG_ACTIVE: AtomicBool = AtomicBool::new(false);
+static DRAG_MOVED: AtomicBool = AtomicBool::new(false);
 
 pub fn enabled() -> bool {
     ENABLED.load(Ordering::Acquire)
@@ -26,6 +35,56 @@ pub fn enabled() -> bool {
 
 pub fn visible() -> bool {
     VISIBLE.load(Ordering::Acquire)
+}
+
+/// Called by the native relative-pointer-v1 protocol listener on GTK's main
+/// thread. This value reflects device movement, independent of GTK reposition.
+extern "C" fn on_relative_motion(dx: f64, dy: f64) {
+    if !DRAG_ACTIVE.load(Ordering::Acquire)
+        || !VISIBLE.load(Ordering::Acquire)
+        || !dx.is_finite()
+        || !dy.is_finite()
+    {
+        return;
+    }
+    FRACTIONAL_MOTION.with(|state| {
+        let mut pending = state.borrow_mut();
+        pending.0 += dx;
+        pending.1 += dy;
+        // Wayland fixed-point values may contain subpixel motion. Preserve
+        // the remainder rather than rounding every packet independently.
+        let delta_x = pending.0.trunc().clamp(-5000.0, 5000.0) as i32;
+        let delta_y = pending.1.trunc().clamp(-5000.0, 5000.0) as i32;
+        pending.0 -= f64::from(delta_x);
+        pending.1 -= f64::from(delta_y);
+        if delta_x == 0 && delta_y == 0 {
+            return;
+        }
+        CARD.with(|cell| {
+            let current = cell.borrow();
+            let Some(window) = current.as_ref() else { return };
+            MARGINS.with(|state| {
+                let mut margins = state.borrow_mut();
+                let before = *margins;
+                margins.0 = (margins.0 - delta_y).clamp(0, 5000);
+                margins.1 = (margins.1 - delta_x).clamp(0, 5000);
+                if before != *margins {
+                    DRAG_MOVED.store(true, Ordering::Release);
+                    window.set_layer_shell_margin(Edge::Bottom, margins.0);
+                    window.set_layer_shell_margin(Edge::Right, margins.1);
+                }
+                if std::env::var_os("REPOTICKER_UI_DEBUG").is_some() {
+                    eprintln!(
+                        "RepoTicker relative drag: physical=({dx:.2},{dy:.2}) applied=({delta_x},{delta_y}) margins={:?}->{:?} allocated={}x{}",
+                        before,
+                        *margins,
+                        window.allocated_width(),
+                        window.allocated_height()
+                    );
+                }
+            });
+        });
+    });
 }
 
 /// GTK is accessed only on the Tauri main thread.
@@ -113,6 +172,12 @@ pub fn install(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
     }
     CARD.with(|cell| *cell.borrow_mut() = Some(layer));
     CONTENT.with(|cell| *cell.borrow_mut() = Some(vbox));
+    // Protocol discovery is asynchronous and uses GDK's own event loop.
+    // The surface is functional even if this compositor omits the extension;
+    // attempting drag will report the missing native input capability.
+    if unsafe { repoticker_relative_init(on_relative_motion) } == 0 {
+        eprintln!("RepoTicker: Wayland relative-pointer initialization unavailable");
+    }
     ENABLED.store(true, Ordering::Release);
     Ok(())
 }
@@ -208,77 +273,74 @@ pub fn show(app: &AppHandle) -> Result<(), String> {
 
 pub fn hide(app: &AppHandle) -> Result<(), String> {
     VISIBLE.store(false, Ordering::Release);
+    // Drop motion immediately, before GTK receives another pointer packet.
+    cancel_drag(app)?;
     on_main(app, |window| window.hide())
 }
 
-/// Move the Wayland popup by adjusting compositor-managed bottom/right margins.
-/// The bottom edge remains anchored through subsequent drawer size changes.
-pub async fn shift(app: &AppHandle, dx: i32, dy: i32) -> Result<(), String> {
-    if !visible() {
-        return Ok(());
-    }
-    if dx.abs() > 150 || dy.abs() > 150 {
-        return Err("Invalid drag delta".into());
-    }
-
-    // The old command acknowledged queuing a GTK update, not executing it.
-    // The UI must see completed margins before sampling another pointer move.
-    // Wait off the GTK event thread to avoid deadlocking the compositor.
-    let (sender, receiver) = std::sync::mpsc::sync_channel(1);
-    app.run_on_main_thread(move || {
-        let result = CARD.with(|cell| {
-            let current = cell.borrow();
-            let Some(window) = current.as_ref() else {
-                return Err("Layer Shell card unavailable".to_owned());
-            };
-            if !visible() {
-                return Ok(());
-            }
-            MARGINS.with(|state| {
-                let mut margins = state.borrow_mut();
-                let (before_bottom, before_right) = *margins;
-                let new_bottom = (before_bottom - dy).clamp(0, 5000);
-                let new_right = (before_right - dx).clamp(0, 5000);
-                margins.0 = new_bottom;
-                margins.1 = new_right;
-                window.set_layer_shell_margin(Edge::Bottom, new_bottom);
-                window.set_layer_shell_margin(Edge::Right, new_right);
-                if std::env::var_os("REPOTICKER_UI_DEBUG").is_some() {
-                    eprintln!(
-                        "RepoTicker drag: delta=({dx},{dy}) anchor=({before_bottom},{before_right})->({new_bottom},{new_right}) allocated={}x{}",
-                        window.allocated_width(),
-                        window.allocated_height()
-                    );
-                }
-            });
-            Ok(())
-        });
-        let _ = sender.send(result);
+/// Persist the native margins without modifying enrolled repository roots.
+fn persist_now(app: &AppHandle) -> Result<(), String> {
+    MARGINS.with(|state| {
+        let (bottom, right) = *state.borrow();
+        let mut config = crate::read_config(app)?;
+        config.card_bottom_margin = Some(bottom);
+        config.card_right_margin = Some(right);
+        crate::write_config(app, &config)
     })
-    .map_err(|err| err.to_string())?;
-
-    let completed = tauri::async_runtime::spawn_blocking(move || receiver.recv())
-        .await
-        .map_err(|err| err.to_string())?;
-    completed.map_err(|_| "GTK drag update interrupted".to_owned())?
 }
 
-/// Persist the manually dragged anchor without changing repository settings.
-pub fn persist(app: &AppHandle) -> Result<(), String> {
+fn stop_on_gtk(app: &AppHandle) -> Result<(), String> {
+    unsafe { repoticker_relative_end() };
+    FRACTIONAL_MOTION.with(|state| *state.borrow_mut() = (0.0, 0.0));
+    if DRAG_MOVED.swap(false, Ordering::AcqRel) {
+        persist_now(app)?;
+    }
+    Ok(())
+}
+
+/// Called from hide, Quit or other synchronous native lifecycle events.
+/// The event handler is deactivated before GTK schedules its cleanup.
+pub fn cancel_drag(app: &AppHandle) -> Result<(), String> {
+    DRAG_ACTIVE.store(false, Ordering::Release);
     let writer = app.clone();
     on_main(app, move |_| {
-        MARGINS.with(|state| {
-            let (bottom, right) = *state.borrow();
-            match crate::read_config(&writer) {
-                Ok(mut config) => {
-                    config.card_bottom_margin = Some(bottom);
-                    config.card_right_margin = Some(right);
-                    if let Err(error) = crate::write_config(&writer, &config) {
-                        eprintln!("RepoTicker: cannot save card position: {error}");
-                    }
-                }
-                Err(error) => eprintln!("RepoTicker: cannot read card config: {error}"),
-            }
-        });
+        if let Err(error) = stop_on_gtk(&writer) {
+            eprintln!("RepoTicker: cannot end relative drag: {error}");
+        }
     })
 }
+
+pub async fn start_drag(app: &AppHandle) -> Result<(), String> {
+    let (send, receive) = std::sync::mpsc::sync_channel(1);
+    on_main(app, move |_| {
+        let result = if !VISIBLE.load(Ordering::Acquire) {
+            Err("Card is hidden".to_owned())
+        } else if unsafe { repoticker_relative_begin() } == 1 {
+            FRACTIONAL_MOTION.with(|state| *state.borrow_mut() = (0.0, 0.0));
+            DRAG_MOVED.store(false, Ordering::Release);
+            DRAG_ACTIVE.store(true, Ordering::Release);
+            Ok(())
+        } else {
+            Err("Wayland relative-pointer-v1 is unavailable or already active".to_owned())
+        };
+        let _ = send.send(result);
+    })?;
+    let completed = tauri::async_runtime::spawn_blocking(move || receive.recv())
+        .await
+        .map_err(|error| error.to_string())?;
+    completed.map_err(|_| "GTK relative drag initialization interrupted".to_owned())?
+}
+
+pub async fn stop_drag(app: &AppHandle) -> Result<(), String> {
+    DRAG_ACTIVE.store(false, Ordering::Release);
+    let (send, receive) = std::sync::mpsc::sync_channel(1);
+    let writer = app.clone();
+    on_main(app, move |_| {
+        let _ = send.send(stop_on_gtk(&writer));
+    })?;
+    let completed = tauri::async_runtime::spawn_blocking(move || receive.recv())
+        .await
+        .map_err(|error| error.to_string())?;
+    completed.map_err(|_| "GTK relative drag cleanup interrupted".to_owned())?
+}
+

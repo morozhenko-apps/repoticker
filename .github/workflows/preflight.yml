@@ -88,7 +88,10 @@ jobs:
             libssl-dev \
             librsvg2-dev \
             libayatana-appindicator3-dev \
-            libgtk-layer-shell-dev
+            libgtk-layer-shell-dev \
+            libwayland-dev \
+            libwayland-bin \
+            wayland-protocols
       - name: Check desktop shell
         run: cargo check -p repoticker-desktop
 

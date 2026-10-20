@@ -44,7 +44,7 @@ jobs:
       - name: Install platform dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends build-essential curl file wget libssl-dev libxdo-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev libgtk-layer-shell-dev librsvg2-dev libfuse2t64 dpkg-dev
+          sudo apt-get install -y --no-install-recommends build-essential curl file wget libssl-dev libxdo-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev libgtk-layer-shell-dev librsvg2-dev libfuse2t64 dpkg-dev libwayland-dev libwayland-bin wayland-protocols
       - name: Install Tauri CLI
         run: cargo install tauri-cli --version '^2' --locked
       - name: Build Linux distributions

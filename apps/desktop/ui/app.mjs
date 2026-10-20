@@ -1,5 +1,5 @@
 import { nextCardView, pullReadyCommitCount } from "./view.mjs";
-import { createCardDragController } from "./drag.mjs";
+import { createNativeDragGesture } from "./native-drag.mjs";
 
 const emptySnapshot = {
   roots: [], repositories: [], errors: [],
@@ -289,50 +289,38 @@ window.__TAURI__?.event?.listen?.("repoticker-git-action-finished", async event 
 });
 refresh();
 
-/* The grab anchor is fixed in the WebView's LOCAL client coordinate frame.
-   Moving the Layer Shell surface brings clientX/Y back toward that anchor.
-   Screen-space deltas accumulated across reallocations caused oscillation. */
+/* GTK Layer Shell receives physical Wayland relative-pointer events directly.
+   The WebView only owns the gesture start/end, never motion coordinates. */
 const dragSurface = byId("card");
-const cardDrag = createCardDragController({
-  apply: (dx, dy) => invoke("move_card", { dx, dy }),
-  persist: () => invoke("persist_card_position"),
-  onError: showError,
-  scheduleFrame: callback => requestAnimationFrame(callback),
-  cancelFrame: id => cancelAnimationFrame(id)
+const dragGesture = createNativeDragGesture({
+  start: () => invoke("start_card_drag"),
+  stop: () => invoke("stop_card_drag"),
+  onError: showError
 });
+let activePointerId = null;
 
-function stopDragging() {
-  cardDrag.end();
-  if (activePointerId !== null && dragSurface.hasPointerCapture(activePointerId)) {
-    dragSurface.releasePointerCapture(activePointerId);
-  }
+function stopDragging(event = null) {
+  if (event?.pointerId != null && event.pointerId !== activePointerId) return;
+  const id = activePointerId;
+  if (id === null) return;
   activePointerId = null;
+  dragGesture.end(id);
+  if (dragSurface.hasPointerCapture(id)) {
+    dragSurface.releasePointerCapture(id);
+  }
 }
 
-let activePointerId = null;
 dragSurface.addEventListener("pointerdown", event => {
   if (event.button !== 0 || !event.isPrimary ||
       event.target.closest("button,input,select,a,[role=button]")) return;
-  if (!cardDrag.begin(event.pointerId, event.clientX, event.clientY)) return;
+  if (!dragGesture.begin(event.pointerId)) return;
   activePointerId = event.pointerId;
   dragSurface.setPointerCapture(event.pointerId);
-  void invoke("start_card_drag").then(anchored => {
-    if (activePointerId !== event.pointerId) return;
-    if (!anchored) {
-      stopDragging();
-      return;
-    }
-    cardDrag.activate(event.pointerId);
-  }).catch(error => { stopDragging(); showError(error); });
 });
-
 dragSurface.addEventListener("pointermove", event => {
-  if (activePointerId !== event.pointerId) return;
-  if (!cardVisible || !(event.buttons & 1)) {
-    stopDragging();
-    return;
+  if (event.pointerId === activePointerId && !(event.buttons & 1)) {
+    stopDragging(event);
   }
-  cardDrag.move(event.pointerId, event.clientX, event.clientY);
 });
 dragSurface.addEventListener("pointerup", stopDragging);
 dragSurface.addEventListener("pointercancel", stopDragging);

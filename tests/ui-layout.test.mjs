@@ -77,9 +77,9 @@ test("settings has a separate entrypoint and card can be dragged", () => {
   assert.match(settings, /Worker URL/);
   assert.doesNotMatch(html, /id="roots-editor"/);
   assert.match(ui, /start_card_drag/);
-  assert.match(ui, /move_card/);
-  assert.match(ui, /event\.clientX/);
-  assert.doesNotMatch(ui, /event\.screenX/);
+  assert.match(ui, /stop_card_drag/);
+  assert.match(ui, /createNativeDragGesture/);
+  assert.doesNotMatch(ui, /event\.clientX|event\.screenX/);
 });
 
 test("repository drawer disables idle dismissal and drag never survives hiding", () => {
@@ -117,8 +117,8 @@ test("settings is transactional and has no duplicate title or scrolling page", (
 test("popup is transparent and persists native anchor after manual movement", () => {
   const tauri = JSON.parse(readFileSync(new URL("../apps/desktop/src-tauri/tauri.conf.json", import.meta.url), "utf8"));
   assert.equal(tauri.app.windows.find(w => w.label === "main").transparent, true);
-  assert.match(ui, /"persist_card_position"/);
-  assert.match(ui, /createCardDragController/);
+  assert.match(ui, /"stop_card_drag"/);
+  assert.match(ui, /dragGesture\.end/);
 });
 
 test("tray About uses real package version, icon and author", () => {

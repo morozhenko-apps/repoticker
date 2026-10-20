@@ -439,10 +439,11 @@ No new OS window. No changes to Git root/editor state.
 - [x] Add native `quota` card-view height using current compositor
   positioning (bottom remains fixed); restore original height on close,
   Hide and Escape, including failure paths.
-- [ ] Final Preflight for implementation `c623f4a`:
+- [x] Final Preflight for implementation `c623f4a`:
   [Actions run #39424742140](https://github.com/morozhenko-apps/repoticker/actions/runs/39424742140).
-  Node UI tests, Rust check and real native popup behavior require the
-  complete final CI and KDE physical acceptance gates.
+  Rust formatting/core/Clippy, Node UI + release-contract tests,
+  Linux desktop compilation, and aggregate Preflight succeeded (4/4).
+  Real native KDE popup hover/focus/geometry still needs acceptance.
 - [ ] Physically accept mouse/keyboard tooltip behavior and compositor
   geometry on Alcotester, after Wayland drag #2 is separately verified.
 - [ ] Integrate the existing bounded collector through native authenticated

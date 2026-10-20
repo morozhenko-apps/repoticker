@@ -365,9 +365,10 @@ fn valid_user_code(code: &str) -> bool {
     let bytes = code.as_bytes();
     bytes.len() == 9
         && bytes[4] == b'-'
-        && bytes.iter().enumerate().all(|(index, byte)| {
-            index == 4 || byte.is_ascii_uppercase() || byte.is_ascii_digit()
-        })
+        && bytes
+            .iter()
+            .enumerate()
+            .all(|(index, byte)| index == 4 || byte.is_ascii_uppercase() || byte.is_ascii_digit())
 }
 
 /// The only clipboard operation exposed to the Settings WebView.

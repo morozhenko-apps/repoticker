@@ -910,8 +910,7 @@ implement a shell subprocess/secret-tool plaintext fallback.
   module under `#[cfg(test)]` until production HTTP/keyring adapters
   are ready; the public publisher Client ID and official OAuth
   endpoint constants are exercised by deterministic native tests.
-- **CI**: https://github.com/morozhenko-apps/repoticker/actions/runs/39490890584
-  (final gate pending at this documentation revision).
+- **CI passed:** [Preflight #39490890584](https://github.com/morozhenko-apps/repoticker/actions/runs/39490890584) green on code SHA `8389b8c`: Rust format/core tests/Clippy, Node model and syntax, native Linux desktop compile and aggregate gate. KDE physical acceptance of new tooltip sizing remains pending.
 - **Not complete:** interactive desktop authorization, bearer transport,
   persisted refresh rotation, account/organization selection and CI
   statistics collection. Do not indicate "Connected" in production UI

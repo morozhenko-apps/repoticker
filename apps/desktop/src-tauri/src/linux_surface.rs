@@ -221,7 +221,9 @@ fn install_usage_surface(
             b"window.repoticker-usage { background-color: transparent; background-image: none; }",
         )?;
         gtk::StyleContext::add_provider_for_screen(
-            &screen, &css, gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+            &screen,
+            &css,
+            gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
         );
     }
     usage.style_context().add_class("repoticker-usage");

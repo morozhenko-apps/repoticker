@@ -424,7 +424,8 @@ fn show_usage_popup(app: AppHandle) -> Result<(), String> {
         let card = app
             .get_webview_window("main")
             .ok_or_else(|| "Card unavailable".to_owned())?;
-        let popup = app.get_webview_window("usage")
+        let popup = app
+            .get_webview_window("usage")
             .ok_or_else(|| "Usage popup unavailable".to_owned())?;
         if let (Ok(position), Ok(size)) = (card.outer_position(), card.outer_size()) {
             let outer = popup.outer_size().map_err(|error| error.to_string())?;

@@ -174,6 +174,11 @@ test("GitHub Device Flow Settings never expose bearer tokens to JavaScript", () 
   assert.match(js, /"github_disconnect"/);
   assert.match(js, /"github_cancel"/);
   assert.match(js, /challenge\.userCode/);
+  assert.match(html, /id="github-copy-code"/);
+  assert.match(js, /navigator\.clipboard\.writeText\(code\)/);
+  assert.match(js, /"github-check-status"/);
+  assert.match(js, /"github_auth_status"/);
+  assert.match(js, /githubFailureLabels/);
   assert.doesNotMatch(js, /accessToken|refreshToken|deviceCode|localStorage/);
   assert.equal(cfg.app.windows.find(w=>w.label==="main").height, 122);
   assert.equal(cfg.app.windows.find(w=>w.label==="settings").height, 552);

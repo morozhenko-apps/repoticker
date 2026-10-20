@@ -25,14 +25,44 @@ function githubButtons() {
     ? "Authorized (account selection pending)" : "Not connected";
 }
 
+const githubPhaseLabels = Object.freeze({
+  idle: "Not connected. Uses secure device authorization.",
+  requesting: "Requesting a new code from GitHub.",
+  pending: "Waiting for GitHub approval.",
+  awaiting_approval: "Waiting for GitHub approval. The application is checking at GitHub's required interval.",
+  saving_credentials: "GitHub approved. Saving access securely in the system wallet.",
+  connected: "GitHub authorized. CI monitoring is the next stage.",
+  cancelled: "GitHub authorization cancelled.",
+  denied: "GitHub authorization denied.",
+  expired: "Verification code expired. Request a new code.",
+  failed: "GitHub authorization failed."
+});
+const githubFailureLabels = Object.freeze({
+  network: "GitHub request failed: network unavailable.",
+  rate_limit: "GitHub rate limit exceeded.",
+  authorization_rejected: "GitHub rejected the token exchange.",
+  http_status: "GitHub returned an unsuccessful HTTP response.",
+  invalid_response: "GitHub token response could not be validated.",
+  credential_store: "Authorization reached the system wallet, but KWallet/Secret Service could not store the token.",
+  invalid_credential: "Stored credential is invalid. Disconnect and reconnect.",
+  not_connected: "GitHub credentials were not found.",
+  expired: "GitHub authorization expired."
+});
+
 async function refreshGithub() {
   try {
+    // Read native state, rather than assuming all cross-WebView events arrive.
+    // This never makes a GitHub request or exposes a token to JavaScript.
     const auth = await invoke("github_auth_status");
     githubConnected = auth.connected === true;
-    if (githubConnected) githubPending = false;
+    githubPending = !githubConnected &&
+      ["requesting", "pending", "awaiting_approval", "saving_credentials"].includes(auth.phase);
+    if (!githubPending) byId("github-user-code").textContent = "";
     githubButtons();
-    if (githubConnected) githubMessage("GitHub access authorized. CI monitoring is the next stage.");
-    else if (!githubPending) githubMessage("Uses secure device authorization.");
+    const text = auth.reason && Object.hasOwn(githubFailureLabels, auth.reason)
+      ? githubFailureLabels[auth.reason]
+      : (githubPhaseLabels[auth.phase] || githubPhaseLabels.idle);
+    githubMessage(text, auth.phase === "failed");
   } catch (error) {
     githubButtons();
     githubMessage(String(error), true);
@@ -56,6 +86,26 @@ byId("github-connect").addEventListener("click", async () => {
   } finally {
     byId("github-connect").disabled = false;
   }
+});
+
+byId("github-copy-code").addEventListener("click", async () => {
+  const code = byId("github-user-code").textContent;
+  if (!githubPending || !code) return;
+  try {
+    if (!navigator.clipboard?.writeText) throw new Error("Clipboard unavailable");
+    await navigator.clipboard.writeText(code);
+    githubMessage("Verification code copied.");
+  } catch {
+    githubMessage("Cannot access clipboard. Select the code and copy with Ctrl+C.", true);
+  }
+});
+
+byId("github-check-status").addEventListener("click", () => {
+  void refreshGithub();
+});
+
+window.addEventListener("focus", () => {
+  if (githubPending) void refreshGithub();
 });
 
 byId("github-open-device").addEventListener("click", async () => {
@@ -82,19 +132,10 @@ byId("github-disconnect").addEventListener("click", async () => {
   }
 });
 
-window.__TAURI__?.event?.listen?.("repoticker-github-auth", async event => {
-  const status = event?.payload?.status;
-  if (status === "connected" || status === "disconnected") {
-    githubPending = false;
-    byId("github-user-code").textContent = "";
-    await refreshGithub();
-  } else if (["expired", "denied", "failed", "cancelled"].includes(status)) {
-    githubPending = false;
-    byId("github-user-code").textContent = "";
-    githubButtons();
-    githubMessage(status === "failed" ? "GitHub authorization failed. Try again."
-      : "GitHub authorization " + status + ".", status !== "cancelled");
-  }
+window.__TAURI__?.event?.listen?.("repoticker-github-auth", () => {
+  // Treat events as prompts to reconcile state, never as the sole source
+  // of truth. This also catches wallet failures after browser approval.
+  void refreshGithub();
 });
 
 function message(text, error = false) {

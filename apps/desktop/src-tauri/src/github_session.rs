@@ -7,7 +7,7 @@
 use std::{
     sync::{
         atomic::{AtomicU64, Ordering},
-        Arc,
+        Arc, Mutex as StdMutex,
     },
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
@@ -30,6 +30,24 @@ pub struct GitHubAuthManager {
     wake: Notify,
     /// All credential reads/rotations/disconnects are serialized.
     vault_gate: Mutex<()>,
+    /// Read-only, sanitized progress snapshot. Never contains HTTP bodies,
+    /// device codes, OAuth tokens or native keychain error messages.
+    progress: StdMutex<AuthProgress>,
+}
+
+#[derive(Clone, Copy)]
+struct AuthProgress {
+    phase: &'static str,
+    reason: Option<&'static str>,
+}
+
+impl Default for AuthProgress {
+    fn default() -> Self {
+        Self {
+            phase: "idle",
+            reason: None,
+        }
+    }
 }
 
 impl GitHubAuthManager {
@@ -42,12 +60,26 @@ impl GitHubAuthManager {
     fn active(&self, epoch: u64) -> bool {
         self.epoch.load(Ordering::Acquire) == epoch
     }
+
+    fn progress(&self) -> AuthProgress {
+        *self.progress.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
+    }
+
+    fn set_progress(&self, next: AuthProgress) -> bool {
+        let mut progress = self.progress.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+        if progress.phase == next.phase && progress.reason == next.reason {
+            return false;
+        }
+        *progress = next;
+        true
+    }
 }
 
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GitHubAuthEvent {
     pub status: &'static str,
+    pub reason: Option<&'static str>,
 }
 
 #[derive(Serialize)]
@@ -63,6 +95,8 @@ pub struct GitHubAuthChallenge {
 pub struct GitHubAuthStatus {
     pub connected: bool,
     pub expires_at: Option<u64>,
+    pub phase: &'static str,
+    pub reason: Option<&'static str>,
 }
 
 fn unix_now() -> u64 {
@@ -94,8 +128,42 @@ fn public_error(error: NativeAuthError) -> String {
     }
 }
 
+fn reason_category(error: NativeAuthError) -> &'static str {
+    match error {
+        NativeAuthError::Network => "network",
+        NativeAuthError::HttpStatus(429) => "rate_limit",
+        NativeAuthError::HttpStatus(401 | 403) | NativeAuthError::Rejected => "authorization_rejected",
+        NativeAuthError::HttpStatus(_) => "http_status",
+        NativeAuthError::BadResponse => "invalid_response",
+        NativeAuthError::KeychainUnavailable => "credential_store",
+        NativeAuthError::CorruptCredential => "invalid_credential",
+        NativeAuthError::NoCredential => "not_connected",
+        NativeAuthError::Expired => "expired",
+    }
+}
+
+fn publish_with_reason(
+    app: &AppHandle,
+    status: &'static str,
+    reason: Option<&'static str>,
+) {
+    if let Some(state) = app.try_state::<Arc<GitHubAuthManager>>() {
+        if !state.set_progress(AuthProgress { phase: status, reason }) {
+            return;
+        }
+    }
+    // In debug mode, report only fixed non-sensitive phase identifiers.
+    if std::env::var_os("REPOTICKER_UI_DEBUG").is_some() {
+        eprintln!(
+            "RepoTicker github auth phase={status} reason={}",
+            reason.unwrap_or("none")
+        );
+    }
+    let _ = app.emit("repoticker-github-auth", GitHubAuthEvent { status, reason });
+}
+
 fn publish(app: &AppHandle, status: &'static str) {
-    let _ = app.emit("repoticker-github-auth", GitHubAuthEvent { status });
+    publish_with_reason(app, status, None);
 }
 
 pub fn cancel_pending(app: &AppHandle) {
@@ -129,9 +197,12 @@ pub async fn github_auth_status(app: AppHandle) -> Result<GitHubAuthStatus, Stri
     let _guard = state.vault_gate.lock().await;
     let credential = read_credential().await.map_err(public_error)?;
     let valid = credential.filter(|c| c.refresh_expires_at > unix_now());
+    let progress = state.progress();
     Ok(GitHubAuthStatus {
         connected: valid.is_some(),
-        expires_at: valid.map(|c| c.access_expires_at),
+        expires_at: valid.as_ref().map(|c| c.access_expires_at),
+        phase: if valid.is_some() { "connected" } else { progress.phase },
+        reason: if valid.is_some() { None } else { progress.reason },
     })
 }
 
@@ -142,12 +213,22 @@ pub async fn github_auth_status(app: AppHandle) -> Result<GitHubAuthStatus, Stri
 pub async fn github_begin(app: AppHandle) -> Result<GitHubAuthChallenge, String> {
     let state = app.state::<Arc<GitHubAuthManager>>().inner().clone();
     let attempt = state.invalidate();
+    publish(&app, "requesting");
     {
         let _guard = state.vault_gate.lock().await;
-        read_credential().await.map_err(public_error)?;
+        if let Err(error) = read_credential().await {
+            publish_with_reason(&app, "failed", Some(reason_category(error)));
+            return Err(public_error(error));
+        }
     }
     let http = GithubOAuthHttp::new().map_err(public_error)?;
-    let challenge = http.begin(unix_now()).await.map_err(public_error)?;
+    let challenge = match http.begin(unix_now()).await {
+        Ok(challenge) => challenge,
+        Err(error) => {
+            publish_with_reason(&app, "failed", Some(reason_category(error)));
+            return Err(public_error(error));
+        }
+    };
     if !state.active(attempt) {
         return Err("GitHub sign-in was cancelled.".into());
     }
@@ -204,9 +285,9 @@ async fn poll_authorization(
         }
         let reply = match http.poll(challenge.device_code()).await {
             Ok(value) => value,
-            Err(_) => {
+            Err(error) => {
                 if state.active(attempt) {
-                    publish(&app, "failed");
+                    publish_with_reason(&app, "failed", Some(reason_category(error)));
                 }
                 return;
             }
@@ -216,7 +297,11 @@ async fn poll_authorization(
         }
         match reply {
             PollReply::State(response) => {
-                if session.receive(response, unix_now()) != DevicePhase::AwaitingUser {
+                if session.receive(response, unix_now()) == DevicePhase::AwaitingUser {
+                    publish(&app, "awaiting_approval");
+                    continue;
+                }
+                {
                     publish(
                         &app,
                         match response {
@@ -239,19 +324,18 @@ async fn poll_authorization(
                 if !state.active(attempt) {
                     return;
                 }
+                publish(&app, "saving_credentials");
                 let outcome = match CredentialRecord::from_lease(lease, unix_now()) {
                     Ok(record) => store_credential(record).await,
                     Err(error) => Err(error),
                 };
                 if state.active(attempt) {
-                    publish(
-                        &app,
-                        if outcome.is_ok() {
-                            "connected"
-                        } else {
-                            "failed"
-                        },
-                    );
+                    match outcome {
+                        Ok(()) => publish(&app, "connected"),
+                        Err(error) => {
+                            publish_with_reason(&app, "failed", Some(reason_category(error)));
+                        }
+                    }
                 }
                 return;
             }
@@ -349,6 +433,29 @@ mod tests {
             assert!(!text.contains("ghr_"));
             assert!(!text.contains(crate::github_oauth_wire::TOKEN_URL));
         }
+    }
+
+    #[test]
+    fn stages_and_errors_are_safe_and_recoverable_without_webview_events() {
+        let state = GitHubAuthManager::default();
+        assert_eq!(state.progress().phase, "idle");
+        assert!(state.set_progress(AuthProgress {
+            phase: "awaiting_approval",
+            reason: None,
+        }));
+        assert!(!state.set_progress(AuthProgress {
+            phase: "awaiting_approval",
+            reason: None,
+        }));
+        assert_eq!(state.progress().phase, "awaiting_approval");
+        assert!(state.set_progress(AuthProgress {
+            phase: "failed",
+            reason: Some(reason_category(NativeAuthError::KeychainUnavailable)),
+        }));
+        assert_eq!(state.progress().reason, Some("credential_store"));
+        assert_eq!(reason_category(NativeAuthError::BadResponse), "invalid_response");
+        assert_eq!(reason_category(NativeAuthError::Network), "network");
+        assert_eq!(reason_category(NativeAuthError::Rejected), "authorization_rejected");
     }
 
     #[test]

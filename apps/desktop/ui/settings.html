@@ -41,9 +41,11 @@
     <div id="github-device-flow" class="github-device-flow" hidden>
       <span>Enter this code on GitHub:</span>
       <strong id="github-user-code" class="github-user-code"></strong>
+      <button id="github-copy-code" type="button">Copy code</button>
       <button id="github-open-device" type="button">Open GitHub</button>
       <button id="github-cancel-device" type="button">Cancel</button>
     </div>
+    <button id="github-check-status" type="button" class="github-check-status">Check connection status</button>
     <div class="github-grid">
       <label>GitHub authorization<input id="github-account-status" disabled value="Not connected"></label>
       <label>Connection mode<select disabled><option>Simple polling</option><option>Hybrid webhook relay</option></select></label>

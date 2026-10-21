@@ -1037,3 +1037,16 @@ runner inventory permission path, KWallet token refresh, stale/error
 state, card/balloon auto updates and long-lived polling behavior
 on Alcotester KDE Wayland. No `main` merge or public release before
 this. Issue #4 remains open.
+
+
+### Live monitor CI result (2026-10-21)
+
+The final implementation code commit `039149d` passed
+[Preflight #39555681574](https://github.com/morozhenko-apps/repoticker/actions/runs/39555681574)
+**4/4 SUCCESS**: Rust formatting, native core tests/Clippy,
+Linux desktop compilation and JS models/source tests. This is a build
+and source-level contract result, **not a physical authorized REST
+verification** against Alcotester/KWallet. Issue #4 stays open for a
+fresh user test of automatic authorization, account scope selection,
+running/queued jobs, organization self-hosted runner access and
+partial/denied statuses.

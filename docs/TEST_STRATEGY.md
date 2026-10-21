@@ -6,7 +6,7 @@ Tests must protect local Git data, fail closed on unsafe operations, and never f
 
 ## Mode B campaign status (2026-10-21)
 
-Stage 1–3 complete as a **source-only inventory**: [plan](testing/MODE_B_PLAN.md) and [artifact inventory](testing/MODE_B_INVENTORY.md). The scan identified 84 Node, 10 Python, 32 embedded Rust and 8 Rust integration named test declarations, not executions or measured coverage. Branch mapping, Positive/N1–N12 matrices, interaction mapping, mutation analysis and STABLE/known-FLAKY CI grouping are **pending**. No new testing code or release has been published in this campaign.
+A preliminary source-only inventory (now **parked until v0.9.0**) recorded initial Stage 1–3 information: [plan](testing/MODE_B_PLAN.md) and [artifact inventory](testing/MODE_B_INVENTORY.md). The scan identified 84 Node, 10 Python, 32 embedded Rust and 8 Rust integration named test declarations, not executions or measured coverage. Comprehensive branch mapping, Positive/N1–N12 matrices, interaction mapping, mutation analysis and formal STABLE/known-FLAKY CI grouping are **v0.9.0 RC gates**, not blockers for ordinary v0.2–v0.8 feature/regression testing. No new testing code or release has been published in this campaign.
 
 ## Implemented tests
 

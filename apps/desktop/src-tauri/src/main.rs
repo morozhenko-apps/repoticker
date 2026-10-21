@@ -3,6 +3,7 @@ mod app_icon;
 mod github_native;
 mod github_oauth_wire;
 mod github_session;
+mod github_api;
 
 use repoticker_core::{
     git::{self, GitError, OperationOutcome, RepoSnapshot},
@@ -854,6 +855,7 @@ fn main() {
             get_snapshot,
             github_session::github_auth_status,
             github_session::github_flow_status,
+            github_api::github_api_get,
             github_session::github_begin,
             github_session::github_cancel,
             github_session::github_disconnect,

@@ -60,3 +60,40 @@ Rollback: revert native billing route and JS billing collector/UI commits; no ne
 - [x] Security architecture A selected on 2026-10-21.
 - [ ] Native read-only billing implementation verified.
 - [ ] GitHub App permission update and installation/user reapproval accepted physically.
+
+## Physical KDE regression and correction (2026-10-21)
+
+User provided physical screenshots: all three hover targets display the
+Actions billing view, which means the native typed view change is not
+reliably applied on the relocated GTK Layer Shell WebView. The original
+event-only design is insufficient; a read-only native getter backed by the
+last confirmed hover kind plus an explicit post-show UI signal and
+subscription-independent reconciliation is required. Show and switch must
+not depend on a one-shot event reaching an inactive WebView.
+
+The billing overlay also shows organization and personal metrics in narrow
+side-by-side columns and repeats long permission/SKU explanations that
+truncate within a max 320px pointer-pass-through surface. Use one full-width
+column, organization above personal, only three succinct numeric lines per
+owner. No footer/explainer/scroll interaction; include a short reason only
+when a field is unavailable.
+
+Screenshot shows organization 'Choose a monitored organization in Settings'
+although runner monitoring is connected (4 registered / 2 online / 2 offline).
+Root cause is the difference between an automatically selected single
+installation and the nullable saved `github_monitor_org`. Use the actual
+validated `runner_state.scope.organization` when config selection is null;
+prefer the explicit config selection when set. Require identity-safe slug
+validation; account switches must invalidate stale billing state.
+
+Screenshot of the real GitHub billing page independently shows 2,000 / 2,000
+included Actions minutes consumed this month, but this visual information
+does not give RepoTicker a machine-readable included-minute utilization
+API. Display verified Actions billing SKU minute totals for the resolved
+owner; do not turn gross quantity, dollars or discounts into a fabricated
+included-used/free-remaining figure.
+
+Branch policy: developer integration happens on `dev`, `main` only for
+approved releases; after CI and physical contract corrections, consolidate
+feature work into `dev`, close merged PR, and provide explicit user-reviewed
+remote branch deletion commands for all branches other than dev/main.

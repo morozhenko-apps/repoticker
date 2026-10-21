@@ -31,7 +31,7 @@ function paint(details) {
       for (const [label, value] of section.rows || []) line(block, label, value);
       if (section.message) add(block, "span", section.message, "quota-message");
     }
-    add(root, "span", details.message, "quota-message");
+    if (details.message) add(root, "span", details.message, "quota-message");
   }
   // Small for disconnected state, expands only this *separate* popup when
   // there are more details. Main card always stays 390x122.
@@ -86,13 +86,19 @@ const billingCache = createBillingCache({
 function statusUnavailable(message) {
   paint({ connected: false, status: "Status unavailable", message, sections: [] });
 }
+/** Respect explicit Settings selection; auto-selected installation lives
+ * in the validated native monitor snapshot, not necessarily in config. */
+export function selectedOrganization(snapshot) {
+  return snapshot?.github_monitor_org ||
+    snapshot?.runner_state?.scope?.organization || "";
+}
 function paintSnapshot(snapshot) {
   paint(buildHoverDetails(snapshot.runner_state, activeKind, snapshot.connected,
     snapshot.monitor_message, billingState));
 }
 function scheduleBilling(snapshot) {
   if (activeKind !== "billing" || snapshot.connected !== true) return;
-  const scope = snapshot.github_monitor_org || "";
+  const scope = selectedOrganization(snapshot);
   if (billingFetch?.scope === scope) return;
   const currentVersion = billingVersion;
   const request = billingCache.load(scope, true);
@@ -113,10 +119,14 @@ function scheduleBilling(snapshot) {
 async function refresh() {
   const id = ++refreshId;
   try {
+    // A detached GTK Wayland WebView can miss a one-shot shown event.
+    // Read the native selected view before painting a freshly loaded snapshot.
+    const nativeKind = await invoke("get_usage_popup_kind");
+    if (isHoverKind(nativeKind)) activeKind = nativeKind;
     const snapshot = await invoke("get_snapshot");
     if (id !== refreshId) return;
     currentSnapshot = snapshot;
-    const scope = snapshot.connected === true ? snapshot.github_monitor_org || "" : null;
+    const scope = snapshot.connected === true ? selectedOrganization(snapshot) : null;
     if (billingScope !== scope || !snapshot.connected) {
       invalidateBilling();
       billingScope = scope;
@@ -144,10 +154,27 @@ function subscribe(eventName, handler = refresh) {
       statusUnavailable("GitHub Actions updates cannot be subscribed to.");
     });
 }
-// Each entry switches its content before reading the new snapshot.
-function onUsageShown(event) {
-  if (isHoverKind(event?.payload)) activeKind = event.payload;
-  void refresh();
+// The Rust command both stores the selected kind and explicitly evaluates
+// this callback in the relocated WebView. The event is a secondary path.
+function applyHoverKind(kind) {
+  if (!isHoverKind(kind)) return;
+  if (activeKind === kind && currentSnapshot) return;
+  activeKind = kind;
+  if (currentSnapshot) {
+    paintSnapshot(currentSnapshot);
+    scheduleBilling(currentSnapshot);
+  } else {
+    void refresh();
+  }
+}
+window.__repotickerSetHoverKind = applyHoverKind;
+
+async function onUsageShown(event) {
+  if (isHoverKind(event?.payload)) applyHoverKind(event.payload);
+  else {
+    try { applyHoverKind(await invoke("get_usage_popup_kind")); }
+    catch { /* Failed reconciliation is not fabricated as billing data. */ }
+  }
 }
 subscribe("repoticker-usage-shown", onUsageShown);
 subscribe("repoticker-monitor-updated");

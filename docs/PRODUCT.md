@@ -1,5 +1,18 @@
 # RepoTicker product contract and v0.1.0 state
 
+> **Release boundary (2026-10-21):** `v0.1.0` is the immutable
+> published local-Git-only baseline. On `dev`, native GitHub App
+> Device Flow/KWallet, authorized Actions runs and jobs, organization
+> runner occupancy, three distinct hover views (Runners, Tasks, Billing),
+> and transactional Settings confirmation have been implemented and
+> physically accepted for the normal KDE workflow. The text below
+> describing GitHub integration as "planned" describes the published
+> **v0.1.0** experience, not the latest `dev` source.
+>
+> Next release candidate: **v0.2.0**, with no current tag/main promotion.
+> Full gates and outstanding validation: [v0.2.0 readiness](RELEASE_0_2_0.md).
+
+
 RepoTicker is a small, Apache-2.0-licensed, local-first desktop Git companion. The GitHub CI monitoring and optional webhook relay described below are product goals, **not** features available in `v0.1.0`. No proprietary backend or paid tier is required.
 
 ## Implemented desktop experience
@@ -38,12 +51,12 @@ Distribution targets are Linux amd64 DEB/AppImage and unsigned Windows x64 NSIS 
 
 ## Current dev monitoring status and split hover UI (2026-10-21)
 
-The published v0.1.0 still has its original baseline. The unmerged dev candidate implements GitHub App Device Flow with native KWallet-backed credentials, read-only Actions runs/jobs and organization self-hosted runner collection. Authorized monitoring and local Git are independent; partial or missing API coverage yields an unknown counter instead of a fabricated zero.
+The published v0.1.0 still has its original baseline. The merged dev implementation includes GitHub App Device Flow with native KWallet-backed credentials, read-only Actions runs/jobs and organization self-hosted runner collection. Authorized monitoring and local Git are independent; partial or missing API coverage yields an unknown counter instead of a fabricated zero.
 
 The compact status strip now displays just two grouped indicators:
-- **Runners total / online / offline**, neutral / green / red, based solely on organization self-hosted runner registrations. The Runners hover contains Total, Online, Busy, Idle and Offline.
-- **Tasks running / queued**, green / amber, based on jobs in selected repositories. The Tasks hover provides active assigned jobs by runner and label-compatible queue candidates (never guaranteed per-runner assignments); it separates GitHub-hosted and unclassified jobs. The former standalone Queued field is removed.
+- **Runners total / online / offline**, neutral / green / red, based solely on organization self-hosted runner registrations. The Runners hover title is `Runners · Total` and its only metric rows are Online, Busy, Idle and Offline, followed by last-checked time.
+- **Tasks running / queued**, green / amber, based on jobs in selected repositories. The Tasks hover shows the Running/Queued total title, running-job counts for individual self-hosted runners, the GitHub-hosted running-job count at the end, and last-checked time. Queued jobs are not assigned to a runner. The former standalone Queued field is removed.
 
-The ⓘ hover exclusively reports organization and personal-account GitHub-hosted billing allowances, usage and remaining free minutes. These values stay **unknown** until the publisher GitHub App or separately authorized billing provider is granted and verified suitable billing access. Current UI gives permission guidance but **does not grant privileges, fetch billing or invent a plan threshold**.
+The ⓘ hover exclusively reports organization and personal-account GitHub-hosted billing allowances, usage and remaining free minutes. The current dev implementation fetches projected Actions billing usage and, when authorized, detects recognized personal and organization plans using the existing GitHub App. It reports only defensible plan allowances and gross SKU minutes, never fabricates consumed free minutes or remaining quota, and never sends tokens to the WebView.
 
-All three hover targets share one independent pointer-pass-through native Layer Shell popup, with validated native view kind, no click/pin/scroll interaction, a content-dependent 118–320px height, and bounded runner rows. The main card remains 390x122. Full KDE hover and clipping acceptance is still pending. See [split hover security/acceptance contract](SPLIT_HOVER_BILLING.md).
+All three hover targets share one independent pointer-pass-through native Layer Shell popup, with validated native view kind, no click/pin/scroll interaction, a content-dependent 118–320px height, and bounded runner rows. The main card remains 390x122. Normal KDE hover layout and authentication confirmation have been accepted; Linux package upgrade, Windows runtime and denied/expired/429 reliability validation are still pending. See [split hover security/acceptance contract](SPLIT_HOVER_BILLING.md).

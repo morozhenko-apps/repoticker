@@ -1,5 +1,7 @@
 # Test strategy and acceptance evidence
 
+> **v1.0 release gate:** The owner approved mandatory **Mode B — Testing** before stable 1.0. See [Versioned roadmap v0.1.0–v1.0.0](VERSION_ROADMAP_TO_1_0.md) for the binding 12-stage inventory/branch map/Positive+N1–N12/coverage/mutation/final execution program and required audit artifacts. Green Preflight alone does not mark Mode B COMPLETE.
+
 Tests must protect local Git data, fail closed on unsafe operations, and never fabricate CI/runners state. Distinguish **source tests**, **packaging jobs**, **local OS smoke** and **public release acceptance**. No artificial coverage percentage is claimed.
 
 ## Implemented tests

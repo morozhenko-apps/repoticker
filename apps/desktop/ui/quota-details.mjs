@@ -86,7 +86,7 @@ function billingDetails() {
  */
 export function buildHoverDetails(state, kind = "billing", authorized = false, statusMessage = null) {
   if (!isHoverKind(kind)) return notReady(authorized, "Status", "Unknown tooltip type.");
-  if (kind === "billing") return billingDetails();
+  if (kind === "billing") return authorized ? billingDetails() : notReady(false, "Billing");
   if (!state || !state.counts || !state.coverage)
     return notReady(authorized, kind === "runners" ? "Runners" : "Tasks", statusMessage);
   const result = kind === "runners" ? runnerDetails(state) : tasksDetails(state);

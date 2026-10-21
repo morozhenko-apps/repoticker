@@ -186,10 +186,6 @@ byId("github-copy-code").addEventListener("click", async () => {
   }
 });
 
-byId("github-check-status").addEventListener("click", () => {
-  void refreshGithub();
-});
-
 window.addEventListener("focus", () => {
   if (githubPending) void refreshGithub();
 });

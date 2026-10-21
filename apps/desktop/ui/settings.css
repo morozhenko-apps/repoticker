@@ -28,7 +28,6 @@ label { font-size: 12px; }
 .github-device-flow { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; padding: 8px 10px; margin-bottom: 8px; border-radius: 6px; background: color-mix(in srgb, #67aee0 12%, Canvas); }
 .github-device-flow[hidden] { display: none; }
 .github-user-code { font: 700 16px ui-monospace, monospace; letter-spacing: .12em; user-select: text; }
-.github-check-status { height: 28px; padding: 4px 9px; margin-bottom: 7px; font-size: 12px; }
 .github-device-flow span { font-size: 12px; }
 .github-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px 10px; }
 .github-grid label { display: flex; flex-direction: column; gap: 4px; min-width: 0; }

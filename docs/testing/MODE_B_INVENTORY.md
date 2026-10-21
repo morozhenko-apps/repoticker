@@ -190,7 +190,7 @@ investigation lead, not proof that hidden inline cases do not exist.
 - [x] Existing test declarations/suites indexed and source-only evidence
       distinguished from real test execution.
 - [x] Disabled relay placeholder and free-product N11 applicability recorded.
-- [ ] **Stage 4:** inspect each identified conditional/early return,
+- [ ] **Stage 4:** the [initial branch-to-test map](MODE_B_BRANCH_MAP.md) covers Git decision policy, Device Flow, runner-state and billing; inspect each remaining conditional/early return,
       map to a concrete existing/planned test and mark reasoned exclusions.
 - [ ] **Stage 5:** expand every row to 13 mandatory Positive/N1–N12
       cells, including explicit non-applicability justifications.

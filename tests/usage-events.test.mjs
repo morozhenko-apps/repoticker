@@ -107,6 +107,8 @@ test("native-selected tooltip switches reliably and auto-selected organization p
 
     nativeKind = "billing";
     window.__repotickerSetHoverKind("billing");
+    // Delayed 'tasks' event from the previous hover must not restore it.
+    await listeners.get("repoticker-usage-shown")({ payload: "tasks" });
     await new Promise(resolve => setImmediate(resolve));
     assert.match(title.textContent, /Actions/);
     assert.match(allText(root), /Organization/);

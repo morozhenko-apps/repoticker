@@ -25,9 +25,12 @@ pub(crate) fn valid_name(value: &str) -> bool {
 }
 
 fn valid_path(requested: &str) -> bool {
-    if requested.len() > 300 || !requested.starts_with('/') ||
-        requested.contains('%') || requested.contains('#') ||
-        requested.contains("//") || requested.contains('\\')
+    if requested.len() > 300
+        || !requested.starts_with('/')
+        || requested.contains('%')
+        || requested.contains('#')
+        || requested.contains("//")
+        || requested.contains('\\')
     {
         return false;
     }
@@ -40,11 +43,16 @@ fn valid_path(requested: &str) -> bool {
     let segments: Vec<&str> = url.path().split('/').filter(|s| !s.is_empty()).collect();
     let route = match segments.as_slice() {
         ["user", "installations"] => 0,
-        ["user", "installations", id, "repositories"] if id.parse::<u64>().is_ok_and(|n| n > 0) => 1,
+        ["user", "installations", id, "repositories"] if id.parse::<u64>().is_ok_and(|n| n > 0) => {
+            1
+        }
         ["orgs", org, "actions", "runners"] if valid_name(org) => 2,
         ["repos", owner, repo, "actions", "runs"] if valid_name(owner) && valid_name(repo) => 3,
         ["repos", owner, repo, "actions", "runs", id, "jobs"]
-            if valid_name(owner) && valid_name(repo) && id.parse::<u64>().is_ok_and(|n| n > 0) => 4,
+            if valid_name(owner) && valid_name(repo) && id.parse::<u64>().is_ok_and(|n| n > 0) =>
+        {
+            4
+        }
         _ => return false,
     };
     let mut keys = HashSet::new();
@@ -54,7 +62,10 @@ fn valid_path(requested: &str) -> bool {
         }
         match key.as_ref() {
             "per_page" if value == "100" => {}
-            "page" if value.parse::<u32>().is_ok_and(|n| (1..=PAGE_CAP).contains(&n)) => {}
+            "page"
+                if value
+                    .parse::<u32>()
+                    .is_ok_and(|n| (1..=PAGE_CAP).contains(&n)) => {}
             "status" if route == 3 && (value == "queued" || value == "in_progress") => {}
             "filter" if route == 4 && value == "latest" => {}
             _ => return false,
@@ -66,40 +77,51 @@ fn valid_path(requested: &str) -> bool {
 /// Keep fields needed for the already-tested pure JS collector. This is a
 /// deliberate API response projection, not arbitrary GitHub account data.
 fn project(path: &str, value: Value) -> Result<Value, String> {
-    let key = if path.starts_with("/user/installations/") { "repositories" }
-    else if path.starts_with("/user/installations?") { "installations" }
-    else if path.starts_with("/orgs/") { "runners" }
-    else if path.contains("/jobs?") { "jobs" }
-    else { "workflow_runs" };
-    let arr = value.get(key).and_then(Value::as_array)
+    let key = if path.starts_with("/user/installations/") {
+        "repositories"
+    } else if path.starts_with("/user/installations?") {
+        "installations"
+    } else if path.starts_with("/orgs/") {
+        "runners"
+    } else if path.contains("/jobs?") {
+        "jobs"
+    } else {
+        "workflow_runs"
+    };
+    let arr = value
+        .get(key)
+        .and_then(Value::as_array)
         .ok_or_else(|| "Unexpected GitHub API response.".to_owned())?;
     if arr.len() > 100 {
         return Err("GitHub returned more than the requested page size.".into());
     }
-    let items: Vec<Value> = arr.iter().map(|item| match key {
-        "installations" => json!({
-            "id": item.get("id"),
-            "account": {
-                "login": item.pointer("/account/login"),
-                "type": item.pointer("/account/type")
-            }
-        }),
-        "repositories" => json!({
-            "full_name": item.get("full_name"),
-            "owner": { "login": item.pointer("/owner/login") }
-        }),
-        "runners" => json!({
-            "id": item.get("id"), "name": item.get("name"),
-            "status": item.get("status"), "busy": item.get("busy"),
-            "labels": item.get("labels")
-        }),
-        "jobs" => json!({
-            "id": item.get("id"), "name": item.get("name"),
-            "status": item.get("status"), "runner_id": item.get("runner_id"),
-            "labels": item.get("labels"), "html_url": item.get("html_url")
-        }),
-        _ => json!({ "id": item.get("id") })
-    }).collect();
+    let items: Vec<Value> = arr
+        .iter()
+        .map(|item| match key {
+            "installations" => json!({
+                "id": item.get("id"),
+                "account": {
+                    "login": item.pointer("/account/login"),
+                    "type": item.pointer("/account/type")
+                }
+            }),
+            "repositories" => json!({
+                "full_name": item.get("full_name"),
+                "owner": { "login": item.pointer("/owner/login") }
+            }),
+            "runners" => json!({
+                "id": item.get("id"), "name": item.get("name"),
+                "status": item.get("status"), "busy": item.get("busy"),
+                "labels": item.get("labels")
+            }),
+            "jobs" => json!({
+                "id": item.get("id"), "name": item.get("name"),
+                "status": item.get("status"), "runner_id": item.get("runner_id"),
+                "labels": item.get("labels"), "html_url": item.get("html_url")
+            }),
+            _ => json!({ "id": item.get("id") }),
+        })
+        .collect();
     let mut projected = serde_json::Map::new();
     projected.insert(key.to_owned(), Value::Array(items));
     projected.insert(
@@ -126,7 +148,8 @@ pub async fn github_api_get(app: AppHandle, path: String) -> Result<Value, Strin
         .header("X-GitHub-Api-Version", API_VERSION)
         .header(header::USER_AGENT, "RepoTicker/0.1")
         .bearer_auth(&token)
-        .send().await
+        .send()
+        .await
         .map_err(|_| "GitHub API network error.")?;
     if !response.status().is_success() {
         return Err(match response.status().as_u16() {
@@ -134,17 +157,22 @@ pub async fn github_api_get(app: AppHandle, path: String) -> Result<Value, Strin
             403 => "GitHub permissions or rate limit prevent this request.",
             404 => "GitHub resource not accessible to this installation.",
             _ => "GitHub API request failed.",
-        }.into());
+        }
+        .into());
     }
     let mut bytes = Vec::new();
-    while let Some(chunk) = response.chunk().await.map_err(|_| "GitHub API stream failed.")? {
+    while let Some(chunk) = response
+        .chunk()
+        .await
+        .map_err(|_| "GitHub API stream failed.")?
+    {
         if bytes.len().saturating_add(chunk.len()) > MAX_BODY {
             return Err("GitHub API response exceeded safe size.".into());
         }
         bytes.extend_from_slice(&chunk);
     }
-    let value: Value = serde_json::from_slice(&bytes)
-        .map_err(|_| "GitHub API returned invalid JSON.")?;
+    let value: Value =
+        serde_json::from_slice(&bytes).map_err(|_| "GitHub API returned invalid JSON.")?;
     project(&path, value)
 }
 
@@ -160,9 +188,13 @@ mod tests {
             "/orgs/team-apps/actions/runners?per_page=100&page=1",
             "/repos/team-apps/tool/actions/runs?status=queued&per_page=100&page=1",
             "/repos/team-apps/tool/actions/runs/123/jobs?filter=latest&per_page=100&page=1",
-        ] { assert!(valid_path(path), "{path}"); }
+        ] {
+            assert!(valid_path(path), "{path}");
+        }
         for path in [
-            "https://evil.example", "/user", "/user/installations?per_page=100&page=0",
+            "https://evil.example",
+            "/user",
+            "/user/installations?per_page=100&page=0",
             "/user/installations?per_page=999&page=1",
             "/user/installations?per_page=100&page=1&token=secret",
             "/user/installations?per_page=100&page=1&page=2",
@@ -172,7 +204,9 @@ mod tests {
             "/orgs/%2e%2e/actions/runners?per_page=100&page=1",
             "/orgs/team/actions/runners?per_page=100&page=1#frag",
             "/orgs/team/actions/runners?per_page=100&page=1&access_token=bad",
-        ] { assert!(!valid_path(path), "{path}"); }
+        ] {
+            assert!(!valid_path(path), "{path}");
+        }
     }
 
     #[test]
@@ -182,8 +216,10 @@ mod tests {
             "private": true, "secret": "not-for-webview"
         }]});
         let projected = project(
-            "/user/installations/123/repositories?per_page=100&page=1", payload
-        ).unwrap();
+            "/user/installations/123/repositories?per_page=100&page=1",
+            payload,
+        )
+        .unwrap();
         assert_eq!(projected["repositories"][0]["full_name"], "team/repo");
         assert!(projected.to_string().find("not-for-webview").is_none());
     }

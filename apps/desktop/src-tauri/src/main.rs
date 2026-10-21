@@ -1,9 +1,9 @@
 //! RepoTicker desktop: local-only roots, Git provider and tray card.
 mod app_icon;
+mod github_api;
 mod github_native;
 mod github_oauth_wire;
 mod github_session;
-mod github_api;
 mod monitor_cache;
 
 use repoticker_core::{
@@ -184,7 +184,8 @@ fn scan(app: &AppHandle) -> Result<Snapshot, String> {
         }
     }
     summaries.sort_by(|a, b| a.name.cmp(&b.name).then(a.path.cmp(&b.path)));
-    let (connected, runner_state, monitor_message) = app.state::<monitor_cache::MonitorCache>().read();
+    let (connected, runner_state, monitor_message) =
+        app.state::<monitor_cache::MonitorCache>().read();
     Ok(Snapshot {
         roots: config.roots,
         language: config.language,
@@ -693,7 +694,10 @@ fn close_settings(app: AppHandle) -> Result<(), String> {
 
 #[tauri::command]
 fn github_set_monitor_org(app: AppHandle, org: Option<String>) -> Result<(), String> {
-    if org.as_ref().is_some_and(|name| !github_api::valid_name(name)) {
+    if org
+        .as_ref()
+        .is_some_and(|name| !github_api::valid_name(name))
+    {
         return Err("Invalid GitHub account.".into());
     }
     let mut config = read_config(&app)?;

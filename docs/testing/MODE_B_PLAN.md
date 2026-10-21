@@ -1,9 +1,18 @@
 # Mode B — first campaign: repository scan and inventory plan
 
+> **Priority correction (2026-10-22):** The owner confirmed that the
+> comprehensive Mode B inventory, exhaustive branch mapping, Positive/N1–N12
+> matrix, mutation audit and final report belong to the **v0.9.0 RC** gate,
+> not the current v0.2.0 development stage. This file preserves preliminary
+> exploratory evidence only. **It does not block implementing features,
+> fixing defects or writing their required regression tests for v0.2–v0.8.**
+> Resume and rescan this audit at v0.9.0 against the then-current source;
+> existing inventories must not be treated as exhaustive current coverage.
+
 Date: 2026-10-21
 Primary mode: **MODE B — Testing**
 Target: `dev`, baseline revision `eddb3bc11d47f711c46b54036e5cdea31af05962` (approval of 1.0 roadmap).
-Status: **IN PROGRESS — Stage 1–3 only**. No quality gate passed and no new tests implemented by this document.
+Status: **PARKED PRELIMINARY INVENTORY — comprehensive Mode B scheduled for v0.9.0**. No quality gate passed and no new tests implemented by this document.
 
 ## Decision and guardrails
 

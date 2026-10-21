@@ -113,7 +113,7 @@ test("UI uses distinct hover targets, native event validation, no extra queued s
   assert.match(native, /__repotickerSetHoverKind/);
   assert.match(overlay, /repoticker-usage-shown", onUsageShown/);
   assert.match(overlay, /get_usage_popup_kind/);
-  assert.match(overlay, /runner_state\\?\\.scope\\?\\.organization/);
+  assert.ok(overlay.includes("runner_state?.scope?.organization"));
   const css = source("../apps/desktop/ui/quota.css");
-  assert.match(css, /kind-billing \\{ grid-template-columns:minmax\\(0,1fr\\)/);
+  assert.ok(css.includes("kind-billing { grid-template-columns:minmax(0,1fr)"));
 });

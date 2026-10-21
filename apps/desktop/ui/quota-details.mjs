@@ -1,5 +1,4 @@
 import { shown, compactStatus } from "./status-metrics.mjs";
-import { runnerLabelCompatible } from "./runner-state.mjs";
 
 const safeName = value => typeof value === "string" && value.trim()
   ? value.trim().slice(0, 38) : "Unnamed runner";
@@ -25,48 +24,34 @@ export function isHoverKind(kind) {
 
 function runnerDetails(state) {
   const { total, online, offline } = compactStatus(state);
-  const c = state.counts;
-  return view("Self-hosted runners", [{
-    title: "Organization runner inventory",
+  const counts = state.counts;
+  return view("", [{
+    title: "",
     rows: [["Total", total], ["Online", online],
-      ["Busy", shown(state.coverage.runners ? c.busy : null)],
-      ["Idle", shown(state.coverage.runners ? c.idle : null)],
+      ["Busy", shown(state.coverage.runners ? counts.busy : null)],
+      ["Idle", shown(state.coverage.runners ? counts.idle : null)],
       ["Offline", offline]],
-  }], "GitHub-hosted runners are not registered here.");
+  }]);
 }
 
 function tasksDetails(state) {
-  const c = state.counts;
-  const complete = state.coverage.jobs === true;
-  const inventory = state.coverage.runners === true;
-  const running = complete ? c.running : null;
-  const queued = complete ? c.queued : null;
+  const counts = state.counts;
+  const jobsCovered = state.coverage.jobs === true;
+  const runnersCovered = state.coverage.runners === true;
+  const runners = runnersCovered && Array.isArray(state.runners) ? state.runners : [];
+  const active = jobsCovered && Array.isArray(state.runningJobs) ? state.runningJobs : [];
   const rows = [];
-  const runners = inventory && Array.isArray(state.runners) ? state.runners : [];
-  const active = complete && Array.isArray(state.runningJobs) ? state.runningJobs : [];
-  const pending = complete && Array.isArray(state.queuedJobs) ? state.queuedJobs : [];
   for (const runner of runners.slice(0, 4)) {
-    const runningCount = complete
+    const running = jobsCovered
       ? active.filter(job => job.runner_id === runner.id).length : null;
-    const candidateCount = complete
-      ? pending.filter(job => runnerLabelCompatible(job.labels, runner.labels)).length : null;
-    rows.push([safeName(runner.name), shown(runningCount) + " / " + shown(candidateCount)]);
+    rows.push([safeName(runner.name), shown(running)]);
   }
-  if (runners.length > 4) rows.push(["Other runners", "+" + (runners.length - 4) + " not listed"]);
-  if (!inventory) rows.push(["Self-hosted runners", "—"]);
-  const split = [
-    ["Self-hosted jobs", shown(complete ? c.runningSelfHosted : null) +
-      " / " + shown(complete ? c.queuedSelfHosted : null)],
-    ["GitHub-hosted jobs", shown(complete ? c.runningGitHubHosted : null) +
-      " / " + shown(complete ? c.queuedGitHubHosted : null)],
-    ["Unclassified jobs", shown(complete ? c.runningUnclassified : null) +
-      " / " + shown(complete ? c.queuedUnclassified : null)],
-  ];
-  return view("Tasks · Running " + shown(running) + " / Queued " + shown(queued), [
-    { title: "Runner · Running / eligible queue", rows },
-    { title: "Other jobs · Running / Queued", rows: split },
-  ], "Queued jobs are not assigned to a runner until GitHub schedules them. " +
-      "A job may be compatible with multiple runners.");
+  if (runners.length > 4) rows.push(["More self-hosted", "+" + (runners.length - 4)]);
+  if (!runnersCovered) rows.push(["Self-hosted", "—"]);
+  rows.push(["GitHub-hosted", shown(jobsCovered ? counts.runningGitHubHosted : null)]);
+  return view("Tasks · Running " + shown(jobsCovered ? counts.running : null) +
+    " / Queued " + shown(jobsCovered ? counts.queued : null),
+    [{ title: "", rows }]);
 }
 
 function billingDetails(billing = null) {
@@ -100,8 +85,7 @@ export function buildHoverDetails(state, kind = "billing", authorized = false, s
   if (!state || !state.counts || !state.coverage)
     return notReady(authorized, kind === "runners" ? "Runners" : "Tasks", statusMessage);
   const result = kind === "runners" ? runnerDetails(state) : tasksDetails(state);
-  result.message += " Checked: " + timestamp(state.checkedAt) + ".";
-  if (statusMessage) result.message += " " + String(statusMessage).slice(0, 80);
+  result.message = "Checked: " + timestamp(state.checkedAt);
   return result;
 }
 

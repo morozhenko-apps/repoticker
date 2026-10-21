@@ -10,7 +10,7 @@ test("legacy billing-only entrypoint shows only account types and unknown quotas
   for (const section of result.sections) {
     assert.deepEqual(section.rows.map(row => row[1]), ["—", "—", "—"]);
   }
-  assert.doesNotMatch(JSON.stringify(result), /Running ·|Queued ·|Runner availability/);
+  assert.doesNotMatch(JSON.stringify(result), /Running ·|Queued ·|Runner availability|remaining/i);
 });
 test("unavailable runner statistics do not erase authorization", () => {
   const result = buildHoverDetails(null, "runners", true, "GitHub data unavailable");
@@ -29,4 +29,24 @@ test("job URL validator remains restricted even though hover window is pointer-p
   for (const value of bad) assert.equal(safeActionsJobUrl(value), null, value);
   assert.equal(safeActionsJobUrl("https://github.com/a/b/actions/runs/1/job/2"),
     "https://github.com/a/b/actions/runs/1/job/2");
+});
+
+test("billing hover stacks only compact verified owner fields", () => {
+  const details = buildQuotaDetails(null, true, null, {
+    month: "2026-10",
+    organization: { state: "ready", plan: "free", included: 2000,
+      reported: 2791.5, remaining: null, reason: "" },
+    personal: { state: "ready", plan: "pro", included: 3000,
+      reported: 0, remaining: null, reason: "" },
+  });
+  assert.equal(details.status, "Actions · 2026-10");
+  assert.deepEqual(details.sections.map(x => x.title), ["Organization", "Personal account"]);
+  assert.deepEqual(details.sections[0].rows, [
+    ["Plan", "free"], ["Included min", "2,000"], ["Used min (gross)", "2,791.5"]
+  ]);
+  assert.deepEqual(details.sections[1].rows, [
+    ["Plan", "pro"], ["Included min", "3,000"], ["Used min (gross)", "0"]
+  ]);
+  assert.equal(details.message, "");
+  assert.ok(details.sections.every(x => x.message === null));
 });

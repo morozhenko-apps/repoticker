@@ -853,6 +853,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             get_snapshot,
             github_session::github_auth_status,
+            github_session::github_flow_status,
             github_session::github_begin,
             github_session::github_cancel,
             github_session::github_disconnect,

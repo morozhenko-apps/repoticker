@@ -199,6 +199,16 @@ async fn delete_credential() -> Result<(), NativeAuthError> {
         .map_err(|_| NativeAuthError::KeychainUnavailable)?
 }
 
+/// Cheap event-loss recovery: reads only native memory, never KWallet or GitHub.
+#[tauri::command]
+pub fn github_flow_status(app: AppHandle) -> GitHubAuthEvent {
+    let progress = app.state::<Arc<GitHubAuthManager>>().progress();
+    GitHubAuthEvent {
+        status: progress.phase,
+        reason: progress.reason,
+    }
+}
+
 #[tauri::command]
 pub async fn github_auth_status(app: AppHandle) -> Result<GitHubAuthStatus, String> {
     let state = app.state::<Arc<GitHubAuthManager>>().inner().clone();

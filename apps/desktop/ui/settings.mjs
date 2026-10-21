@@ -8,6 +8,41 @@ let draft = null;
 let saving = false;
 let githubPending = false;
 let githubConnected = false;
+let githubStatusTimer = null;
+let githubStatusBusy = false;
+
+function stopGithubStatusUpdates() {
+  if (githubStatusTimer !== null) {
+    clearInterval(githubStatusTimer);
+    githubStatusTimer = null;
+  }
+}
+
+// The timer polls only a native in-memory phase (no GitHub network calls,
+// no keychain unlock). It is active only during Device Flow authorization.
+function startGithubStatusUpdates() {
+  if (githubStatusTimer !== null) return;
+  githubStatusTimer = setInterval(async () => {
+    if (!githubPending) {
+      stopGithubStatusUpdates();
+      return;
+    }
+    if (githubStatusBusy) return;
+    githubStatusBusy = true;
+    try {
+      const phase = await invoke("github_flow_status");
+      if (phase.status === "connected" ||
+          ["denied", "expired", "failed", "cancelled", "disconnected"].includes(phase.status)) {
+        stopGithubStatusUpdates();
+        await refreshGithub();
+      }
+    } catch (error) {
+      githubMessage(String(error), true);
+    } finally {
+      githubStatusBusy = false;
+    }
+  }, 1500);
+}
 
 function githubMessage(text, error = false) {
   const element = byId("github-auth-message");
@@ -63,6 +98,8 @@ async function refreshGithub() {
       ["requesting", "pending", "awaiting_approval", "saving_credentials"].includes(auth.phase);
     if (!githubPending) byId("github-user-code").textContent = "";
     githubButtons();
+    if (githubPending) startGithubStatusUpdates();
+    else stopGithubStatusUpdates();
     const text = auth.reason && Object.hasOwn(githubFailureLabels, auth.reason)
       ? githubFailureLabels[auth.reason]
       : (githubPhaseLabels[auth.phase] || githubPhaseLabels.idle);
@@ -83,6 +120,7 @@ byId("github-connect").addEventListener("click", async () => {
     githubPending = true;
     githubMessage("Waiting for approval in GitHub.");
     githubButtons();
+    startGithubStatusUpdates();
   } catch (error) {
     githubPending = false;
     githubMessage(String(error), true);
@@ -117,6 +155,7 @@ byId("github-open-device").addEventListener("click", async () => {
 });
 byId("github-cancel-device").addEventListener("click", async () => {
   await invoke("github_cancel");
+  stopGithubStatusUpdates();
   githubPending = false;
   byId("github-user-code").textContent = "";
   githubButtons();
@@ -125,6 +164,7 @@ byId("github-cancel-device").addEventListener("click", async () => {
 byId("github-disconnect").addEventListener("click", async () => {
   try {
     await invoke("github_disconnect");
+    stopGithubStatusUpdates();
     githubConnected = false;
     githubPending = false;
     byId("github-user-code").textContent = "";

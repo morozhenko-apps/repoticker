@@ -4,6 +4,10 @@
 
 Tests must protect local Git data, fail closed on unsafe operations, and never fabricate CI/runners state. Distinguish **source tests**, **packaging jobs**, **local OS smoke** and **public release acceptance**. No artificial coverage percentage is claimed.
 
+## Mode B campaign status (2026-10-21)
+
+Stage 1–3 complete as a **source-only inventory**: [plan](testing/MODE_B_PLAN.md) and [artifact inventory](testing/MODE_B_INVENTORY.md). The scan identified 84 Node, 10 Python, 32 embedded Rust and 8 Rust integration named test declarations, not executions or measured coverage. Branch mapping, Positive/N1–N12 matrices, interaction mapping, mutation analysis and STABLE/known-FLAKY CI grouping are **pending**. No new testing code or release has been published in this campaign.
+
 ## Implemented tests
 
 - Rust pure sync classifier: clean/behind, up-to-date, local ahead, diverged, dirty/untracked, unfinished operation, missing upstream, and bounded concurrency.

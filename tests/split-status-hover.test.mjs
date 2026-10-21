@@ -89,8 +89,9 @@ test("billing tooltip never invents free allowance or remaining minutes before p
   const billing = buildHoverDetails(complete, "billing", true);
   assert.deepEqual(billing.sections.map(s => s.title), ["Organization", "Personal account"]);
   assert.ok(billing.sections.every(s => s.rows.every(r => r[1] === "—")));
-  assert.match(billing.sections[0].message, /Administration: read/);
-  assert.match(billing.sections[1].message, /Plan: read/);
+  assert.match(billing.sections[0].message, /Usage not available/);
+  assert.match(billing.sections[1].message, /Usage not available/);
+  assert.equal(billing.message, "");
   assert.doesNotMatch(JSON.stringify(billing), /2,000|3,000|Available/);
 });
 
@@ -107,5 +108,12 @@ test("UI uses distinct hover targets, native event validation, no extra queued s
   assert.match(app, /show_usage_popup", \{ kind: wanted \}/);
   assert.match(app, /status-hover,\[role=button\]/);
   assert.match(native, /Unsupported status tooltip/);
+  assert.match(native, /static USAGE_KIND: AtomicU8/);
+  assert.match(native, /fn get_usage_popup_kind/);
+  assert.match(native, /__repotickerSetHoverKind/);
   assert.match(overlay, /repoticker-usage-shown", onUsageShown/);
+  assert.match(overlay, /get_usage_popup_kind/);
+  assert.match(overlay, /runner_state\\?\\.scope\\?\\.organization/);
+  const css = source("../apps/desktop/ui/quota.css");
+  assert.match(css, /kind-billing \\{ grid-template-columns:minmax\\(0,1fr\\)/);
 });

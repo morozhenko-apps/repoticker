@@ -171,10 +171,10 @@ test("billing cache coalesces concurrent reads, throttles hover and invalidates 
   await cache.load("team", true);
   assert.equal(requests, 8);
   await cache.load("another-team", true);
-  assert.equal(requests, 16);
+  assert.equal(requests, 12);
   assert.equal(await cache.load("team", false), null);
   await cache.load("team", true);
-  assert.equal(requests, 12);
+  assert.equal(requests, 16);
   clock = Date.parse("2026-11-01T00:01:00Z");
   await cache.load("team", true);
   assert.equal(requests, 20);

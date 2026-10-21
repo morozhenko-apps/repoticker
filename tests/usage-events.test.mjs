@@ -82,7 +82,9 @@ test("usage balloon refreshes after native monitor event, without Git re-scan", 
       }
     };
     await listeners.get("repoticker-monitor-updated")();
-    assert.match(allText(root), /Available/);
+    assert.match(allText(root), /Job counts collected/);
+    assert.match(allText(root), /Hosted usage \\(unknown\\)/);
+    assert.doesNotMatch(allText(root), /Available/);
     assert.match(allText(root), /Running · 2/);
     assert.match(allText(root), /Queued · 1/);
     assert.doesNotMatch(allText(root), /Connect GitHub/);

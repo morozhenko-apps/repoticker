@@ -49,3 +49,6 @@ label { font-size: 12px; }
 #language-options { position: absolute; top: calc(100% + 3px); left: 0; width: 140px; padding: 4px; background: Canvas; border: 1px solid color-mix(in srgb, CanvasText 32%, Canvas); border-radius: 6px; box-shadow: 0 5px 13px #0003; }
 #language-options button { width: 100%; height: 32px; display: block; border: 0; text-align: left; background: transparent; }
 #language-options button:hover, #language-options button[aria-selected="true"] { background: color-mix(in srgb, #5aa4d4 19%, Canvas); }
+
+/* A flex/grid declaration must never override hidden scope controls. */
+.github-grid [hidden] { display: none; }

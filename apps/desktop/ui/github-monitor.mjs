@@ -75,12 +75,17 @@ export async function collectForAccount({ get, account, selected, collect = coll
 
 export function startGithubMonitoring({ invoke, event, onError = () => {} }) {
   let busy = false;
+  let rerun = false;
   let lastAttempt = 0;
   const get = path => invoke("github_api_get", { path });
   const publish = (connected, runnerState = null, message = null) =>
     invoke("github_monitor_publish", { connected, runnerState, message });
   async function refresh(force = false) {
-    if (busy || (!force && Date.now() - lastAttempt < REFRESH_MS)) return;
+    if (busy) {
+      if (force) rerun = true;
+      return;
+    }
+    if (!force && Date.now() - lastAttempt < REFRESH_MS) return;
     busy = true;
     lastAttempt = Date.now();
     try {
@@ -99,6 +104,10 @@ export function startGithubMonitoring({ invoke, event, onError = () => {} }) {
         "GitHub Actions data unavailable. Check permissions or network.").catch(onError);
     } finally {
       busy = false;
+      if (rerun) {
+        rerun = false;
+        void refresh(true);
+      }
     }
   }
   event?.listen?.("repoticker-github-auth", evt => {

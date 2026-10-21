@@ -362,6 +362,8 @@ window.__TAURI__?.event?.listen?.("repoticker-reset-view", () => {
 });
 window.__TAURI__?.event?.listen?.("repoticker-config-changed", refresh);
 window.__TAURI__?.event?.listen?.("repoticker-monitor-updated", refresh);
+window.__TAURI__?.event?.listen?.("repoticker-github-auth", refresh);
+window.__TAURI__?.event?.listen?.("repoticker-github-scope-changed", refresh);
 window.__TAURI__?.event?.listen?.("repoticker-git-action-finished", async event => {
   if (event.payload?.Ok) consumeResults(event.payload.Ok);
   else if (event.payload?.Err) showError(event.payload.Err);

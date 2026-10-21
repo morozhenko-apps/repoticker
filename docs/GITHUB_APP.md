@@ -416,3 +416,42 @@ diagnosed independently, not attributed to the removed DOM listener.
 No auth scopes, token storage, REST data collector, popup geometry
 or Wayland dragging changed. Physical KDE click/clipboard confirmation
 is required before closing Issue #4.
+
+
+## Usage balloon stays disconnected while main card has Actions data (2026-10-21)
+
+**Physical report:** the compact main card displays live runner/job
+counts, while the separate `usage` balloon still says "Not connected"
+and asks the user to connect GitHub. The monitor cache is already
+shared in native Rust and published by `github_monitor_publish`; the
+`quota.mjs` presentation fetches the same snapshot.
+
+**Confirmed source-level root cause:** the only Tauri v2 capability
+(`apps/desktop/src-tauri/capabilities/default.json`) scopes
+`core:event:allow-listen` to window label `main` alone. However,
+`quota.mjs` runs in a different WebView labeled `usage`, subscribes
+to `repoticker-usage-shown` and `repoticker-monitor-updated`, and
+does not handle rejected subscription promises. Native Rust emits
+these events but the separate balloon is not permitted to subscribe.
+Consequently the balloon can keep its initial pre-authorization
+snapshot while the main card refreshes its counters. This is
+independent of GitHub App scopes, KWallet, polling cadence or
+monitor data collection.
+
+**Mode A, narrow permission fix:** add a separate `usage` capability
+allowing only `core:event:allow-listen`, without copying the
+`main` capability or granting event emission, clipboard access,
+plugin/network permissions, OAuth token access, or Git mutations.
+The existing private Rust monitor cache and read-only snapshot
+contract remain unchanged. `quota.mjs` must report subscription
+failures as such, not silently turn them into "Not connected".
+Test the capability against its window label and permissions, and
+verify both expected event subscription strings are present.
+
+**Completion gate:** all stable source tests and native desktop
+compile green, followed by physical KDE confirmation that the
+hover balloon displays the same available/partial runner and job
+state as the main card immediately after opening, after refresh,
+and after restarting. Preserve the compact card 390x122, three
+indicators, noninteractive hover-only balloon and native drag.
+This is dev-only; do not update `main` or `v0.1.0` before acceptance.

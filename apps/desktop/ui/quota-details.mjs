@@ -70,28 +70,25 @@ function tasksDetails(state) {
 }
 
 function billingDetails(billing = null) {
-  const formatMinutes = value => Number.isFinite(value) && value >= 0
-    ? (Number.isInteger(value) ? value.toLocaleString("en-US") :
-      value.toLocaleString("en-US", { maximumFractionDigits: 2 })) : "—";
-  const accounts = [
+  const fmt = value => Number.isFinite(value) && value >= 0
+    ? value.toLocaleString("en-US", { maximumFractionDigits: 2 }) : "—";
+  const sections = [
     ["Organization", billing?.organization],
     ["Personal account", billing?.personal],
-  ];
-  const sections = accounts.map(([title, account]) => ({
-    title,
-    rows: [
-      ["Included min", formatMinutes(account?.included)],
-      ["Reported SKU min", formatMinutes(account?.reported)],
-      ["Free remaining", "—"],
-    ],
-    message: account?.reason || (title === "Organization"
-      ? "Requires Administration: read." : "Requires Plan: read."),
-  }));
-  const period = /^\d{4}-(?:0[1-9]|1[0-2])$/.test(billing?.month || "")
-    ? billing.month : "unknown month";
-  return view("Actions billing · " + period, sections,
-    "Reported SKU minutes are not free-minute consumption. " +
-    "Free remaining requires authoritative allowance accounting.");
+  ].map(([title, account]) => {
+    const rows = [
+      ["Plan", account?.plan || "—"],
+      ["Included min", fmt(account?.included)],
+      ["Used min (gross)", fmt(account?.reported)],
+    ];
+    // One concise diagnostic only if consumption is unavailable.
+    const message = account?.reported == null
+      ? account?.reason || "Usage not available" : null;
+    return { title, rows, message };
+  });
+  const period = /^\\d{4}-(?:0[1-9]|1[0-2])$/.test(billing?.month || "")
+    ? billing.month : "—";
+  return view("Actions · " + period, sections);
 }
 
 /** The pointer-pass-through popup cannot scroll, click links or pin.

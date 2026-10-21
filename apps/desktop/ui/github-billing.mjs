@@ -19,6 +19,17 @@ export function knownPersonalAllowance(plan) {
   }
 }
 
+/** Only direct organization plans with unambiguous published hosted allowances.
+ * Enterprise entitlements may be billed at enterprise scope, never guessed here.
+ */
+export function knownOrganizationAllowance(plan) {
+  switch (typeof plan === "string" ? plan.toLowerCase() : "") {
+    case "free": return 2000;
+    case "team": return 3000;
+    default: return null;
+  }
+}
+
 export function reportedActionsMinutes(payload) {
   if (!payload || !Array.isArray(payload.usageItems) || payload.usageItems.length > 500)
     throw Error("Invalid GitHub billing projection");
@@ -49,15 +60,32 @@ export async function collectBillingUsage({ get, organization, now = new Date() 
   async function fetchOrganization() {
     if (typeof organization !== "string" || !NAME.test(organization))
       return unavailable("Choose a monitored organization in Settings.");
-    try {
-      const projection = await get("/organizations/" + organization +
-        "/settings/billing/usage/summary" + suffix);
-      return { state: "ready", plan: null, included: null,
-        reported: reportedActionsMinutes(projection), remaining: null,
-        reason: "Organization plan requires separate Organization plan: read." };
-    } catch {
-      return unavailable("Organization billing unavailable; check App permissions and admin access.");
+    // Plan and usage have separate permission/reliability boundaries.
+    // A partial failure must never erase the other successful resource.
+    const [planResult, usageResult] = await Promise.allSettled([
+      get("/orgs/" + organization),
+      get("/organizations/" + organization +
+        "/settings/billing/usage/summary" + suffix),
+    ]);
+    const rawPlan = planResult.status === "fulfilled" &&
+      planResult.value?.login?.toLowerCase() === organization.toLowerCase()
+      ? planResult.value?.plan?.name : null;
+    const plan = typeof rawPlan === "string" && rawPlan.length <= 40
+      ? rawPlan : null;
+    let reported = null;
+    if (usageResult.status === "fulfilled") {
+      try { reported = reportedActionsMinutes(usageResult.value); }
+      catch { /* A malformed report stays unknown. */ }
     }
+    const ready = reported !== null || knownOrganizationAllowance(plan) !== null;
+    const reason = reported === null
+      ? "Organization usage unavailable; check admin access or API support."
+      : plan === null
+        ? "Organization plan unavailable; free allowance is unknown."
+        : "Billing SKU minutes do not prove free-minute consumption.";
+    return { state: ready ? "ready" : "unavailable",
+      plan, included: knownOrganizationAllowance(plan),
+      reported, remaining: null, reason };
   }
 
   async function fetchPersonal() {

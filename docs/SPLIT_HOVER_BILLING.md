@@ -1,6 +1,6 @@
 # Split status hover and billing access (2026-10-21)
 
-Status: implementation plan on `feat/split-status-hover`, based on the currently open unmerged PR #5. Target `dev`, not `main`. Published `v0.1.0` remains immutable.
+Status: implementation plan on `feat/split-status-hover`, tracked in PR #6; PR #5 was closed without merge. Target `dev`, not `main`. Published `v0.1.0` remains immutable.
 
 ## User's current contract
 
@@ -14,14 +14,33 @@ The compact card remains 390x122 with its four Git operations. Replace three pla
 
 Keep the existing standalone 340px, 118–320px hover-only, pointer-pass-through GTK Layer Shell WebView. One popup is reused for the three anchors, with a typed, sanitized view-kind event; stale hover callbacks must not flash another view. Never resize the main card, swallow clicks, or require mouse access to popup. Do not expose tokens or install new services.
 
-## Security boundary: STOP FACTOR on live billing collection
+## Security boundary: chosen architecture and billing constraints
 
 Current publisher GitHub App grants Actions read and organization runner read; it does not have broader billing permissions. Current docs identify Organization Administration **read** and user Account Plan **read** as necessary. GitHub's billing usage summary REST endpoints are public preview; summary usage is **not** itself the free plan allowance or remaining concurrency. The organization permission affects all installations of the publisher-owned GitHub App; it is not scoped to a single tooltip or per-installation preference. Existing installation owners must approve permission changes, and personal Account Plan access requires user reauthorization.
 
-Do not modify App permissions, register new auth flows, request expanded tokens, invoke billing endpoints, or claim validated hosted minutes until the user selects an explicit security architecture:
-- **A**: extend the single publisher GitHub App with organization Administration:read + user Plan:read. Pro: native token/keyring reused. Con: broad organization administrative visibility for every installation and explicit reapproval needed.
-- **B**: leave base App least-privilege, add a separate opt-in narrowly scoped user token/billing integration. Pro: ordinary monitor users are not asked for organization Administration:read. Con: additional credential/account lifecycle and UX to secure, plus same organization-admin requirement.
-Recommended: B for long-term least privilege. This affects auth/trust boundary, so implementation of live billing is blocked pending the user's decision. Static guidance and truthfully unknown fields are not blocked.
+**Decision 2026-10-21: A approved.** Extend the existing publisher GitHub App with organization `Administration: read` and personal-account `Plan: read`. Keep existing native Device Flow/KWallet refresh, never distribute an App secret. The owner must change the publisher App configuration in GitHub; existing installation owners must approve the permission update and users must reauthorize where required. Repository code alone cannot grant permissions.
+
+### API and calculation boundaries (verified against GitHub REST docs on 2026-10-21)
+
+- Use current consolidated, public-preview REST endpoints `GET /organizations/{org}/settings/billing/usage/summary?year=YYYY&month=M` and `GET /users/{user}/settings/billing/usage/summary?year=YYYY&month=M`. Legacy `/settings/billing/actions` endpoints were retired in 2025. The organization summary requires org administration read and an organization administrator. The user summary requires user Plan read.
+- Obtain personal login and optional verified plan name from `GET /user`, projected natively to `login` and `plan.name` only. Do not request arbitrary profile fields.
+- The GitHub org plan field in `GET /orgs/{org}` requires an *additional* GitHub App `Organization plan` permission. This is **not** included in the chosen two permissions. Do not silently add it or assume the organization plan. Show its free allowance as unknown until separately approved and verified.
+- Published allowance mapping (documentation, not account data): personal Free 2,000 minutes/month, Pro 3,000; organization Free 2,000, Team 3,000, Enterprise Cloud 50,000. Populate a personal allowance **only** after GitHub returns an unambiguous supported plan name. No plan guess from an account's name, public metadata or API error.
+- Usage summaries expose `usageItems` by SKU, with `product`, `unitType`, `grossQuantity`, `discountQuantity`, etc. Those values are billing-SKU quantities, **not an authoritative count of free-plan minutes consumed**. Different OS/runner SKUs and additional billable products prevent naive arithmetic. Display only verified `Actions` minutes as `Reported usage` and keep `Free minutes used` and `Remaining` unknown until the API supports a defensible conversion, or an authoritative allowance-consumption figure is identified. `discountQuantity` is not proof of free usage.
+- All collected usage is billed to the **repository owner** and separate for organization vs. personal account. Self-hosted and standard public repository runners do not use the included GitHub-hosted private-repository allowance. Do not claim quota exhaustion on mere job absence or 403.
+- Native transport is HTTPS, fixed-origin, exact route allowlisting, bounded body, read-only projection; no raw billing JSON, identity details or tokens outside their necessary isolated layers. Billing views may receive only sanitized own-account plan name, month and aggregated Actions quantities. No repository attribution or payment details go into the WebView.
+- Failure modes: missing permission/installation approval, non-admin user, unsupported/preview API, malformed/partial response, unknown plan, network failure and month boundary all yield explicit unavailable or stale values, never zero. Scope changes and disconnect invalidate cache. Billing refresh is bounded and never fires per mouse movement.
+- Hover-only window remains pointer-pass-through, 340px and max 320px: keep organization/user readout compact, make any permission guidance available separately in Settings/docs. No new clickable elements or interactive scrolling inside popup.
+
+### Planned implementation
+
+1. Documentation-first decision and precise permission setup guidance (separate docs commit).
+2. Strict native `github_api_get` route model for `/user` and consolidated org/user usage summary; sanitize projected data and negative-test endpoint/response validation. No App config write.
+3. Pure `github-billing.mjs` collector: independent per-account results, validated month/scope, bounded refresh, fail closed. No free-minute subtraction from raw SKU quantities.
+4. Inject billing state into the existing billing-only hover, preserve runner/task projection and visual geometry; add deterministic tests for permissions, invalid data, refresh and partial failures.
+5. Run final stable GitHub Preflight once on code SHA, physical KDE/Keyring approval and exact account usage verification. No main merge or release before acceptance.
+
+Rollback: revert native billing route and JS billing collector/UI commits; no new persistent token storage, database or migration.
 
 ## Ordered work
 
@@ -37,4 +56,6 @@ Recommended: B for long-term least privilege. This affects auth/trust boundary, 
 - [ ] Rendering/hover implementation complete.
 - [ ] Stable CI green.
 - [ ] Physical KDE acceptance.
-- [ ] Security architecture decided for authorized org/user billing.
+- [x] Security architecture A selected on 2026-10-21.
+- [ ] Native read-only billing implementation verified.
+- [ ] GitHub App permission update and installation/user reapproval accepted physically.

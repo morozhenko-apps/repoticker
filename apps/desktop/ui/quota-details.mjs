@@ -69,26 +69,37 @@ function tasksDetails(state) {
       "A job may be compatible with multiple runners.");
 }
 
-function billingDetails() {
-  // No authorized usage/plan transport exists. Do not fabricate a
-  // personal or organization allowance or infer it from Actions jobs.
-  return view("GitHub-hosted free allowances", [
-    { title: "Organization", rows: [
-      ["Included minutes", "—"], ["Used this cycle", "—"], ["Remaining", "—"],
-    ], message: "Requires organization Administration: read." },
-    { title: "Personal account", rows: [
-      ["Included minutes", "—"], ["Used this cycle", "—"], ["Remaining", "—"],
-    ], message: "Requires user Plan: read." },
-  ], "Grant permissions in GitHub App settings, then approve the installation " +
-     "and reauthorize. Billing data not yet connected.");
+function billingDetails(billing = null) {
+  const formatMinutes = value => Number.isFinite(value) && value >= 0
+    ? (Number.isInteger(value) ? value.toLocaleString("en-US") :
+      value.toLocaleString("en-US", { maximumFractionDigits: 2 })) : "—";
+  const accounts = [
+    ["Organization", billing?.organization],
+    ["Personal account", billing?.personal],
+  ];
+  const sections = accounts.map(([title, account]) => ({
+    title,
+    rows: [
+      ["Included min", formatMinutes(account?.included)],
+      ["Reported SKU min", formatMinutes(account?.reported)],
+      ["Free remaining", "—"],
+    ],
+    message: account?.reason || (title === "Organization"
+      ? "Requires Administration: read." : "Requires Plan: read."),
+  }));
+  const period = /^\d{4}-(?:0[1-9]|1[0-2])$/.test(billing?.month || "")
+    ? billing.month : "unknown month";
+  return view("Actions billing · " + period, sections,
+    "Reported SKU minutes are not free-minute consumption. " +
+    "Free remaining requires authoritative allowance accounting.");
 }
 
 /** The pointer-pass-through popup cannot scroll, click links or pin.
  * Only safe projected values and at most six runner rows are displayed.
  */
-export function buildHoverDetails(state, kind = "billing", authorized = false, statusMessage = null) {
+export function buildHoverDetails(state, kind = "billing", authorized = false, statusMessage = null, billing = null) {
   if (!isHoverKind(kind)) return notReady(authorized, "Status", "Unknown tooltip type.");
-  if (kind === "billing") return authorized ? billingDetails() : notReady(false, "Billing");
+  if (kind === "billing") return authorized ? billingDetails(billing) : notReady(false, "Billing");
   if (!state || !state.counts || !state.coverage)
     return notReady(authorized, kind === "runners" ? "Runners" : "Tasks", statusMessage);
   const result = kind === "runners" ? runnerDetails(state) : tasksDetails(state);
@@ -98,6 +109,6 @@ export function buildHoverDetails(state, kind = "billing", authorized = false, s
 }
 
 // Existing entrypoint remains for consumers testing billing-only presentation.
-export function buildQuotaDetails(state, authorized = false, statusMessage = null) {
-  return buildHoverDetails(state, "billing", authorized, statusMessage);
+export function buildQuotaDetails(state, authorized = false, statusMessage = null, billing = null) {
+  return buildHoverDetails(state, "billing", authorized, statusMessage, billing);
 }

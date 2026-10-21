@@ -980,3 +980,60 @@ breakdown, bounded pagination, partial/denied coverage, and
 rate-limit-aware refresh, as tracked in
 [Issue #4](https://github.com/morozhenko-apps/repoticker/issues/4).
 No Cloudflare Worker, no client secret, and no write permissions.
+
+ 
+## Live authorized GitHub Actions monitoring candidate (2026-10-21)
+
+The user physically confirmed GitHub App Device Flow approval and native
+KWallet persistence: Settings changes to `Authorized` after manually
+checking. The main card's three unchanged indicators and balloon still
+said `Not connected` because the existing read-only collector had
+never been attached to authenticated transport; `get_snapshot` always
+returned `connected: false`, runners/jobs null.
+
+**Dev-only code (physical validation pending):**
+- `2f4a2fb` replaces the manual Check connection status button with
+  a temporary 1.5-second **native-memory-only** phase reconciliation
+  during Device Flow, stopped at Connected/Denied/Failed/Cancelled. No
+  GitHub request, keyring unlock or polling leak per UI tick.
+- `73aae10` adds a strict allowlist of read-only GitHub REST endpoints,
+  called natively using the OS-held user token. Responses are projected
+  to required installation, repository, run, job and runner fields;
+  no token crosses the WebView.
+- `7ee834c` adds sanitized shared in-memory monitor state and
+  persisted nonsecret preferred GitHub account. Both the main status
+  strip and separate hover balloon see the same snapshot. A failed
+  collection must never be translated into zero running/queued jobs.
+- `a6f4cb6` wires the existing pure
+  `apps/desktop/ui/runner-collector.mjs` and account/repository
+  discovery to native reads. `c470dc2` provides an account selector
+  inside Settings and distinguishes GitHub authorization from the
+  availability of monitoring statistics inside the balloon.
+- `0a77148` runs official `cargo fmt` on native source once, after
+  which the temporary helper workflow was removed in `95de94a`.
+- `95de94a` adds deterministic JS tests for singleton and multiple
+  installations, incomplete repository inventory, and no fabricated
+  zero-count from partial coverage.
+- `aeea497` varies refresh cadence with the accessible repository
+  count: two minutes for 1-30, three minutes for 31-45, up to seven
+  minutes for 100; additionally updates on real auth/scope change and
+  when the card opens after the cadence has elapsed. No request on
+  every hover or local Git fetch.
+
+**Correct semantics:** Github-hosted Actions jobs and self-hosted
+runner registrations have distinct data provenance. When org
+self-hosted runner inventory is inaccessible (GitHub requires org
+admin plus App organization Self-hosted runners read), `Runners`
+remains **—**, while authorized repository job Running/Queued can
+still be shown if their job enumeration is complete. No claim that
+GitHub-hosted ephemeral runners appear in the org runners API.
+Billing/usage limits remain unavailable without opted-in permissions.
+An incomplete repository list or job pagination also means unknown,
+not zero. API calls are bounded and rate-conscious.
+
+**Remaining acceptance:** verify GitHub App installation discovery,
+exact account and repository scope, real private Actions runs/jobs,
+runner inventory permission path, KWallet token refresh, stale/error
+state, card/balloon auto updates and long-lived polling behavior
+on Alcotester KDE Wayland. No `main` merge or public release before
+this. Issue #4 remains open.

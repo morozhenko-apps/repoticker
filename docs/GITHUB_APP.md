@@ -515,3 +515,24 @@ Docs: https://docs.github.com/en/rest/billing/usage
 https://docs.github.com/en/rest/orgs/orgs
 https://docs.github.com/en/billing/concepts/product-billing/github-actions
 https://github.blog/changelog/2025-09-26-product-specific-billing-apis-are-closing-down/
+
+## Permission confirmation and live org-plan support (2026-10-21)
+
+The publisher confirmed that all requested read-only permissions were **already set**
+in the GitHub App, including Organization Administration:read, Account Plan:read,
+and Organization plan:read. Do not ask the publisher to repeat the App
+registration changes or assert that the settings are missing.
+
+Registration permissions do not by themselves prove effective authorization
+for a particular installation/user session. Native runtime verification is
+still required (without exposing tokens): read sanitized `GET /orgs/{org}`
+`plan.name`, organization Actions billing usage summary, `GET /user`
+personal identity and personal Actions billing usage summary. A 403 must
+remain an unavailable result for the affected endpoint only, and should
+not reset successfully read fields from the other endpoint.
+
+The current feature-branch implementation recognizes a direct organization
+Free/Team plan as published included minutes. Enterprise/unknown organization
+allowance and **remaining free minutes** stay unknown rather than
+being guessed from gross billing SKU consumption. See
+[SPLIT_HOVER_BILLING.md](SPLIT_HOVER_BILLING.md).

@@ -101,7 +101,7 @@ test("native-selected tooltip switches reliably and auto-selected organization p
     // The typed shown event was lost. Direct native WebView notification works.
     nativeKind = "runners";
     window.__repotickerSetHoverKind("runners");
-    assert.equal(title.textContent, "");
+    assert.equal(title.textContent, "Runners · 4");
     assert.match(allText(root), /Offline/);
     assert.doesNotMatch(allText(root), /GitHub-hosted/);
 

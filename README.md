@@ -44,6 +44,8 @@ On KDE, left-click the SNI tray icon to toggle the card; right-click for Open, S
 
 ## Documentation
 
+- [Approved v0.1.0–v1.0.0 roadmap](docs/VERSION_ROADMAP_TO_1_0.md), including mandatory Mode B testing/coverage and the v0.9 release-candidate gate; this is a plan, not a published v1.0 binary.
+
 - [Product contract](docs/PRODUCT.md) and [architecture](docs/ARCHITECTURE.md)
 - [Current Git behavior](docs/GIT_PROVIDER.md), [roadmap](docs/ROADMAP.md) and [test strategy](docs/TEST_STRATEGY.md)
 - [CI](docs/CI.md), [releases/APT signing](docs/RELEASE.md), [security](docs/SECURITY.md) and [planned webhook relay](docs/RELAY.md)

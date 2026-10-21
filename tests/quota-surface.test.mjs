@@ -58,7 +58,7 @@ test("usage overlay follows the same physical monitor as the main Layer Shell ca
 });
 
 test("three separate hover targets share one pointer-pass-through WebView", () => {
-  assert.match(ui, /for \\(const \\[kind, anchor\\] of Object.entries\\(hoverTargets\\)\\)/);
+  assert.match(ui, /for \(const \[kind, anchor\] of Object.entries\(hoverTargets\)\)/);
   assert.match(ui, /anchor.addEventListener\\("mouseenter"/);
   assert.match(ui, /anchor.addEventListener\\("mouseleave"/);
   assert.match(ui, /setQuotaOpen\\(kind\\)/);

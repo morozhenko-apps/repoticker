@@ -1,7 +1,7 @@
 import { collectRunnerState } from "./runner-collector.mjs";
 
 // Existing job classification is reused; bearer tokens remain in native Rust.
-// A 15-minute bounded refresh avoids excessive REST usage across many repos.
+// Adaptive 2-7 minute refresh avoids excessive REST usage across many repos.
 export const REFRESH_MS = 60_000;
 export function monitorRefreshDelay(repositoryCount) {
   // Each repo requires two run-list queries; a larger portfolio must

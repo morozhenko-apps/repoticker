@@ -201,7 +201,7 @@ test("read-only monitor flow shares native state and allows installation selecti
   assert.match(monitor, /collectRunnerState/);
   assert.match(monitor, /"github_api_get"/);
   assert.match(monitor, /"github_monitor_publish"/);
-  assert.match(monitor, /15 \* 60_000/);
+  assert.match(monitor, /monitorRefreshDelay/);
   assert.match(settings, /"github_set_monitor_org"/);
   assert.match(html, /id="github-monitor-scope"/);
   assert.match(quota, /snapshot\.monitor_message/);

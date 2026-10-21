@@ -1,5 +1,29 @@
 # Roadmap and delivery evidence
 
+## Latest state — 2026-10-21: v0.2.0 release candidate preparation
+
+The owner physically accepted the `dev` KDE runner/tasks/billing hover experience,
+including separate content per hover target, `Runners · Total` heading,
+GitHub Device Flow Settings OK/Cancel, monitor account selection and immediate
+card refresh on confirmation. The latest verified preflight for this source
+family is [#195](https://github.com/morozhenko-apps/repoticker/actions/runs/39669960891)
+(4/4 success). Only `dev` and `main` exist; `main` still contains
+the published v0.1.0 baseline.
+
+The **next release candidate is v0.2.0** because GitHub integration is new
+functionality relative to published v0.1.0. Release staging requirements and
+the outstanding APT-upgrade/security/Windows gates are in
+[RELEASE_0_2_0.md](RELEASE_0_2_0.md).
+
+P2 GitHub App Device Flow, OS keyring, REST job/runner data, hover metrics
+and billing are **implemented in dev**; original "not implemented" roadmap
+entries below are historical plans and are superseded by this latest-state
+section. Negative end-to-end auth expiry, live 401/403/429 handling, package
+upgrade, and real Windows runtime are *not* yet accepted. Keep issue #4
+open for these remaining acceptance conditions. Do not mark `main`, signed
+APT or published installers updated until the release gate completes.
+
+
 ## Verified current status (2026-10-20)
 
 The user physically accepted the current `dev` version on Alcotester:

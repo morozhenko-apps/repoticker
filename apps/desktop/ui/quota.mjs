@@ -71,14 +71,39 @@ function paint(details) {
   }
   void invoke("resize_usage_popup", { height: targetHeight }).catch(() => {});
 }
+// The hover balloon is its own Tauri WebView. Its event permission is
+// deliberately scoped to usage-events.json rather than inherited from main.
+let refreshId = 0;
+function statusUnavailable(message) {
+  paint({ connected: false, status: "Status unavailable", message, sections: [] });
+}
 async function refresh() {
+  const id = ++refreshId;
   try {
     const snapshot = await invoke("get_snapshot");
+    if (id !== refreshId) return; // Drop an older Git scan response.
     paint(buildQuotaDetails(snapshot.runner_state, snapshot.connected, snapshot.monitor_message));
   } catch {
-    paint(buildQuotaDetails(null));
+    if (id === refreshId) {
+      statusUnavailable("Cannot read GitHub Actions status. Reopen the balloon to retry.");
+    }
   }
 }
-window.__TAURI__?.event?.listen?.("repoticker-usage-shown", refresh);
-window.__TAURI__?.event?.listen?.("repoticker-monitor-updated", refresh);
-refresh();
+function subscribe(eventName) {
+  const listen = window.__TAURI__?.event?.listen;
+  if (typeof listen !== "function") {
+    statusUnavailable("GitHub Actions updates are unavailable in this window.");
+    return;
+  }
+  void Promise.resolve()
+    .then(() => listen(eventName, refresh))
+    .catch(() => {
+      // Failed event permissions must never be displayed as a missing
+      // GitHub authorization.
+      refreshId++;
+      statusUnavailable("GitHub Actions updates cannot be subscribed to.");
+    });
+}
+subscribe("repoticker-usage-shown");
+subscribe("repoticker-monitor-updated");
+void refresh();

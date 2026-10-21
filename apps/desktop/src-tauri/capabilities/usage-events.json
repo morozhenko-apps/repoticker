@@ -1,0 +1,10 @@
+{
+  "identifier": "usage-events",
+  "description": "Allow the read-only GitHub Actions balloon to receive native status updates; no event emission or other plugin permissions.",
+  "windows": [
+    "usage"
+  ],
+  "permissions": [
+    "core:event:allow-listen"
+  ]
+}

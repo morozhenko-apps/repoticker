@@ -46,7 +46,7 @@ Tree counts above are path-family counts, **not test case counts**. Do not synth
 - [x] Read current owner-provided Mode B agent prompt and approved version roadmap.
 - [x] Enumerate complete tree, execution/test framework and principal source families.
 - [x] Identify and document risk-bearing invariants.
-- [ ] **Stage 3:** enumerate concrete functions/public methods, important internal behavioral rules and current tests for all source families; document full `docs/testing/MODE_B_INVENTORY.md` with risk, planned test level/count and N-category relevance.
+- [x] **Stage 3:** inventory all production paths and current test declarations. Evidence: [`MODE_B_INVENTORY.md`](MODE_B_INVENTORY.md), commit `ccb9e30`; prospective case counts are not test passes or coverage measurements.
 - [ ] **Stage 4:** `docs/testing/MODE_B_BRANCH_MAP.md`, mapping each executable branch to existing or planned cases.
 - [ ] **Stage 5:** `docs/testing/MODE_B_MATRIX.md`, Positive + N1–N12 with no blank cells; `N/A` must explain why.
 - [ ] **Stages 6–8:** interaction/state combination map, justified per-artifact test count estimate, function/branch coverage map.

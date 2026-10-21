@@ -20,7 +20,7 @@ test("compact has no duplicate header, refresh, or permanent results", () => {
 });
 
 test("four main operations remain at bottom; only two metric hovers and billing icon", () => {
-  assert.match(css, /\\.actions \\{[^}]*grid-template-columns: repeat\\(4/s);
+  assert.match(css, /\.actions \{[^}]*grid-template-columns: repeat\(4/s);
   assert.ok(html.indexOf('id="repo-drawer"') < html.indexOf('class="status-strip"'));
   assert.ok(html.indexOf('class="status-strip"') < html.indexOf('class="actions"'));
   const strip = html.slice(html.indexOf('class="status-strip"'), html.indexOf('class="actions"'));

@@ -16,6 +16,7 @@ const complete = {
   counts: {
     busy: 1, idle: 1, offline: 1,
     running: 2, queued: 2,
+    runningSelfHosted: 1, queuedSelfHosted: 1,
     runningGitHubHosted: 1, queuedGitHubHosted: 1,
     runningUnclassified: 0, queuedUnclassified: 0
   },
@@ -66,6 +67,7 @@ test("task hover maps active jobs to assigned runner and queue to compatible can
   assert.match(view.message, /not assigned/);
   assert.match(view.message, /multiple runners/);
   assert.deepEqual(view.sections[1].rows, [
+    ["Self-hosted jobs", "1 / 1"],
     ["GitHub-hosted jobs", "1 / 1"], ["Unclassified jobs", "0 / 0"]
   ]);
   const partial = buildHoverDetails({ ...complete,
@@ -77,8 +79,8 @@ test("task hover maps active jobs to assigned runner and queue to compatible can
 test("large inventories keep tooltip bounded and declare omitted runners", () => {
   const many = Array.from({ length: 30 }, (_, i) => runner(i + 1, "r-" + i));
   const details = buildHoverDetails({ ...complete, runners: many }, "tasks", true);
-  assert.equal(details.sections[0].rows.length, 7);
-  assert.deepEqual(details.sections[0].rows.at(-1), ["Other runners", "+24 not listed"]);
+  assert.equal(details.sections[0].rows.length, 5);
+  assert.deepEqual(details.sections[0].rows.at(-1), ["Other runners", "+26 not listed"]);
   assert.equal(isHoverKind("unknown"), false);
   for (const kind of ["runners", "tasks", "billing"]) assert.equal(isHoverKind(kind), true);
 });

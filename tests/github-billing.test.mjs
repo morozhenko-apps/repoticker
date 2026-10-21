@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  billingMonth, knownPersonalAllowance, reportedActionsMinutes,
+  billingMonth, knownPersonalAllowance, knownOrganizationAllowance, reportedActionsMinutes,
   collectBillingUsage, createBillingCache, BILLING_MIN_INTERVAL_MS
 } from "../apps/desktop/ui/github-billing.mjs";
 
@@ -14,6 +14,7 @@ test("billing requests use fixed owner paths and month, never legacy Actions bil
   const get = async path => {
     paths.push(path);
     if (path === "/user") return { login: "rudev", plan: { name: "pro" } };
+    if (path === "/orgs/morozhenko-apps") return { login: "morozhenko-apps", plan: { name: "team" } };
     if (path.includes("/organizations/")) return summary(123);
     if (path.includes("/users/")) return summary(40, 5);
     throw Error("Unexpected path");
@@ -21,11 +22,13 @@ test("billing requests use fixed owner paths and month, never legacy Actions bil
   const result = await collectBillingUsage({ get, organization: "morozhenko-apps", now: date });
   assert.deepEqual(paths.sort(), [
     "/organizations/morozhenko-apps/settings/billing/usage/summary?year=2026&month=10",
+    "/orgs/morozhenko-apps",
     "/user",
     "/users/rudev/settings/billing/usage/summary?year=2026&month=10",
   ].sort());
   assert.equal(result.organization.reported, 123);
-  assert.equal(result.organization.included, null);
+  assert.equal(result.organization.included, 3000);
+  assert.equal(result.organization.plan, "team");
   assert.equal(result.personal.plan, "pro");
   assert.equal(result.personal.included, 3000);
   assert.equal(result.personal.reported, 45);
@@ -35,7 +38,11 @@ test("billing requests use fixed owner paths and month, never legacy Actions bil
   assert.equal(BILLING_MIN_INTERVAL_MS, 600000);
 });
 
-test("only recognized personal plans provide documented included allowances", () => {
+test("only recognized direct-owner plans provide documented included allowances", () => {
+  assert.equal(knownOrganizationAllowance("free"), 2000);
+  assert.equal(knownOrganizationAllowance("Team"), 3000);
+  assert.equal(knownOrganizationAllowance("enterprise"), null);
+  assert.equal(knownOrganizationAllowance(null), null);
   assert.equal(knownPersonalAllowance("free"), 2000);
   assert.equal(knownPersonalAllowance("Pro"), 3000);
   assert.equal(knownPersonalAllowance("team"), null);
@@ -112,6 +119,41 @@ test("unsupported owner, missing identity and unknown plans fail closed", async 
   assert.equal(denied.personal.reported, null);
 });
 
+test("recognized organization plan remains visible if Actions billing is denied", async () => {
+  const result = await collectBillingUsage({
+    get: async path => {
+      if (path === "/orgs/team") return { login: "team", plan: { name: "free" } };
+      if (path.startsWith("/organizations/")) throw Error("403 missing admin approval");
+      if (path === "/user") return { login: "rudev", plan: { name: "free" } };
+      if (path.startsWith("/users/")) return summary(5);
+      throw Error("unexpected path");
+    },
+    organization: "team", now: date,
+  });
+  assert.equal(result.organization.plan, "free");
+  assert.equal(result.organization.included, 2000);
+  assert.equal(result.organization.reported, null);
+  assert.equal(result.organization.remaining, null);
+  assert.equal(result.personal.reported, 5);
+});
+
+test("organization plan denial does not erase available usage and never infers plan", async () => {
+  const result = await collectBillingUsage({
+    get: async path => {
+      if (path === "/orgs/team") throw Error("Plan permission missing");
+      if (path.startsWith("/organizations/")) return summary(40);
+      if (path === "/user") return { login: "rudev", plan: { name: "free" } };
+      if (path.startsWith("/users/")) return summary();
+      throw Error("unexpected path");
+    },
+    organization: "team", now: date,
+  });
+  assert.equal(result.organization.reported, 40);
+  assert.equal(result.organization.included, null);
+  assert.equal(result.organization.plan, null);
+  assert.equal(result.organization.remaining, null);
+});
+
 test("billing cache coalesces concurrent reads, throttles hover and invalidates on scope/disconnect", async () => {
   let clock = Date.parse("2026-10-21T17:00:00Z");
   let requests = 0;
@@ -122,20 +164,20 @@ test("billing cache coalesces concurrent reads, throttles hover and invalidates 
   const cache = createBillingCache({ get, now: () => clock });
   const [a, b] = await Promise.all([cache.load("team", true), cache.load("team", true)]);
   assert.deepEqual(a, b);
-  assert.equal(requests, 3);
+  assert.equal(requests, 4);
   await cache.load("team", true);
-  assert.equal(requests, 3);
+  assert.equal(requests, 4);
   clock += BILLING_MIN_INTERVAL_MS + 1;
   await cache.load("team", true);
-  assert.equal(requests, 6);
+  assert.equal(requests, 8);
   await cache.load("another-team", true);
-  assert.equal(requests, 9);
+  assert.equal(requests, 16);
   assert.equal(await cache.load("team", false), null);
   await cache.load("team", true);
   assert.equal(requests, 12);
   clock = Date.parse("2026-11-01T00:01:00Z");
   await cache.load("team", true);
-  assert.equal(requests, 15);
+  assert.equal(requests, 20);
 });
 
 test("source contracts keep billing route exact, native-projected and token-free", async () => {

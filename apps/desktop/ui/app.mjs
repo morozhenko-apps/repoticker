@@ -230,10 +230,6 @@ function render(next) {
   byId("runners-offline").textContent = status.offline;
   byId("tasks-running").textContent = status.running;
   byId("tasks-queued").textContent = status.queued;
-  hoverTargets.runners.title = "Self-hosted total / online / offline";
-  hoverTargets.tasks.title = "Jobs running / queued (all monitored repositories)";
-  hoverTargets.billing.title = "GitHub Actions free allowances: organization and personal";
-
   const list = byId("repo-list");
   list.replaceChildren();
   if (!next.repositories.length) {

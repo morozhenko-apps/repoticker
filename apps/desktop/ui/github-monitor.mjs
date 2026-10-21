@@ -2,7 +2,13 @@ import { collectRunnerState } from "./runner-collector.mjs";
 
 // Existing job classification is reused; bearer tokens remain in native Rust.
 // A 15-minute bounded refresh avoids excessive REST usage across many repos.
-export const REFRESH_MS = 15 * 60_000;
+export const REFRESH_MS = 60_000;
+export function monitorRefreshDelay(repositoryCount) {
+  // Each repo requires two run-list queries; a larger portfolio must
+  // refresh less often to respect GitHub App user-token API limits.
+  const count = Number.isSafeInteger(repositoryCount) ? repositoryCount : 100;
+  return 60_000 * Math.max(2, Math.ceil(Math.max(1, count) / 15));
+}
 const INSTALL_PAGE_LIMIT = 10;
 const ACCOUNT_NAME = /^[a-zA-Z0-9_.-]+$/;
 
@@ -69,7 +75,7 @@ export async function collectForAccount({ get, account, selected, collect = coll
     state.counts.queued = null;
     state.errors.push({ scope: "repositories", reason: "incomplete" });
   }
-  return { state, reason: state.errors.length
+  return { state, repositoryCount: repos.items.length, reason: state.errors.length
     ? "Some GitHub data is partial or permission-restricted." : null };
 }
 
@@ -77,6 +83,7 @@ export function startGithubMonitoring({ invoke, event, onError = () => {} }) {
   let busy = false;
   let rerun = false;
   let lastAttempt = 0;
+  let minIntervalMs = monitorRefreshDelay(100);
   const get = path => invoke("github_api_get", { path });
   const publish = (connected, runnerState = null, message = null) =>
     invoke("github_monitor_publish", { connected, runnerState, message });
@@ -85,7 +92,7 @@ export function startGithubMonitoring({ invoke, event, onError = () => {} }) {
       if (force) rerun = true;
       return;
     }
-    if (!force && Date.now() - lastAttempt < REFRESH_MS) return;
+    if (!force && Date.now() - lastAttempt < minIntervalMs) return;
     busy = true;
     lastAttempt = Date.now();
     try {
@@ -98,6 +105,7 @@ export function startGithubMonitoring({ invoke, event, onError = () => {} }) {
       const result = await collectForAccount({
         get, selected: snapshot.github_monitor_org,
       });
+      minIntervalMs = monitorRefreshDelay(result.repositoryCount ?? 100);
       await publish(true, result.state, result.reason);
     } catch {
       await publish(true, null,
@@ -119,6 +127,7 @@ export function startGithubMonitoring({ invoke, event, onError = () => {} }) {
   // Refresh only while the application is running, never an API request
   // per hover, mouse movement or local Git scan.
   setInterval(() => { void refresh(); }, REFRESH_MS);
+  event?.listen?.("repoticker-card-shown", () => { void refresh(); });
   void refresh(true);
   return refresh;
 }

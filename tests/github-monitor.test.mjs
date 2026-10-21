@@ -1,7 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  listAvailableInstallations, listInstalledRepositories, collectForAccount, REFRESH_MS
+  listAvailableInstallations, listInstalledRepositories, collectForAccount,
+  REFRESH_MS, monitorRefreshDelay
 } from "../apps/desktop/ui/github-monitor.mjs";
 
 const installation = (id, name) => ({ id, account: { login: name, type: "Organization" } });
@@ -27,7 +28,10 @@ test("single available GitHub App installation is selected automatically", async
   });
   assert.equal(result.state.counts.running, 2);
   assert.equal(result.reason, null);
-  assert.equal(REFRESH_MS, 900_000);
+  assert.equal(REFRESH_MS, 60_000);
+  assert.equal(monitorRefreshDelay(10), 120_000);
+  assert.equal(monitorRefreshDelay(40), 180_000);
+  assert.equal(monitorRefreshDelay(100), 420_000);
   assert.ok(paths.some(path => path.includes("/repositories?")));
 });
 

@@ -17,6 +17,7 @@ function line(parent, label, value) {
 }
 function paint(details) {
   const root = byId("quota-content");
+  root.className = "quota-content kind-" + activeKind;
   const title = byId("quota-title");
   if (title) title.textContent = details.status;
   root.replaceChildren();

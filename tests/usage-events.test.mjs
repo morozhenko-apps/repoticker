@@ -95,15 +95,15 @@ test("native-selected tooltip switches reliably and auto-selected organization p
     nativeKind = "tasks";
     await listeners.get("repoticker-monitor-updated")();
     assert.match(title.textContent, /Tasks/);
-    assert.match(allText(root), /GitHub-hosted jobs/);
+    assert.match(allText(root), /GitHub-hosted/);
     const scansBeforeHover = calls.filter(([x]) => x === "get_snapshot").length;
 
     // The typed shown event was lost. Direct native WebView notification works.
     nativeKind = "runners";
     window.__repotickerSetHoverKind("runners");
-    assert.match(title.textContent, /Self-hosted runners/);
+    assert.equal(title.textContent, "");
     assert.match(allText(root), /Offline/);
-    assert.doesNotMatch(allText(root), /GitHub-hosted jobs/);
+    assert.doesNotMatch(allText(root), /GitHub-hosted/);
 
     nativeKind = "billing";
     window.__repotickerSetHoverKind("billing");

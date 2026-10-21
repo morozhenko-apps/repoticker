@@ -81,14 +81,16 @@ test("usage balloon refreshes after native monitor event, without Git re-scan", 
         checkedAt: "2026-10-21T07:00:00Z", runners: [],
       }
     };
+    await listeners.get("repoticker-usage-shown")({ payload: "tasks" });
+    assert.match(allText(root), /GitHub-hosted jobs/);
+    assert.match(allText(root), /Runner · Running \/ eligible queue/);
     await listeners.get("repoticker-monitor-updated")();
-    assert.match(allText(root), /Job counts collected/);
-    assert.match(allText(root), /Hosted usage \(unknown\)/);
-    assert.doesNotMatch(allText(root), /Available/);
-    assert.match(allText(root), /Running · 2/);
-    assert.match(allText(root), /Queued · 1/);
+    assert.match(allText(root), /GitHub-hosted jobs/);
     assert.doesNotMatch(allText(root), /Connect GitHub/);
-    await listeners.get("repoticker-usage-shown")();
+    await listeners.get("repoticker-usage-shown")({ payload: "billing" });
+    assert.match(allText(root), /Organization/);
+    assert.match(allText(root), /Personal account/);
+    assert.doesNotMatch(allText(root), /GitHub-hosted jobs/);
     assert.ok(calls.filter(command => command === "get_snapshot").length >= 3);
   } finally {
     if (prior.window === undefined) delete globalThis.window;

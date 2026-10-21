@@ -1,6 +1,6 @@
 # Roadmap and delivery evidence
 
-> **Approved release map:** [Versioned roadmap v0.1.0–v1.0.0](VERSION_ROADMAP_TO_1_0.md) maps existing P0–P4 priorities to releases and makes **Mode B testing mandatory before v1.0.0**. The sections below preserve original decisions and chronological investigation notes; they do not override the published version map.
+> **Approved release map:** [Versioned roadmap v0.1.0–v1.0.0](VERSION_ROADMAP_TO_1_0.md) maps existing P0–P4 priorities to releases and makes the **full Mode B testing audit mandatory at v0.9.0 RC before v1.0.0**. Its preliminary inventory is parked; development from v0.2 through v0.8 proceeds with normal focused regression tests. The sections below preserve original decisions and chronological investigation notes; they do not override the published version map.
 
 ## Latest state — 2026-10-21: v0.2.0 release candidate preparation
 

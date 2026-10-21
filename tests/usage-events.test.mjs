@@ -64,7 +64,7 @@ test("usage balloon refreshes after native monitor event, without Git re-scan", 
     await import("../apps/desktop/ui/quota.mjs?usage-event-smoke");
     // Resolve the initial native getter and asynchronous event subscriptions.
     await new Promise(resolve => setImmediate(resolve));
-    assert.match(allText(root), /Not connected/);
+    assert.match(allText(root), /Connect GitHub/);
     assert.ok(listeners.has("repoticker-usage-shown"));
     assert.ok(listeners.has("repoticker-monitor-updated"));
 

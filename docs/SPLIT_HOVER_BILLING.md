@@ -8,7 +8,7 @@ The compact card remains 390x122 with its four Git operations. Replace three pla
 
 - **Runners Total / Online / Offline**, with total gray, online green, offline red. The count source is the complete organization self-hosted runner inventory only; GitHub-hosted ephemeral runners are never counted. Unknown inventory yields `—`, not 0.
 - **Tasks Running / Queued**, with running green and queued yellow; the standalone Queued field is removed. These are GitHub Actions *job* counts from the selected monitored repositories, including both GitHub-hosted and self-hosted.
-- **Runners hover**: Total, Online, Busy, Idle, Offline.
+- **Runners hover**: heading `Runners · N` with Total as `N`; rows only Online, Busy, Idle, Offline. Unknown total is displayed as `—`.
 - **Tasks hover**: active jobs by named self-hosted runner (GitHub supplies `runner_id` after assignment), compatible queued jobs *by labels* shown as candidates, not assigned queue. Include GitHub-hosted/unclassified totals separately; never claim a queued job belongs to a specific runner before the scheduler assigns it. Bounded visible rows, explicit overflow note if needed, and unknown values on partial coverage.
 - **ⓘ hover**: only organization and personal free-allowance/usage status. Keep them distinct. Do not report plan minutes or available quota as real until authorized billing endpoints plus plan allowance are validated. Show clear instructions to obtain GitHub App permissions rather than silently escalating them.
 
@@ -109,9 +109,9 @@ The approved compact tooltip presentation is:
   **running job count only**, followed by one GitHub-hosted running-job row.
   The only footer is the last checked timestamp. No false attribution of queued
   jobs to a runner, and unknown coverage remains unknown.
-- **Runners** removes the "Self-hosted runners" heading and explanatory
-  paragraph. Keep total/online/busy/idle/offline statistics and the checked
-  timestamp.
+- **Runners** uses the compact `Runners · Total` heading (rather than a
+  separate Total row); keep Online, Busy, Idle, Offline and the checked
+  timestamp, without any descriptive paragraph.
 - Both compact hovers must fit without scroll and be isolated from the Billing
   display. The main card geometry and three hover anchors do not change.
 

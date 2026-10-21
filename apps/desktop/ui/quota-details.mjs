@@ -25,9 +25,9 @@ export function isHoverKind(kind) {
 function runnerDetails(state) {
   const { total, online, offline } = compactStatus(state);
   const counts = state.counts;
-  return view("", [{
+  return view("Runners · " + total, [{
     title: "",
-    rows: [["Total", total], ["Online", online],
+    rows: [["Online", online],
       ["Busy", shown(state.coverage.runners ? counts.busy : null)],
       ["Idle", shown(state.coverage.runners ? counts.idle : null)],
       ["Offline", offline]],

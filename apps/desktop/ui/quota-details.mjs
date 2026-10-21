@@ -86,7 +86,7 @@ function billingDetails(billing = null) {
       ? account?.reason || "Usage not available" : null;
     return { title, rows, message };
   });
-  const period = /^\\d{4}-(?:0[1-9]|1[0-2])$/.test(billing?.month || "")
+  const period = /^\d{4}-(?:0[1-9]|1[0-2])$/.test(billing?.month || "")
     ? billing.month : "—";
   return view("Actions · " + period, sections);
 }

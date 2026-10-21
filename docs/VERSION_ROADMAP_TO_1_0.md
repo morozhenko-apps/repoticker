@@ -188,6 +188,12 @@ A 1.0.0 tag is permitted only after:
 - `dev` is promoted to `main` only after its acceptance; the released
   tag matches the **exact main SHA**. No third permanent branch.
 
+## Tracking
+
+- [Mode B before v1.0 acceptance issue #10](https://github.com/morozhenko-apps/repoticker/issues/10)
+- [v0.2 release readiness issue #9](https://github.com/morozhenko-apps/repoticker/issues/9)
+- [GitHub integration reliability issue #4](https://github.com/morozhenko-apps/repoticker/issues/4)
+
 ## Checkpoint as of 2026-10-21
 
 - [x] Functional P0–P4 mapped to proposed v0.1–v1.0 milestone series.

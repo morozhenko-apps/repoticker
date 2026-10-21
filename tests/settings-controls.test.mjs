@@ -83,8 +83,10 @@ test("Device Flow buttons register and invoke native commands after JS startup",
   assert.equal(elements.get("github-device-flow").hidden, false);
 
   await handlers.get("github-copy-code:click")();
-  assert.deepEqual(calls.find(c => c.command === "github_copy_user_code")?.args,
-    { code: "ABCD-1234" });
+  // The fixture executes Settings in another VM realm; compare the
+  // transmitted scalar instead of object prototypes across realms.
+  assert.equal(calls.find(c => c.command === "github_copy_user_code")?.args?.code,
+    "ABCD-1234");
 
   await handlers.get("github-open-device:click")();
   assert.ok(calls.some(c => c.command === "github_open_device_page"));

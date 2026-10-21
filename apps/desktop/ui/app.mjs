@@ -212,6 +212,12 @@ function render(next) {
     ? "Running —" : "Running " + running;
   byId("ci-queued").textContent = queued == null
     ? "Queued —" : "Queued " + queued;
+  byId("runner-status").title =
+    "Online self-hosted runners (busy + idle). Excludes GitHub-hosted machines.";
+  byId("ci-running").title =
+    "Active jobs across monitored repositories, including GitHub-hosted jobs.";
+  byId("ci-queued").title =
+    "Queued jobs across monitored repositories; not a billing quota.";
 
   const list = byId("repo-list");
   list.replaceChildren();

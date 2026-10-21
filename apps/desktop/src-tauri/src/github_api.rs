@@ -44,6 +44,9 @@ fn valid_path(requested: &str) -> bool {
     if segments.as_slice() == ["user"] {
         return url.query().is_none();
     }
+    if matches!(segments.as_slice(), ["orgs", org] if valid_name(org)) {
+        return url.query().is_none();
+    }
     let billing = matches!(
         segments.as_slice(),
         ["organizations", org, "settings", "billing", "usage", "summary"] if valid_name(org)
@@ -138,6 +141,20 @@ fn project_billing(value: Value) -> Result<Value, String> {
 /// Keep fields needed for the already-tested pure JS collector. This is a
 /// deliberate API response projection, not arbitrary GitHub account data.
 fn project(path: &str, value: Value) -> Result<Value, String> {
+    if let Some(org) = path.strip_prefix("/orgs/") {
+        if valid_name(org) && !org.contains('/') {
+            let login = value
+                .get("login")
+                .and_then(Value::as_str)
+                .filter(|name| name.eq_ignore_ascii_case(org))
+                .ok_or_else(|| "Invalid GitHub organization identity.".to_owned())?;
+            let plan = value.pointer("/plan/name").and_then(Value::as_str);
+            return Ok(json!({
+                "login": login,
+                "plan": { "name": plan.filter(|name| name.len() <= 40) }
+            }));
+        }
+    }
     if path == "/user" {
         let login = value
             .get("login")
@@ -261,6 +278,7 @@ mod tests {
         for path in [
             "/user/installations?per_page=100&page=1",
             "/user",
+            "/orgs/team-apps",
             "/organizations/team-apps/settings/billing/usage/summary?year=2026&month=10",
             "/users/monalisa/settings/billing/usage/summary?year=2026&month=10",
             "/user/installations/123/repositories?per_page=100&page=2",
@@ -273,6 +291,10 @@ mod tests {
         for path in [
             "https://evil.example",
             "/user?other=true",
+            "/orgs/team-apps?token=secret",
+            "/orgs/../settings/billing",
+            "/orgs/team-apps/private",
+
             "/organizations/team/settings/billing/usage/summary?month=10",
             "/users/monalisa/settings/billing/usage/summary?year=2026&month=13",
             "/users/monalisa/settings/billing/usage/summary?year=2026&month=10&token=abc",
@@ -320,6 +342,22 @@ mod tests {
         assert_eq!(identity["login"], "monalisa");
         assert_eq!(identity["plan"]["name"], "free");
         assert!(!identity.to_string().contains("private@example.com"));
+        let organization = project(
+            "/orgs/team-apps",
+            json!({
+                "login": "team-apps",
+                "plan": { "name": "team", "paymentDetails": "secret" },
+                "billing_email": "secret@example.com"
+            }),
+        )
+        .unwrap();
+        assert_eq!(organization["plan"]["name"], "team");
+        assert!(!organization.to_string().contains("secret"));
+        assert!(project(
+            "/orgs/team-apps",
+            json!({"login": "other-org", "plan": {"name": "free"}})
+        )
+        .is_err());
         let path = "/organizations/team/settings/billing/usage/summary?year=2026&month=10";
         let payload = json!({ "usageItems": [
             { "product": "Actions", "sku": "actions_linux", "unitType": "minutes",

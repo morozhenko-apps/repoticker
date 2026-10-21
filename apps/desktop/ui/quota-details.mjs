@@ -1,64 +1,101 @@
-const shown = n => Number.isSafeInteger(n) && n >= 0 ? String(n) : "—";
-const laneRows = (counts, prefix) => [
-  ["Self-hosted", shown(counts?.[prefix + "SelfHosted"])],
-  ["GitHub-hosted", shown(counts?.[prefix + "GitHubHosted"])],
-  ["Unclassified", shown(counts?.[prefix + "Unclassified"])],
-];
+import { shown, compactStatus } from "./status-metrics.mjs";
+import { runnerLabelCompatible } from "./runner-state.mjs";
 
-function runnerPreview(state) {
-  if (state.coverage?.runners !== true || !Array.isArray(state.runners)) return null;
-  const runners = state.runners;
-  const preview = runners.slice(0, 2).map(runner => {
-    const name = typeof runner.name === "string" ? runner.name.trim().slice(0, 32) : "Unknown";
-    const status = runner.status === "offline" ? "Offline" :
-      runner.busy === true ? "Busy" : runner.ready === true ? "Idle" : "Unknown";
-    return name + ": " + status;
-  });
-  if (runners.length > 2) preview.push("+" + (runners.length - 2) + " more");
-  return preview.length ? preview.join(" · ") : null;
+const safeName = value => typeof value === "string" && value.trim()
+  ? value.trim().slice(0, 38) : "Unnamed runner";
+const timestamp = value => typeof value === "string" && Number.isFinite(Date.parse(value))
+  ? new Date(value).toISOString().replace("T", " ").slice(0, 16) + " UTC"
+  : "Unknown";
+const view = (status, sections, message = "") => ({
+  connected: true, status, sections, message,
+});
+const notReady = (authorized, topic, reason) => ({
+  connected: false,
+  status: authorized ? topic + " unavailable" : "Not connected",
+  message: authorized
+    ? reason || "Monitoring data unavailable. — means unknown."
+    : "Connect GitHub in Settings to read this status.",
+  sections: [],
+});
+
+export const HOVER_KINDS = Object.freeze(["runners", "tasks", "billing"]);
+export function isHoverKind(kind) {
+  return HOVER_KINDS.includes(kind);
 }
 
-/** A pointer-pass-through hover balloon cannot scroll or activate links.
- * Keep the four critical data cards visible within the 320px window.
- * Actions job links stay in the native provider snapshot for a future
- * interactive surface; they are not falsely rendered as clickable here.
- */
-export function buildQuotaDetails(state, authorized = false, statusMessage = null) {
-  if (!state || !state.counts || !state.coverage) {
-    return authorized
-      ? { connected: false, status: "GitHub authorized",
-          message: statusMessage || "Fetching job and runner counts. — means unknown.",
-          sections: [] }
-      : { connected: false, status: "Not connected",
-          message: "Connect GitHub to view runners and jobs. Hosted billing quotas require separate permissions.",
-          sections: [] };
-  }
-
+function runnerDetails(state) {
+  const { total, online, offline } = compactStatus(state);
   const c = state.counts;
-  const online = Number.isSafeInteger(c.busy) && Number.isSafeInteger(c.idle)
-    ? String(c.busy + c.idle) : "—";
-  const sections = [
-    { title: "Online self-hosted · " + online, rows: [
-      ["Busy", shown(c.busy)], ["Idle", shown(c.idle)], ["Offline", shown(c.offline)]
-    ], message: runnerPreview(state) },
-    { title: "Running · " + shown(c.running), rows: laneRows(c, "running") },
-    { title: "Queued · " + shown(c.queued), rows: laneRows(c, "queued") },
-    { title: "Hosted usage (unknown)", rows: [
-      ["Minutes left", "—"], ["Concurrency", "—"]
-    ], message: "No billing access; may be exhausted." },
+  return view("Self-hosted runners", [{
+    title: "Organization runner inventory",
+    rows: [["Total", total], ["Online", online],
+      ["Busy", shown(state.coverage.runners ? c.busy : null)],
+      ["Idle", shown(state.coverage.runners ? c.idle : null)],
+      ["Offline", offline]],
+  }], "GitHub-hosted runners are not registered here.");
+}
+
+function tasksDetails(state) {
+  const c = state.counts;
+  const complete = state.coverage.jobs === true;
+  const inventory = state.coverage.runners === true;
+  const running = complete ? c.running : null;
+  const queued = complete ? c.queued : null;
+  const rows = [];
+  const runners = inventory && Array.isArray(state.runners) ? state.runners : [];
+  const active = complete && Array.isArray(state.runningJobs) ? state.runningJobs : [];
+  const pending = complete && Array.isArray(state.queuedJobs) ? state.queuedJobs : [];
+  for (const runner of runners.slice(0, 6)) {
+    const runningCount = complete
+      ? active.filter(job => job.runner_id === runner.id).length : null;
+    const candidateCount = complete
+      ? pending.filter(job => runnerLabelCompatible(job.labels, runner.labels)).length : null;
+    rows.push([safeName(runner.name), shown(runningCount) + " / " + shown(candidateCount)]);
+  }
+  if (runners.length > 6) rows.push(["Other runners", "+" + (runners.length - 6) + " not listed"]);
+  if (!inventory) rows.push(["Self-hosted runners", "—"]);
+  const split = [
+    ["GitHub-hosted jobs", shown(complete ? c.runningGitHubHosted : null) +
+      " / " + shown(complete ? c.queuedGitHubHosted : null)],
+    ["Unclassified jobs", shown(complete ? c.runningUnclassified : null) +
+      " / " + shown(complete ? c.queuedUnclassified : null)],
   ];
-  const partial = state.coverage.runners !== true || state.coverage.jobs !== true ||
-    state.coverage.runningLanes !== true || state.coverage.queuedLanes !== true;
-  const checked = typeof state.checkedAt === "string" &&
-    Number.isFinite(Date.parse(state.checkedAt))
-    ? new Date(state.checkedAt).toISOString().replace("T", " ").slice(0, 16) + " UTC"
-    : "Unknown";
-  const note = typeof statusMessage === "string" && statusMessage.trim()
-    ? " " + statusMessage.trim().slice(0, 100) : "";
-  return {
-    connected: true,
-    status: partial ? "Partial monitoring data" : "Job counts collected",
-    message: "Checked: " + checked + (partial ? ". Some data unknown." : "") + note,
-    sections,
-  };
+  return view("Tasks · Running " + shown(running) + " / Queued " + shown(queued), [
+    { title: "Runner · Running / eligible queue", rows },
+    { title: "Other jobs · Running / Queued", rows: split },
+  ], "Queued jobs are not assigned to a runner until GitHub schedules them. " +
+      "A job may be compatible with multiple runners.");
+}
+
+function billingDetails() {
+  // No authorized usage/plan transport exists. Do not fabricate a
+  // personal or organization allowance or infer it from Actions jobs.
+  return view("GitHub-hosted free allowances", [
+    { title: "Organization", rows: [
+      ["Included minutes", "—"], ["Used this cycle", "—"], ["Remaining", "—"],
+    ], message: "Requires organization Administration: read." },
+    { title: "Personal account", rows: [
+      ["Included minutes", "—"], ["Used this cycle", "—"], ["Remaining", "—"],
+    ], message: "Requires user Plan: read." },
+  ], "Grant permissions in GitHub App settings, then approve the installation " +
+     "and reauthorize. Billing data not yet connected.");
+}
+
+/** The pointer-pass-through popup cannot scroll, click links or pin.
+ * Only safe projected values and at most six runner rows are displayed.
+ */
+export function buildHoverDetails(state, kind = "billing", authorized = false, statusMessage = null) {
+  if (!isHoverKind(kind)) return notReady(authorized, "Status", "Unknown tooltip type.");
+  if (kind === "billing") return billingDetails();
+  if (!state || !state.counts || !state.coverage)
+    return notReady(authorized, kind === "runners" ? "Runners" : "Tasks", statusMessage);
+  const result = kind === "runners" ? runnerDetails(state) : tasksDetails(state);
+  result.message += " Checked: " + timestamp(state.checkedAt) + ".";
+  if (statusMessage) result.message += " " + String(statusMessage).slice(0, 80);
+  return result;
+}
+
+// Existing entrypoint remains for consumers testing billing-only presentation.
+export function buildQuotaDetails(state, authorized = false, statusMessage = null) {
+  return buildHoverDetails(state, "billing", authorized, statusMessage);
 }

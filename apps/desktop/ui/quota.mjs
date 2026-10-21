@@ -25,16 +25,6 @@ function paint(details) {
       const block = add(root, "section", "", "quota-section");
       add(block, "div", section.title, "quota-section-title");
       for (const [label, value] of section.rows || []) line(block, label, value);
-      for (const item of section.links || []) {
-        const link = add(block, "a", item.label, "quota-job-link");
-        link.href = item.url;
-        link.rel = "noopener noreferrer";
-        link.title = item.url;
-        link.addEventListener("click", async event => {
-          event.preventDefault();
-          await invoke("open_actions_job", { url: item.url });
-        });
-      }
       if (section.message) add(block, "span", section.message, "quota-message");
     }
     add(root, "span", details.message, "quota-message");

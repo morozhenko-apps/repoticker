@@ -1,6 +1,15 @@
 # Mode B — executable branch and test map (Stage 4)
 
-Status: **IN PROGRESS, source-verified subset only** (2026-10-21).
+> **Priority correction (2026-10-22):** The owner confirmed that the
+> comprehensive Mode B inventory, exhaustive branch mapping, Positive/N1–N12
+> matrix, mutation audit and final report belong to the **v0.9.0 RC** gate,
+> not the current v0.2.0 development stage. This file preserves preliminary
+> exploratory evidence only. **It does not block implementing features,
+> fixing defects or writing their required regression tests for v0.2–v0.8.**
+> Resume and rescan this audit at v0.9.0 against the then-current source;
+> existing inventories must not be treated as exhaustive current coverage.
+
+Status: **PARKED PARTIAL PRELIMINARY MAP for v0.9.0**, source-verified subset only (2026-10-21).
 Source baseline: `dev` as inspected by GitHub contents API.
 Reference: [complete artifact inventory](MODE_B_INVENTORY.md).
 Do **not** write new tests until all current production functions are

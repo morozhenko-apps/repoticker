@@ -57,12 +57,14 @@ test("usage overlay follows the same physical monitor as the main Layer Shell ca
   assert.equal(usage.maxHeight,320);
 });
 
-test("hover controls balloon lifetime, never clicks, pins or popup hover", () => {
-  assert.match(ui, /quotaAnchor\.addEventListener\("mouseenter"/);
-  assert.match(ui, /quotaAnchor\.addEventListener\("mouseleave"/);
-  assert.doesNotMatch(ui, /popupHovered|closeGrace|quotaAnchor\.addEventListener\("click"/);
+test("three separate hover targets share one pointer-pass-through WebView", () => {
+  assert.match(ui, /for \\(const \\[kind, anchor\\] of Object.entries\\(hoverTargets\\)\\)/);
+  assert.match(ui, /anchor.addEventListener\\("mouseenter"/);
+  assert.match(ui, /anchor.addEventListener\\("mouseleave"/);
+  assert.match(ui, /setQuotaOpen\\(kind\\)/);
+  assert.doesNotMatch(ui, /popupHovered|closeGrace|quotaAnchor.addEventListener\\("click"/);
   assert.doesNotMatch(read("../apps/desktop/ui/quota.html"), /<button|quota-close/);
-  assert.match(read("../apps/desktop/ui/quota.css"), /pointer-events:none/);
+  assert.match(css, /pointer-events:none/);
 });
 
 test("native tooltip ignores pointer/focus and reports the actual surface backend", () => {

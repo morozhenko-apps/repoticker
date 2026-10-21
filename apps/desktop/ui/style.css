@@ -8,7 +8,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: transparent;
 button, input { font: inherit; }
 button { cursor: pointer; background: transparent; color: inherit; border: 0; }
 button:disabled { opacity: .38; cursor: default; }
-button:focus-visible, input:focus-visible, .quota-anchor:focus-visible { outline: 2px solid #3b82f6; outline-offset: -2px; }
+button:focus-visible, input:focus-visible, .status-hover:focus-visible { outline: 2px solid #3b82f6; outline-offset: -2px; }
 [hidden] { display: none !important; }
 
 .card { height: 100%; width: 100%; display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden; position: relative; background: #e9ecef; border: 1px solid #c7cbd0; border-radius: 17px; padding: 9px 10px 10px; box-shadow: inset 0 1px 0 #ffffffbb; color: #242b30; }
@@ -29,7 +29,15 @@ button:focus-visible, input:focus-visible, .quota-anchor:focus-visible { outline
 .empty { margin: 12px 15px; font-size: 13px; color: GrayText; }
 
 .status-strip { flex-shrink: 0; min-height: 25px; display: flex; align-items: center; justify-content: space-around; gap: 5px; padding: 0 5px 2px; font-size: 12px; color: #7a828b; white-space: nowrap; }
-.quota-anchor { cursor: help; display: inline-flex; position: relative; font-size: 17px; outline-offset: 2px; }
+.status-hover { cursor: help; display:inline-flex; align-items:center; justify-content:center; gap:3px; min-width:0; border-radius:4px; }
+.status-hover .metric-caption { color:#626b75; font-weight:500; margin-right:2px; }
+.metric-neutral { color:#68717b; font-variant-numeric:tabular-nums; font-weight:600; }
+.metric-online { color:#17824a; font-variant-numeric:tabular-nums; font-weight:650; }
+.metric-offline { color:#ba413b; font-variant-numeric:tabular-nums; font-weight:650; }
+.metric-queued { color:#ae770e; font-variant-numeric:tabular-nums; font-weight:650; }
+.metric-divider { color:#90979f; }
+.quota-anchor { position:relative; font-size:17px; outline-offset:2px; }
+
 .actions { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 6px; flex-shrink: 0; padding: 0; min-height: 70px; }
 .action { min-height: 70px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 4px; border: 1px solid #c5c9ce; border-radius: 6px; background: #fafbfc; color: #262c32; box-shadow: 0 1px 1px #0000001c; font-size: 13px; font-weight: 400; padding: 5px 1px; }
 .action:hover:not(:disabled) { border-color: #81bfe5; background: #eaf5fc; }
@@ -56,7 +64,7 @@ button:focus-visible, input:focus-visible, .quota-anchor:focus-visible { outline
 /* The title-less card is its own drag surface: only controls keep click cursors. */
 .card { cursor: grab; }
 .card:active { cursor: grabbing; }
-.card button, .card input, .card select, .card .quota-anchor { cursor: pointer; }
+.card button, .card input, .card select, .card .quota-anchor, .card .status-hover { cursor: help; }
 .card[data-view="compact"] { justify-content: flex-end; }
 
 /* The card is an actual compact popup: no title area, empty caption or

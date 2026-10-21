@@ -1,5 +1,14 @@
 # RepoTicker release, license and signing
 
+> **Next candidate:** v0.2.0 is being prepared on `dev` after KDE
+> acceptance of native GitHub Actions monitoring. See
+> [v0.2.0 release readiness](RELEASE_0_2_0.md) for the current
+> blockers, synchronized version/lockfile procedure, independent APT
+> upgrade verification and explicit `main`/tag admission gates.
+> The published `v0.1.0` release and its signed APT artifacts are
+> unchanged. This notice does not authorize release publication.
+
+
 ## v0.1.0 delivery evidence (recorded 2026-10-19)
 
 Source tag: `v0.1.0` -> `21f3b61d9774b931b57a4e3c83f61b2bcf2bb0ee`.

@@ -30,6 +30,9 @@ test("four main operations are at the bottom without an extra heading", () => {
   assert.ok(strip.indexOf('id="runner-status"') < strip.indexOf('id="ci-running"'));
   assert.ok(strip.indexOf('id="ci-running"') < strip.indexOf('id="ci-queued"'));
   assert.ok(strip.indexOf('id="ci-queued"') < strip.indexOf('class="quota-anchor"'));
+  assert.match(ui, /Online self-hosted runners \\(busy \\+ idle\\)/);
+  assert.match(ui, /Excludes GitHub-hosted machines/);
+  assert.match(ui, /not a billing quota/);
 });
 
 test("repeating Repos collapses to compact; new open always resets", () => {

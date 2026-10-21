@@ -32,9 +32,9 @@ test("four main operations remain at bottom; only two metric hovers and billing 
   assert.match(strip, /id="runners-offline"/);
   assert.match(strip, /id="tasks-running"/);
   assert.match(strip, /id="tasks-queued"/);
-  assert.match(css, /\\.metric-online/);
-  assert.match(css, /\\.metric-offline/);
-  assert.match(css, /\\.metric-queued/);
+  assert.match(css, /\.metric-online/);
+  assert.match(css, /\.metric-offline/);
+  assert.match(css, /\.metric-queued/);
 });
 
 test("repeating Repos collapses to compact; new open always resets", () => {
@@ -65,7 +65,7 @@ test("successes do not create logs, errors remain visible and check is green", (
   assert.match(ui, /results\.filter\(item => item\.status === "error"\)/);
   assert.match(css, /\.repo-delta\.is-current \{[^}]*color: #159947/s);
   assert.match(css, /\.repo-name \{[^}]*font-weight: 400/s);
-  assert.match(html, /class="quota-anchor" tabindex="0"/);
+  assert.match(html, /class="quota-anchor status-hover" tabindex="0"/);
   assert.doesNotMatch(html, /id="quota-tooltip"/);
 });
 
@@ -163,7 +163,7 @@ test("native geometry changes are serialized by GTK acknowledgment and preserve 
   assert.match(commands, /async fn set_card_view/);
   assert.match(commands, /linux_surface::resize\(app, height as i32\)\.await/);
   assert.match(commands, /linux_surface::request_resize\(&app, 122\)/);
-  assert.match(ui, /\.quota-anchor,\[role=button\]/);
+  assert.match(ui, /\.status-hover,\[role=button\]/);
 });
 
 test("GitHub Device Flow Settings never expose bearer tokens to JavaScript", () => {

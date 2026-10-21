@@ -16,6 +16,8 @@ Jobs on Ubuntu 24.04:
 
 ## Manual strict gate — `.github/workflows/strict.yml`
 
+**Approved 1.0 requirement (documentation only, not yet implemented):** [Mode B roadmap](VERSION_ROADMAP_TO_1_0.md) requires separate STABLE and known-FLAKY test identification, complete documented Positive/N1–N12 coverage and mutation review before stable v1.0. The current manual strict workflow repeats all Rust+JS tests ten times; it does **not** implement the new STABLE/known-FLAKY separation and cannot by itself close Mode B. Align its configuration and record actual evidence at the v0.9 RC gate. The current agent SSOT uses a single end-of-task stable run and a separate known-flaky run; targeted repetition is for confirmed race/instability investigation, not routine entire-suite ×10.
+
 Manual-only workflow that executes ten consecutive Rust core + JS passes on one SHA. It is a repeatability diagnostic, **not** evidence of a completed release, physical acceptance, or a configured flaky-test quarantine. Its existence does not mean it ran for the tagged candidate. No release keys or deployment permissions are provided.
 
 Stable vs. known-flaky tests should be tracked explicitly as future test infrastructure evolves. Newly failing stable tests must not be reclassified or silenced to make CI green. Do not run the manual strict gate unnecessarily during routine edits.

@@ -120,11 +120,12 @@ async function refresh() {
   const id = ++refreshId;
   try {
     // A detached GTK Wayland WebView can miss a one-shot shown event.
-    // Read the native selected view before painting a freshly loaded snapshot.
-    const nativeKind = await invoke("get_usage_popup_kind");
-    if (isHoverKind(nativeKind)) activeKind = nativeKind;
+    // Read the native selected view after the scan, not before, so a fast
+    // hover transition during a slow Git scan cannot restore stale content.
     const snapshot = await invoke("get_snapshot");
+    const nativeKind = await invoke("get_usage_popup_kind");
     if (id !== refreshId) return;
+    if (isHoverKind(nativeKind)) activeKind = nativeKind;
     currentSnapshot = snapshot;
     const scope = snapshot.connected === true ? selectedOrganization(snapshot) : null;
     if (billingScope !== scope || !snapshot.connected) {
@@ -169,12 +170,10 @@ function applyHoverKind(kind) {
 }
 window.__repotickerSetHoverKind = applyHoverKind;
 
-async function onUsageShown(event) {
-  if (isHoverKind(event?.payload)) applyHoverKind(event.payload);
-  else {
-    try { applyHoverKind(await invoke("get_usage_popup_kind")); }
-    catch { /* Failed reconciliation is not fabricated as billing data. */ }
-  }
+async function onUsageShown() {
+  // An older queued event must never repaint a newer hover selection.
+  try { applyHoverKind(await invoke("get_usage_popup_kind")); }
+  catch { /* Failed reconciliation is not fabricated as billing data. */ }
 }
 subscribe("repoticker-usage-shown", onUsageShown);
 subscribe("repoticker-monitor-updated");

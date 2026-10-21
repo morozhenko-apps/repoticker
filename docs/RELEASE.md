@@ -1,5 +1,7 @@
 # RepoTicker release, license and signing
 
+> Version goals and the **mandatory Mode B gate before 1.0** are recorded in [the approved version roadmap](VERSION_ROADMAP_TO_1_0.md). This is planning documentation; no new tag or signed package was created by publishing the roadmap.
+
 > **Next candidate:** v0.2.0 is being prepared on `dev` after KDE
 > acceptance of native GitHub Actions monitoring. See
 > [v0.2.0 release readiness](RELEASE_0_2_0.md) for the current

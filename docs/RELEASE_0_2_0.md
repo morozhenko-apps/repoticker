@@ -1,5 +1,7 @@
 # RepoTicker v0.2.0 — release readiness (draft, 2026-10-21)
 
+> **Approved series:** This is the next candidate in the [v0.1.0–v1.0.0 roadmap](VERSION_ROADMAP_TO_1_0.md). **Mode B is required before 1.0**, not falsely claimed finished or required to be repeated in its entirety for the 0.2 development checkpoint. It is accumulated by version and formally closed on the v0.9 RC. Publishing this roadmap does not trigger the v0.2 software release.
+
 ## Status and decision
 
 **Mode A — release preparation, no deployment or tag.** RepoTicker `v0.1.0`

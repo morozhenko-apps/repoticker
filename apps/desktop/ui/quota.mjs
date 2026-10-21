@@ -1,5 +1,6 @@
 import { buildHoverDetails, isHoverKind } from "./quota-details.mjs";
 import { usageHeight } from "./quota-size.mjs";
+import { createBillingCache } from "./github-billing.mjs";
 
 const byId = id => document.getElementById(id);
 const invoke = (name, args = {}) => window.__TAURI__.core.invoke(name, args);
@@ -68,21 +69,59 @@ function paint(details) {
 // deliberately scoped to usage-events.json rather than inherited from main.
 let refreshId = 0;
 let activeKind = "billing";
+let currentSnapshot = null;
+let billingState = null;
+let billingScope = null;
+let billingFetch = null;
+const billingCache = createBillingCache({
+  get: path => invoke("github_api_get", { path }),
+});
 function statusUnavailable(message) {
   paint({ connected: false, status: "Status unavailable", message, sections: [] });
+}
+function paintSnapshot(snapshot) {
+  paint(buildHoverDetails(snapshot.runner_state, activeKind, snapshot.connected,
+    snapshot.monitor_message, billingState));
+}
+function scheduleBilling(snapshot) {
+  if (activeKind !== "billing" || snapshot.connected !== true) return;
+  const scope = snapshot.github_monitor_org || "";
+  if (billingFetch?.scope === scope) return;
+  const request = billingCache.load(scope, true);
+  billingFetch = { scope, request };
+  void request.then(value => {
+    if (billingScope === scope && value) {
+      billingState = value;
+      if (activeKind === "billing" && currentSnapshot?.connected)
+        paintSnapshot(currentSnapshot);
+    }
+  }).catch(() => {
+    // No raw provider error crosses into a tooltip.
+    if (billingScope === scope) billingState = null;
+  }).finally(() => {
+    if (billingFetch?.request === request) billingFetch = null;
+  });
 }
 async function refresh() {
   const id = ++refreshId;
   try {
     const snapshot = await invoke("get_snapshot");
-    if (id !== refreshId) return; // Drop an older Git scan response.
-    paint(buildHoverDetails(snapshot.runner_state, activeKind, snapshot.connected, snapshot.monitor_message));
-  } catch {
-    if (id === refreshId) {
-      statusUnavailable("Cannot read GitHub Actions status. Reopen the balloon to retry.");
+    if (id !== refreshId) return;
+    currentSnapshot = snapshot;
+    const scope = snapshot.connected === true ? snapshot.github_monitor_org || "" : null;
+    if (billingScope !== scope || !snapshot.connected) {
+      billingCache.clear();
+      billingState = null;
+      billingScope = scope;
     }
+    paintSnapshot(snapshot);
+    scheduleBilling(snapshot);
+  } catch {
+    if (id === refreshId)
+      statusUnavailable("Cannot read GitHub status. Reopen the balloon to retry.");
   }
 }
+
 function subscribe(eventName, handler = refresh) {
   const listen = window.__TAURI__?.event?.listen;
   if (typeof listen !== "function") {
@@ -105,4 +144,6 @@ function onUsageShown(event) {
 }
 subscribe("repoticker-usage-shown", onUsageShown);
 subscribe("repoticker-monitor-updated");
+subscribe("repoticker-github-auth", () => { billingCache.clear(); billingState = null; void refresh(); });
+subscribe("repoticker-github-scope-changed", () => { billingCache.clear(); billingState = null; void refresh(); });
 void refresh();

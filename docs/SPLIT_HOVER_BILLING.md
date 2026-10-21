@@ -97,3 +97,36 @@ Branch policy: developer integration happens on `dev`, `main` only for
 approved releases; after CI and physical contract corrections, consolidate
 feature work into `dev`, close merged PR, and provide explicit user-reviewed
 remote branch deletion commands for all branches other than dev/main.
+
+## KDE follow-up UX and transactional GitHub Settings (2026-10-21)
+
+Physical acceptance verified that each hover now displays its own view.
+The approved compact tooltip presentation is:
+
+- **Tasks** retains the main title with Running/Queued job totals; removes
+  "Other jobs", lane totals, the "Runner · Running / eligible queue" subtitle,
+  and the explanatory paragraph. Show each self-hosted runner name and
+  **running job count only**, followed by one GitHub-hosted running-job row.
+  The only footer is the last checked timestamp. No false attribution of queued
+  jobs to a runner, and unknown coverage remains unknown.
+- **Runners** removes the "Self-hosted runners" heading and explanatory
+  paragraph. Keep total/online/busy/idle/offline statistics and the checked
+  timestamp.
+- Both compact hovers must fit without scroll and be isolated from the Billing
+  display. The main card geometry and three hover anchors do not change.
+
+The monitor checks due refreshes every 60 s; the actual GitHub job/runner
+refresh interval is `max(2, ceil(repoCount/15))` minutes, so 2 to 7 minutes
+for up to 100 repositories. Billing is cached for 10 minutes; hover itself
+does not trigger a Git repository scan.
+
+GitHub Settings becomes a deliberate, transactional confirmation boundary:
+new Device Flow credentials remain in the OS wallet but are considered
+**unconfirmed** until OK. Cancel invalidates any pending Device Flow and
+removes credentials established during the current Settings session only;
+a previously authorized account must not be erased by Cancel. Monitor
+account selection must be staged until OK rather than persisted on every
+combobox change. OK commits the selected scope, triggers a GitHub monitoring
+refresh even if the card stays visible, updates the account selector, and
+closes Settings. A failed save/refresh must not falsely claim confirmed
+state; no changed GitHub credentials enter WebView storage.

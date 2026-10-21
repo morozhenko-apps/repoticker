@@ -98,6 +98,7 @@ function githubButtons() {
   byId("github-connect").hidden = githubConnected || githubPending;
   byId("github-disconnect").hidden = !githubConnected;
   byId("github-device-flow").hidden = !githubPending;
+  if (!githubPending) byId("github-copy-code").textContent = "Copy code";
   byId("github-connection-indicator").textContent = githubPending
     ? "Authorization pending" : githubConnected ? "Authorized" : "Not connected";
   byId("github-account-status").value = githubConnected
@@ -180,8 +181,10 @@ byId("github-copy-code").addEventListener("click", async () => {
   if (!githubPending || !code) return;
   try {
     await invoke("github_copy_user_code", { code });
+    byId("github-copy-code").textContent = "Copied";
     githubMessage("Verification code copied.");
   } catch {
+    byId("github-copy-code").textContent = "Copy code";
     githubMessage("Cannot access system clipboard. Select the code and copy with Ctrl+C.", true);
   }
 });

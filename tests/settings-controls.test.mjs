@@ -88,6 +88,8 @@ test("Device Flow buttons register and invoke native commands after JS startup",
   assert.equal(calls.find(c => c.command === "github_copy_user_code")?.args?.code,
     "ABCD-1234");
 
+  assert.equal(elements.get("github-copy-code").textContent, "Copied");
+
   await handlers.get("github-open-device:click")();
   assert.ok(calls.some(c => c.command === "github_open_device_page"));
 
@@ -95,4 +97,5 @@ test("Device Flow buttons register and invoke native commands after JS startup",
   assert.ok(calls.some(c => c.command === "github_cancel"));
   assert.equal(elements.get("github-device-flow").hidden, true);
   assert.equal(elements.get("github-user-code").textContent, "");
+  assert.equal(elements.get("github-copy-code").textContent, "Copy code");
 });

@@ -1,5 +1,7 @@
 # Monitor balloon semantics and visibility acceptance
 
+> Superseded by [SPLIT_HOVER_BILLING.md](SPLIT_HOVER_BILLING.md) after updated user requirements on 2026-10-21. This file records the earlier PR #5 design and should not be used for current UI acceptance.
+
 Status: planned correction after KDE feedback on 2026-10-21. Target branch: `fix/monitor-balloon-visibility`, based on `dev`. The published v0.1.0 and `main` are not changed.
 
 ## Repro evidence and root cause

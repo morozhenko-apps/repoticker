@@ -73,6 +73,13 @@ let currentSnapshot = null;
 let billingState = null;
 let billingScope = null;
 let billingFetch = null;
+let billingVersion = 0;
+function invalidateBilling() {
+  billingVersion++;
+  billingCache.clear();
+  billingState = null;
+  billingFetch = null;
+}
 const billingCache = createBillingCache({
   get: path => invoke("github_api_get", { path }),
 });
@@ -87,17 +94,18 @@ function scheduleBilling(snapshot) {
   if (activeKind !== "billing" || snapshot.connected !== true) return;
   const scope = snapshot.github_monitor_org || "";
   if (billingFetch?.scope === scope) return;
+  const currentVersion = billingVersion;
   const request = billingCache.load(scope, true);
   billingFetch = { scope, request };
   void request.then(value => {
-    if (billingScope === scope && value) {
+    if (currentVersion === billingVersion && billingScope === scope && value) {
       billingState = value;
       if (activeKind === "billing" && currentSnapshot?.connected)
         paintSnapshot(currentSnapshot);
     }
   }).catch(() => {
     // No raw provider error crosses into a tooltip.
-    if (billingScope === scope) billingState = null;
+    if (currentVersion === billingVersion && billingScope === scope) billingState = null;
   }).finally(() => {
     if (billingFetch?.request === request) billingFetch = null;
   });
@@ -110,8 +118,7 @@ async function refresh() {
     currentSnapshot = snapshot;
     const scope = snapshot.connected === true ? snapshot.github_monitor_org || "" : null;
     if (billingScope !== scope || !snapshot.connected) {
-      billingCache.clear();
-      billingState = null;
+      invalidateBilling();
       billingScope = scope;
     }
     paintSnapshot(snapshot);
@@ -144,6 +151,6 @@ function onUsageShown(event) {
 }
 subscribe("repoticker-usage-shown", onUsageShown);
 subscribe("repoticker-monitor-updated");
-subscribe("repoticker-github-auth", () => { billingCache.clear(); billingState = null; void refresh(); });
-subscribe("repoticker-github-scope-changed", () => { billingCache.clear(); billingState = null; void refresh(); });
+subscribe("repoticker-github-auth", () => { invalidateBilling(); void refresh(); });
+subscribe("repoticker-github-scope-changed", () => { invalidateBilling(); void refresh(); });
 void refresh();

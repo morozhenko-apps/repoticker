@@ -11,6 +11,11 @@ let githubConnected = false;
 let githubStatusTimer = null;
 let githubStatusBusy = false;
 let selectedScope = null;
+let githubScopeAtOpen = null;
+let githubScopeTouched = false;
+let githubWasConnectedAtOpen = false;
+let githubStartedHere = false;
+let githubStarting = false;
 
 async function refreshMonitorScopes() {
   const row = byId("github-monitor-scope-row");
@@ -36,23 +41,24 @@ async function refreshMonitorScopes() {
       option.textContent = name;
       select.append(option);
     }
-    selectedScope = config.github_monitor_org || (accounts.length === 1 ? accounts[0] : "");
-    select.value = selectedScope;
+    if (githubScopeAtOpen === null) githubScopeAtOpen = config.github_monitor_org || "";
+    const suggestion = config.github_monitor_org || (accounts.length === 1 ? accounts[0] : "");
+    if (!githubScopeTouched || !accounts.includes(selectedScope)) {
+      selectedScope = suggestion;
+      githubScopeTouched = false;
+    }
+    select.value = selectedScope || "";
+    updateApply();
   } catch {
     githubMessage("GitHub authorized; cannot list available installations.", true);
   }
 }
 
-byId("github-monitor-scope").addEventListener("change", async event => {
-  const org = event.target.value || null;
-  try {
-    await invoke("github_set_monitor_org", { org });
-    selectedScope = org;
-    githubMessage("Monitoring scope changed. Fetching Actions data.");
-  } catch (error) {
-    githubMessage(String(error), true);
-    event.target.value = selectedScope || "";
-  }
+byId("github-monitor-scope").addEventListener("change", event => {
+  selectedScope = event.target.value || "";
+  githubScopeTouched = selectedScope !== (githubScopeAtOpen || "");
+  githubMessage("Press OK to confirm the monitoring account.");
+  updateApply();
 });
 
 function stopGithubStatusUpdates() {
@@ -102,7 +108,8 @@ function githubButtons() {
   byId("github-connection-indicator").textContent = githubPending
     ? "Authorization pending" : githubConnected ? "Authorized" : "Not connected";
   byId("github-account-status").value = githubConnected
-    ? "Authorized (account selection pending)" : "Not connected";
+    ? "Authorized" : "Not connected";
+  updateApply();
 }
 
 const githubPhaseLabels = Object.freeze({
@@ -150,6 +157,7 @@ async function refreshGithub() {
       : (githubPhaseLabels[auth.phase] || githubPhaseLabels.idle);
     githubMessage(text, auth.phase === "failed");
     if (githubConnected) await refreshMonitorScopes();
+    updateApply();
   } catch (error) {
     githubButtons();
     githubMessage(String(error), true);
@@ -159,6 +167,9 @@ async function refreshGithub() {
 byId("github-connect").addEventListener("click", async () => {
   if (githubPending) return;
   byId("github-connect").disabled = true;
+  githubStarting = true;
+  githubStartedHere = true;
+  updateApply();
   try {
     const challenge = await invoke("github_begin");
     // Only a public one-time USER code may enter the WebView.
@@ -172,7 +183,9 @@ byId("github-connect").addEventListener("click", async () => {
     githubMessage(String(error), true);
     githubButtons();
   } finally {
+    githubStarting = false;
     byId("github-connect").disabled = false;
+    updateApply();
   }
 });
 
@@ -235,7 +248,10 @@ function isDirty() {
     JSON.stringify(original.roots) !== JSON.stringify(draft.roots);
 }
 function updateApply() {
-  byId("apply-settings").disabled = saving || !isDirty();
+  const authNeedsConfirmation = githubConnected && githubStartedHere;
+  byId("apply-settings").disabled =
+    saving || githubStarting || githubPending ||
+    !(isDirty() || authNeedsConfirmation || githubScopeTouched);
 }
 function renderRoots() {
   const list = byId("roots-list");
@@ -266,6 +282,13 @@ function renderRoots() {
 }
 async function refresh() {
   const snapshot = await invoke("get_snapshot");
+  const authAtOpen = await invoke("github_auth_status");
+  githubWasConnectedAtOpen = authAtOpen.connected === true;
+  githubStartedHere = false;
+  githubStarting = false;
+  githubScopeTouched = false;
+  githubScopeAtOpen = snapshot.github_monitor_org || "";
+  selectedScope = null;
   original = {
     roots: [...(snapshot.roots || [])],
     language: snapshot.language || "en"
@@ -321,21 +344,57 @@ document.addEventListener("keydown", event => {
   if (event.key === "Escape") closeLanguagePicker();
 });
 byId("cancel-settings").addEventListener("click", async () => {
-  try { await invoke("close_settings"); }
-  catch (error) { message(error, true); }
-});
-byId("apply-settings").addEventListener("click", async () => {
-  if (!isDirty() || saving) return;
+  if (saving) return;
   saving = true;
   updateApply();
   try {
-    await invoke("save_settings", {
-      roots: [...draft.roots],
-      language: draft.language
-    });
+    // A new Device Flow is provisional until OK. Cancel invalidates
+    // polling before possibly deleting its newly acquired wallet credential.
+    if (githubStartedHere || githubPending) {
+      await invoke("github_cancel");
+      stopGithubStatusUpdates();
+      if (githubStartedHere) {
+        const auth = await invoke("github_auth_status");
+        if (auth.connected) await invoke("github_disconnect");
+      }
+    }
+    githubStartedHere = false;
+    githubPending = false;
+    githubConnected = githubWasConnectedAtOpen && !githubStartedHere;
+    byId("github-user-code").textContent = "";
     await invoke("close_settings");
   } catch (error) {
-    message(error, true);
+    message(String(error), true);
+  } finally {
+    saving = false;
+    updateApply();
+  }
+});
+byId("apply-settings").addEventListener("click", async () => {
+  if (saving || githubPending || githubStarting ||
+      !(isDirty() || githubScopeTouched || (githubConnected && githubStartedHere))) return;
+  saving = true;
+  updateApply();
+  try {
+    if (isDirty()) {
+      await invoke("save_settings", {
+        roots: [...draft.roots],
+        language: draft.language
+      });
+    }
+    if (githubConnected) {
+      // Commit the account selection only on explicit OK. Reapplying the
+      // selection also sends repoticker-github-scope-changed to refresh
+      // the running monitor/card while they remain visible.
+      await invoke("github_set_monitor_org", { org: selectedScope || null });
+      githubScopeTouched = false;
+      githubScopeAtOpen = selectedScope || "";
+      await refreshMonitorScopes();
+    }
+    githubStartedHere = false;
+    await invoke("close_settings");
+  } catch (error) {
+    message(String(error), true);
   } finally {
     saving = false;
     updateApply();

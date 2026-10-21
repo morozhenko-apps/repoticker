@@ -23,7 +23,9 @@ test("compact card is never resized or expanded to display a tooltip", () => {
 test("tooltip is a standalone WebView and not a child of compact card", () => {
   assert.match(usage, /id="quota-content"/);
   assert.match(usage, /quota\.css/);
-  assert.match(css, /overflow-y:auto/);
+  assert.match(css, /grid-template-columns:repeat\\(2,minmax\\(0,1fr\\)\\)/);
+  assert.doesNotMatch(css, /overflow-y:auto/);
+  assert.match(css, /pointer-events:none/);
   assert.match(native, /fn install_usage_surface/);
   assert.match(native, /usage\.set_layer\(Layer::Overlay\)/);
   assert.match(native, /fn anchor_usage/);

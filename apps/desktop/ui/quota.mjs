@@ -27,7 +27,7 @@ function paint(details) {
   else {
     for (const section of details.sections) {
       const block = add(root, "section", "", "quota-section");
-      add(block, "div", section.title, "quota-section-title");
+      if (section.title) add(block, "div", section.title, "quota-section-title");
       for (const [label, value] of section.rows || []) line(block, label, value);
       if (section.message) add(block, "span", section.message, "quota-message");
     }

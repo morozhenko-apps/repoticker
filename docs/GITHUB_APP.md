@@ -393,3 +393,26 @@ Keep the GitHub Device Flow protocol, OS secret store, native
 REST monitor, card geometry, KDE drag and quota popup unchanged.
 This is a targeted Settings event-binding regression fix, not a
 change to GitHub App scopes or security.
+
+
+**Implemented Settings UI regression fix on dev:**
+- `4c4ea1d` removes the obsolete
+  `github-check-status` listener and style, preserving automatic
+  GitHub native flow-state synchronization. Adds a source-to-HTML
+  `byId` invariant and a runtime JS click-dispatch test for Connect,
+  Copy code, Open GitHub and Cancel.
+- `34b1286` corrects the test-only assertion for objects crossing
+  Node's VM realm boundary.
+- `fdc1206` makes Copy code visibly change to **Copied** only after
+  native clipboard write success and reset to **Copy code** when
+  cancelled or the Device Flow ends.
+- Preflight: https://github.com/morozhenko-apps/repoticker/actions/runs/39557990709
+  (final gate pending while this documentation is authored).
+
+The missing Settings binding definitively explains why Open GitHub
+and Cancel handlers never registered; the clipboard handler preceded
+the exception, so any remaining physical clipboard failure should be
+diagnosed independently, not attributed to the removed DOM listener.
+No auth scopes, token storage, REST data collector, popup geometry
+or Wayland dragging changed. Physical KDE click/clipboard confirmation
+is required before closing Issue #4.

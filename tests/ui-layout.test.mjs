@@ -25,7 +25,7 @@ test("four main operations remain at bottom; only two metric hovers and billing 
   assert.ok(html.indexOf('class="status-strip"') < html.indexOf('class="actions"'));
   const strip = html.slice(html.indexOf('class="status-strip"'), html.indexOf('class="actions"'));
   assert.ok(strip.indexOf('id="runner-status"') < strip.indexOf('id="ci-tasks"'));
-  assert.ok(strip.indexOf('id="ci-tasks"') < strip.indexOf('class="quota-anchor"'));
+  assert.ok(strip.indexOf('id="ci-tasks"') < strip.indexOf('class="quota-anchor status-hover"'));
   assert.doesNotMatch(strip, /id="ci-queued"/);
   assert.match(strip, /id="runners-total"/);
   assert.match(strip, /id="runners-online"/);

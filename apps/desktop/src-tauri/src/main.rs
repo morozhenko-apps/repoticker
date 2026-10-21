@@ -432,7 +432,10 @@ async fn set_card_view(app: AppHandle, view: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn show_usage_popup(app: AppHandle) -> Result<(), String> {
+fn show_usage_popup(app: AppHandle, kind: String) -> Result<(), String> {
+    if !matches!(kind.as_str(), "runners" | "tasks" | "billing") {
+        return Err("Unsupported status tooltip.".into());
+    }
     #[cfg(target_os = "linux")]
     if linux_surface::enabled() {
         linux_surface::show_usage(&app)?;
@@ -453,7 +456,7 @@ fn show_usage_popup(app: AppHandle) -> Result<(), String> {
         }
         popup.show().map_err(|error| error.to_string())?;
     }
-    let _ = app.emit_to("usage", "repoticker-usage-shown", ());
+    let _ = app.emit_to("usage", "repoticker-usage-shown", kind);
     Ok(())
 }
 

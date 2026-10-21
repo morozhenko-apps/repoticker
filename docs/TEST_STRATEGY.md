@@ -96,34 +96,12 @@ must persist the last applied margins with no regression to card geometry
 or transparent rounded corners. Do not classify the bug as fixed without
 that runtime evidence.
 
-## Existing usage tooltip regression contract (dev)
+## Split hover and limited billing acceptance (2026-10-21 candidate)
 
-New `tests/quota-details.test.mjs` validates the real quota view-model
-for disconnected state, partial/unknown counters, runner availability,
-running/queued lane splits, bounded safe job URLs and preservation of
-separate billing limits. `tests/ui-layout.test.mjs` asserts unchanged
-indicator order, native 510px temporary popup height, clipped
-`quota-tooltip` sizing and pointer/keyboard state hooks.
+`tests/split-status-hover.test.mjs` validates coverage-aware compact self-hosted total/online/offline, Actions job running/queued, the three independent view kinds, per-runner running assignment by ID, queued candidate compatibility by labels, and bounded display with explicit omissions. `tests/quota-details.test.mjs` guards unknown billing allowance and GitHub job URL validation. `tests/usage-events.test.mjs` exercises the real balloon controller with typed native tooltip events and independent monitor update. `tests/ui-layout.test.mjs` and `tests/quota-surface.test.mjs` protect the unchanged card geometry, separate overlay, native pass-through, strict hover-only lifetime and the new grouped strip.
 
-The newly added read-only `open_actions_job` native command is guarded
-by a strict allowlist; never render raw API strings as HTML or treat a
-GitHub-hosted Actions job as a durable self-hosted runner registration.
-End-to-end KDE hover/focus/drag/popup acceptance remains pending.
-Native GitHub auth/source integration will require independent
-permissions, pagination, rate-limit and persistence tests.
+The existing `open_actions_job` native command remains protected by an allowlist, but noninteractive hover views do not display inoperable action links. Partial API results, runner-inventory denial, missing labels and unavailable billing must never become fabricated zeroes, available minutes or assigned queued jobs.
 
-## Native usage overlay contracts (dev)
+Final validation is the normal full STABLE Preflight gate (Node model/source tests, Rust formatting/core/Clippy, Linux desktop cargo check). Physical KDE validation must confirm no hover clipping, instant changes between Runners/Tasks/Billing, correct runner/job counts and colors, no residual popup after Hide/Open, stable native drag, and no hidden dependency on an interactive scroll surface. Billing API/scopes and true free allowance calculations are separately blocked pending the security choice in `SPLIT_HOVER_BILLING.md`; no test may pretend they are live.
 
-`tests/quota-surface.test.mjs` asserts that main is configured at
-390x122; the `usage` Tauri window is independent; and the native
-Wayland bridge anchors a Layer::Overlay window by the persisted margins
-rather than resizing the main card on ⓘ hover. The existing quota
-presentation model tests still cover sanitized job links, partial
-coverage and disconnected state. The old tests that endorsed an
-in-flow 510px quota surface were removed as obsolete.
-
-Runtime KDE acceptance must compare main GTK `requested/allocated`
-geometry and `card_bottom_margin/card_right_margin` before/after
-opening usage, Repos and Hide/Open, plus persistence over process
-restart and visible cursor/drag smoothness. The display server's
-allocation cannot be inferred from JS source tests or Linux compile.
+The CI build gate cannot establish visual acceptance, real GitHub billing entitlement, installation scope, or KWallet authorization on the user's machine.

@@ -19,17 +19,22 @@ test("compact has no duplicate header, refresh, or permanent results", () => {
   assert.match(html, /id="show-repos"/);
 });
 
-test("four main operations are at the bottom without an extra heading", () => {
+test("four main operations remain at bottom; only two metric hovers and billing icon", () => {
   assert.match(css, /\.actions \{[^}]*grid-template-columns: repeat\(4/s);
   assert.ok(html.indexOf('id="repo-drawer"') < html.indexOf('class="status-strip"'));
   assert.ok(html.indexOf('class="status-strip"') < html.indexOf('class="actions"'));
-  assert.match(html, /id="ci-running"/);
-  assert.match(html, /id="ci-queued"/);
-  assert.match(html, /id="runner-status"/);
   const strip = html.slice(html.indexOf('class="status-strip"'), html.indexOf('class="actions"'));
-  assert.ok(strip.indexOf('id="runner-status"') < strip.indexOf('id="ci-running"'));
-  assert.ok(strip.indexOf('id="ci-running"') < strip.indexOf('id="ci-queued"'));
-  assert.ok(strip.indexOf('id="ci-queued"') < strip.indexOf('class="quota-anchor"'));
+  assert.ok(strip.indexOf('id="runner-status"') < strip.indexOf('id="ci-tasks"'));
+  assert.ok(strip.indexOf('id="ci-tasks"') < strip.indexOf('class="quota-anchor status-hover"'));
+  assert.doesNotMatch(strip, /id="ci-queued"/);
+  assert.match(strip, /id="runners-total"/);
+  assert.match(strip, /id="runners-online"/);
+  assert.match(strip, /id="runners-offline"/);
+  assert.match(strip, /id="tasks-running"/);
+  assert.match(strip, /id="tasks-queued"/);
+  assert.match(css, /\.metric-online/);
+  assert.match(css, /\.metric-offline/);
+  assert.match(css, /\.metric-queued/);
 });
 
 test("repeating Repos collapses to compact; new open always resets", () => {
@@ -60,7 +65,7 @@ test("successes do not create logs, errors remain visible and check is green", (
   assert.match(ui, /results\.filter\(item => item\.status === "error"\)/);
   assert.match(css, /\.repo-delta\.is-current \{[^}]*color: #159947/s);
   assert.match(css, /\.repo-name \{[^}]*font-weight: 400/s);
-  assert.match(html, /class="quota-anchor" tabindex="0"/);
+  assert.match(html, /class="quota-anchor status-hover" tabindex="0"/);
   assert.doesNotMatch(html, /id="quota-tooltip"/);
 });
 
@@ -158,7 +163,7 @@ test("native geometry changes are serialized by GTK acknowledgment and preserve 
   assert.match(commands, /async fn set_card_view/);
   assert.match(commands, /linux_surface::resize\(app, height as i32\)\.await/);
   assert.match(commands, /linux_surface::request_resize\(&app, 122\)/);
-  assert.match(ui, /\.quota-anchor,\[role=button\]/);
+  assert.match(ui, /\.status-hover,\[role=button\]/);
 });
 
 test("GitHub Device Flow Settings never expose bearer tokens to JavaScript", () => {

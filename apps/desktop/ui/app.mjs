@@ -1,6 +1,7 @@
 import { nextCardView, pullReadyCommitCount } from "./view.mjs";
 import { createNativeDragGesture } from "./native-drag.mjs";
 import { startGithubMonitoring } from "./github-monitor.mjs";
+import { compactStatus } from "./status-metrics.mjs";
 
 const emptySnapshot = {
   roots: [], repositories: [], errors: [],
@@ -147,72 +148,88 @@ function updateActionState() {
     : "No branches eligible for safe pull. Run Fetch to refresh remote refs.";
 }
 
-/* Strict ⓘ hover balloon: no click-to-pin, no independent hover state,
- * no keyboard focus stealing, and no GTK resize of the main card. */
-const quotaAnchor = document.querySelector(".quota-anchor");
+/* A single noninteractive native balloon follows three independent hover
+ * targets. Serialize native show/hide IPC; only the last requested kind wins.
+ */
+const hoverTargets = {
+  runners: byId("runner-status"),
+  tasks: byId("ci-tasks"),
+  billing: document.querySelector(".quota-anchor"),
+};
 let quotaExpanded = false;
-let quotaWanted = false;
+let hoveredKind = null;
+let visibleKind = null;
 let quotaQueue = Promise.resolve();
 
+function setActiveTooltip(kind) {
+  for (const [name, node] of Object.entries(hoverTargets)) {
+    node.setAttribute("aria-expanded", String(name === kind));
+    node.dataset.open = String(name === kind);
+  }
+}
+
 function resetQuota() {
-  quotaWanted = false;
+  hoveredKind = null;
+  visibleKind = null;
   quotaExpanded = false;
-  quotaAnchor.dataset.open = "false";
-  quotaAnchor.setAttribute("aria-expanded", "false");
+  setActiveTooltip(null);
   void invoke("hide_usage_popup").catch(() => {});
 }
 
-function setQuotaOpen(wanted) {
-  quotaWanted = wanted;
+function setQuotaOpen(kind = null) {
+  hoveredKind = kind;
   quotaQueue = quotaQueue.then(async () => {
-    if (!cardVisible) { resetQuota(); return; }
-    if (quotaWanted === quotaExpanded) return;
-    if (quotaWanted) {
-      await invoke("show_usage_popup");
-      if (!quotaWanted || !cardVisible) {
-        await invoke("hide_usage_popup");
+    const wanted = cardVisible ? hoveredKind : null;
+    if (wanted === visibleKind) return;
+    if (wanted) {
+      await invoke("show_usage_popup", { kind: wanted });
+      if (!cardVisible || hoveredKind !== wanted) {
+        // The final queued callback will show the newest target.
+        if (!hoveredKind || !cardVisible) await invoke("hide_usage_popup");
+        visibleKind = null;
+        quotaExpanded = false;
+        setActiveTooltip(null);
         return;
       }
+      visibleKind = wanted;
       quotaExpanded = true;
-      quotaAnchor.dataset.open = "true";
-      quotaAnchor.setAttribute("aria-expanded", "true");
+      setActiveTooltip(wanted);
       cancelAutoHide();
     } else {
       await invoke("hide_usage_popup");
+      visibleKind = null;
       quotaExpanded = false;
-      quotaAnchor.dataset.open = "false";
-      quotaAnchor.setAttribute("aria-expanded", "false");
+      setActiveTooltip(null);
       armAutoHide();
     }
   }).catch(error => {
+    visibleKind = null;
     quotaExpanded = false;
-    quotaAnchor.dataset.open = "false";
-    quotaAnchor.setAttribute("aria-expanded", "false");
+    setActiveTooltip(null);
     showError(error);
   });
   return quotaQueue;
 }
 
-quotaAnchor.addEventListener("mouseenter", () => { void setQuotaOpen(true); });
-quotaAnchor.addEventListener("mouseleave", () => { void setQuotaOpen(false); });
-quotaAnchor.addEventListener("focusin", () => { void setQuotaOpen(true); });
-quotaAnchor.addEventListener("focusout", () => { void setQuotaOpen(false); });
+for (const [kind, anchor] of Object.entries(hoverTargets)) {
+  anchor.addEventListener("mouseenter", () => { void setQuotaOpen(kind); });
+  anchor.addEventListener("mouseleave", () => {
+    if (hoveredKind === kind) void setQuotaOpen(null);
+  });
+  anchor.addEventListener("focusin", () => { void setQuotaOpen(kind); });
+  anchor.addEventListener("focusout", () => {
+    if (hoveredKind === kind) void setQuotaOpen(null);
+  });
+}
 
 function render(next) {
   snapshot = next;
-  const counts = next.runner_state?.counts;
-  const online = counts?.busy != null && counts?.idle != null
-    ? counts.busy + counts.idle : next.runners_online;
-  const running = counts?.running ?? next.ci_running;
-  const queued = counts?.queued ?? next.ci_queued;
-  // Preserve the exact three existing indicators, order and presentation.
-  byId("runner-status").textContent = online == null
-    ? "Runners —" : "Runners " + online;
-  byId("ci-running").textContent = running == null
-    ? "Running —" : "Running " + running;
-  byId("ci-queued").textContent = queued == null
-    ? "Queued —" : "Queued " + queued;
-
+  const status = compactStatus(next.runner_state);
+  byId("runners-total").textContent = status.total;
+  byId("runners-online").textContent = status.online;
+  byId("runners-offline").textContent = status.offline;
+  byId("tasks-running").textContent = status.running;
+  byId("tasks-queued").textContent = status.queued;
   const list = byId("repo-list");
   list.replaceChildren();
   if (!next.repositories.length) {
@@ -377,7 +394,7 @@ function stopDragging(event = null) {
 
 dragSurface.addEventListener("pointerdown", event => {
   if (event.button !== 0 || !event.isPrimary ||
-      event.target.closest("button,input,select,a,.quota-anchor,[role=button]")) return;
+      event.target.closest("button,input,select,a,.status-hover,[role=button]")) return;
   if (!dragGesture.begin(event.pointerId)) return;
   activePointerId = event.pointerId;
   dragSurface.setPointerCapture(event.pointerId);

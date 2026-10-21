@@ -23,7 +23,9 @@ test("compact card is never resized or expanded to display a tooltip", () => {
 test("tooltip is a standalone WebView and not a child of compact card", () => {
   assert.match(usage, /id="quota-content"/);
   assert.match(usage, /quota\.css/);
-  assert.match(css, /overflow-y:auto/);
+  assert.match(css, /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+  assert.doesNotMatch(css, /overflow-y:auto/);
+  assert.match(css, /pointer-events:none/);
   assert.match(native, /fn install_usage_surface/);
   assert.match(native, /usage\.set_layer\(Layer::Overlay\)/);
   assert.match(native, /fn anchor_usage/);
@@ -55,12 +57,14 @@ test("usage overlay follows the same physical monitor as the main Layer Shell ca
   assert.equal(usage.maxHeight,320);
 });
 
-test("hover controls balloon lifetime, never clicks, pins or popup hover", () => {
-  assert.match(ui, /quotaAnchor\.addEventListener\("mouseenter"/);
-  assert.match(ui, /quotaAnchor\.addEventListener\("mouseleave"/);
+test("three separate hover targets share one pointer-pass-through WebView", () => {
+  assert.match(ui, /for \(const \[kind, anchor\] of Object.entries\(hoverTargets\)\)/);
+  assert.match(ui, /anchor\.addEventListener\("mouseenter"/);
+  assert.match(ui, /anchor\.addEventListener\("mouseleave"/);
+  assert.match(ui, /setQuotaOpen\(kind\)/);
   assert.doesNotMatch(ui, /popupHovered|closeGrace|quotaAnchor\.addEventListener\("click"/);
   assert.doesNotMatch(read("../apps/desktop/ui/quota.html"), /<button|quota-close/);
-  assert.match(read("../apps/desktop/ui/quota.css"), /pointer-events:none/);
+  assert.match(css, /pointer-events:none/);
 });
 
 test("native tooltip ignores pointer/focus and reports the actual surface backend", () => {
@@ -86,7 +90,7 @@ test("the separate usage WebView can listen without inheriting main permissions"
   assert.deepEqual(usageCapability.windows, ["usage"]);
   assert.deepEqual(usageCapability.permissions, ["core:event:allow-listen"]);
   const quotaJs = read("../apps/desktop/ui/quota.mjs");
-  assert.match(quotaJs, /subscribe\("repoticker-usage-shown"\)/);
+  assert.match(quotaJs, /subscribe\("repoticker-usage-shown", onUsageShown\)/);
   assert.match(quotaJs, /subscribe\("repoticker-monitor-updated"\)/);
   assert.match(quotaJs, /Status unavailable/);
   assert.doesNotMatch(quotaJs, /catch\s*\{\s*paint\(buildQuotaDetails\(null\)\)/);

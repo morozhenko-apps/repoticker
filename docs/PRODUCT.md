@@ -36,29 +36,14 @@ Future settings include GitHub credentials/filters, polling intervals, notificat
 
 Distribution targets are Linux amd64 DEB/AppImage and unsigned Windows x64 NSIS for the tagged v0.1.0 candidate. A configured packaging workflow is not proof of a published release or Windows OS acceptance. macOS remains disabled pending Apple signing/notarization. See [release gates](RELEASE.md) and [roadmap](ROADMAP.md).
 
-## Runner and Actions detail popup (dev, not yet connected to GitHub)
+## Current dev monitoring status and split hover UI (2026-10-21)
 
-The existing compact status strip retains its **three indicators in the
-same order and at their original size and location**: Runners, Running,
-Queued. The existing GitHub usage `ⓘ` tooltip now supports a detailed
-readout containing self-hosted runner availability (busy/idle/offline),
-Running/Queued totals split into self-hosted/GitHub-hosted/unclassified
-jobs, runner names and bounded direct links to validated Actions jobs.
-The tooltip still reserves usage/billing limits as *unavailable* until
-a separately authorized source is implemented; job counts must not be
-presented as billing or hosted-concurrency quotas.
+The published v0.1.0 still has its original baseline. The unmerged dev candidate implements GitHub App Device Flow with native KWallet-backed credentials, read-only Actions runs/jobs and organization self-hosted runner collection. Authorized monitoring and local Git are independent; partial or missing API coverage yields an unknown counter instead of a fabricated zero.
 
-A 122px compact Wayland card clips a regular browser overflow tooltip.
-On opening the existing `ⓘ` popup, the application temporarily requests
-the established bottom-anchored native 510px card height and returns to
-122px on closing. The indicators stay bottom-anchored and are not
-repositioned relative to the screen. An already expanded repository drawer
-needs no extra native resize. CSS/keyboard/pointer behavior remains subject
-to KDE physical acceptance alongside drag Issue #2.
+The compact status strip now displays just two grouped indicators:
+- **Runners total / online / offline**, neutral / green / red, based solely on organization self-hosted runner registrations. The Runners hover contains Total, Online, Busy, Idle and Offline.
+- **Tasks running / queued**, green / amber, based on jobs in selected repositories. The Tasks hover provides active assigned jobs by runner and label-compatible queue candidates (never guaranteed per-runner assignments); it separates GitHub-hosted and unclassified jobs. The former standalone Queued field is removed.
 
-**Important:** this release stage contains the tested **presentation and
-aggregation contract**, not GitHub account authorization. Until native
-GitHub REST transport/secret storage are integrated, `get_snapshot`
-continues to report unconnected counters as `—` and the popup explicitly
-shows `Not connected`. No sample values are inserted into production
-state. The published v0.1.0 package remains unchanged.
+The ⓘ hover exclusively reports organization and personal-account GitHub-hosted billing allowances, usage and remaining free minutes. These values stay **unknown** until the publisher GitHub App or separately authorized billing provider is granted and verified suitable billing access. Current UI gives permission guidance but **does not grant privileges, fetch billing or invent a plan threshold**.
+
+All three hover targets share one independent pointer-pass-through native Layer Shell popup, with validated native view kind, no click/pin/scroll interaction, a content-dependent 118–320px height, and bounded runner rows. The main card remains 390x122. Full KDE hover and clipping acceptance is still pending. See [split hover security/acceptance contract](SPLIT_HOVER_BILLING.md).

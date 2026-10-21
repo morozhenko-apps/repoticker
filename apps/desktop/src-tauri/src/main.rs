@@ -11,6 +11,7 @@ use repoticker_core::{
     SyncDecision,
 };
 use serde::{Deserialize, Serialize};
+use std::sync::atomic::{AtomicU8, Ordering};
 use std::{fs, path::PathBuf, sync::Mutex};
 #[cfg(target_os = "linux")]
 mod linux_surface;
@@ -431,8 +432,28 @@ async fn set_card_view(app: AppHandle, view: String) -> Result<(), String> {
     resize_unmanaged_card(&window, height)
 }
 
+// Authoritative selected view survives missed events while the detached GTK
+// Layer Shell WebView is hidden. No polling or GitHub API call is involved.
+static USAGE_KIND: AtomicU8 = AtomicU8::new(0);
+
 #[tauri::command]
-fn show_usage_popup(app: AppHandle) -> Result<(), String> {
+fn get_usage_popup_kind() -> &'static str {
+    match USAGE_KIND.load(Ordering::Acquire) {
+        1 => "runners",
+        2 => "tasks",
+        _ => "billing",
+    }
+}
+
+#[tauri::command]
+fn show_usage_popup(app: AppHandle, kind: String) -> Result<(), String> {
+    let code = match kind.as_str() {
+        "runners" => 1,
+        "tasks" => 2,
+        "billing" => 0,
+        _ => return Err("Unsupported status tooltip.".into()),
+    };
+    USAGE_KIND.store(code, Ordering::Release);
     #[cfg(target_os = "linux")]
     if linux_surface::enabled() {
         linux_surface::show_usage(&app)?;
@@ -453,7 +474,18 @@ fn show_usage_popup(app: AppHandle) -> Result<(), String> {
         }
         popup.show().map_err(|error| error.to_string())?;
     }
-    let _ = app.emit_to("usage", "repoticker-usage-shown", ());
+    // Deliver a typed presentation change even when the detached usage
+    // window missed an ordinary event. The injected string is selected from
+    // static literals above, never from an arbitrary provider response.
+    if let Some(usage) = app.get_webview_window("usage") {
+        let script = match code {
+            1 => "window.__repotickerSetHoverKind?.('runners')",
+            2 => "window.__repotickerSetHoverKind?.('tasks')",
+            _ => "window.__repotickerSetHoverKind?.('billing')",
+        };
+        let _ = usage.eval(script);
+    }
+    let _ = app.emit_to("usage", "repoticker-usage-shown", kind);
     Ok(())
 }
 
@@ -894,6 +926,7 @@ fn main() {
             get_about_info,
             open_actions_job,
             show_usage_popup,
+            get_usage_popup_kind,
             hide_usage_popup,
             resize_usage_popup,
             open_project_website,

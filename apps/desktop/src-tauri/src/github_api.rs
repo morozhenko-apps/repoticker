@@ -1,5 +1,5 @@
 //! Authenticated read-only GitHub REST transport.
-//! The UI may request ONLY a finite set of Actions/installation routes.
+//! The UI may request ONLY documented Actions, account and billing read routes.
 //! OAuth bearer strings never cross IPC; error responses are not returned.
 
 use std::{collections::HashSet, time::Duration};
@@ -41,19 +41,41 @@ fn valid_path(requested: &str) -> bool {
         return false;
     }
     let segments: Vec<&str> = url.path().split('/').filter(|s| !s.is_empty()).collect();
-    let route = match segments.as_slice() {
-        ["user", "installations"] => 0,
-        ["user", "installations", id, "repositories"] if id.parse::<u64>().is_ok_and(|n| n > 0) => {
-            1
+    if segments.as_slice() == ["user"] {
+        return url.query().is_none();
+    }
+    let billing = matches!(
+        segments.as_slice(),
+        ["organizations", org, "settings", "billing", "usage", "summary"] if valid_name(org)
+    ) || matches!(
+        segments.as_slice(),
+        ["users", user, "settings", "billing", "usage", "summary"] if valid_name(user)
+    );
+    let route = if billing {
+        5
+    } else {
+        match segments.as_slice() {
+            ["user", "installations"] => 0,
+            ["user", "installations", id, "repositories"]
+                if id.parse::<u64>().is_ok_and(|n| n > 0) =>
+            {
+                1
+            }
+            ["orgs", org, "actions", "runners"] if valid_name(org) => 2,
+            ["repos", owner, repo, "actions", "runs"]
+                if valid_name(owner) && valid_name(repo) =>
+            {
+                3
+            }
+            ["repos", owner, repo, "actions", "runs", id, "jobs"]
+                if valid_name(owner)
+                    && valid_name(repo)
+                    && id.parse::<u64>().is_ok_and(|n| n > 0) =>
+            {
+                4
+            }
+            _ => return false,
         }
-        ["orgs", org, "actions", "runners"] if valid_name(org) => 2,
-        ["repos", owner, repo, "actions", "runs"] if valid_name(owner) && valid_name(repo) => 3,
-        ["repos", owner, repo, "actions", "runs", id, "jobs"]
-            if valid_name(owner) && valid_name(repo) && id.parse::<u64>().is_ok_and(|n| n > 0) =>
-        {
-            4
-        }
-        _ => return false,
     };
     let mut keys = HashSet::new();
     for (key, value) in url.query_pairs() {
@@ -61,22 +83,84 @@ fn valid_path(requested: &str) -> bool {
             return false;
         }
         match key.as_ref() {
-            "per_page" if value == "100" => {}
+            "per_page" if route != 5 && value == "100" => {}
             "page"
-                if value
-                    .parse::<u32>()
-                    .is_ok_and(|n| (1..=PAGE_CAP).contains(&n)) => {}
+                if route != 5
+                    && value
+                        .parse::<u32>()
+                        .is_ok_and(|n| (1..=PAGE_CAP).contains(&n)) => {}
             "status" if route == 3 && (value == "queued" || value == "in_progress") => {}
             "filter" if route == 4 && value == "latest" => {}
+            "year"
+                if route == 5
+                    && value.len() == 4
+                    && value
+                        .parse::<u32>()
+                        .is_ok_and(|n| (2020..=2100).contains(&n)) => {}
+            "month"
+                if route == 5
+                    && value
+                        .parse::<u32>()
+                        .is_ok_and(|n| (1..=12).contains(&n)) => {}
             _ => return false,
         }
     }
-    keys.contains("per_page") && keys.contains("page")
+    if route == 5 {
+        keys.contains("year") && keys.contains("month")
+    } else {
+        keys.contains("per_page") && keys.contains("page")
+    }
+}
+
+fn project_billing(value: Value) -> Result<Value, String> {
+    let items = value
+        .get("usageItems")
+        .and_then(Value::as_array)
+        .ok_or_else(|| "Unexpected GitHub billing response.".to_owned())?;
+    if items.len() > 500 {
+        return Err("GitHub billing response exceeds allowed item count.".into());
+    }
+    let mut projected = Vec::new();
+    for item in items {
+        if item.get("product").and_then(Value::as_str) != Some("Actions")
+            || item.get("unitType").and_then(Value::as_str) != Some("minutes")
+        {
+            continue;
+        }
+        let sku = item
+            .get("sku")
+            .and_then(Value::as_str)
+            .ok_or_else(|| "Incomplete GitHub billing item.".to_owned())?;
+        let quantity = item
+            .get("grossQuantity")
+            .and_then(Value::as_f64)
+            .ok_or_else(|| "Incomplete GitHub billing quantity.".to_owned())?;
+        if sku.len() > 80 || sku.is_empty() || !quantity.is_finite() || quantity < 0.0 {
+            return Err("Invalid GitHub billing quantity.".into());
+        }
+        projected.push(json!({ "sku": sku, "grossQuantity": quantity }));
+    }
+    Ok(json!({ "usageItems": projected }))
 }
 
 /// Keep fields needed for the already-tested pure JS collector. This is a
 /// deliberate API response projection, not arbitrary GitHub account data.
 fn project(path: &str, value: Value) -> Result<Value, String> {
+    if path == "/user" {
+        let login = value
+            .get("login")
+            .and_then(Value::as_str)
+            .filter(|name| valid_name(name))
+            .ok_or_else(|| "Invalid GitHub account identity.".to_owned())?;
+        let plan = value.pointer("/plan/name").and_then(Value::as_str);
+        return Ok(json!({
+            "login": login,
+            "plan": { "name": plan.filter(|name| name.len() <= 40) }
+        }));
+    }
+    if path.contains("/settings/billing/usage/summary?") {
+        return project_billing(value);
+    }
     let key = if path.starts_with("/user/installations/") {
         "repositories"
     } else if path.starts_with("/user/installations?") {
@@ -184,6 +268,9 @@ mod tests {
     fn only_documented_read_routes_are_allowed() {
         for path in [
             "/user/installations?per_page=100&page=1",
+            "/user",
+            "/organizations/team-apps/settings/billing/usage/summary?year=2026&month=10",
+            "/users/monalisa/settings/billing/usage/summary?year=2026&month=10",
             "/user/installations/123/repositories?per_page=100&page=2",
             "/orgs/team-apps/actions/runners?per_page=100&page=1",
             "/repos/team-apps/tool/actions/runs?status=queued&per_page=100&page=1",
@@ -193,7 +280,11 @@ mod tests {
         }
         for path in [
             "https://evil.example",
-            "/user",
+            "/user?other=true",
+            "/organizations/team/settings/billing/usage/summary?month=10",
+            "/users/monalisa/settings/billing/usage/summary?year=2026&month=13",
+            "/users/monalisa/settings/billing/usage/summary?year=2026&month=10&token=abc",
+            "/organizations/team/settings/billing/actions",
             "/user/installations?per_page=100&page=0",
             "/user/installations?per_page=999&page=1",
             "/user/installations?per_page=100&page=1&token=secret",
@@ -223,4 +314,31 @@ mod tests {
         assert_eq!(projected["repositories"][0]["full_name"], "team/repo");
         assert!(projected.to_string().find("not-for-webview").is_none());
     }
+    #[test]
+    fn projection_exposes_only_actions_minutes_and_minimal_identity() {
+        let identity = project("/user", json!({
+            "login": "monalisa",
+            "plan": { "name": "free", "payment_method": "secret" },
+            "email": "private@example.com", "token": "secret"
+        })).unwrap();
+        assert_eq!(identity["login"], "monalisa");
+        assert_eq!(identity["plan"]["name"], "free");
+        assert!(!identity.to_string().contains("private@example.com"));
+        let path = "/organizations/team/settings/billing/usage/summary?year=2026&month=10";
+        let payload = json!({ "usageItems": [
+            { "product": "Actions", "sku": "actions_linux", "unitType": "minutes",
+              "grossQuantity": 20, "netAmount": 1, "repositoryName": "private/secret" },
+            { "product": "Copilot", "sku": "copilot", "unitType": "requests",
+              "grossQuantity": 400, "netAmount": 10 }
+        ], "paymentDetails": "should-never-leak" });
+        let result = project(path, payload).unwrap();
+        assert_eq!(result["usageItems"].as_array().unwrap().len(), 1);
+        assert_eq!(result["usageItems"][0]["grossQuantity"], 20);
+        assert!(!result.to_string().contains("private/secret"));
+        assert!(!result.to_string().contains("netAmount"));
+        assert!(project_billing(json!({"usageItems": [{
+            "product": "Actions", "unitType": "minutes", "sku": "actions_linux",
+            "grossQuantity": "invalid" }]})).is_err());
+    }
+
 }

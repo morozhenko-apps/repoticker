@@ -13,7 +13,7 @@ published v0.1.0 are product planning targets, **not previously established
 historical facts**, guaranteed delivery dates, or permission to ship
 unfinished code.
 
-**Mandatory owner addition:** complete **Mode B — Testing** before
+**Mandatory owner addition:** complete **Mode B — Testing** at the v0.9.0 RC gate before
 declaring RepoTicker v1.0.0 stable. Mode B is the testing process defined in
 the user-provided current `AGENT.md` SSOT (Stage 1–12, Positive/N1–N12,
 risk-driven inventory, branch/interaction/coverage maps, mutation review,
@@ -51,6 +51,8 @@ macOS is likewise excluded from the claimed support matrix until signed
 and physically accepted. Do not claim Windows support from NSIS build alone.
 
 ## Mode B — Testing: binding test program before v1.0
+
+**Full campaign starts at v0.9.0.** Earlier versions (v0.2–v0.8) must still include normal targeted feature/regression tests and final stable CI, but do not require exhaustive Mode B branch/matrix/mutation deliverables. The preliminary October source scan is archived as exploratory material, **not** a prerequisite to further feature implementation.
 
 The **latest approved agent SSOT** is the user-provided `AGENT.md`,
 sections 8.1 and 5.2. Testing is its own primary **MODE B**, used for
@@ -200,8 +202,8 @@ A 1.0.0 tag is permitted only after:
 - [x] Mode B declared **mandatory before stable 1.0.0** with explicit
       source-of-truth pipeline and negative testing requirements.
 - [x] Roadmap published in the GitHub repository on `dev`.
-- [x] Mode B Stage 1–3 source scan and artifact inventory recorded in [`MODE_B_INVENTORY.md`](testing/MODE_B_INVENTORY.md); branch map/matrix and measured coverage remain open, so **Mode B is not complete**.
-- [ ] Mode B Stage 4 [branch map](testing/MODE_B_BRANCH_MAP.md) started for high-risk source and remains incomplete. Tests/mutations/coverage are not complete; no quality metrics invented.
+- [x] Optional preliminary Mode B source inventory archived in [`MODE_B_INVENTORY.md`](testing/MODE_B_INVENTORY.md). The full Mode B campaign starts at **v0.9.0**, after v0.2–v0.8 development. Its matrices and metrics remain unstarted as a release gate.
+- [ ] Preliminary [branch map](testing/MODE_B_BRANCH_MAP.md) is parked; it must be regenerated/reconciled against the v0.9.0 RC source. No full audit or quality metrics claimed.
 - [ ] STABLE/known-FLAKY split wired to CI for the pre-1.0 gate.
 - [ ] v0.2 release candidate built/tagged/published; unchanged here.
 - [ ] v0.9 RC and v1.0 product/OS/QA acceptance achieved.

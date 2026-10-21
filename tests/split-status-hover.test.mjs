@@ -48,7 +48,9 @@ test("compact counters do not mix hosted jobs with registered runner population"
 
 test("runner hover lists total online busy idle offline without task or billing fields", () => {
   const view = buildHoverDetails(complete, "runners", true);
-  assert.equal(view.status, "Self-hosted runners");
+  assert.equal(view.status, "");
+  assert.equal(view.sections[0].title, "");
+  assert.equal(view.message, "Checked: 2026-10-21 17:00 UTC");
   assert.deepEqual(view.sections[0].rows, [
     ["Total", "3"], ["Online", "2"], ["Busy", "1"],
     ["Idle", "1"], ["Offline", "1"]
@@ -56,31 +58,32 @@ test("runner hover lists total online busy idle offline without task or billing 
   assert.doesNotMatch(JSON.stringify(view), /Minutes left|eligible queue/);
 });
 
-test("task hover maps active jobs to assigned runner and queue to compatible candidates", () => {
-  const view = buildHoverDetails(complete, "tasks", true);
-  assert.match(view.status, /Running 2 \/ Queued 2/);
-  assert.deepEqual(view.sections[0].rows, [
-    ["Alcotester", "1 / 1"],
-    ["Alcotester-2", "0 / 1"],
-    ["Offline", "0 / 0"]
+test("task hover shows only running jobs by runner, then GitHub-hosted", () => {
+  const result = buildHoverDetails(complete, "tasks", true);
+  assert.match(result.status, /Running 2 \/ Queued 2/);
+  assert.equal(result.sections.length, 1);
+  assert.equal(result.sections[0].title, "");
+  assert.deepEqual(result.sections[0].rows, [
+    ["Alcotester", "1"],
+    ["Alcotester-2", "0"],
+    ["Offline", "0"],
+    ["GitHub-hosted", "1"]
   ]);
-  assert.match(view.message, /not assigned/);
-  assert.match(view.message, /multiple runners/);
-  assert.deepEqual(view.sections[1].rows, [
-    ["Self-hosted jobs", "1 / 1"],
-    ["GitHub-hosted jobs", "1 / 1"], ["Unclassified jobs", "0 / 0"]
-  ]);
+  assert.equal(result.message, "Checked: 2026-10-21 17:00 UTC");
+  assert.doesNotMatch(JSON.stringify(result), /eligible queue|Other jobs|Unclassified jobs|compatible/);
+
   const partial = buildHoverDetails({ ...complete,
     coverage: { runners: true, jobs: false } }, "tasks", true);
-  assert.ok(partial.sections[0].rows.every(([, value]) => value === "— / —"));
+  assert.deepEqual(partial.sections[0].rows.map(row => row[1]), ["—", "—", "—", "—"]);
   assert.match(partial.status, /Running — \/ Queued —/);
 });
 
 test("large inventories keep tooltip bounded and declare omitted runners", () => {
   const many = Array.from({ length: 30 }, (_, i) => runner(i + 1, "r-" + i));
   const details = buildHoverDetails({ ...complete, runners: many }, "tasks", true);
-  assert.equal(details.sections[0].rows.length, 5);
-  assert.deepEqual(details.sections[0].rows.at(-1), ["Other runners", "+26 not listed"]);
+  assert.equal(details.sections[0].rows.length, 6);
+  assert.deepEqual(details.sections[0].rows.at(-2), ["More self-hosted", "+26"]);
+  assert.deepEqual(details.sections[0].rows.at(-1), ["GitHub-hosted", "1"]);
   assert.equal(isHoverKind("unknown"), false);
   for (const kind of ["runners", "tasks", "billing"]) assert.equal(isHoverKind(kind), true);
 });

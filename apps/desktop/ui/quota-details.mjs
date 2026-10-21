@@ -45,16 +45,18 @@ function tasksDetails(state) {
   const runners = inventory && Array.isArray(state.runners) ? state.runners : [];
   const active = complete && Array.isArray(state.runningJobs) ? state.runningJobs : [];
   const pending = complete && Array.isArray(state.queuedJobs) ? state.queuedJobs : [];
-  for (const runner of runners.slice(0, 6)) {
+  for (const runner of runners.slice(0, 4)) {
     const runningCount = complete
       ? active.filter(job => job.runner_id === runner.id).length : null;
     const candidateCount = complete
       ? pending.filter(job => runnerLabelCompatible(job.labels, runner.labels)).length : null;
     rows.push([safeName(runner.name), shown(runningCount) + " / " + shown(candidateCount)]);
   }
-  if (runners.length > 6) rows.push(["Other runners", "+" + (runners.length - 6) + " not listed"]);
+  if (runners.length > 4) rows.push(["Other runners", "+" + (runners.length - 4) + " not listed"]);
   if (!inventory) rows.push(["Self-hosted runners", "—"]);
   const split = [
+    ["Self-hosted jobs", shown(complete ? c.runningSelfHosted : null) +
+      " / " + shown(complete ? c.queuedSelfHosted : null)],
     ["GitHub-hosted jobs", shown(complete ? c.runningGitHubHosted : null) +
       " / " + shown(complete ? c.queuedGitHubHosted : null)],
     ["Unclassified jobs", shown(complete ? c.runningUnclassified : null) +

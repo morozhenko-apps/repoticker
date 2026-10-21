@@ -455,3 +455,63 @@ state as the main card immediately after opening, after refresh,
 and after restarting. Preserve the compact card 390x122, three
 indicators, noninteractive hover-only balloon and native drag.
 This is dev-only; do not update `main` or `v0.1.0` before acceptance.
+
+## Billing authorization A: publisher action required (2026-10-21)
+
+Decision: reuse the existing publisher-owned RepoTicker GitHub App and native
+Device Flow/KWallet credential boundary. Enable **Organization permissions ->
+Administration: Read-only** and **Account permissions -> Plan: Read-only**.
+Leave every existing read-only CI permission in place and do not enable any
+write operation, webhooks, or access to secrets. This broadened organization
+permission affects all installations, and cannot be scoped to just this
+product's billing hover.
+
+Publisher setup (manual GitHub UI operation, not a repository setting):
+
+1. Sign in as an owner of the publisher GitHub App, open GitHub Settings >
+   Developer settings > GitHub Apps, select RepoTicker, and open Permissions
+   & events.
+2. In Organization permissions set Administration to Read-only.
+   In Account permissions set Plan to Read-only. Keep other privileges
+   unchanged, and save the permission change.
+3. Open the App installation under each desired organization/personal owner
+   and approve the changed permissions. An organization admin is still
+   required for organization-level billing. In RepoTicker, Disconnect and
+   Connect again through Device Flow to obtain the updated user permission.
+4. Confirm that `/user` and the two consolidated usage summary endpoints
+   return expected sanitized results. Approval in a browser is not evidence
+   of an effective permission until real native calls succeed.
+
+The read-only publisher configuration and the installation's approval are
+user-owned GitHub settings: repository commits cannot modify them, and
+this document does not claim they were changed.
+
+### API interpretation
+
+- `GET /organizations/{org}/settings/billing/usage/summary`: Organization
+  Administration:read and organization administrator. Account Plan:read
+  cannot replace this permission.
+- `GET /users/{login}/settings/billing/usage/summary`: User Plan:read.
+  `GET /user` provides the authenticated personal login and, when
+  permitted, the personal plan name.
+- Organization plan discovery through `GET /orgs/{org}` requires an
+  **additional** GitHub App `Organization plan` permission. This has not
+  been requested or approved; the organization included allowance remains
+  unknown until a separate explicit security decision.
+- The summary endpoint is in public preview. Billing SKU gross minute
+  quantities are useful evidence of reported Actions usage but are not
+  free-plan minutes consumed. Windows, macOS, nonstandard runners and
+  discounts make naive subtraction unsafe. Do **not** compute remaining
+  free minutes by subtracting reported SKU quantities from 2,000/3,000.
+  The personal plan's documented *included* allowance may be shown after
+  validated plan detection; free consumption and remaining stay unknown.
+- The older `/settings/billing/actions` API was retired by GitHub.
+  Never use it as an emergency fallback.
+- A 403, 404, missing plan, unsupported billing report, partial/malformed
+  data or rejected new permission must remain **Unavailable**, never
+  display zero or “Available/Not exhausted”.
+
+Docs: https://docs.github.com/en/rest/billing/usage
+https://docs.github.com/en/rest/orgs/orgs
+https://docs.github.com/en/billing/concepts/product-billing/github-actions
+https://github.blog/changelog/2025-09-26-product-specific-billing-apis-are-closing-down/

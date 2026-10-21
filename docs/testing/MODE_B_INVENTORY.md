@@ -1,9 +1,18 @@
 # Mode B — testable artifact inventory (Stage 3)
 
+> **Priority correction (2026-10-22):** The owner confirmed that the
+> comprehensive Mode B inventory, exhaustive branch mapping, Positive/N1–N12
+> matrix, mutation audit and final report belong to the **v0.9.0 RC** gate,
+> not the current v0.2.0 development stage. This file preserves preliminary
+> exploratory evidence only. **It does not block implementing features,
+> fixing defects or writing their required regression tests for v0.2–v0.8.**
+> Resume and rescan this audit at v0.9.0 against the then-current source;
+> existing inventories must not be treated as exhaustive current coverage.
+
 Baseline: `dev` on 2026-10-21, source tree scanned after approved version-roadmap commit `eddb3bc`.
 Owner: RepoTicker Mode B campaign [#10](https://github.com/morozhenko-apps/repoticker/issues/10).
 Primary mode: **MODE B — Testing**.
-Status: **STAGE 3 INVENTORY COMPLETE for the current tree; not a test completion report.** New product code and the next release must be rescanned when changed.
+Status: **PRELIMINARY SOURCE INVENTORY, PARKED until v0.9.0 audit; not a test completion report.** New product code and the next release must be rescanned when changed.
 
 ## Method and evidence
 

@@ -62,11 +62,7 @@ fn valid_path(requested: &str) -> bool {
                 1
             }
             ["orgs", org, "actions", "runners"] if valid_name(org) => 2,
-            ["repos", owner, repo, "actions", "runs"]
-                if valid_name(owner) && valid_name(repo) =>
-            {
-                3
-            }
+            ["repos", owner, repo, "actions", "runs"] if valid_name(owner) && valid_name(repo) => 3,
             ["repos", owner, repo, "actions", "runs", id, "jobs"]
                 if valid_name(owner)
                     && valid_name(repo)
@@ -97,11 +93,7 @@ fn valid_path(requested: &str) -> bool {
                     && value
                         .parse::<u32>()
                         .is_ok_and(|n| (2020..=2100).contains(&n)) => {}
-            "month"
-                if route == 5
-                    && value
-                        .parse::<u32>()
-                        .is_ok_and(|n| (1..=12).contains(&n)) => {}
+            "month" if route == 5 && value.parse::<u32>().is_ok_and(|n| (1..=12).contains(&n)) => {}
             _ => return false,
         }
     }
@@ -316,11 +308,15 @@ mod tests {
     }
     #[test]
     fn projection_exposes_only_actions_minutes_and_minimal_identity() {
-        let identity = project("/user", json!({
-            "login": "monalisa",
-            "plan": { "name": "free", "payment_method": "secret" },
-            "email": "private@example.com", "token": "secret"
-        })).unwrap();
+        let identity = project(
+            "/user",
+            json!({
+                "login": "monalisa",
+                "plan": { "name": "free", "payment_method": "secret" },
+                "email": "private@example.com", "token": "secret"
+            }),
+        )
+        .unwrap();
         assert_eq!(identity["login"], "monalisa");
         assert_eq!(identity["plan"]["name"], "free");
         assert!(!identity.to_string().contains("private@example.com"));
@@ -338,7 +334,7 @@ mod tests {
         assert!(!result.to_string().contains("netAmount"));
         assert!(project_billing(json!({"usageItems": [{
             "product": "Actions", "unitType": "minutes", "sku": "actions_linux",
-            "grossQuantity": "invalid" }]})).is_err());
+            "grossQuantity": "invalid" }]}))
+        .is_err());
     }
-
 }

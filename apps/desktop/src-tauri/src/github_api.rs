@@ -14,7 +14,7 @@ const MAX_BODY: usize = 2 * 1024 * 1024;
 const PAGE_CAP: u32 = 10;
 const API_VERSION: &str = "2022-11-28";
 
-fn valid_name(value: &str) -> bool {
+pub(crate) fn valid_name(value: &str) -> bool {
     !value.is_empty()
         && value.len() <= 100
         && value != "."
@@ -100,7 +100,13 @@ fn project(path: &str, value: Value) -> Result<Value, String> {
         }),
         _ => json!({ "id": item.get("id") })
     })).collect();
-    Ok(json!({key: items, "total_count": value.get("total_count")}))
+    let mut projected = serde_json::Map::new();
+    projected.insert(key.to_owned(), Value::Array(items));
+    projected.insert(
+        "total_count".to_owned(),
+        value.get("total_count").cloned().unwrap_or(Value::Null),
+    );
+    Ok(Value::Object(projected))
 }
 
 #[tauri::command]

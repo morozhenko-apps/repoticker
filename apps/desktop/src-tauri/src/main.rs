@@ -4,6 +4,7 @@ mod github_native;
 mod github_oauth_wire;
 mod github_session;
 mod github_api;
+mod monitor_cache;
 
 use repoticker_core::{
     git::{self, GitError, OperationOutcome, RepoSnapshot},
@@ -36,6 +37,8 @@ struct Config {
     card_bottom_margin: Option<i32>,
     #[serde(default)]
     card_right_margin: Option<i32>,
+    #[serde(default)]
+    github_monitor_org: Option<String>,
 }
 
 fn default_language() -> String {
@@ -65,6 +68,9 @@ struct Snapshot {
     ci_queued: Option<u32>,
     runners_online: Option<u32>,
     connected: bool,
+    runner_state: Option<serde_json::Value>,
+    monitor_message: Option<String>,
+    github_monitor_org: Option<String>,
 }
 
 #[derive(Serialize, Clone)]
@@ -121,6 +127,7 @@ fn read_config(app: &AppHandle) -> Result<Config, String> {
             language: default_language(),
             card_bottom_margin: None,
             card_right_margin: None,
+            github_monitor_org: None,
         });
     }
     let content = fs::read(&path).map_err(|err| format!("Cannot read config: {err}"))?;
@@ -177,6 +184,7 @@ fn scan(app: &AppHandle) -> Result<Snapshot, String> {
         }
     }
     summaries.sort_by(|a, b| a.name.cmp(&b.name).then(a.path.cmp(&b.path)));
+    let (connected, runner_state, monitor_message) = app.state::<monitor_cache::MonitorCache>().read();
     Ok(Snapshot {
         roots: config.roots,
         language: config.language,
@@ -185,7 +193,10 @@ fn scan(app: &AppHandle) -> Result<Snapshot, String> {
         ci_running: None,
         ci_queued: None,
         runners_online: None,
-        connected: false,
+        connected,
+        runner_state,
+        monitor_message,
+        github_monitor_org: config.github_monitor_org,
     })
 }
 
@@ -681,6 +692,18 @@ fn close_settings(app: AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn github_set_monitor_org(app: AppHandle, org: Option<String>) -> Result<(), String> {
+    if org.as_ref().is_some_and(|name| !github_api::valid_name(name)) {
+        return Err("Invalid GitHub account.".into());
+    }
+    let mut config = read_config(&app)?;
+    config.github_monitor_org = org;
+    write_config(&app, &config)?;
+    let _ = app.emit("repoticker-github-scope-changed", ());
+    Ok(())
+}
+
+#[tauri::command]
 fn set_language(app: AppHandle, language: String) -> Result<(), String> {
     if language != "en" && language != "ru" {
         return Err("Unsupported language".into());
@@ -751,6 +774,7 @@ fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_clipboard_manager::init())
         .manage(OperationLock::default())
+        .manage(monitor_cache::MonitorCache::default())
         .manage(std::sync::Arc::new(
             github_session::GitHubAuthManager::default(),
         ))
@@ -856,6 +880,8 @@ fn main() {
             github_session::github_auth_status,
             github_session::github_flow_status,
             github_api::github_api_get,
+            monitor_cache::github_monitor_publish,
+            github_set_monitor_org,
             github_session::github_begin,
             github_session::github_cancel,
             github_session::github_disconnect,

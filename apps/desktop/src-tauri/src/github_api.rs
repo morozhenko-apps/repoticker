@@ -99,7 +99,7 @@ fn project(path: &str, value: Value) -> Result<Value, String> {
             "labels": item.get("labels"), "html_url": item.get("html_url")
         }),
         _ => json!({ "id": item.get("id") })
-    })).collect();
+    }).collect();
     let mut projected = serde_json::Map::new();
     projected.insert(key.to_owned(), Value::Array(items));
     projected.insert(

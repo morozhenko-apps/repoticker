@@ -48,14 +48,17 @@ test("compact counters do not mix hosted jobs with registered runner population"
 
 test("runner hover lists total online busy idle offline without task or billing fields", () => {
   const view = buildHoverDetails(complete, "runners", true);
-  assert.equal(view.status, "");
+  assert.equal(view.status, "Runners · 3");
   assert.equal(view.sections[0].title, "");
   assert.equal(view.message, "Checked: 2026-10-21 17:00 UTC");
   assert.deepEqual(view.sections[0].rows, [
-    ["Total", "3"], ["Online", "2"], ["Busy", "1"],
+    ["Online", "2"], ["Busy", "1"],
     ["Idle", "1"], ["Offline", "1"]
   ]);
   assert.doesNotMatch(JSON.stringify(view), /Minutes left|eligible queue/);
+  const partial = buildHoverDetails({ ...complete, coverage: { runners: false, jobs: true } }, "runners", true);
+  assert.equal(partial.status, "Runners · —");
+  assert.ok(partial.sections[0].rows.every(([key, value]) => key !== "Total" && value === "—"));
 });
 
 test("task hover shows only running jobs by runner, then GitHub-hosted", () => {

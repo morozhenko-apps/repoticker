@@ -45,7 +45,7 @@ export function buildQuotaDetails(state, authorized = false, statusMessage = nul
     { title: "Queued · " + shown(c.queued), rows: laneRows(c, "queued") },
     { title: "Hosted usage (unknown)", rows: [
       ["Minutes left", "—"], ["Concurrency", "—"]
-    ], message: "Billing access not granted; jobs may be blocked by exhausted minutes." },
+    ], message: "No billing access; may be exhausted." },
   ];
   const partial = state.coverage.runners !== true || state.coverage.jobs !== true ||
     state.coverage.runningLanes !== true || state.coverage.queuedLanes !== true;

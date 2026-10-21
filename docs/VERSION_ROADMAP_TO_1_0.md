@@ -200,7 +200,7 @@ A 1.0.0 tag is permitted only after:
 - [x] Mode B declared **mandatory before stable 1.0.0** with explicit
       source-of-truth pipeline and negative testing requirements.
 - [x] Roadmap published in the GitHub repository on `dev`.
-- [ ] Mode B inventory/branch map/matrix measured; no audit claimed.
+- [x] Mode B Stage 1–3 source scan and artifact inventory recorded in [`MODE_B_INVENTORY.md`](testing/MODE_B_INVENTORY.md); branch map/matrix and measured coverage remain open, so **Mode B is not complete**.
 - [ ] Mode B tests/mutations/coverage complete; no quality metrics invented.
 - [ ] STABLE/known-FLAKY split wired to CI for the pre-1.0 gate.
 - [ ] v0.2 release candidate built/tagged/published; unchanged here.

@@ -1,4 +1,4 @@
-import { buildQuotaDetails } from "./quota-details.mjs";
+import { buildHoverDetails, isHoverKind } from "./quota-details.mjs";
 import { usageHeight } from "./quota-size.mjs";
 
 const byId = id => document.getElementById(id);
@@ -17,8 +17,10 @@ function line(parent, label, value) {
 }
 function paint(details) {
   const root = byId("quota-content");
+  const title = byId("quota-title");
+  if (title) title.textContent = details.status;
   root.replaceChildren();
-  add(root, "span", details.status, "quota-message");
+
   if (!details.connected) add(root, "span", details.message, "quota-message");
   else {
     for (const section of details.sections) {
@@ -64,6 +66,7 @@ function paint(details) {
 // The hover balloon is its own Tauri WebView. Its event permission is
 // deliberately scoped to usage-events.json rather than inherited from main.
 let refreshId = 0;
+let activeKind = "billing";
 function statusUnavailable(message) {
   paint({ connected: false, status: "Status unavailable", message, sections: [] });
 }
@@ -72,21 +75,21 @@ async function refresh() {
   try {
     const snapshot = await invoke("get_snapshot");
     if (id !== refreshId) return; // Drop an older Git scan response.
-    paint(buildQuotaDetails(snapshot.runner_state, snapshot.connected, snapshot.monitor_message));
+    paint(buildHoverDetails(snapshot.runner_state, activeKind, snapshot.connected, snapshot.monitor_message));
   } catch {
     if (id === refreshId) {
       statusUnavailable("Cannot read GitHub Actions status. Reopen the balloon to retry.");
     }
   }
 }
-function subscribe(eventName) {
+function subscribe(eventName, handler = refresh) {
   const listen = window.__TAURI__?.event?.listen;
   if (typeof listen !== "function") {
     statusUnavailable("GitHub Actions updates are unavailable in this window.");
     return;
   }
   void Promise.resolve()
-    .then(() => listen(eventName, refresh))
+    .then(() => listen(eventName, handler))
     .catch(() => {
       // Failed event permissions must never be displayed as a missing
       // GitHub authorization.
@@ -94,6 +97,11 @@ function subscribe(eventName) {
       statusUnavailable("GitHub Actions updates cannot be subscribed to.");
     });
 }
-subscribe("repoticker-usage-shown");
+// Each entry switches its content before reading the new snapshot.
+function onUsageShown(event) {
+  if (isHoverKind(event?.payload)) activeKind = event.payload;
+  void refresh();
+}
+subscribe("repoticker-usage-shown", onUsageShown);
 subscribe("repoticker-monitor-updated");
 void refresh();

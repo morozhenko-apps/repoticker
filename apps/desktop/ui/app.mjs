@@ -1,5 +1,6 @@
 import { nextCardView, pullReadyCommitCount } from "./view.mjs";
 import { createNativeDragGesture } from "./native-drag.mjs";
+import { startGithubMonitoring } from "./github-monitor.mjs";
 
 const emptySnapshot = {
   roots: [], repositories: [], errors: [],
@@ -343,6 +344,7 @@ window.__TAURI__?.event?.listen?.("repoticker-reset-view", () => {
   refresh();
 });
 window.__TAURI__?.event?.listen?.("repoticker-config-changed", refresh);
+window.__TAURI__?.event?.listen?.("repoticker-monitor-updated", refresh);
 window.__TAURI__?.event?.listen?.("repoticker-git-action-finished", async event => {
   if (event.payload?.Ok) consumeResults(event.payload.Ok);
   else if (event.payload?.Err) showError(event.payload.Err);
@@ -350,6 +352,7 @@ window.__TAURI__?.event?.listen?.("repoticker-git-action-finished", async event 
   await refresh();
 });
 refresh();
+startGithubMonitoring({ invoke, event: window.__TAURI__?.event, onError: showError });
 
 /* GTK Layer Shell receives physical Wayland relative-pointer events directly.
    The WebView only owns the gesture start/end, never motion coordinates. */

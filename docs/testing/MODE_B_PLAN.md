@@ -24,7 +24,7 @@ GitHub tree: `GET /repos/morozhenko-apps/repoticker/git/trees/dev?recursive=1`; 
 | Distribution scripts | `scripts/{apt_repository,r2_release,release_assets,release_version,verify_signing_key}.py`, `{provision_apt_key,verify_signing_passphrase}.sh` | Signed-APT/immutable release, SHA256, GPG key/secret handling, retries and partial remote publication |
 | Optional relay prototype | `apps/relay-cloudflare/src/index.ts`, `apps/relay-{cloudflare,selfhost}/README.md` | Determine whether placeholder-only or executable; exclude not-shipped behavior with explicit reason, re-open if P3 ships |
 | CI and configs | `.github/workflows/{preflight,strict,desktop-release-candidates}.yml`, Tauri capabilities/config and workspace Cargo manifests/lock | Stable/flaky separation, release admission, Linux/Windows build, version consistency and promotion |
-| Existing test suites | 13 `tests/*.test.mjs`, 6 `tests/test_release_*.py`, 1 Rust `tests/git_integration.rs`; native module unit tests also embedded in Rust sources | Index scenarios/evidence and identify untested branches, do not claim a code path tested just because a file name suggests it |
+| Existing test suites | 14 `tests/*.test.mjs`, 6 `tests/test_release_*.py`, 1 Rust `tests/git_integration.rs`; native module unit tests also embedded in Rust sources | Index scenarios/evidence and identify untested branches, do not claim a code path tested just because a file name suggests it |
 
 Tree counts above are path-family counts, **not test case counts**. Do not synthesize coverage percentages. Images, icons, formatting-only CSS, routine DTOs and dependency lock entries are not top-level behavioral units; their integrity is checked through the relevant contract/integration tests.
 

@@ -19,20 +19,22 @@ test("compact has no duplicate header, refresh, or permanent results", () => {
   assert.match(html, /id="show-repos"/);
 });
 
-test("four main operations are at the bottom without an extra heading", () => {
-  assert.match(css, /\.actions \{[^}]*grid-template-columns: repeat\(4/s);
+test("four main operations remain at bottom; only two metric hovers and billing icon", () => {
+  assert.match(css, /\\.actions \\{[^}]*grid-template-columns: repeat\\(4/s);
   assert.ok(html.indexOf('id="repo-drawer"') < html.indexOf('class="status-strip"'));
   assert.ok(html.indexOf('class="status-strip"') < html.indexOf('class="actions"'));
-  assert.match(html, /id="ci-running"/);
-  assert.match(html, /id="ci-queued"/);
-  assert.match(html, /id="runner-status"/);
   const strip = html.slice(html.indexOf('class="status-strip"'), html.indexOf('class="actions"'));
-  assert.ok(strip.indexOf('id="runner-status"') < strip.indexOf('id="ci-running"'));
-  assert.ok(strip.indexOf('id="ci-running"') < strip.indexOf('id="ci-queued"'));
-  assert.ok(strip.indexOf('id="ci-queued"') < strip.indexOf('class="quota-anchor"'));
-  assert.match(ui, /Online self-hosted runners \(busy \+ idle\)/);
-  assert.match(ui, /Excludes GitHub-hosted machines/);
-  assert.match(ui, /not a billing quota/);
+  assert.ok(strip.indexOf('id="runner-status"') < strip.indexOf('id="ci-tasks"'));
+  assert.ok(strip.indexOf('id="ci-tasks"') < strip.indexOf('class="quota-anchor"'));
+  assert.doesNotMatch(strip, /id="ci-queued"/);
+  assert.match(strip, /id="runners-total"/);
+  assert.match(strip, /id="runners-online"/);
+  assert.match(strip, /id="runners-offline"/);
+  assert.match(strip, /id="tasks-running"/);
+  assert.match(strip, /id="tasks-queued"/);
+  assert.match(css, /\\.metric-online/);
+  assert.match(css, /\\.metric-offline/);
+  assert.match(css, /\\.metric-queued/);
 });
 
 test("repeating Repos collapses to compact; new open always resets", () => {

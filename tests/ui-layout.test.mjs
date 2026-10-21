@@ -190,3 +190,20 @@ test("GitHub Device Flow Settings never expose bearer tokens to JavaScript", () 
   assert.equal(cfg.app.windows.find(w=>w.label==="main").height, 122);
   assert.equal(cfg.app.windows.find(w=>w.label==="settings").height, 552);
 });
+
+test("read-only monitor flow shares native state and allows installation selection", () => {
+  const app = readFileSync(new URL("../apps/desktop/ui/app.mjs", import.meta.url), "utf8");
+  const monitor = readFileSync(new URL("../apps/desktop/ui/github-monitor.mjs", import.meta.url), "utf8");
+  const settings = readFileSync(new URL("../apps/desktop/ui/settings.mjs", import.meta.url), "utf8");
+  const html = readFileSync(new URL("../apps/desktop/ui/settings.html", import.meta.url), "utf8");
+  const quota = readFileSync(new URL("../apps/desktop/ui/quota.mjs", import.meta.url), "utf8");
+  assert.match(app, /startGithubMonitoring/);
+  assert.match(monitor, /collectRunnerState/);
+  assert.match(monitor, /"github_api_get"/);
+  assert.match(monitor, /"github_monitor_publish"/);
+  assert.match(monitor, /15 \* 60_000/);
+  assert.match(settings, /"github_set_monitor_org"/);
+  assert.match(html, /id="github-monitor-scope"/);
+  assert.match(quota, /snapshot\.monitor_message/);
+  assert.doesNotMatch(monitor, /accessToken|refreshToken|deviceCode/);
+});

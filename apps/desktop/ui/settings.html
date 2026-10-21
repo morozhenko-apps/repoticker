@@ -48,6 +48,9 @@
 
     <div class="github-grid">
       <label>GitHub authorization<input id="github-account-status" disabled value="Not connected"></label>
+      <label id="github-monitor-scope-row" hidden>Monitor account
+        <select id="github-monitor-scope"><option value="">Choose account</option></select>
+      </label>
       <label>Connection mode<select disabled><option>Simple polling</option><option>Hybrid webhook relay</option></select></label>
       <label class="worker-label">Worker URL<input disabled placeholder="https://your-worker.example"></label>
     </div>

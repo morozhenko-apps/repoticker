@@ -74,10 +74,11 @@ function paint(details) {
 async function refresh() {
   try {
     const snapshot = await invoke("get_snapshot");
-    paint(buildQuotaDetails(snapshot.runner_state));
+    paint(buildQuotaDetails(snapshot.runner_state, snapshot.connected, snapshot.monitor_message));
   } catch {
     paint(buildQuotaDetails(null));
   }
 }
 window.__TAURI__?.event?.listen?.("repoticker-usage-shown", refresh);
+window.__TAURI__?.event?.listen?.("repoticker-monitor-updated", refresh);
 refresh();

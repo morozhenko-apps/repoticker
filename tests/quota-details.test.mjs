@@ -72,3 +72,10 @@ test("external links allow canonical GitHub job URL only", () => {
   assert.equal(safeActionsJobUrl("https://github.com/a/b/actions/runs/1/job/2"),
     "https://github.com/a/b/actions/runs/1/job/2");
 });
+
+test("authorized connection awaiting initial runner data is not misreported as disconnected", () => {
+  const result = buildQuotaDetails(null, true, "Choose account to monitor");
+  assert.equal(result.status, "GitHub authorized");
+  assert.match(result.message, /Choose account/);
+  assert.deepEqual(result.sections, []);
+});

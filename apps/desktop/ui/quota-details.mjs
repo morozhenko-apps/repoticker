@@ -8,11 +8,15 @@ const lanes = (s, prefix) => [
 ];
 
 /** No fake quota values; returns only safe strings and allowlisted job links. */
-export function buildQuotaDetails(state) {
+export function buildQuotaDetails(state, authorized = false, statusMessage = null) {
   if (!state || !state.counts || !state.coverage) {
-    return { connected: false, status: "Not connected",
-      message: "Connect GitHub to view runners, active jobs and queue. Usage limits require separate permissions.",
-      sections: [] };
+    return authorized
+      ? { connected: false, status: "GitHub authorized",
+          message: statusMessage || "Fetching Actions and runner status. — means unknown, not zero.",
+          sections: [] }
+      : { connected: false, status: "Not connected",
+          message: "Connect GitHub to view runners, active jobs and queue. Usage limits require separate permissions.",
+          sections: [] };
   }
   const c = state.counts;
   const online = Number.isSafeInteger(c.busy) && Number.isSafeInteger(c.idle)
@@ -55,6 +59,6 @@ export function buildQuotaDetails(state) {
   return { connected: true,
     status: partial ? "Partial / unclassified data" : "Available",
     message: (partial ? "Some sources are incomplete; — means unknown, not zero. " : "") +
-      "Last checked: " + checked,
+      "Last checked: " + checked + (statusMessage ? ". " + statusMessage : ""),
     sections };
 }

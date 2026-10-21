@@ -10,6 +10,50 @@ let githubPending = false;
 let githubConnected = false;
 let githubStatusTimer = null;
 let githubStatusBusy = false;
+let selectedScope = null;
+
+async function refreshMonitorScopes() {
+  const row = byId("github-monitor-scope-row");
+  row.hidden = !githubConnected;
+  if (!githubConnected) return;
+  try {
+    const [config, data] = await Promise.all([
+      invoke("get_snapshot"),
+      invoke("github_api_get", { path: "/user/installations?per_page=100&page=1" })
+    ]);
+    if (!Array.isArray(data.installations)) throw Error("Invalid GitHub installations");
+    const select = byId("github-monitor-scope");
+    select.replaceChildren();
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "Choose account";
+    select.append(placeholder);
+    const accounts = data.installations.map(i => i?.account?.login)
+      .filter(name => typeof name === "string" && /^[a-zA-Z0-9_.-]+$/.test(name));
+    for (const name of [...new Set(accounts)].sort()) {
+      const option = document.createElement("option");
+      option.value = name;
+      option.textContent = name;
+      select.append(option);
+    }
+    selectedScope = config.github_monitor_org || (accounts.length === 1 ? accounts[0] : "");
+    select.value = selectedScope;
+  } catch {
+    githubMessage("GitHub authorized; cannot list available installations.", true);
+  }
+}
+
+byId("github-monitor-scope").addEventListener("change", async event => {
+  const org = event.target.value || null;
+  try {
+    await invoke("github_set_monitor_org", { org });
+    selectedScope = org;
+    githubMessage("Monitoring scope changed. Fetching Actions data.");
+  } catch (error) {
+    githubMessage(String(error), true);
+    event.target.value = selectedScope || "";
+  }
+});
 
 function stopGithubStatusUpdates() {
   if (githubStatusTimer !== null) {
@@ -104,6 +148,7 @@ async function refreshGithub() {
       ? githubFailureLabels[auth.reason]
       : (githubPhaseLabels[auth.phase] || githubPhaseLabels.idle);
     githubMessage(text, auth.phase === "failed");
+    if (githubConnected) await refreshMonitorScopes();
   } catch (error) {
     githubButtons();
     githubMessage(String(error), true);

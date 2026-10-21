@@ -356,3 +356,40 @@ runner inventory permission path, KWallet token refresh, stale/error
 state, card/balloon auto updates and long-lived polling behavior
 on Alcotester KDE Wayland. No `main` merge or public release before
 this. Issue #4 remains open.
+
+
+## Device Flow controls fail to respond (2026-10-21) — confirmed cause and regression policy
+
+**User reproduction:** after requesting a fresh GitHub device code, the
+Settings window shows `Copy code`, `Open GitHub` and `Cancel`, but
+the user reports that all three do not respond.
+
+**Source-proven root cause:** the automatic authentication status
+reconciliation change (`2f4a2fb`) removed
+`id="github-check-status"` from `settings.html`, but
+`settings.mjs` still calls
+`byId("github-check-status").addEventListener(...)`.
+Because the element is absent, evaluating the Settings module throws a
+`TypeError` at startup. In particular, `github-open-device` and
+`github-cancel-device` event listeners registered **after** that
+statement never install. The `github-copy-code` listener appears
+**before** the exception and must be tested independently; it is
+not yet proven to have the same exact failure mode. Do not silently
+assert that one removed handler explains clipboard writes.
+
+**Architectural correction:** remove the obsolete element reference
+and retain automatic native in-memory status reconciliation.
+Do NOT recreate a manual Check button. Add two focused regressions:
+1. Static contract: each literal `byId("...")` in `settings.mjs`
+   resolves to an actual element id in `settings.html`; additionally
+   validate critical native command names.
+2. Runtime smoke test: load the real Settings JS with a minimal
+   Tauri/DOM event fixture and exercise Connect, Copy code, Open
+   GitHub, Cancel; assert all callback registrations occurred and
+   their native commands are dispatched. Avoid credentials in test
+   output and any dependency that alters production runtime.
+
+Keep the GitHub Device Flow protocol, OS secret store, native
+REST monitor, card geometry, KDE drag and quota popup unchanged.
+This is a targeted Settings event-binding regression fix, not a
+change to GitHub App scopes or security.

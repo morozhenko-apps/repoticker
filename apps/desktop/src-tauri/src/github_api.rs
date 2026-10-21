@@ -294,7 +294,6 @@ mod tests {
             "/orgs/team-apps?token=secret",
             "/orgs/../settings/billing",
             "/orgs/team-apps/private",
-
             "/organizations/team/settings/billing/usage/summary?month=10",
             "/users/monalisa/settings/billing/usage/summary?year=2026&month=13",
             "/users/monalisa/settings/billing/usage/summary?year=2026&month=10&token=abc",

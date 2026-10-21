@@ -201,7 +201,7 @@ A 1.0.0 tag is permitted only after:
       source-of-truth pipeline and negative testing requirements.
 - [x] Roadmap published in the GitHub repository on `dev`.
 - [x] Mode B Stage 1–3 source scan and artifact inventory recorded in [`MODE_B_INVENTORY.md`](testing/MODE_B_INVENTORY.md); branch map/matrix and measured coverage remain open, so **Mode B is not complete**.
-- [ ] Mode B tests/mutations/coverage complete; no quality metrics invented.
+- [ ] Mode B Stage 4 [branch map](testing/MODE_B_BRANCH_MAP.md) started for high-risk source and remains incomplete. Tests/mutations/coverage are not complete; no quality metrics invented.
 - [ ] STABLE/known-FLAKY split wired to CI for the pre-1.0 gate.
 - [ ] v0.2 release candidate built/tagged/published; unchanged here.
 - [ ] v0.9 RC and v1.0 product/OS/QA acceptance achieved.

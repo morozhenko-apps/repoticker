@@ -48,23 +48,23 @@ This is **release candidate feedback**, not a new v0.3 feature.
 
 ## Ordered implementation and acceptance
 
-- [ ] Fix GTK exact-height min/max transition for **main and usage**
+- [x] Fix GTK exact-height min/max transition for **main and usage**
       ScrolledWindows, preserving pointer-pass-through and async GTK
       resizing; add deterministic Rust/test contract evidence of order
       and the invariant.
-- [ ] Restrict CSS help cursor to Runners/Tasks/Billing hover controls;
+- [x] Restrict CSS help cursor to Runners/Tasks/Billing hover controls;
       action buttons have clickable pointer/default disabled cursor.
-- [ ] Render native status `Checking GitHub connection…` until native
+- [x] Render native status `Checking GitHub connection…` until native
       auth check, followed by `Connecting to GitHub…` until a
       monitor result; disconnected prompt only after native evidence
       of no valid credential. Keep runners/tasks unknown until collected.
-- [ ] Fix compact status-strip exact height to avoid content-based
+- [x] Fix compact status-strip exact height to avoid content-based
       reflow; do not claim physical GTK compositor dimensions changed
       unless measured.
-- [ ] Hide worker URL in unavailable Simple polling mode, keep Hybrid
+- [x] Hide worker URL in unavailable Simple polling mode, keep Hybrid
       selector disabled. Do not add unimplemented relay wiring or
       introduce a persistent settings field.
-- [ ] Add focused stable Rust/Node source/behavior regression tests.
+- [x] Add focused stable Node behavior/source contract regression tests; Rust build/format checked at final CI gate.
 - [ ] Run final GitHub Preflight **once** after implementation; verify
       Rust formatting, core tests, Node tests and Linux desktop compile.
       Physical AppImage/DEB KDE acceptance remains manual on Alcotester.
@@ -75,3 +75,35 @@ This is **release candidate feedback**, not a new v0.3 feature.
 Rollback: independent code commits per GTK size, card cursor/layout,
 monitor loading presentation and unsupported Worker field. Documentation
 commits are separate. No extra branch, released package or token mutation.
+
+## Implementation checkpoint (2026-10-22)
+
+Code changes are on `dev`:
+- `linux_surface.rs`: the shared `set_exact_viewport_height` orders
+  max/min setters according to grow/shrink; invoked for both card and
+  usage surfaces.
+- `style.css`: action buttons use pointer/default-disabled, help is
+  restricted to actual status hover targets; the compact metric strip
+  has an exact 25px row.
+- `monitor_cache.rs`: native unchecked-auth startup gets the nonsecret
+  display status "Checking GitHub connection...".
+- `github-monitor.mjs`: after native auth succeeds and before remote
+  collection finishes publishes "Connecting to GitHub..."; independently
+  tracks completed collection so normal periodic refresh need not erase
+  the existing snapshot. Schedulers/data collection are injectable for
+  deterministic tests, while production behavior uses existing timers.
+- `quota-details.mjs`: all three hover kinds expose Connecting while
+  pending rather than instructing reauthorization.
+- `settings.html` + `settings.mjs`: Worker URL is hidden/disabled in
+  simple polling and can only show when an *enabled* hybrid selector is
+  active. The shipped v0.2 selector remains disabled because relay is
+  unimplemented; no data persistence or auth boundary changed.
+- Focused regression tests updated in `tests/github-monitor.test.mjs`,
+  `tests/quota-details.test.mjs`, `tests/settings-controls.test.mjs`,
+  `tests/quota-surface.test.mjs` and `tests/ui-layout.test.mjs`.
+
+At this checkpoint code tests are **committed, not yet executed**.
+The user's initial AppImage was built before these changes and cannot
+validate them. The described few-pixel change of *physical* GTK card
+size still requires user measurement after a fresh build; source
+inspection alone does not establish this was resolved.

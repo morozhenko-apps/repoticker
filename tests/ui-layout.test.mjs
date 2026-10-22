@@ -212,3 +212,11 @@ test("read-only monitor flow shares native state and allows installation selecti
   assert.match(quota, /snapshot\.monitor_message/);
   assert.doesNotMatch(monitor, /accessToken|refreshToken|deviceCode/);
 });
+
+test("only status hovers use help cursor and compact metric row cannot change card height", () => {
+  assert.match(css, /\.card \.status-hover \{ cursor: help; \}/);
+  assert.match(css, /\.card button:not\(:disabled\), \.card input, \.card select \{ cursor: pointer; \}/);
+  assert.match(css, /\.card button:disabled \{ cursor: default; \}/);
+  assert.doesNotMatch(css, /\.card button, \.card input, \.card select, \.card \.quota-anchor/);
+  assert.match(css, /\.status-strip \{[^}]*height: 25px; min-height: 25px; max-height: 25px; overflow: hidden;/);
+});

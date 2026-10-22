@@ -90,6 +90,7 @@ export function startGithubMonitoring({ invoke, event, onError = () => {} }) {
   let rerun = false;
   let lastAttempt = 0;
   let minIntervalMs = monitorRefreshDelay(100);
+  let hasPublishedResult = false;
   const get = path => invoke("github_api_get", { path });
   const publish = (connected, runnerState = null, message = null) =>
     invoke("github_monitor_publish", { connected, runnerState, message });
@@ -101,21 +102,30 @@ export function startGithubMonitoring({ invoke, event, onError = () => {} }) {
     if (!force && Date.now() - lastAttempt < minIntervalMs) return;
     busy = true;
     lastAttempt = Date.now();
+    let authorized = false;
     try {
       const auth = await invoke("github_auth_status");
-      if (!auth.connected) {
+      authorized = auth.connected === true;
+      if (!authorized) {
+        hasPublishedResult = false;
         await publish(false);
         return;
       }
+      // Native credential validation precedes this message. Never say
+      // "Connect GitHub" while an authorized account is loading.
+      if (!hasPublishedResult)
+        await publish(true, null, "Connecting to GitHub...");
       const snapshot = await invoke("get_snapshot");
       const result = await collectForAccount({
         get, selected: snapshot.github_monitor_org,
       });
       minIntervalMs = monitorRefreshDelay(result.repositoryCount ?? 100);
       await publish(true, result.state, result.reason);
+      hasPublishedResult = true;
     } catch (error) {
-      await publish(true, null,
+      await publish(authorized, null,
         githubFailureMessage(githubFailureReason(error))).catch(onError);
+      hasPublishedResult = true;
     } finally {
       busy = false;
       if (rerun) {
@@ -126,10 +136,11 @@ export function startGithubMonitoring({ invoke, event, onError = () => {} }) {
   }
   event?.listen?.("repoticker-github-auth", evt => {
     if (["connected", "disconnected"].includes(evt?.payload?.status)) {
+      hasPublishedResult = false;
       void refresh(true);
     }
   });
-  event?.listen?.("repoticker-github-scope-changed", () => { void refresh(true); });
+  event?.listen?.("repoticker-github-scope-changed", () => { hasPublishedResult = false; void refresh(true); });
   // Refresh only while the application is running, never an API request
   // per hover, mouse movement or local Git scan.
   setInterval(() => { void refresh(); }, REFRESH_MS);

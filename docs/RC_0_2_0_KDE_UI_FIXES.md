@@ -118,6 +118,30 @@ validate them. The described few-pixel change of *physical* GTK card
 size still requires user measurement after a fresh build; source
 inspection alone does not establish this was resolved.
 
+## Physical GTK warning and geometry evidence (2026-10-22)
+
+The owner rebuilt the 0.2.0 AppImage and ran it on KDE Wayland
+with `REPOTICKER_UI_DEBUG=1`. In the recorded
+`/tmp/repoticker-0.2.0-gtk.log`:
+- `Gtk-CRITICAL|GLib-CRITICAL` count: **0**.
+- Compact card: `requested=122 actual=390x122`.
+- Expanded repository drawer: `requested=510 actual=390x510`.
+- Layer Shell margins: `(211,100)` throughout the shown states.
+- The last `resize: height=122` entry logged `allocated=1x1`
+  while the transition was occurring; **no subsequent settled
+  allocation is visible** in the excerpt, so this is not evidence of
+  a lasting size change or proof of the final compact allocation.
+
+**Accepted within the supplied sample:** disappearance of the
+previous repeated GTK height-constraint CRITICAL messages and
+correct compact and expanded allocation at the shown checkpoints.
+
+**Still unverified from this sample:** button cursor shape,
+end-of-cycle compact allocation, About version, OS keyring state
+after app restart. The temporarily false `Not connected` and
+staged slow startup are deferred by the owner to v0.3 issue #12,
+not resolved by these GTK geometry fixes.
+
 ## Final CI evidence
 
 - Source commit: `18f400fa8191cb98e553efc8cc44c81386a6281a`

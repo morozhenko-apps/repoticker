@@ -51,16 +51,21 @@ There is no unattended background Git mutation and no required cloud service.
 - **GitHub hosted free balance** is not inferred from gross billing-SKU
   consumption; a remaining-free-minutes value may be unknown.
 - **Offline/limited GitHub APIs:** missing permissions or incomplete
-  result pagination can leave some counters unknown. Live 401/403/429,
-  refresh/revocation and failure-path acceptance remain open in issue #4.
+  result pagination can leave some counters unknown. Static 401/403/429
+  classification and redacted-message regression tests passed CI, but
+  live token expiry/revocation, locked wallet, denied permissions and
+  offline failure-path acceptance remain open in issue #4.
 - **Linux upgrade:** local DEB upgrade from installed v0.1.0 to
   v0.2.0 succeeded on KDE; signed-repository APT upgrade remains
   untested until publication. Normal installed-KDE restart retained
   GitHub authorization, local repository roots and selected Monitor
   account, without repeating Device Flow; uninstall lifecycle and
   negative KWallet/token handling are separately pending.
-- **Windows:** a buildable unsigned NSIS installer exists, but real
-  Windows installation/tray/auth acceptance is not yet evidenced.
+- **Windows:** Windows x64 NSIS is built by the release workflow but
+  is **unsigned and not physically tested**. Actual Windows installation,
+  tray rendering, settings and GitHub authorization will be checked
+  after publication. CI build success must not be interpreted as
+  verified Windows runtime compatibility.
 - **macOS:** not shipped.
 - **Billing:** organization/personal reports are monthly and do not
   prove free allowance usage or remaining included minutes.

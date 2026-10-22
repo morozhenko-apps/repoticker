@@ -259,6 +259,49 @@ Deferred to `v0.3.0`: slow staged startup and temporary false
 The owner accepted **the persisted authorized state after loading**,
 not a fix for this deferred startup defect.
 
+## Explicit release admission — owner decision 2026-10-22
+
+The owner explicitly instructed **release v0.2.0 now and physically
+test the Windows installer later**. This is approval to proceed with
+the established `dev → main → main Preflight → immutable v0.2.0 tag →
+protected apt-release review → signed APT/R2 → GitHub Release` sequence;
+it is **not** evidence that any unperformed validation passed.
+
+- **Windows:** keep the automated NSIS build in the tagged workflow.
+  The Windows x64 installer is **not physically tested**. Mark this
+  clearly in the actual public GitHub Release description and draft
+  release notes; retain Windows runtime verification as a post-release
+  open task. Do not call it Windows runtime accepted.
+- **GitHub/KWallet:** normal KDE Device Flow, retained authorization
+  after restart and authorized runner/job counts are accepted; native
+  401/403/404/429 classification, redacted JS messages and focused
+  tests passed Preflight. Live expiry/revocation, vault-lock,
+  permission-denial and offline failure injection remain **untested
+  physically** and tracked in #4. They do not become checked by
+  shipping; carry them into v0.3 hardening with explicit disclosure.
+- **Linux:** local DEB 0.1.0→0.2.0 upgrade, AppImage startup,
+  and zero GTK/GLib-CRITICAL diagnostics confirmed. **Public signed
+  APT 0.1.0→0.2.0 upgrade cannot be done until the new signed index is
+  actually published.** Keep it as the post-publication gate.
+- **Known startup behavior:** eventual GitHub and local-repo load
+  works, but incorrect early `Not connected` and long staged
+  initialization are deferred to [#12](https://github.com/morozhenko-apps/repoticker/issues/12)
+  for v0.3.0. Do not claim fixed.
+- **Release tooling:** `.github/workflows/desktop-release-candidates.yml`
+  is tag-triggered and uses the protected `apt-release` environment.
+  GitHub Release must explain Windows's build-only testing status.
+  Never silently bypass the required reviewer, bypass checksum/GPG
+  validation or update the immutable previous release.
+
+**Required sequence:** first commit truthful release description and
+this decision to `dev`; run final Preflight on the resulting candidate;
+perform a non-forced FF update to `main`; verify main Preflight; create
+`v0.2.0` at **exact main HEAD** using an authorized Git tagging
+capability; observe the protected workflow and public readback. If the
+available connector cannot create a tag or authorize the protected
+environment, stop at the verified point and require owner-side GitHub
+action; do not assert publication.
+
 ## Release blocker matrix
 
 | Area | Evidence | Release gate |

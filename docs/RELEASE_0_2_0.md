@@ -22,6 +22,52 @@ immutable tags, APT metadata nor published downloads are modified here.
 `dev` and `main` are the only Git branches. No additional feature branch
 is needed.
 
+## Active Mode A implementation slice — REST failure transparency (2026-10-22)
+
+The 0.2.0 milestone resumes with focused **Mode A** reliability correction,
+not the Mode B matrix (reserved for the 0.9.0 RC). It uses existing
+read-only `github_api_get`, `runner-collector` and `github-monitor`
+contracts; no GitHub App scope, persistent state or external service changes.
+
+**Observed source cause:** `github_api_get` treats 403 permission denial
+and GitHub secondary/primary rate limiting alike; it does not specially
+classify HTTP 429. The JS runner collector catches all failures as
+`unavailable`, and the monitor replaces the result with a generic status.
+The user cannot distinguish revoked credentials, org runner permission
+denial, service outage or temporary throttling. Partial runner inventory
+must remain independent of readable Actions jobs.
+
+Ordered work and rollback:
+1. [ ] Introduce a small, pure sanitized native HTTP failure classifier:
+   401 unauthorized; 403 with GitHub primary-rate remaining=0 or
+   `Retry-After` header → rate-limited; ordinary 403 → permission
+   denied; 404 → not found; 429 → rate-limited; other failures → unavailable.
+   Never send GitHub raw error JSON, HTTP bodies, tokens or private resource
+   paths into the WebView. Keep the existing internal Tauri error string
+   contract (no new public API or auth permission).
+2. [ ] Add a pure JS mapping from these **exact static** native messages
+   to finite user-facing reason categories. Catch blocks in the collector
+   retain only the category, without exposing thrown provider text.
+   Rate-limited/unavailable runner API must not invalidate independently
+   complete repo job totals.
+3. [ ] Show a short actionable reason in the already-existing monitoring
+   status, preserving `null` for unknown counts, no false zeros, no
+   modal dialog or credential deletion on 401.
+4. [ ] Targeted deterministic Rust/Node regression tests, including
+   401/403/429, a 403 with rate-limit headers, 404, secondary failure,
+   network exception, partial owner coverage and no secret leak. Run
+   existing STABLE suite once **after** final implementation through CI.
+5. [ ] Record CI source SHA and exact results; physical expired-token
+   and network-failure acceptance on Alcotester remains separate.
+
+No network retry per hover, no force loops. The adaptive existing
+2–7 minute monitoring cadence is unchanged for this slice. Fine-grained
+`Retry-After`/reset-time backoff, ETag cache and 429 retry scheduling
+are the explicitly planned v0.3.0 hardening; 0.2.0 must not claim
+them implemented. On a failure this slice can be rolled back in isolated
+code/test commits, leaving the previously working authorized monitor and
+KWallet untouched.
+
 ## Release blocker matrix
 
 | Area | Evidence | Release gate |

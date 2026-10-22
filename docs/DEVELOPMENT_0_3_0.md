@@ -217,6 +217,47 @@ evidence that the owner's entire staggered startup delay is fixed.
 Network and Git inspection still take time in their legitimate
 independent paths. No new release/version bump is required.
 
+## Slice A2 — bounded, opt-in startup instrumentation (implementation plan)
+
+**Decision:** do not guess which of the remaining cold-start phases is
+slow. Instrument actual call durations in native Rust and monotonic,
+process-relative milestone timestamps in the UI. Keep the diagnostics
+disabled by default. Owner can explicitly start a *locally rebuilt*
+`dev` AppImage with `REPOTICKER_STARTUP_DEBUG=1`; this flag must not be
+persisted, deployed, or sent as telemetry.
+
+- Native trace helper uses process-relative `Instant` and a duration
+  guard, emitting `RepoTicker startup: stage=... since_ms=...
+  duration_ms=...` to stderr **only** with the exact flag value `1`.
+- Timed spans: full local `get_snapshot`, Git discovery, aggregated
+  inspection, Settings config-only read, monitor scope read, native
+  wallet authorization check, token acquisition/refresh, and categories
+  of read-only REST requests. No request paths, repo/user names,
+  account IDs, tokens, response bodies, header values or credentials.
+- UI milestones via a fixed, bounded **allowlist of stage names** in
+  native IPC: card boot and initial snapshot; GitHub monitor auth,
+  selected scope and completed runner/job collection; Settings first
+  config/auth resolution and installation list. Reject or silently
+  ignore unrecognized strings so untrusted WebView content cannot
+  inject arbitrary log text. Diagnostics must not block UI or remote
+  calls.
+- Deterministic source/logic tests must confirm the opt-in flag,
+  allowlisted milestones, nonsecret spans, and exact native command
+  registration. The final normal Preflight is run once after the
+  implementation edits; no full Mode B, no version bump or publication.
+- Record **real** cold and warm measurements on Alcotester before
+  attributing the remaining delay to any subsystem. If the user
+  does not physically run the instrumented build, leave performance
+  conclusions marked as unverified.
+
+**Potential subsequent architectural optimization already identified
+but not covered by timing alone:** `app.mjs` currently subscribes the
+`repoticker-monitor-updated` event to the **full**
+`get_snapshot`/local Git inspection instead of a cached read-only
+monitor delta. A focused cache-boundary change can remove that edge if
+instrumentation confirms its impact; do not alter Git safety or
+monitor count semantics without a regression test.
+
 ## Stop factors and invariant boundaries
 
 If later stages require a changed persistent model, GitHub App

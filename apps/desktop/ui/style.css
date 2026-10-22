@@ -28,7 +28,7 @@ button:focus-visible, input:focus-visible, .status-hover:focus-visible { outline
 .repo-menu button:hover { background: color-mix(in srgb, CanvasText 10%, transparent); }
 .empty { margin: 12px 15px; font-size: 13px; color: GrayText; }
 
-.status-strip { flex-shrink: 0; min-height: 25px; display: flex; align-items: center; justify-content: space-around; gap: 5px; padding: 0 5px 2px; font-size: 12px; color: #7a828b; white-space: nowrap; }
+.status-strip { flex-shrink: 0; height: 25px; min-height: 25px; max-height: 25px; overflow: hidden; display: flex; align-items: center; justify-content: space-around; gap: 5px; padding: 0 5px 2px; font-size: 12px; color: #7a828b; white-space: nowrap; }
 .status-hover { cursor: help; display:inline-flex; align-items:center; justify-content:center; gap:3px; min-width:0; border-radius:4px; }
 .status-hover .metric-caption { color:#626b75; font-weight:500; margin-right:2px; }
 .metric-neutral { color:#68717b; font-variant-numeric:tabular-nums; font-weight:600; }
@@ -64,7 +64,9 @@ button:focus-visible, input:focus-visible, .status-hover:focus-visible { outline
 /* The title-less card is its own drag surface: only controls keep click cursors. */
 .card { cursor: grab; }
 .card:active { cursor: grabbing; }
-.card button, .card input, .card select, .card .quota-anchor, .card .status-hover { cursor: help; }
+.card button:not(:disabled), .card input, .card select { cursor: pointer; }
+.card button:disabled { cursor: default; }
+.card .status-hover { cursor: help; }
 .card[data-view="compact"] { justify-content: flex-end; }
 
 /* The card is an actual compact popup: no title area, empty caption or

@@ -188,6 +188,15 @@ by the local packaging result.
 - [ ] User-verified stable compact size, no Gtk-CRITICAL, and
   connection status transitions. Windows and secure published
   APT upgrade remain separate release gates.
+- [x] Owner rebuilt the local 0.2.0 DEB/AppImage from current `dev`;
+  build succeeded on Ubuntu KDE. AppImage starts and eventually
+  displays local repos plus Actions/runner statistics; **startup has a
+  measurable-looking staged delay and prematurely shows ‘Not connected’**
+  despite existing credentials. Full diagnosis/optimization is
+  deliberately deferred to **v0.3.0 [issue #12](https://github.com/morozhenko-apps/repoticker/issues/12)**;
+  no timing values are claimed verified. No grep-filtered GTK geometry
+  log was supplied after the build; absence of Gtk-CRITICAL warnings
+  cannot be asserted from build output alone.
 
 ## Release blocker matrix
 

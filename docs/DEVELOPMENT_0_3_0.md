@@ -258,6 +258,72 @@ monitor delta. A focused cache-boundary change can remove that edge if
 instrumentation confirms its impact; do not alter Git safety or
 monitor count semantics without a regression test.
 
+## A2 instrumentation checkpoint (2026-10-22)
+
+- **Implementation commit**:
+  [`0d7f02a`](https://github.com/morozhenko-apps/repoticker/commit/0d7f02a1e84ff6d28bd578db91f0aea3670b7fe7);
+  subsequent Rustfmt-only adjustment `b61e580`.
+- `apps/desktop/src-tauri/src/startup_diagnostics.rs` provides a
+  **disabled-by-default** timer and an explicitly allowlisted stage
+  handler. It logs strictly fixed stage labels and numeric durations;
+  unrecognized labels are ignored and may not inject arbitrary strings.
+- Native sampled durations include full `get_snapshot`,
+  `git::discover_all`, aggregate `git::inspect`, config-only
+  monitor/Settings reads, KWallet authorization, token acquisition
+  and each validated REST category. JS milestone traces cover card,
+  Settings and GitHub monitor lifecycle; they are fire-and-forget,
+  never block UI.
+- Scope of logging: **only** with
+  `REPOTICKER_STARTUP_DEBUG=1` at application launch. Exact REST
+  URLs/paths, repository and organization names, tokens, device
+  codes, provider headers/bodies, and config values are not logged.
+- Focused tests confirm the allowlist rejects arbitrary text,
+  instrumentation hooks run in the expected monitor order and
+  full-repository snapshots are still decoupled from initial
+  GitHub-monitor and Settings configuration reads.
+- **Latest source CI:** [Preflight
+  #39851495575](https://github.com/morozhenko-apps/repoticker/actions/runs/39851495575)
+  initially identified one Rustfmt-only difference. Corrected in
+  `b61e580`. **Do not call this final CI green until the post-format
+  head run is verified.**
+
+### Physical cold/warm collection (owner's KDE desktop)
+
+Do not run the installed APT binary simultaneously with the instrumented
+AppImage. A build from current `dev` retains version markers `0.2.0`
+because this is continuous unreleased development; it is **not** the
+published `v0.2.0` source, and must never be distributed under that tag.
+
+From `~/Documents/GitHub/repoticker`:
+
+```bash
+git switch dev
+git pull --ff-only
+cargo tauri build --bundles appimage
+
+APPIMAGE="$PWD/target/release/bundle/appimage/RepoTicker_0.2.0_amd64.AppImage"
+REPOTICKER_STARTUP_DEBUG=1 "$APPIMAGE" 2> /tmp/repoticker-dev-cold.log
+
+# After closing the AppImage from the tray, review:
+grep '^RepoTicker startup:' /tmp/repoticker-dev-cold.log
+```
+
+Repeat the launch in a **new process** using a different log filename
+(`/tmp/repoticker-dev-warm.log`). For cold runs, record whether
+KWallet was already unlocked and whether GitHub network was online;
+do not artificially clear credentials, drop Linux filesystem caches
+or remove user settings. Log lines are process-relative
+`since_ms` and per-phase `duration_ms`, not absolute clock times.
+Remote request categories may produce multiple repeated samples.
+
+Compare stages: `card.start`, `git.scan_total`,
+`card.snapshot_ready`, `settings.start`,
+`github.auth_status`, `github.wallet_read`,
+`monitor.auth_ready`, `monitor.scope_ready`,
+`monitor.collect_ready`, `card.monitor_ready`.
+The instrumentation only describes timing; no root-cause
+claim is warranted until actual measurements are supplied.
+
 ## Stop factors and invariant boundaries
 
 If later stages require a changed persistent model, GitHub App

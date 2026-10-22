@@ -1,5 +1,18 @@
 // Settings are transactional: editing never writes on disk until Apply.
 const byId = id => document.getElementById(id);
+
+/** Hybrid relay has no native transport or persistence in v0.2.
+ * Its URL input is irrelevant to simple polling and cannot be enabled
+ * until a supported connection mode is available in a future release. */
+function syncWorkerControls() {
+  const mode = byId("github-connection-mode");
+  const worker = byId("github-worker-url");
+  const available = !mode.disabled && mode.value === "hybrid";
+  byId("github-worker-row").hidden = !available;
+  worker.disabled = !available;
+}
+byId("github-connection-mode").addEventListener("change", syncWorkerControls);
+syncWorkerControls();
 const invoke = (command, args = {}) => window.__TAURI__?.core?.invoke(command, args) ??
   Promise.reject(new Error("Open settings in RepoTicker."));
 

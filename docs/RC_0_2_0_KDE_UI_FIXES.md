@@ -65,7 +65,7 @@ This is **release candidate feedback**, not a new v0.3 feature.
       selector disabled. Do not add unimplemented relay wiring or
       introduce a persistent settings field.
 - [x] Add focused stable Node behavior/source contract regression tests; Rust build/format checked at final CI gate.
-- [ ] Run final GitHub Preflight **once** after implementation; verify
+- [x] Run final GitHub Preflight after implementation; verify
       Rust formatting, core tests, Node tests and Linux desktop compile.
       Physical AppImage/DEB KDE acceptance remains manual on Alcotester.
 - [ ] Record final source SHA and evidence, request a new local AppImage
@@ -117,3 +117,21 @@ The user's initial AppImage was built before these changes and cannot
 validate them. The described few-pixel change of *physical* GTK card
 size still requires user measurement after a fresh build; source
 inspection alone does not establish this was resolved.
+
+## Final CI evidence
+
+- Source commit: `18f400fa8191cb98e553efc8cc44c81386a6281a`
+  (tests-only last code/test change).
+- [Preflight #39826251376](https://github.com/morozhenko-apps/repoticker/actions/runs/39826251376):
+  **SUCCESS 4/4** — Rust formatting, core tests and Clippy; Node UI and
+  release-contract tests; Linux desktop compilation; aggregate gate.
+- Earlier run #39825447714 failed only because a strict mock Settings
+  DOM list had not included the new control. The fixture now derives IDs
+  from actual HTML. All original authorization lifecycle assertions
+  remain active; no tests were skipped/quarantined.
+- **Still pending physical acceptance:** this CI is a compile/test
+  result, not KDE Wayland or AppImage smoke. Rebuild from the current
+  `dev`; verify zero Gtk-CRITICAL warnings when the hover panels change
+  heights, cursor shapes, startup connection messages, Worker field
+  visibility, and fixed compact GTK allocation. Do not change `main`
+  or publish the tag before that validation.

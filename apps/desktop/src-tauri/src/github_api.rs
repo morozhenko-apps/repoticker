@@ -14,6 +14,19 @@ const MAX_BODY: usize = 2 * 1024 * 1024;
 const PAGE_CAP: u32 = 10;
 const API_VERSION: &str = "2022-11-28";
 
+/// A fixed, redacted error vocabulary shared with the JS monitor policy.
+/// Do not return GitHub response bodies, account names or HTTP header values.
+fn api_http_failure(status: u16, remaining: Option<&str>, retry_after: Option<&str>) -> &'static str {
+    match status {
+        401 => "GitHub API authorization expired or revoked.",
+        403 if remaining == Some("0") || retry_after.is_some() => "GitHub API rate limited.",
+        403 => "GitHub API permission denied.",
+        404 => "GitHub API resource inaccessible.",
+        429 => "GitHub API rate limited.",
+        _ => "GitHub API request failed.",
+    }
+}
+
 pub(crate) fn valid_name(value: &str) -> bool {
     !value.is_empty()
         && value.len() <= 100
@@ -245,13 +258,15 @@ pub async fn github_api_get(app: AppHandle, path: String) -> Result<Value, Strin
         .await
         .map_err(|_| "GitHub API network error.")?;
     if !response.status().is_success() {
-        return Err(match response.status().as_u16() {
-            401 => "GitHub authorization expired or revoked.",
-            403 => "GitHub permissions or rate limit prevent this request.",
-            404 => "GitHub resource not accessible to this installation.",
-            _ => "GitHub API request failed.",
-        }
-        .into());
+        let remaining = response
+            .headers()
+            .get("x-ratelimit-remaining")
+            .and_then(|header| header.to_str().ok());
+        let retry_after = response
+            .headers()
+            .get(header::RETRY_AFTER)
+            .and_then(|header| header.to_str().ok());
+        return Err(api_http_failure(response.status().as_u16(), remaining, retry_after).into());
     }
     let mut bytes = Vec::new();
     while let Some(chunk) = response
@@ -374,4 +389,16 @@ mod tests {
             "grossQuantity": "invalid" }]}))
         .is_err());
     }
+    #[test]
+    fn github_rest_failures_distinguish_permissions_and_rate_limits_without_provider_text() {
+        assert_eq!(api_http_failure(401, None, None), "GitHub API authorization expired or revoked.");
+        assert_eq!(api_http_failure(403, None, None), "GitHub API permission denied.");
+        assert_eq!(api_http_failure(403, Some("123"), None), "GitHub API permission denied.");
+        assert_eq!(api_http_failure(403, Some("0"), None), "GitHub API rate limited.");
+        assert_eq!(api_http_failure(403, None, Some("90")), "GitHub API rate limited.");
+        assert_eq!(api_http_failure(429, None, None), "GitHub API rate limited.");
+        assert_eq!(api_http_failure(404, None, None), "GitHub API resource inaccessible.");
+        assert_eq!(api_http_failure(502, None, None), "GitHub API request failed.");
+    }
+
 }

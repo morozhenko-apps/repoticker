@@ -12,6 +12,16 @@ and [startup defect #12](https://github.com/morozhenko-apps/repoticker/issues/12
 Normal focused tests apply. The exhaustive Mode B program begins only
 at the **v0.9.0 release-candidate gate**.
 
+**Development cadence (owner decision, 2026-10-22):** Keep implementing
+reliability slices on `dev` and validate changes as needed; neither
+A1/A2/A3 nor the proposed `0.3.0` checkpoint requires an immediate public
+release. Only cut a new immutable intermediate version if progress becomes
+extended or a useful release-ready increment warrants it. Do not bump
+Cargo/Tauri versions or promote `main` as a routine step after each slice.
+The v0.3–v0.8 labels are planning buckets and can be consolidated.
+Mandatory complete Mode B at the v0.9 RC and v1.0 stable acceptance
+remain unchanged.
+
 ## Accepted release and open aftercare
 
 - v0.2.0 tagged release CI and protected signed APT/R2 publication
@@ -160,9 +170,11 @@ or data conversion required, and published v0.2 is unaffected.
 - **A4: operational hardening**. Rate-reset-aware bounded
   scheduling, offline/stale, token expiry and authorization failures,
   ETag correctness, account/repository selection with focused tests.
-- **A5: 0.3 release gate**. Version helper/Cargo.lock, final stable
-  CI, physical KDE and Windows smoke where possible; publish as a
-  new immutable tag only after acceptance. No auto-promotion.
+- **A5: optional intermediate release gate**. Only when the owner
+  decides a release is useful: use the version helper/Cargo.lock,
+  final stable CI and physical smoke, then publish a new immutable
+  tag after acceptance. Otherwise continue development on `dev`
+  without version bump, promotion or tag.
 
 ## Stop factors and invariant boundaries
 

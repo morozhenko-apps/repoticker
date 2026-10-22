@@ -28,6 +28,17 @@ explicit documented product decision. Patch releases are reserved for
 compatible corrections; no arbitrary obligation to publish every minor.
 SemVer pre-1.0 does not itself guarantee stability.
 
+**Owner delivery policy (2026-10-22): Continuous development, not a release
+per milestone.** v0.3–v0.8 below name work packages and checkpoints, **not
+mandatory public versions**. Continue adding architecture and tests to
+`dev` without creating a GitHub Release, Cargo version bump, main promotion,
+or signed APT publication after every completed slice. If work takes
+longer than expected, or there is a useful independently accepted state,
+the owner may decide to cut an intermediate version following the full
+release gate. Numbering can be consolidated or skipped with documented
+reason; v0.9 Mode B and the final v1.0 acceptance gates remain mandatory.
+Never reinterpret the plan as permission to release untested code.
+
 ## Version milestones
 
 | Version | Target feature contract | Current evidence/status | Mode B exit work |

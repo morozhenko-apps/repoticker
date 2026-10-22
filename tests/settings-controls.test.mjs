@@ -73,6 +73,24 @@ test("Device Flow buttons register and invoke native commands after JS startup",
   }, { filename: "settings.mjs" });
   // Flush initial Settings -> get_snapshot -> github_auth_status refresh.
   await new Promise(resolve => setImmediate(resolve));
+  const mode = elements.get("github-connection-mode");
+  const workerRow = elements.get("github-worker-row");
+  const workerUrl = elements.get("github-worker-url");
+  mode.disabled = true;
+  mode.value = "polling";
+  handlers.get("github-connection-mode:change")();
+  assert.equal(workerRow.hidden, true);
+  assert.equal(workerUrl.disabled, true);
+  // The unavailable relay must not expose its URL in polling mode.
+  mode.disabled = false;
+  mode.value = "hybrid";
+  handlers.get("github-connection-mode:change")();
+  assert.equal(workerRow.hidden, false);
+  assert.equal(workerUrl.disabled, false);
+  mode.value = "polling";
+  handlers.get("github-connection-mode:change")();
+  assert.equal(workerRow.hidden, true);
+  assert.equal(workerUrl.disabled, true);
   for (const button of ["github-connect", "github-copy-code",
     "github-open-device", "github-cancel-device"]) {
     assert.equal(typeof handlers.get(button + ":click"), "function",
@@ -98,4 +116,13 @@ test("Device Flow buttons register and invoke native commands after JS startup",
   assert.equal(elements.get("github-device-flow").hidden, true);
   assert.equal(elements.get("github-user-code").textContent, "");
   assert.equal(elements.get("github-copy-code").textContent, "Copy code");
+});
+
+test("shipped Simple polling has no configurable Worker URL or active Hybrid mode", () => {
+  assert.match(html, /id="github-connection-mode" disabled/);
+  assert.match(html, /value="polling">Simple polling/);
+  assert.match(html, /value="hybrid">Hybrid webhook relay \(not available yet\)/);
+  assert.match(html, /id="github-worker-row"[^>]*hidden/);
+  assert.match(html, /id="github-worker-url" disabled/);
+  assert.doesNotMatch(js, /save_settings[\s\S]*worker_url|save_settings[\s\S]*workerUrl/);
 });

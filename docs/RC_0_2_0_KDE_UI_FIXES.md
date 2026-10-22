@@ -142,6 +142,16 @@ after app restart. The temporarily false `Not connected` and
 staged slow startup are deferred by the owner to v0.3 issue #12,
 not resolved by these GTK geometry fixes.
 
+## Further installed DEB owner acceptance — 2026-10-22
+
+Owner separately confirms running installed RepoTicker after upgrade
+and restart: About `0.2.0`, KWallet/native GitHub remains `Authorized`
+without another Device Flow, enrolled local repositories and selected
+Monitor account remain present, and Runners/Tasks load eventually.
+This confirms **persistent credentials in the normal case**, but
+not negative/vault-locked token handling. Slower startup/temporary
+misleading `Not connected` remains deferred to 0.3.0 issue #12.
+
 ## Final CI evidence
 
 - Source commit: `18f400fa8191cb98e553efc8cc44c81386a6281a`

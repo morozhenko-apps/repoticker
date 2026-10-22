@@ -102,7 +102,17 @@ Code changes are on `dev`:
   `tests/quota-details.test.mjs`, `tests/settings-controls.test.mjs`,
   `tests/quota-surface.test.mjs` and `tests/ui-layout.test.mjs`.
 
-At this checkpoint code tests are **committed, not yet executed**.
+CI progress: [Preflight #39825447714](https://github.com/morozhenko-apps/repoticker/actions/runs/39825447714)
+compiled Rust and Linux desktop successfully but failed four Settings
+authorization tests because their fixture hardcoded HTML control IDs
+and did not include the newly added connection-mode control. This
+failure was in the stale test fixture, not in any OAuth transition or
+security assertion. The fixture now extracts its declared IDs from
+the real `settings.html` (tests-only commits `bfcd1ae`, `18f400f`).
+The complete current-source rerun is
+[Preflight #39826251376](https://github.com/morozhenko-apps/repoticker/actions/runs/39826251376);
+**its final status must be checked before claiming a green release
+candidate**.
 The user's initial AppImage was built before these changes and cannot
 validate them. The described few-pixel change of *physical* GTK card
 size still requires user measurement after a fresh build; source

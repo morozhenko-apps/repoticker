@@ -81,6 +81,10 @@ function billingDetails(billing = null) {
  */
 export function buildHoverDetails(state, kind = "billing", authorized = false, statusMessage = null, billing = null) {
   if (!isHoverKind(kind)) return notReady(authorized, "Status", "Unknown tooltip type.");
+  // Distinguish checking the OS keyring / loading data from an actually
+  // disconnected account. Neither phase asserts that counts are known.
+  if (!state && ["Checking GitHub connection...", "Connecting to GitHub..."].includes(statusMessage))
+    return { connected: false, status: "Connecting", message: statusMessage, sections: [] };
   if (kind === "billing") return authorized ? billingDetails(billing) : notReady(false, "Billing");
   if (!state || !state.counts || !state.coverage)
     return notReady(authorized, kind === "runners" ? "Runners" : "Tasks", statusMessage);

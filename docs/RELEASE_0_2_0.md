@@ -232,6 +232,33 @@ by the local packaging result.
 Evidence is owner-provided runtime log, not a simulated CI fixture.
 No runtime code change or new build was made by recording these results.
 
+## Owner-accepted installed runtime and persisted GitHub session — 2026-10-22
+
+- [x] After the local `0.1.0 → 0.2.0` DEB upgrade and a clean
+  restart of the installed application through KDE, owner explicitly
+  confirms **About shows `0.2.0`**.
+- [x] **KWallet-backed GitHub connection remains `Authorized`
+  without repeating Device Flow after restart.** This validates the
+  successful existing-session persistence path only; it does not exercise
+  token expiry/revocation, locked vault, denied login or reconnect.
+- [x] Local repository roots, selected Monitor account and the
+  eventually loaded Runners/Tasks display survive the upgrade/restart.
+- [x] Owner's prior `REPOTICKER_UI_DEBUG=1` AppImage trace recorded
+  **zero GTK/GLib critical messages** and settled compact
+  `390x122` and expanded `390x510` allocations.
+- [ ] A final settled `390x122` allocation after returning from
+  the expanded drawer, and a separate explicit post-fix cursor check
+  were not reported. No extra claims from this limited evidence.
+- [ ] Remaining release decisions: failure-path authorization/KWallet
+  acceptance or explicit disposition (#4), Windows physical runtime
+  acceptance vs honest build-only disclosure, main/tag/protected
+  distribution; signed APT upgrade only after public publication.
+
+Deferred to `v0.3.0`: slow staged startup and temporary false
+`Not connected` display ([#12](https://github.com/morozhenko-apps/repoticker/issues/12)).
+The owner accepted **the persisted authorized state after loading**,
+not a fix for this deferred startup defect.
+
 ## Release blocker matrix
 
 | Area | Evidence | Release gate |

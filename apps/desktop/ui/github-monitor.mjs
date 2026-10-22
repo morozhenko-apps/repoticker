@@ -85,7 +85,8 @@ export async function collectForAccount({ get, account, selected, collect = coll
     : null };
 }
 
-export function startGithubMonitoring({ invoke, event, onError = () => {} }) {
+export function startGithubMonitoring({ invoke, event, onError = () => {},
+  collect = collectForAccount, schedule = setInterval }) {
   let busy = false;
   let rerun = false;
   let lastAttempt = 0;
@@ -116,7 +117,7 @@ export function startGithubMonitoring({ invoke, event, onError = () => {} }) {
       if (!hasPublishedResult)
         await publish(true, null, "Connecting to GitHub...");
       const snapshot = await invoke("get_snapshot");
-      const result = await collectForAccount({
+      const result = await collect({
         get, selected: snapshot.github_monitor_org,
       });
       minIntervalMs = monitorRefreshDelay(result.repositoryCount ?? 100);
@@ -143,7 +144,7 @@ export function startGithubMonitoring({ invoke, event, onError = () => {} }) {
   event?.listen?.("repoticker-github-scope-changed", () => { hasPublishedResult = false; void refresh(true); });
   // Refresh only while the application is running, never an API request
   // per hover, mouse movement or local Git scan.
-  setInterval(() => { void refresh(); }, REFRESH_MS);
+  schedule(() => { void refresh(); }, REFRESH_MS);
   event?.listen?.("repoticker-card-shown", () => { void refresh(); });
   void refresh(true);
   return refresh;

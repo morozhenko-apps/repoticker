@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import {
   listAvailableInstallations, listInstalledRepositories, collectForAccount,
   REFRESH_MS, monitorRefreshDelay, startGithubMonitoring
@@ -153,7 +154,7 @@ test("monitor says Connecting after native authorization before slow data collec
   const collect = async () => collecting;
   const invoke = async (name, args) => {
     if (name === "github_auth_status") return { connected: true };
-    if (name === "get_snapshot") return { github_monitor_org: "team" };
+    if (name === "get_monitor_scope") return "team";
     if (name === "github_monitor_publish") {
       messages.push(args);
       return;
@@ -198,4 +199,43 @@ test("disconnected native credential check never claims Connecting or authorized
   assert.equal(collectionCalls, 0);
   assert.deepEqual(messages.map(m => [m.connected, m.runnerState, m.message]),
     [[false, null, null]]);
+});
+
+test("GitHub monitor uses config-only scope without invoking the local Git scan", async () => {
+  const native = readFileSync(
+    new URL("../apps/desktop/src-tauri/src/main.rs", import.meta.url), "utf8");
+  const getter = native.match(/fn get_monitor_scope\([\s\S]*?\n\}/)?.[0];
+  assert.ok(getter, "read-only native monitor scope command must exist");
+  assert.match(getter, /read_config\(&app\)\?\.github_monitor_org/);
+  assert.doesNotMatch(getter, /scan\(|git::discover|git::inspect/);
+  assert.match(native, /generate_handler!\[[\s\S]*?get_monitor_scope,/);
+
+  const commands = [];
+  const published = [];
+  let selectedFromCollector = null;
+  startGithubMonitoring({
+    invoke: async (name, args) => {
+      commands.push(name);
+      if (name === "github_auth_status") return { connected: true };
+      if (name === "get_monitor_scope") return "team";
+      if (name === "github_monitor_publish") {
+        published.push(args);
+        return;
+      }
+      if (name === "get_snapshot")
+        throw Error("Local Git scanning must not gate remote monitoring");
+      throw Error("Unexpected IPC: " + name);
+    },
+    collect: async ({ selected }) => {
+      selectedFromCollector = selected;
+      return { state: null, reason: "No accessible repositories." };
+    },
+    schedule: () => {},
+  });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(selectedFromCollector, "team");
+  assert.equal(commands.filter(name => name === "get_monitor_scope").length, 1);
+  assert.equal(commands.includes("get_snapshot"), false);
+  assert.deepEqual(published.map(p => p.message),
+    ["Connecting to GitHub...", "No accessible repositories."]);
 });

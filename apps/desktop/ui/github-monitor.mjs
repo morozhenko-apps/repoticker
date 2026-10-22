@@ -116,10 +116,10 @@ export function startGithubMonitoring({ invoke, event, onError = () => {},
       // "Connect GitHub" while an authorized account is loading.
       if (!hasPublishedResult)
         await publish(true, null, "Connecting to GitHub...");
-      const snapshot = await invoke("get_snapshot");
-      const result = await collect({
-        get, selected: snapshot.github_monitor_org,
-      });
+      // Config-only read: the full snapshot inspects every local Git repo.
+      // GitHub polling must never depend on completion of that scan.
+      const selected = await invoke("get_monitor_scope");
+      const result = await collect({ get, selected });
       minIntervalMs = monitorRefreshDelay(result.repositoryCount ?? 100);
       await publish(true, result.state, result.reason);
       hasPublishedResult = true;

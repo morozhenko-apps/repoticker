@@ -350,6 +350,13 @@ async fn get_snapshot(app: AppHandle) -> Result<Snapshot, String> {
         .map_err(|err| err.to_string())?
 }
 
+/// Read only the configured GitHub monitor scope. Remote monitoring
+/// must not wait for a full local Git discovery/inspection snapshot.
+#[tauri::command]
+fn get_monitor_scope(app: AppHandle) -> Result<Option<String>, String> {
+    Ok(read_config(&app)?.github_monitor_org)
+}
+
 #[tauri::command]
 fn add_root(app: AppHandle, root: String) -> Result<Vec<String>, String> {
     let canonical = git::normalize_root(&root).map_err(|err| err.to_string())?;
@@ -913,6 +920,7 @@ fn main() {
         })
         .invoke_handler(tauri::generate_handler![
             get_snapshot,
+            get_monitor_scope,
             github_session::github_auth_status,
             github_session::github_flow_status,
             github_api::github_api_get,

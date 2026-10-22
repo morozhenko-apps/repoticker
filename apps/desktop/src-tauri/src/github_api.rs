@@ -428,5 +428,4 @@ mod tests {
             "GitHub API request failed."
         );
     }
-
 }

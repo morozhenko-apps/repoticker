@@ -1,5 +1,17 @@
 # Roadmap and delivery evidence
 
+> **Latest status — 2026-10-22:** v0.2.0 is **published**:
+> [GitHub Release](https://github.com/morozhenko-apps/repoticker/releases/tag/v0.2.0),
+> protected release workflow successful, signed APT candidate 0.2.0
+> independently visible on Alcotester. The next milestone
+> [v0.3.0](DEVELOPMENT_0_3_0.md) has begun on `dev` only;
+> [startup regression #12](https://github.com/morozhenko-apps/repoticker/issues/12),
+> [GitHub auth hardening #4](https://github.com/morozhenko-apps/repoticker/issues/4).
+> Windows runtime is still pending [#13](https://github.com/morozhenko-apps/repoticker/issues/13).
+> Below are historical snapshots and original feature intentions, not a
+> statement that v0.2.0 remains unpublished.
+
+
 > **Approved release map:** [Versioned roadmap v0.1.0–v1.0.0](VERSION_ROADMAP_TO_1_0.md) maps existing P0–P4 priorities to releases and makes the **full Mode B testing audit mandatory at v0.9.0 RC before v1.0.0**. Its preliminary inventory is parked; development from v0.2 through v0.8 proceeds with normal focused regression tests. The sections below preserve original decisions and chronological investigation notes; they do not override the published version map.
 
 ## Latest state — 2026-10-21: v0.2.0 release candidate preparation

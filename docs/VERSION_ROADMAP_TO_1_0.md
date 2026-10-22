@@ -20,8 +20,9 @@ risk-driven inventory, branch/interaction/coverage maps, mutation review,
 stable/flaky separation and evidence). Do not confuse Mode B with merely
 running a green Preflight.
 
-Versioning principle: v0.1.0 is the existing immutable local-Git release;
-v0.2.0 is the next candidate due to the substantial new GitHub module.
+Versioning principle: v0.1.0 is the immutable original local-Git release;
+v0.2.0 was published on 2026-10-22 with the GitHub monitoring module.
+The active development milestone is v0.3.0 (GitHub hardening and startup).
 From v0.3.0 on, proposed feature groupings may be adjusted through an
 explicit documented product decision. Patch releases are reserved for
 compatible corrections; no arbitrary obligation to publish every minor.
@@ -32,8 +33,8 @@ SemVer pre-1.0 does not itself guarantee stability.
 | Version | Target feature contract | Current evidence/status | Mode B exit work |
 | --- | --- | --- | --- |
 | **v0.1.0** | P0: local Git companion, tray/card, manual Fetch, safe `ff-only` pull, Linux DEB/AppImage, Windows NSIS build, signed APT distribution | **Published 2026-10-19.** KDE local smoke and CI; not full lifetime/Windows physical acceptance | Baseline inventory of core Git, package/signing and UI tests; identify historical gaps |
-| **v0.2.0** | P2: GitHub App Device Flow, OS keyring, self-hosted runner status, Actions job counts and separate hover views; opt-in read-only billing | **Implemented on `dev`, not published.** Normal KDE flow accepted; failure-path/API/upgrade verification pending | Auth/session transition and bounded GitHub response contracts; per-account failures, fake clock/pagination, no secret leakage; record matrix gaps |
-| **v0.3.0** | P2 hardening: expiry/refresh/revocation, API `401/403/404/429`, rate limits, offline/stale, ETags/conditional polling where supportable; monitored-repository selection; **fix slow staged startup and premature GitHub ‘Not connected’ display ([#12](https://github.com/morozhenko-apps/repoticker/issues/12))** | Planned; instrument cold/warm timing for local repo visibility and separate wallet/auth/runner/job loading; do not block local UI on remote data | Focused startup-state, authorization and API adapter regression tests; full Mode B remains scheduled for v0.9.0 |
+| **v0.2.0** | P2: GitHub App Device Flow, OS keyring, self-hosted runner status, Actions job counts and separate hover views; opt-in read-only billing | **Published 2026-10-22.** Signed APT index offers `repo-ticker 0.2.0` on Alcotester. Windows physical runtime and selected live failure paths remain unverified | Auth/session transition and bounded GitHub response contracts; per-account failures, fake clock/pagination, no secret leakage; record matrix gaps |
+| **v0.3.0** | P2 hardening: expiry/refresh/revocation, API `401/403/404/429`, rate limits, offline/stale, ETags/conditional polling where supportable; monitored-repository selection; **fix slow staged startup and premature GitHub ‘Not connected’ display ([#12](https://github.com/morozhenko-apps/repoticker/issues/12))** | **Started in `dev`**; [v0.3 development plan](DEVELOPMENT_0_3_0.md), first slice removes full Git scan from monitor scope lookup; cold/warm timing, wallet and remote startup still pending | Focused startup-state, authorization and API adapter regression tests; full Mode B remains scheduled for v0.9.0 |
 | **v0.4.0** | P1 hardening: terminate long Git/SSH tasks, external concurrent changes, linked worktrees, submodules, hooks, multiple remotes, adversarial configs; atomic configuration and recovery | Planned | Local Git/filesystem and `ff-only` invariant matrices; N1/N2/N4/N5/N6/N7/N12, mutation checks against unsafe Git changes |
 | **v0.5.0** | P1/P4: native CI notifications, autostart, monitoring preferences, complete EN/RU UI localization, settings/error clarity and accessibility basics | Planned | Settings and event integration matrix; N8 timezone/DST, N9 cancel/close/reopen, N10 redaction, N12 persistence; critical UI E2E only |
 | **v0.6.0** | **Optional P3:** opt-in unattended Git sync with explicit schedule, unchanged safe `ff-only` invariants and cancellation | Conditional product milestone; OFF by default, not a v1.0 prerequisite if explicitly deferred | If shipped: destructive-state/race/state-machine and restart/recovery tests; Mode B applies in full before enabling, never bypassed |

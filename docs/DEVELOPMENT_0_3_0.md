@@ -94,11 +94,11 @@ remote API privileges, or Git safety. It is **not** a complete startup
 solution and does not pretend to cure keyring/Settings/Git scanning delays.
 
 Scope and rollback:
-1. [ ] Native read-only getter with same `read_config` error semantics;
+1. [x] Native read-only getter with same `read_config` error semantics;
    register in the existing command handler (no filesystem mutation).
-2. [ ] Replace monitor's full scan invocation with
+2. [x] Replace monitor's full scan invocation with
    `get_monitor_scope`; preserve selected account and auto-selection.
-3. [ ] Deterministic Node contract tests: the collector obtains the
+3. [x] Deterministic Node contract tests: the collector obtains the
    persisted scope without calling `get_snapshot`; source-level native
    contract check that command reads `read_config`, not git::inspect.
 4. [ ] Final CI Preflight stable Rust/JS/native Linux gate **once** after
@@ -110,7 +110,25 @@ Scope and rollback:
 Rollback: revert the one code/test commit. No credential migration
 or data conversion required, and published v0.2 is unaffected.
 
-### Follow-up stages (not implemented by A1)
+### A1 checkpoint (2026-10-22)
+
+- **Code + directly related focused tests committed to `dev`**:
+  `66cfa3a34590a5bd53dd45dba2e6cc8ee97453d4`
+  (`refactor: decouple GitHub monitor scope from full local Git scan`).
+- Tauri now registers the read-only `get_monitor_scope` command that
+  uses existing `read_config`. The monitor's first collection now
+  invokes that command rather than `get_snapshot`; the latter remains
+  unchanged for the card and Settings.
+- Node contract tests verify a configured account is selected, no
+  `get_snapshot` call is made and startup publishes the expected
+  connecting and no-access status without touching local Git.
+- **Not yet validated at this checkpoint:** latest CI and real cold/warm
+  startup measurements. No latency reduction is claimed until measured.
+  The UI can still display temporary false `Not connected` from
+  independent Settings/auth state, and local repo display still scans
+  the Git tree; both are explicitly scheduled in later stages.
+
+## Follow-up stages (not implemented by A1)
 
 - **A2: measured startup boundaries**. Capture monotonic time
   from native first paint, local scan, credential-store read,

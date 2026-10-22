@@ -1,4 +1,5 @@
 import { collectRunnerState } from "./runner-collector.mjs";
+import { githubFailureReason, githubFailureMessage, mostImportantGithubFailure } from "./github-errors.mjs";
 
 // Existing job classification is reused; bearer tokens remain in native Rust.
 // Adaptive 2-7 minute refresh avoids excessive REST usage across many repos.
@@ -75,8 +76,13 @@ export async function collectForAccount({ get, account, selected, collect = coll
     state.counts.queued = null;
     state.errors.push({ scope: "repositories", reason: "incomplete" });
   }
-  return { state, repositoryCount: repos.items.length, reason: state.errors.length
-    ? "Some GitHub data is partial or permission-restricted." : null };
+  const failure = mostImportantGithubFailure(state.errors);
+  const runnerOnlyPermissionDenied = state.errors.some(error =>
+    error.scope === "runners" && error.reason === "permission_denied"
+  ) && state.errors.every(error => error.scope === "runners");
+  return { state, repositoryCount: repos.items.length, reason: failure
+    ? githubFailureMessage(failure, runnerOnlyPermissionDenied ? "runners" : "monitor")
+    : null };
 }
 
 export function startGithubMonitoring({ invoke, event, onError = () => {} }) {
@@ -107,9 +113,9 @@ export function startGithubMonitoring({ invoke, event, onError = () => {} }) {
       });
       minIntervalMs = monitorRefreshDelay(result.repositoryCount ?? 100);
       await publish(true, result.state, result.reason);
-    } catch {
+    } catch (error) {
       await publish(true, null,
-        "GitHub Actions data unavailable. Check permissions or network.").catch(onError);
+        githubFailureMessage(githubFailureReason(error))).catch(onError);
     } finally {
       busy = false;
       if (rerun) {

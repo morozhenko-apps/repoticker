@@ -106,3 +106,41 @@ test("unbounded org repository sets are not silently represented as complete", a
   assert.equal(result.complete, false);
   assert.equal(result.items.length, 100);
 });
+
+test("runner-only permission denial gives a bounded diagnostic and keeps job totals", async () => {
+  const get = async path => {
+    if (path.startsWith("/user/installations?"))
+      return { installations: [installation(14, "team")] };
+    if (path.startsWith("/user/installations/14/repositories?"))
+      return { repositories: [{ full_name: "team/service" }] };
+    throw Error("unexpected path");
+  };
+  const state = { counts: { busy: null, running: 4, queued: 2 },
+    coverage: { runners: false, jobs: true },
+    errors: [
+      { scope: "runners", reason: "permission_denied" },
+      { scope: "runners", reason: "incomplete" }
+    ] };
+  const result = await collectForAccount({ get, collect: async () => state });
+  assert.equal(result.state.counts.running, 4);
+  assert.equal(result.state.counts.queued, 2);
+  assert.equal(result.state.counts.busy, null);
+  assert.match(result.reason, /Runner inventory access denied/);
+  assert.doesNotMatch(result.reason, /team\/service|token/);
+});
+
+test("rate-limited job collection shows explicit rate-limit status without fabricated zero", async () => {
+  const get = async path => {
+    if (path.startsWith("/user/installations?"))
+      return { installations: [installation(14, "team")] };
+    if (path.startsWith("/user/installations/14/repositories?"))
+      return { repositories: [{ full_name: "team/service" }] };
+    throw Error("unexpected path");
+  };
+  const state = { counts: { busy: 0, running: null, queued: null },
+    coverage: { runners: true, jobs: false },
+    errors: [{ scope: "team/service", reason: "rate_limited" }] };
+  const result = await collectForAccount({ get, collect: async () => state });
+  assert.equal(result.state.counts.running, null);
+  assert.match(result.reason, /API rate limited/);
+});

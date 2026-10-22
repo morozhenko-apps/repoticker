@@ -1,0 +1,77 @@
+# v0.2.0 RC follow-up — KDE AppImage UI and GTK sizing defects
+
+Status: **MODE A — bugfix, planned (2026-10-22)**.
+Branch: `dev`; published `v0.1.0` and `main` unchanged.
+Trigger: owner physically ran local `RepoTicker_0.2.0_amd64.AppImage`
+on KDE Wayland and reports usable startup plus repeated GTK CRITICAL,
+help cursor on action buttons, misleading first-load authentication text,
+apparent compact card height shift, and irrelevant Worker URL in polling mode.
+This is **release candidate feedback**, not a new v0.3 feature.
+
+## Source evidence / root cause checkpoints
+
+1. `apps/desktop/ui/style.css` explicitly applies `cursor: help`
+   to `.card button, .card input, .card select` as well as tooltip
+   anchors (end-of-file rule). This directly explains action-button
+   pointer shape; keep `help` only on interactive tooltip anchors.
+2. `linux_surface.rs::resize_usage` and `apply_card_height`
+   call `set_min_content_height(new)` before reducing/increasing the
+   prior exact maximum. Whenever new min exceeds old max, GTK3 emits
+   `gtk_scrolled_window_set_min_content_height` CRITICAL. The height
+   contract must transition min/max while preserving `min<=max`
+   at **every intermediate setter call**.
+3. `MonitorCache::default` uses `connected=false, message=None` even
+   before checking OS credentials; `startGithubMonitoring` publishes
+   `connected=true` only **after** the potentially long account/repos/jobs
+   reads. `quota-details.mjs::notReady` therefore incorrectly tells an
+   already-authenticated user to connect during first loading.
+   UI must distinguish `checking/connecting` from truly disconnected
+   without treating credentials as connected until native auth says so,
+   without exposing keyring secrets or changing persistent config.
+4. Compact card geometry is fixed in native GTK to 390×122, but the
+   CSS `.status-strip` uses `min-height:25px` and automatic
+   content-driven height with dynamic numeric text. Fix the status
+   strip's actual height to 25px and avoid vertical content-driven
+   reflow. Native min/max geometry must still be the authoritative
+   window size. The reported *few pixels of actual window growth*
+   is **not confirmed** without GTK allocation diagnostics; if this
+   persists, use the existing `REPOTICKER_UI_DEBUG` allocation
+   measurements and identify the cause rather than guessing.
+5. Settings HTML has a **disabled** `Simple polling / Hybrid webhook
+   relay` selector and a **disabled** Worker URL. P3 relay is
+   unimplemented (the Cloudflare prototype returns HTTP 501), and no
+   connection mode/worker URL is persisted. It must not be deceptively
+   enabled in v0.2. Hide the irrelevant Worker URL while the only
+   available mode is Simple polling. When an actual relay is implemented
+   in P3, the selected mode must own Worker URL visibility/enablement
+   via an explicit implemented-and-authorized settings contract.
+
+## Ordered implementation and acceptance
+
+- [ ] Fix GTK exact-height min/max transition for **main and usage**
+      ScrolledWindows, preserving pointer-pass-through and async GTK
+      resizing; add deterministic Rust/test contract evidence of order
+      and the invariant.
+- [ ] Restrict CSS help cursor to Runners/Tasks/Billing hover controls;
+      action buttons have clickable pointer/default disabled cursor.
+- [ ] Render native status `Checking GitHub connection…` until native
+      auth check, followed by `Connecting to GitHub…` until a
+      monitor result; disconnected prompt only after native evidence
+      of no valid credential. Keep runners/tasks unknown until collected.
+- [ ] Fix compact status-strip exact height to avoid content-based
+      reflow; do not claim physical GTK compositor dimensions changed
+      unless measured.
+- [ ] Hide worker URL in unavailable Simple polling mode, keep Hybrid
+      selector disabled. Do not add unimplemented relay wiring or
+      introduce a persistent settings field.
+- [ ] Add focused stable Rust/Node source/behavior regression tests.
+- [ ] Run final GitHub Preflight **once** after implementation; verify
+      Rust formatting, core tests, Node tests and Linux desktop compile.
+      Physical AppImage/DEB KDE acceptance remains manual on Alcotester.
+- [ ] Record final source SHA and evidence, request a new local AppImage
+      run after the developer pulls `dev` and rebuilds. Do not promote
+      `dev → main` or tag `v0.2.0` until real smoke is accepted.
+
+Rollback: independent code commits per GTK size, card cursor/layout,
+monitor loading presentation and unsupported Worker field. Documentation
+commits are separate. No extra branch, released package or token mutation.

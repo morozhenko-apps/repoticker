@@ -324,6 +324,41 @@ Compare stages: `card.start`, `git.scan_total`,
 The instrumentation only describes timing; no root-cause
 claim is warranted until actual measurements are supplied.
 
+## A2b — measured startup and monitor-only refresh plan (2026-10-22)
+
+The owner provided an instrumented physical KDE AppImage launch log and
+reports substantially faster startup than the previous minute-scale
+observation. The trace measures process-relative events:
+- Settings authorization ready at 1,156 ms; KWallet initial read 15 ms.
+- Card first local snapshot at 8,211 ms.
+- GitHub monitor collection completed at 13,618 ms; card displayed
+  monitor data at 18,230 ms.
+- Seven full local Git scans completed before 18,815 ms, each roughly
+  5–7 seconds (inspection dominates; discovery around 60–100 ms).
+- 78 REST run-list requests, averaging about 0.49 seconds each.
+  Token acquisition averaged a few milliseconds.
+
+Confirmed unnecessary work from source: `app.mjs` reacts to
+`repoticker-monitor-updated`, GitHub authorization, and monitor-scope
+events by calling full `get_snapshot`, scanning all local Git repos.
+A monitor event only changes cached remote metrics, not local Git.
+
+A2b decision: expose a read-only `github_monitor_snapshot` from the
+existing native `MonitorCache` returning connected, runner_state and
+monitor_message. Route monitor-related events through the cached
+snapshot and render only the metric strip, without rebuilding the
+repository list. Keep full local Git scans on initial card load,
+config changes and actual Git action completion. Prevent older
+in-flight full snapshots from rolling back newer monitor state.
+Add deterministic regression tests for native projection,
+partial view behavior and event routing. No persistent changes,
+new authorization permissions, version bump or release.
+
+This is a measured bottleneck and a source-supported refactor, not
+proof that all remote API latency has been fixed. After CI, compare
+physical cold-start traces and specifically the count of full Git
+scans and monitor-collection-to-visible delay.
+
 ## Stop factors and invariant boundaries
 
 If later stages require a changed persistent model, GitHub App

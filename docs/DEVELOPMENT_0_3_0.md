@@ -387,6 +387,54 @@ without changing `main`, release tags or version metadata.
   and collect-to-card delay. Longer-term Git repository inspection
   may still need separate optimization.
 
+## A3 — enforce one global REST concurrency cap per collection
+
+**Mode A refactor; documented before implementation (2026-10-22).**
+
+Evidence: the existing `collectRunnerState` uses
+`boundedMap(selectedRepos, concurrency, ...)` then, within each
+repository worker, another `boundedMap(selectedIds, concurrency, ...)`
+for jobs. At the default `concurrency=4`, four repositories may
+each launch four job-page requests, so as many as **16 concurrent**
+GitHub REST operations can occur in one collection. This violates
+the implied per-collection concurrency budget, increases API burst
+pressure, and is not needed for correctness. The actual number
+observed in the owner's trace was not measured directly.
+
+Decision: keep the existing `boundedMap` for deterministic
+repo/job traversal and existing coverage semantics, but wrap its
+injected `get(path)` with a **single FIFO request limiter** created
+once per `collectRunnerState` invocation. Every request for runners,
+runs, and jobs passes through that one limiter; at most `concurrency`
+requests can be active for this collection, regardless of nested
+workers. The limiter releases slots on both resolution and rejection.
+Do **not** sleep/retry, expand GitHub App permissions, expose bearer
+tokens, change stable response types, or turn unknown counters
+into zero. This is explicitly **per collection**, not an invented
+global cap across unrelated Settings/Billing WebViews.
+
+Implementation stages:
+1. [ ] Add a small injectable async request limiter and replace only
+   the collector's raw `get` entrypoint with the bound version.
+2. [ ] Add deterministic tests with many queued workflow job
+   requests across multiple repos: measured maximum in-flight
+   count at and below the configured cap; actual totals complete.
+3. [ ] Prove permit release on a failing GitHub request and preserve
+   partial/unknown coverage, without leaking provider response data.
+4. [ ] Run the standard stable Preflight on the final code/test
+   commit once and record the exact SHA and CI evidence. Do not run
+   Mode B or demand another KDE physical smoke during this stage.
+5. [ ] Record completion evidence in a **separate docs-only commit**.
+   Track combined physical/Mode B acceptance in
+   [deferred test gate #15](https://github.com/morozhenko-apps/repoticker/issues/15).
+
+Risk: limiting REST bursts can increase collection latency in large
+active-run sets; preserving the existing per-repo traversal and
+full-coverage/unknown handling is essential. Compare the future
+integrated cold/warm trace before tuning the concurrency budget.
+Rollback: revert the one code/test commit. No persistent migration
+or release needed. Keep `main` and immutable v0.2.0 untouched.
+
 ## Stop factors and invariant boundaries
 
 If later stages require a changed persistent model, GitHub App

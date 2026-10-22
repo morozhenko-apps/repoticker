@@ -57,8 +57,14 @@ Ordered work and rollback:
    401/403/429, a 403 with rate-limit headers, 404, secondary failure,
    network exception, partial owner coverage and no secret leak. Run
    existing STABLE suite once **after** final implementation through CI.
-5. [ ] Record CI source SHA and exact results; physical expired-token
-   and network-failure acceptance on Alcotester remains separate.
+5. [x] Record final code CI evidence: source SHA
+   `43c327435bccedd2fc82511ebf25ea25e43eeda8`,
+   [Preflight #39738777419](https://github.com/morozhenko-apps/repoticker/actions/runs/39738777419)
+   completed **SUCCESS** on 2026-10-22: Rust format/core/Clippy,
+   JS tests and Linux desktop compile all successful.
+6. [ ] Physically verify expired/revoked credentials, locked KWallet,
+   denied runner API and offline/rate-limited reconnection on Alcotester.
+   A compiled Linux binary is not an authorized runtime smoke test.
 
 **Source review checkpoint:** native `github_api.rs::api_http_failure`
 maps 403 with rate-limit headers separately from genuine permission
@@ -69,7 +75,7 @@ keeping independent coverage, and `github-monitor.mjs` shows the most
 actionable status. Tests in `github-errors.test.mjs`,
 `runner-collector.test.mjs` and `github-monitor.test.mjs` cover error
 categories, malformed provider text, partial collection and denial.
-**Test source is committed; pass/fail awaits final Preflight.** The
+**Final Preflight on code SHA 43c3274 passed; physical failure-injection acceptance remains open.** The
 existing cadence is unchanged and rate-limit-aware rescheduling
 is still a v0.3 target.
 

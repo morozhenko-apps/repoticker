@@ -33,7 +33,7 @@ async function fixture(suffix, initiallyConnected) {
   // Mirror the real Settings DOM IDs so harmless form additions do not
   // cause unrelated authorization lifecycle scenarios to fail on missing mocks.
   const html = readFileSync(new URL("../apps/desktop/ui/settings.html", import.meta.url), "utf8");
-  const ids = [...new Set([...html.matchAll(/\\bid="([^"]+)"/g)].map(match => match[1]))];
+  const ids = [...new Set([...html.matchAll(/\bid="([^"]+)"/g)].map(match => match[1]))];
   const elements = new Map(ids.map(id => [id, mockNode(id)]));
   const listeners = new Map();
   const calls = [];

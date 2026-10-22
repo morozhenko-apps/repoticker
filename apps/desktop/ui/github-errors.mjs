@@ -30,7 +30,7 @@ export function githubFailureMessage(reason, scope = "monitor") {
     rate_limited: "GitHub API rate limited. Monitoring will retry on its normal schedule.",
     not_found: "GitHub resource inaccessible to this installation.",
     network: "GitHub network unavailable. Monitoring will retry.",
-    incomplete: "Some GitHub data is incomplete.",
+    incomplete: "Some GitHub data is partial or incomplete.",
     unavailable: "GitHub Actions data unavailable.",
   };
   if (scope === "runners" && reason === "permission_denied")

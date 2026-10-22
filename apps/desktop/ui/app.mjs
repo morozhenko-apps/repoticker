@@ -2,6 +2,7 @@ import { nextCardView, pullReadyCommitCount } from "./view.mjs";
 import { createNativeDragGesture } from "./native-drag.mjs";
 import { startGithubMonitoring } from "./github-monitor.mjs";
 import { compactStatus } from "./status-metrics.mjs";
+import { mergeMonitorPresentation, reconcileScanPresentation } from "./monitor-presentation.mjs";
 
 const emptySnapshot = {
   roots: [], repositories: [], errors: [],
@@ -23,6 +24,8 @@ const traceStartup = stage => {
 traceStartup("card.start");
 let firstSnapshotReady = false;
 let firstMonitorReady = false;
+let monitorRevision = 0;
+let monitorRequest = 0;
 let snapshot = emptySnapshot;
 let busy = false;
 let view = "compact";
@@ -230,14 +233,23 @@ for (const [kind, anchor] of Object.entries(hoverTargets)) {
   });
 }
 
-function render(next) {
-  snapshot = next;
-  const status = compactStatus(next.runner_state);
+function renderMonitorMetrics(state) {
+  const status = compactStatus(state);
   byId("runners-total").textContent = status.total;
   byId("runners-online").textContent = status.online;
   byId("runners-offline").textContent = status.offline;
   byId("tasks-running").textContent = status.running;
   byId("tasks-queued").textContent = status.queued;
+}
+function traceMonitorReady() {
+  if (!firstMonitorReady && snapshot.runner_state != null) {
+    firstMonitorReady = true;
+    traceStartup("card.monitor_ready");
+  }
+}
+function render(next) {
+  snapshot = next;
+  renderMonitorMetrics(next.runner_state);
   const list = byId("repo-list");
   list.replaceChildren();
   if (!next.repositories.length) {
@@ -251,17 +263,32 @@ function render(next) {
   if (next.errors?.length) showError(next.errors[0]);
 }
 async function refresh() {
+  const revision = monitorRevision;
   try {
     const next = await invoke("get_snapshot");
-    render(next);
+    render(reconcileScanPresentation(next, snapshot, revision, monitorRevision));
     if (!firstSnapshotReady) {
       firstSnapshotReady = true;
       traceStartup("card.snapshot_ready");
     }
-    if (!firstMonitorReady && next.runner_state != null) {
-      firstMonitorReady = true;
-      traceStartup("card.monitor_ready");
-    }
+    traceMonitorReady();
+  } catch (error) {
+    showError(error);
+  }
+}
+
+// Monitoring changes only the native in-memory presentation cache. A full
+// Git status scan would rebuild every repo row and block remote status.
+async function refreshMonitor() {
+  const request = ++monitorRequest;
+  try {
+    const remote = await invoke("github_monitor_snapshot");
+    // Ignore older IPC replies if multiple events arrived together.
+    if (request !== monitorRequest) return;
+    snapshot = mergeMonitorPresentation(snapshot, remote);
+    monitorRevision++;
+    renderMonitorMetrics(snapshot.runner_state);
+    traceMonitorReady();
   } catch (error) {
     showError(error);
   }
@@ -378,9 +405,9 @@ window.__TAURI__?.event?.listen?.("repoticker-reset-view", () => {
   refresh();
 });
 window.__TAURI__?.event?.listen?.("repoticker-config-changed", refresh);
-window.__TAURI__?.event?.listen?.("repoticker-monitor-updated", refresh);
-window.__TAURI__?.event?.listen?.("repoticker-github-auth", refresh);
-window.__TAURI__?.event?.listen?.("repoticker-github-scope-changed", refresh);
+window.__TAURI__?.event?.listen?.("repoticker-monitor-updated", refreshMonitor);
+window.__TAURI__?.event?.listen?.("repoticker-github-auth", refreshMonitor);
+window.__TAURI__?.event?.listen?.("repoticker-github-scope-changed", refreshMonitor);
 window.__TAURI__?.event?.listen?.("repoticker-git-action-finished", async event => {
   if (event.payload?.Ok) consumeResults(event.payload.Ok);
   else if (event.payload?.Err) showError(event.payload.Err);

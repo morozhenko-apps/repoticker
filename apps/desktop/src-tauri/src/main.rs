@@ -958,6 +958,7 @@ fn main() {
             github_session::github_flow_status,
             github_api::github_api_get,
             monitor_cache::github_monitor_publish,
+            monitor_cache::github_monitor_snapshot,
             github_set_monitor_org,
             github_session::github_begin,
             github_session::github_cancel,

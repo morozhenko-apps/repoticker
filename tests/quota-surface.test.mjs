@@ -96,3 +96,12 @@ test("the separate usage WebView can listen without inheriting main permissions"
   assert.doesNotMatch(quotaJs, /catch\s*\{\s*paint\(buildQuotaDetails\(null\)\)/);
 });
 
+
+test("GTK exact min/max height updates stay valid while growing and shrinking", () => {
+  const helper = native.match(/fn set_exact_viewport_height\([\s\S]*?\n\}/)?.[0];
+  assert.ok(helper, "one shared native geometry helper for card and usage");
+  assert.match(helper, /if height > previous \{\s*viewport\.set_max_content_height\(height\);\s*viewport\.set_min_content_height\(height\)/);
+  assert.match(helper, /\} else \{\s*viewport\.set_min_content_height\(height\);\s*viewport\.set_max_content_height\(height\)/);
+  assert.match(native, /USAGE_HEIGHT\.load\(Ordering::Acquire\),\s*height,/);
+  assert.match(native, /set_exact_viewport_height\(&viewport, CARD_HEIGHT\.load\(Ordering::Acquire\), height\)/);
+});

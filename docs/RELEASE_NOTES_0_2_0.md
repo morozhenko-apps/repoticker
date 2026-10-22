@@ -55,8 +55,10 @@ There is no unattended background Git mutation and no required cloud service.
   refresh/revocation and failure-path acceptance remain open in issue #4.
 - **Linux upgrade:** local DEB upgrade from installed v0.1.0 to
   v0.2.0 succeeded on KDE; signed-repository APT upgrade remains
-  untested until publication. Restart/credential persistence and
-  uninstall lifecycle are separately pending.
+  untested until publication. Normal installed-KDE restart retained
+  GitHub authorization, local repository roots and selected Monitor
+  account, without repeating Device Flow; uninstall lifecycle and
+  negative KWallet/token handling are separately pending.
 - **Windows:** a buildable unsigned NSIS installer exists, but real
   Windows installation/tray/auth acceptance is not yet evidenced.
 - **macOS:** not shipped.

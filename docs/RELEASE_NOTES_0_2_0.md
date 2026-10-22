@@ -53,14 +53,28 @@ There is no unattended background Git mutation and no required cloud service.
 - **Offline/limited GitHub APIs:** missing permissions or incomplete
   result pagination can leave some counters unknown. Live 401/403/429,
   refresh/revocation and failure-path acceptance remain open in issue #4.
-- **Linux upgrade:** signed APT upgrade from installed v0.1.0, settings
-  preservation, tray restart and uninstall lifecycle must still be
-  exercised on the next candidate. No result is claimed yet.
+- **Linux upgrade:** local DEB upgrade from installed v0.1.0 to
+  v0.2.0 succeeded on KDE; signed-repository APT upgrade remains
+  untested until publication. Restart/credential persistence and
+  uninstall lifecycle are separately pending.
 - **Windows:** a buildable unsigned NSIS installer exists, but real
   Windows installation/tray/auth acceptance is not yet evidenced.
 - **macOS:** not shipped.
 - **Billing:** organization/personal reports are monthly and do not
   prove free allowance usage or remaining included minutes.
+
+### Deferred to v0.3.0
+
+On KDE Wayland, the new GitHub monitor may initially show `Not connected`
+despite existing credentials, then populate local repositories and finally
+runner/task counts in separate delayed phases. This has been reported by
+the owner and deferred to
+[startup issue #12](https://github.com/morozhenko-apps/repoticker/issues/12).
+No cause or exact latency has yet been measured. It is a known
+first-load presentation/performance issue, not a claim that credentials
+were lost. The 0.2.0 GTK height/cursor/Worker UI fixes passed source CI;
+their updated physical GTK warning log and exact card geometry must be
+verified separately before release admission.
 
 ## Availability
 

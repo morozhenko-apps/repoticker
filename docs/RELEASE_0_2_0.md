@@ -123,12 +123,28 @@ until physical acceptance and explicit release admission.
   (`dpkg-query: install ok installed 0.1.0`), and signed production
   APT candidate is still `0.1.0` at
   `https://download.morozhenko.com/dist/RepoTicker/apt`.
-- [ ] **Next:** physical local DEB upgrade `0.1.0 → 0.2.0`
-  using the locally built `.deb`; verify version in About, config
-  persistence, keyring-backed GitHub login, self-hosted runner and
-  job tooltip, and restart. This is **not** a signed APT repository
-  upgrade; independent APT upgrade must be checked after authorized
-  release publication.
+- [x] Local DEB upgrade `0.1.0 → 0.2.0` **successfully
+  executed** on Alcotester via `sudo apt install
+  target/release/bundle/deb/RepoTicker_0.2.0_amd64.deb`.
+  APT reported `Unpacking repo-ticker (0.2.0) over (0.1.0)` and
+  `Setting up repo-ticker (0.2.0)`. `dpkg-query` confirmed
+  `repo-ticker 0.2.0 amd64`. Installed binary and desktop shortcut
+  remain under `/usr/bin/repoticker-desktop` and
+  `/usr/share/applications/RepoTicker.desktop`.
+  A settings backup was created. The owner informally confirms normal
+  behavior post-upgrade; **individual About/KWallet persistence and
+  restart/hover acceptance steps were not explicitly itemized** and
+  remain for confirmation.
+- [ ] The public **signed APT repository upgrade** still requires
+  authorized `0.2.0` publication. Immediately after the local
+  upgrade, `apt-cache policy` showed installed/candidate `0.2.0`
+  from dpkg status (priority 100), while the remote APT index still
+  offered `0.1.0` (priority 500). Do not conflate local DEB
+  installation with signed APT upgrade testing.
+- [ ] Slower perceived data initialization was reported on 0.2.0.
+  No measured cause or timings; deferred as
+  [performance issue #12](https://github.com/morozhenko-apps/repoticker/issues/12),
+  targeted after the release unless the behavior becomes blocking.
 - [ ] Exercise AppImage separately after closing the DEB instance.
   Check runtime and version; never run two RepoTicker instances
   concurrently during keyring/settings acceptance.

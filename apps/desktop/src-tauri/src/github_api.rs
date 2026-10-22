@@ -16,7 +16,11 @@ const API_VERSION: &str = "2022-11-28";
 
 /// A fixed, redacted error vocabulary shared with the JS monitor policy.
 /// Do not return GitHub response bodies, account names or HTTP header values.
-fn api_http_failure(status: u16, remaining: Option<&str>, retry_after: Option<&str>) -> &'static str {
+fn api_http_failure(
+    status: u16,
+    remaining: Option<&str>,
+    retry_after: Option<&str>,
+) -> &'static str {
     match status {
         401 => "GitHub API authorization expired or revoked.",
         403 if remaining == Some("0") || retry_after.is_some() => "GitHub API rate limited.",
@@ -391,14 +395,38 @@ mod tests {
     }
     #[test]
     fn github_rest_failures_distinguish_permissions_and_rate_limits_without_provider_text() {
-        assert_eq!(api_http_failure(401, None, None), "GitHub API authorization expired or revoked.");
-        assert_eq!(api_http_failure(403, None, None), "GitHub API permission denied.");
-        assert_eq!(api_http_failure(403, Some("123"), None), "GitHub API permission denied.");
-        assert_eq!(api_http_failure(403, Some("0"), None), "GitHub API rate limited.");
-        assert_eq!(api_http_failure(403, None, Some("90")), "GitHub API rate limited.");
-        assert_eq!(api_http_failure(429, None, None), "GitHub API rate limited.");
-        assert_eq!(api_http_failure(404, None, None), "GitHub API resource inaccessible.");
-        assert_eq!(api_http_failure(502, None, None), "GitHub API request failed.");
+        assert_eq!(
+            api_http_failure(401, None, None),
+            "GitHub API authorization expired or revoked."
+        );
+        assert_eq!(
+            api_http_failure(403, None, None),
+            "GitHub API permission denied."
+        );
+        assert_eq!(
+            api_http_failure(403, Some("123"), None),
+            "GitHub API permission denied."
+        );
+        assert_eq!(
+            api_http_failure(403, Some("0"), None),
+            "GitHub API rate limited."
+        );
+        assert_eq!(
+            api_http_failure(403, None, Some("90")),
+            "GitHub API rate limited."
+        );
+        assert_eq!(
+            api_http_failure(429, None, None),
+            "GitHub API rate limited."
+        );
+        assert_eq!(
+            api_http_failure(404, None, None),
+            "GitHub API resource inaccessible."
+        );
+        assert_eq!(
+            api_http_failure(502, None, None),
+            "GitHub API request failed."
+        );
     }
 
 }

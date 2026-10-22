@@ -153,6 +153,27 @@ No tag, `main` promotion, R2 upload, signed APT publication, Windows
 runtime validation or authenticated failure-path acceptance is implied
 by the local packaging result.
 
+## KDE AppImage 0.2.0 RC observation and correction (2026-10-22)
+
+- The local v0.2.0 AppImage starts and reports native `gtk-layer-shell`,
+  `session=wayland`, `wayland_display=true` and `gdk_backend=wayland`.
+  User reports usable app behavior but repeated
+  `Gtk-CRITICAL gtk_scrolled_window_set_min_content_height` warnings
+  when resizing hover surfaces. The log does **not** establish a
+  process-fatal crash.
+- Also observed: wrong `help` cursor on Fetch/Safe pull/Repos/Hide,
+  misleading `Connect GitHub` prompt during initial authorized
+  loading, a possible 2–3px compact-card growth, and Worker URL shown
+  even though the only available connection mode is Simple polling.
+- Targeted Mode A fixes and source-based root causes are recorded in
+  [RC KDE fixes](RC_0_2_0_KDE_UI_FIXES.md). All affected implementation
+  and focused test changes are on `dev`. **Old AppImage still contains
+  the original defects; it must be rebuilt for verification.**
+- Full Mode B remains deferred to v0.9.0. Keep this v0.2.0 candidate
+  from `main` and tagged release until the rebuilt Linux package is
+  physically accepted, no GTK warnings remain, and unresolved Windows/
+  credential-runtime gates have been explicitly disposed.
+
 ## Release blocker matrix
 
 | Area | Evidence | Release gate |

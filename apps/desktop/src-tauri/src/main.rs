@@ -357,6 +357,25 @@ fn get_monitor_scope(app: AppHandle) -> Result<Option<String>, String> {
     Ok(read_config(&app)?.github_monitor_org)
 }
 
+/// Settings must not wait for `git::discover_all` and `git::inspect`.
+/// This returns only the persisted, non-secret settings shown in its form.
+#[derive(Serialize)]
+struct SettingsConfig {
+    roots: Vec<String>,
+    language: String,
+    github_monitor_org: Option<String>,
+}
+
+#[tauri::command]
+fn get_settings_config(app: AppHandle) -> Result<SettingsConfig, String> {
+    let config = read_config(&app)?;
+    Ok(SettingsConfig {
+        roots: config.roots,
+        language: config.language,
+        github_monitor_org: config.github_monitor_org,
+    })
+}
+
 #[tauri::command]
 fn add_root(app: AppHandle, root: String) -> Result<Vec<String>, String> {
     let canonical = git::normalize_root(&root).map_err(|err| err.to_string())?;
@@ -921,6 +940,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             get_snapshot,
             get_monitor_scope,
+            get_settings_config,
             github_session::github_auth_status,
             github_session::github_flow_status,
             github_api::github_api_get,

@@ -57,9 +57,10 @@ async function fixture(suffix, initiallyConnected) {
         async invoke(command, args) {
           calls.push([command, args]);
           switch (command) {
-            case "get_snapshot": return {
+            case "get_settings_config": return {
               roots: ["/repos"], language: "en", github_monitor_org: monitorOrg
             };
+            case "get_monitor_scope": return monitorOrg;
             case "github_auth_status": return { connected, phase };
             case "github_api_get": return {
               installations: [
@@ -126,6 +127,10 @@ test("new authorization enables OK, confirms selected Monitor account and refres
   const ui = await fixture("connect", false);
   try {
     assert.equal(ui.node("apply-settings").disabled, true);
+    assert.ok(!ui.calls.some(([command]) => command === "get_snapshot"),
+      "Settings must not invoke local Git inspection");
+    assert.equal(ui.calls.filter(([command]) => command === "github_auth_status").length, 1,
+      "Cold Settings initialization reads KWallet only once");
     await ui.node("github-connect").fire("click");
     ui.authConnected();
     await ui.dispatchAuth();

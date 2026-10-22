@@ -21,6 +21,8 @@ let draft = null;
 let saving = false;
 let githubPending = false;
 let githubConnected = false;
+let githubChecking = true;
+let githubCheckFailed = false;
 let githubStatusTimer = null;
 let githubStatusBusy = false;
 let selectedScope = null;
@@ -36,7 +38,7 @@ async function refreshMonitorScopes() {
   if (!githubConnected) return;
   try {
     const [config, data] = await Promise.all([
-      invoke("get_snapshot"),
+      invoke("get_monitor_scope"),
       invoke("github_api_get", { path: "/user/installations?per_page=100&page=1" })
     ]);
     if (!Array.isArray(data.installations)) throw Error("Invalid GitHub installations");
@@ -54,8 +56,8 @@ async function refreshMonitorScopes() {
       option.textContent = name;
       select.append(option);
     }
-    if (githubScopeAtOpen === null) githubScopeAtOpen = config.github_monitor_org || "";
-    const suggestion = config.github_monitor_org || (accounts.length === 1 ? accounts[0] : "");
+    if (githubScopeAtOpen === null) githubScopeAtOpen = config || "";
+    const suggestion = config || (accounts.length === 1 ? accounts[0] : "");
     if (!githubScopeTouched || !accounts.includes(selectedScope)) {
       selectedScope = suggestion;
       githubScopeTouched = false;
@@ -114,14 +116,17 @@ function githubMessage(text, error = false) {
 }
 
 function githubButtons() {
-  byId("github-connect").hidden = githubConnected || githubPending;
-  byId("github-disconnect").hidden = !githubConnected;
+  const unknown = githubChecking || githubCheckFailed;
+  byId("github-connect").hidden = unknown || githubConnected || githubPending;
+  byId("github-disconnect").hidden = unknown || !githubConnected;
   byId("github-device-flow").hidden = !githubPending;
   if (!githubPending) byId("github-copy-code").textContent = "Copy code";
-  byId("github-connection-indicator").textContent = githubPending
-    ? "Authorization pending" : githubConnected ? "Authorized" : "Not connected";
-  byId("github-account-status").value = githubConnected
-    ? "Authorized" : "Not connected";
+  const status = githubChecking ? "Checking connection..."
+    : githubCheckFailed ? "Connection unavailable"
+    : githubPending ? "Authorization pending"
+    : githubConnected ? "Authorized" : "Not connected";
+  byId("github-connection-indicator").textContent = status;
+  byId("github-account-status").value = status;
   updateApply();
 }
 
@@ -153,11 +158,13 @@ const githubFailureLabels = Object.freeze({
   github_rejected: "GitHub rejected this device code. Start a new authorization."
 });
 
-async function refreshGithub() {
+async function refreshGithub(knownAuth = null) {
   try {
-    // Read native state, rather than assuming all cross-WebView events arrive.
-    // This never makes a GitHub request or exposes a token to JavaScript.
-    const auth = await invoke("github_auth_status");
+    // The initial auth status is already captured by Settings initialization.
+    // Avoid a redundant second OS wallet read on cold open.
+    const auth = knownAuth ?? await invoke("github_auth_status");
+    githubChecking = false;
+    githubCheckFailed = false;
     githubConnected = auth.connected === true;
     githubPending = !githubConnected &&
       ["requesting", "pending", "awaiting_approval", "saving_credentials"].includes(auth.phase);
@@ -172,6 +179,8 @@ async function refreshGithub() {
     if (githubConnected) await refreshMonitorScopes();
     updateApply();
   } catch (error) {
+    githubChecking = false;
+    githubCheckFailed = true;
     githubButtons();
     githubMessage(String(error), true);
   }
@@ -294,8 +303,15 @@ function renderRoots() {
   }
 }
 async function refresh() {
-  const snapshot = await invoke("get_snapshot");
-  const authAtOpen = await invoke("github_auth_status");
+  githubChecking = true;
+  githubCheckFailed = false;
+  githubButtons();
+  githubMessage("Checking GitHub connection...");
+  // Persistent form settings and native KWallet interrogation run independently.
+  // Neither path triggers local Git discovery/inspection.
+  const [snapshot, authAtOpen] = await Promise.all([
+    invoke("get_settings_config"), invoke("github_auth_status")
+  ]);
   githubWasConnectedAtOpen = authAtOpen.connected === true;
   githubStartedHere = false;
   githubStarting = false;
@@ -312,7 +328,7 @@ async function refresh() {
   renderRoots();
   message("");
   updateApply();
-  await refreshGithub();
+  await refreshGithub(authAtOpen);
 }
 byId("add-root-form").addEventListener("submit", event => {
   event.preventDefault();
@@ -414,6 +430,12 @@ byId("apply-settings").addEventListener("click", async () => {
   }
 });
 window.__TAURI__?.event?.listen?.("repoticker-settings-opened", () => {
-  void refresh().catch(error => message(error, true));
+  void refresh().catch(error => {
+  githubChecking = false;
+  githubCheckFailed = true;
+  githubButtons();
+  githubMessage("Cannot initialize settings.", true);
+  message(error, true);
+});
 });
 void refresh().catch(error => message(error, true));

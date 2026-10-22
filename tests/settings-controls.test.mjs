@@ -45,9 +45,10 @@ test("Device Flow buttons register and invoke native commands after JS startup",
   const invoke = async (command, args = {}) => {
     calls.push({ command, args });
     switch (command) {
-      case "get_snapshot": return {
+      case "get_settings_config": return {
         roots: [], language: "en", github_monitor_org: null
       };
+      case "get_monitor_scope": return null;
       case "github_auth_status": return { connected: false, phase: "idle", reason: null };
       case "github_begin": return { userCode: "ABCD-1234" };
       default: return undefined;
@@ -71,7 +72,14 @@ test("Device Flow buttons register and invoke native commands after JS startup",
     setInterval: () => 1,
     clearInterval() {},
   }, { filename: "settings.mjs" });
-  // Flush initial Settings -> get_snapshot -> github_auth_status refresh.
+  // New startup does not need a full local Git snapshot and checks
+  // authorization concurrently with config-only settings retrieval.
+  assert.equal(elements.get("github-connection-indicator").textContent,
+    "Checking connection...");
+  assert.equal(elements.get("github-connect").hidden, true);
+  assert.equal(elements.get("github-account-status").value,
+    "Checking connection...");
+  assert.ok(!calls.some(c => c.command === "get_snapshot"));
   await new Promise(resolve => setImmediate(resolve));
   const mode = elements.get("github-connection-mode");
   const workerRow = elements.get("github-worker-row");
@@ -125,4 +133,17 @@ test("shipped Simple polling has no configurable Worker URL or active Hybrid mod
   assert.match(html, /id="github-worker-row"[^>]*hidden/);
   assert.match(html, /id="github-worker-url" disabled/);
   assert.doesNotMatch(js, /save_settings[\s\S]*worker_url|save_settings[\s\S]*workerUrl/);
+});
+
+test("Settings native command reads config only, without Git scanning", () => {
+  const native = readFileSync(
+    new URL("../apps/desktop/src-tauri/src/main.rs", import.meta.url), "utf8");
+  const body = native.match(/fn get_settings_config\([\s\S]*?\n\}/)?.[0];
+  assert.ok(body, "native config-only Settings command must exist");
+  assert.match(body, /read_config\(&app\)\?/);
+  assert.doesNotMatch(body, /git::inspect|git::discover|scan\(/);
+  assert.match(native, /generate_handler!\[[\s\S]*?get_settings_config,/);
+  assert.doesNotMatch(js, /invoke\("get_snapshot"\)/,
+    "Settings must never request the expensive full Git snapshot");
+  assert.match(js, /Promise\.all\(\[\s*invoke\("get_settings_config"\),\s*invoke\("github_auth_status"\)/);
 });

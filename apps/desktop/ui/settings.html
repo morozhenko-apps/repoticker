@@ -32,11 +32,11 @@
     <div id="roots-list" class="roots-list"></div>
   </section>
   <section class="block github">
-    <div class="section-heading"><h2>GitHub &amp; Relay</h2><span id="github-connection-indicator" class="hint">Not connected</span></div>
+    <div class="section-heading"><h2>GitHub &amp; Relay</h2><span id="github-connection-indicator" class="hint">Checking connection...</span></div>
     <div class="github-auth-controls">
-      <button id="github-connect" type="button">Connect GitHub</button>
+      <button id="github-connect" type="button" hidden>Connect GitHub</button>
       <button id="github-disconnect" type="button" hidden>Disconnect</button>
-      <span id="github-auth-message" class="hint" role="status" aria-live="polite">Uses secure device authorization.</span>
+      <span id="github-auth-message" class="hint" role="status" aria-live="polite">Checking GitHub connection...</span>
     </div>
     <div id="github-device-flow" class="github-device-flow" hidden>
       <span>Enter this code on GitHub:</span>
@@ -47,7 +47,7 @@
     </div>
 
     <div class="github-grid">
-      <label>GitHub authorization<input id="github-account-status" disabled value="Not connected"></label>
+      <label>GitHub authorization<input id="github-account-status" disabled value="Checking connection..."></label>
       <label id="github-monitor-scope-row" hidden>Monitor account
         <select id="github-monitor-scope"><option value="">Choose account</option></select>
       </label>

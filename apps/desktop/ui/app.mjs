@@ -15,6 +15,14 @@ const invoke = (command, args = {}) => {
   }
   return window.__TAURI__.core.invoke(command, args);
 };
+const traceStartup = stage => {
+  // Only native allowlisted labels are emitted when the user explicitly opts in.
+  // Fire and forget so diagnostics never block first render.
+  void invoke("trace_startup_stage", { stage }).catch(() => {});
+};
+traceStartup("card.start");
+let firstSnapshotReady = false;
+let firstMonitorReady = false;
 let snapshot = emptySnapshot;
 let busy = false;
 let view = "compact";
@@ -244,7 +252,16 @@ function render(next) {
 }
 async function refresh() {
   try {
-    render(await invoke("get_snapshot"));
+    const next = await invoke("get_snapshot");
+    render(next);
+    if (!firstSnapshotReady) {
+      firstSnapshotReady = true;
+      traceStartup("card.snapshot_ready");
+    }
+    if (!firstMonitorReady && next.runner_state != null) {
+      firstMonitorReady = true;
+      traceStartup("card.monitor_ready");
+    }
   } catch (error) {
     showError(error);
   }
@@ -371,7 +388,10 @@ window.__TAURI__?.event?.listen?.("repoticker-git-action-finished", async event 
   await refresh();
 });
 refresh();
-startGithubMonitoring({ invoke, event: window.__TAURI__?.event, onError: showError });
+startGithubMonitoring({
+  invoke, event: window.__TAURI__?.event, onError: showError,
+  onStage: traceStartup
+});
 
 /* GTK Layer Shell receives physical Wayland relative-pointer events directly.
    The WebView only owns the gesture start/end, never motion coordinates. */

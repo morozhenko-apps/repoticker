@@ -5,6 +5,7 @@ mod github_native;
 mod github_oauth_wire;
 mod github_session;
 mod monitor_cache;
+mod startup_diagnostics;
 
 use repoticker_core::{
     git::{self, GitError, OperationOutcome, RepoSnapshot},
@@ -175,13 +176,20 @@ fn present(repo: RepoSnapshot) -> RepoSummary {
 }
 
 fn scan(app: &AppHandle) -> Result<Snapshot, String> {
+    let _scan = startup_diagnostics::Span::new("git.scan_total");
     let config = read_config(app)?;
-    let (repositories, mut errors) = git::discover_all(&roots_as_paths(&config));
+    let (repositories, mut errors) = {
+        let _discover = startup_diagnostics::Span::new("git.discover");
+        git::discover_all(&roots_as_paths(&config))
+    };
     let mut summaries = Vec::new();
-    for path in repositories {
-        match git::inspect(&path) {
-            Ok(status) => summaries.push(present(status)),
-            Err(err) => errors.push(format!("{}: {err}", path.display())),
+    {
+        let _inspect = startup_diagnostics::Span::new("git.inspect_all");
+        for path in repositories {
+            match git::inspect(&path) {
+                Ok(status) => summaries.push(present(status)),
+                Err(err) => errors.push(format!("{}: {err}", path.display())),
+            }
         }
     }
     summaries.sort_by(|a, b| a.name.cmp(&b.name).then(a.path.cmp(&b.path)));
@@ -345,6 +353,7 @@ fn execute(
 
 #[tauri::command]
 async fn get_snapshot(app: AppHandle) -> Result<Snapshot, String> {
+    let _snapshot = startup_diagnostics::Span::new("git.snapshot_ipc");
     tauri::async_runtime::spawn_blocking(move || scan(&app))
         .await
         .map_err(|err| err.to_string())?
@@ -354,6 +363,7 @@ async fn get_snapshot(app: AppHandle) -> Result<Snapshot, String> {
 /// must not wait for a full local Git discovery/inspection snapshot.
 #[tauri::command]
 fn get_monitor_scope(app: AppHandle) -> Result<Option<String>, String> {
+    let _scope = startup_diagnostics::Span::new("config.monitor_scope");
     Ok(read_config(&app)?.github_monitor_org)
 }
 
@@ -368,6 +378,7 @@ struct SettingsConfig {
 
 #[tauri::command]
 fn get_settings_config(app: AppHandle) -> Result<SettingsConfig, String> {
+    let _config = startup_diagnostics::Span::new("config.settings");
     let config = read_config(&app)?;
     Ok(SettingsConfig {
         roots: config.roots,
@@ -830,6 +841,7 @@ fn configure_gdk_for_native_wayland() {
 }
 
 fn main() {
+    startup_diagnostics::initialize();
     #[cfg(target_os = "linux")]
     configure_gdk_for_native_wayland();
 
@@ -941,6 +953,7 @@ fn main() {
             get_snapshot,
             get_monitor_scope,
             get_settings_config,
+            startup_diagnostics::trace_startup_stage,
             github_session::github_auth_status,
             github_session::github_flow_status,
             github_api::github_api_get,

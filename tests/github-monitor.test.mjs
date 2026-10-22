@@ -239,3 +239,31 @@ test("GitHub monitor uses config-only scope without invoking the local Git scan"
   assert.deepEqual(published.map(p => p.message),
     ["Connecting to GitHub...", "No accessible repositories."]);
 });
+
+test("first monitor startup reports only allowlisted nonsecret milestones in order", async () => {
+  const stages = [];
+  const pending = [];
+  let release;
+  const collect = () => new Promise(resolve => { release = resolve; });
+  startGithubMonitoring({
+    invoke: async (command, args) => {
+      if (command === "github_auth_status") return { connected: true };
+      if (command === "get_monitor_scope") return "team";
+      if (command === "github_monitor_publish") {
+        pending.push(args);
+        return null;
+      }
+      throw Error("Unexpected command: " + command);
+    },
+    collect, schedule: () => {}, onStage: stage => stages.push(stage)
+  });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(stages, ["monitor.auth_start", "monitor.auth_ready", "monitor.scope_ready"]);
+  release({ state: null, reason: "No accessible repositories." });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(stages, [
+    "monitor.auth_start", "monitor.auth_ready",
+    "monitor.scope_ready", "monitor.collect_ready"
+  ]);
+  assert.equal(pending.at(-1).message, "No accessible repositories.");
+});

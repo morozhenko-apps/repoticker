@@ -246,6 +246,21 @@ pub async fn github_api_get(app: AppHandle, path: String) -> Result<Value, Strin
     if !valid_path(&path) {
         return Err("Unsupported GitHub read-only API request.".into());
     }
+    // Never include the path itself: it can contain private repository names.
+    let stage = if path.starts_with("/user/installations?") {
+        "github.rest_installations"
+    } else if path.starts_with("/user/installations/") {
+        "github.rest_repositories"
+    } else if path.contains("/actions/runners?") {
+        "github.rest_runners"
+    } else if path.contains("/actions/runs/") {
+        "github.rest_jobs"
+    } else if path.contains("/actions/runs?") {
+        "github.rest_runs"
+    } else {
+        "github.rest_other"
+    };
+    let _api = crate::startup_diagnostics::Span::new(stage);
     let token = github_session::github_access_token(&app).await?;
     let client = Client::builder()
         .redirect(Policy::none())

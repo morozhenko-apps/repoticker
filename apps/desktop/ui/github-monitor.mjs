@@ -86,7 +86,7 @@ export async function collectForAccount({ get, account, selected, collect = coll
 }
 
 export function startGithubMonitoring({ invoke, event, onError = () => {},
-  collect = collectForAccount, schedule = setInterval }) {
+  collect = collectForAccount, schedule = setInterval, onStage = () => {} }) {
   let busy = false;
   let rerun = false;
   let lastAttempt = 0;
@@ -104,9 +104,12 @@ export function startGithubMonitoring({ invoke, event, onError = () => {},
     busy = true;
     lastAttempt = Date.now();
     let authorized = false;
+    const first = !hasPublishedResult;
     try {
+      if (first) onStage("monitor.auth_start");
       const auth = await invoke("github_auth_status");
       authorized = auth.connected === true;
+      if (first) onStage("monitor.auth_ready");
       if (!authorized) {
         hasPublishedResult = false;
         await publish(false);
@@ -119,11 +122,14 @@ export function startGithubMonitoring({ invoke, event, onError = () => {},
       // Config-only read: the full snapshot inspects every local Git repo.
       // GitHub polling must never depend on completion of that scan.
       const selected = await invoke("get_monitor_scope");
+      if (first) onStage("monitor.scope_ready");
       const result = await collect({ get, selected });
+      if (first) onStage("monitor.collect_ready");
       minIntervalMs = monitorRefreshDelay(result.repositoryCount ?? 100);
       await publish(true, result.state, result.reason);
       hasPublishedResult = true;
     } catch (error) {
+      if (first) onStage("monitor.failed");
       await publish(authorized, null,
         githubFailureMessage(githubFailureReason(error))).catch(onError);
       hasPublishedResult = true;

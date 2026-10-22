@@ -211,9 +211,13 @@ pub fn github_flow_status(app: AppHandle) -> GitHubAuthEvent {
 
 #[tauri::command]
 pub async fn github_auth_status(app: AppHandle) -> Result<GitHubAuthStatus, String> {
+    let _status = crate::startup_diagnostics::Span::new("github.auth_status");
     let state = app.state::<Arc<GitHubAuthManager>>().inner().clone();
     let _guard = state.vault_gate.lock().await;
-    let credential = read_credential().await.map_err(public_error)?;
+    let credential = {
+        let _wallet = crate::startup_diagnostics::Span::new("github.wallet_read");
+        read_credential().await.map_err(public_error)?
+    };
     let valid = credential.filter(|c| c.refresh_expires_at > unix_now());
     let progress = state.progress();
     Ok(GitHubAuthStatus {
@@ -413,6 +417,7 @@ pub async fn github_disconnect(app: AppHandle) -> Result<(), String> {
 /// This method is NEVER registered as a Tauri JS command.
 #[allow(dead_code)]
 pub async fn github_access_token(app: &AppHandle) -> Result<String, String> {
+    let _token = crate::startup_diagnostics::Span::new("github.token_acquisition");
     let state = app.state::<Arc<GitHubAuthManager>>().inner().clone();
     let _guard = state.vault_gate.lock().await;
     let current = read_credential()

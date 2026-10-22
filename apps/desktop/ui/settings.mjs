@@ -15,6 +15,10 @@ byId("github-connection-mode").addEventListener("change", syncWorkerControls);
 syncWorkerControls();
 const invoke = (command, args = {}) => window.__TAURI__?.core?.invoke(command, args) ??
   Promise.reject(new Error("Open settings in RepoTicker."));
+const traceStartup = stage => {
+  void invoke("trace_startup_stage", { stage }).catch(() => {});
+};
+traceStartup("settings.start");
 
 let original = null;
 let draft = null;
@@ -41,6 +45,7 @@ async function refreshMonitorScopes() {
       invoke("get_monitor_scope"),
       invoke("github_api_get", { path: "/user/installations?per_page=100&page=1" })
     ]);
+    traceStartup("settings.installations_ready");
     if (!Array.isArray(data.installations)) throw Error("Invalid GitHub installations");
     const select = byId("github-monitor-scope");
     select.replaceChildren();
@@ -312,6 +317,7 @@ async function refresh() {
   const [snapshot, authAtOpen] = await Promise.all([
     invoke("get_settings_config"), invoke("github_auth_status")
   ]);
+  traceStartup("settings.config_auth_ready");
   githubWasConnectedAtOpen = authAtOpen.connected === true;
   githubStartedHere = false;
   githubStarting = false;

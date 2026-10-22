@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   listAvailableInstallations, listInstalledRepositories, collectForAccount,
-  REFRESH_MS, monitorRefreshDelay
+  REFRESH_MS, monitorRefreshDelay, startGithubMonitoring
 } from "../apps/desktop/ui/github-monitor.mjs";
 
 const installation = (id, name) => ({ id, account: { login: name, type: "Organization" } });
@@ -143,4 +143,59 @@ test("rate-limited job collection shows explicit rate-limit status without fabri
   const result = await collectForAccount({ get, collect: async () => state });
   assert.equal(result.state.counts.running, null);
   assert.match(result.reason, /API rate limited/);
+});
+
+test("monitor says Connecting after native authorization before slow data collection", async () => {
+  const messages = [];
+  const registered = [];
+  let finishCollection;
+  const collecting = new Promise(resolve => { finishCollection = resolve; });
+  const collect = async () => collecting;
+  const invoke = async (name, args) => {
+    if (name === "github_auth_status") return { connected: true };
+    if (name === "get_snapshot") return { github_monitor_org: "team" };
+    if (name === "github_monitor_publish") {
+      messages.push(args);
+      return;
+    }
+    throw Error("unexpected command " + name);
+  };
+  startGithubMonitoring({
+    invoke, collect,
+    schedule: (callback, delay) => {
+      assert.equal(delay, REFRESH_MS);
+      registered.push(callback);
+    },
+  });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(registered.length, 1);
+  assert.deepEqual(messages.map(m => [m.connected, m.runnerState, m.message]),
+    [[true, null, "Connecting to GitHub..."]]);
+  finishCollection({
+    state: { coverage: { jobs: true, runners: true }, counts: { running: 1 } },
+    repositoryCount: 1, reason: null,
+  });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(messages.length, 2);
+  assert.equal(messages[1].connected, true);
+  assert.equal(messages[1].runnerState.counts.running, 1);
+  assert.equal(messages[1].message, null);
+});
+
+test("disconnected native credential check never claims Connecting or authorized", async () => {
+  const messages = [];
+  let collectionCalls = 0;
+  startGithubMonitoring({
+    invoke: async (name, args) => {
+      if (name === "github_auth_status") return { connected: false };
+      if (name === "github_monitor_publish") messages.push(args);
+      return null;
+    },
+    collect: async () => { collectionCalls++; },
+    schedule: () => {},
+  });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(collectionCalls, 0);
+  assert.deepEqual(messages.map(m => [m.connected, m.runnerState, m.message]),
+    [[false, null, null]]);
 });

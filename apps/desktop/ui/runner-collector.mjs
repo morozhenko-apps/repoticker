@@ -33,6 +33,31 @@ async function boundedMap(items, parallel, process) {
   return result;
 }
 
+/** One FIFO budget for every REST request in a collector invocation.
+ * Nested repository and job workers must not multiply the request cap.
+ * A slot is released whether the native transport resolves or rejects.
+ */
+function limitRequests(get, limit) {
+  let active = 0;
+  const pending = [];
+  function dispatch() {
+    while (active < limit && pending.length) {
+      const { path, resolve, reject } = pending.shift();
+      active++;
+      Promise.resolve().then(() => get(path))
+        .then(resolve, reject)
+        .finally(() => {
+          active--;
+          dispatch();
+        });
+    }
+  }
+  return path => new Promise((resolve, reject) => {
+    pending.push({ path, resolve, reject });
+    dispatch();
+  });
+}
+
 /** Queued jobs may exist in in_progress workflow runs. Jobs are the
  * counting unit, not workflow runs. Truncation and errors mean unknown.
  */
@@ -59,11 +84,13 @@ export async function collectRunnerState({
       !NAME.test(components[1]) || components[1] === "." || components[1] === "..";
   })) throw Error("Invalid selected repositories");
 
+  // The cap applies across every repo and nested jobs page, not per worker.
+  const limitedGet = limitRequests(get, concurrency);
   const errors = [];
   let runnerPage = { items: [], complete: false };
   try {
     runnerPage = await getPages(
-      get,
+      limitedGet,
       page => "/orgs/" + encodeURIComponent(org) + "/actions/runners?per_page=100&page=" + page,
       "runners", maxRunnerPages
     );
@@ -80,7 +107,7 @@ export async function collectRunnerState({
       const runIds = new Set();
       for (const status of ["queued", "in_progress"]) {
         const page = await getPages(
-          get,
+          limitedGet,
           number => "/repos/" + repository + "/actions/runs?status=" + status +
             "&per_page=100&page=" + number,
           "workflow_runs", maxRunPages
@@ -94,7 +121,7 @@ export async function collectRunnerState({
       const selectedIds = [...runIds].slice(0, maxActiveRunsPerRepo);
       if (runIds.size > maxActiveRunsPerRepo) complete = false;
       const pages = await boundedMap(selectedIds, concurrency, runId => getPages(
-        get,
+        limitedGet,
         number => "/repos/" + repository + "/actions/runs/" + runId +
           "/jobs?filter=latest&per_page=100&page=" + number,
         "jobs", maxJobPages

@@ -150,3 +150,80 @@ test("runner permission denial does not erase complete Actions jobs", async () =
   assert.ok(snapshot.errors.some(x =>
     x.scope === "runners" && x.reason === "permission_denied"));
 });
+
+function manyQueuedRuns({ failJob = null } = {}) {
+  const repositories = ["org/one", "org/two", "org/three", "org/four"];
+  const names = repositories.map(repo => repo.split("/")[1]);
+  let active = 0;
+  let maximum = 0;
+  let completed = 0;
+  const get = async path => {
+    active++;
+    maximum = Math.max(maximum, active);
+    // Flush asynchronously without timing sleeps; overlap is deterministic
+    // across nested repo and job workers.
+    await new Promise(resolve => setImmediate(resolve));
+    try {
+      const url = new URL(path, "https://api.github.com");
+      if (url.pathname === "/orgs/org/actions/runners")
+        return { runners: [] };
+      const segments = url.pathname.split("/").filter(Boolean);
+      const index = names.indexOf(segments[2]);
+      if (segments[0] === "repos" && index >= 0 &&
+          segments[3] === "actions" && segments[4] === "runs") {
+        if (segments.length === 5) {
+          return { workflow_runs: url.searchParams.get("status") === "queued"
+            ? Array.from({ length: 4 }, (_, n) => ({ id: (index + 1) * 100 + n + 1 }))
+            : [] };
+        }
+        if (segments.length === 7 && segments[6] === "jobs") {
+          const id = Number(segments[5]);
+          if (id === failJob) throw Error("ghu_PRIVATE must never reach presentation");
+          return { jobs: [{ id: id * 10, status: "queued",
+            runner_id: null, labels: ["ubuntu-latest"] }] };
+        }
+      }
+      throw Error("Unexpected test GitHub request");
+    } finally {
+      active--;
+      completed++;
+    }
+  };
+  return {
+    repositories, get,
+    stats: () => ({ active, maximum, completed })
+  };
+}
+
+test("global cap applies to all nested jobs requests across repositories", async () => {
+  const fake = manyQueuedRuns();
+  const snapshot = await collectRunnerState({
+    org: "org", repositories: fake.repositories, get: fake.get,
+    concurrency: 2, now: config.now, maxRunPages: 1, maxJobPages: 1,
+  });
+  assert.equal(fake.stats().active, 0);
+  assert.equal(fake.stats().maximum, 2);
+  assert.equal(snapshot.counts.queued, 16);
+  assert.equal(snapshot.coverage.jobs, true);
+  assert.equal(snapshot.errors.length, 0);
+});
+
+test("global cap releases failed requests without fabricating complete job counts", async () => {
+  const fake = manyQueuedRuns({ failJob: 101 });
+  const snapshot = await collectRunnerState({
+    org: "org", repositories: fake.repositories, get: fake.get,
+    concurrency: 2, now: config.now, maxRunPages: 1, maxJobPages: 1,
+  });
+  assert.ok(fake.stats().maximum <= 2);
+  assert.equal(snapshot.coverage.runners, true);
+  assert.equal(snapshot.coverage.jobs, false);
+  assert.equal(snapshot.counts.queued, null);
+  assert.ok(snapshot.errors.some(error =>
+    error.scope === "org/one" && error.reason === "unavailable"));
+  assert.doesNotMatch(JSON.stringify(snapshot.errors), /ghu_PRIVATE/);
+  // Concurrent requests accepted before failure may finish afterwards;
+  // the request limiter must release those slots as well.
+  await new Promise(resolve => setImmediate(resolve));
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(fake.stats().active, 0);
+});

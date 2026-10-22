@@ -51,8 +51,13 @@
       <label id="github-monitor-scope-row" hidden>Monitor account
         <select id="github-monitor-scope"><option value="">Choose account</option></select>
       </label>
-      <label>Connection mode<select disabled><option>Simple polling</option><option>Hybrid webhook relay</option></select></label>
-      <label class="worker-label">Worker URL<input disabled placeholder="https://your-worker.example"></label>
+      <label>Connection mode<select id="github-connection-mode" disabled>
+        <option value="polling">Simple polling</option>
+        <option value="hybrid">Hybrid webhook relay (not available yet)</option>
+      </select></label>
+      <label id="github-worker-row" class="worker-label" hidden>Worker URL
+        <input id="github-worker-url" disabled placeholder="https://your-worker.example">
+      </label>
     </div>
   </section>
   <div class="settings-footer">

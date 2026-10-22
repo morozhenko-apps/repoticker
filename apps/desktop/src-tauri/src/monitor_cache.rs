@@ -53,8 +53,7 @@ pub struct MonitorPresentation {
 
 #[tauri::command]
 pub fn github_monitor_snapshot(app: AppHandle) -> MonitorPresentation {
-    let (connected, runner_state, monitor_message) =
-        app.state::<MonitorCache>().read();
+    let (connected, runner_state, monitor_message) = app.state::<MonitorCache>().read();
     MonitorPresentation {
         connected,
         runner_state,

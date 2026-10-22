@@ -94,8 +94,8 @@ KWallet untouched.
 - [x] Cargo-generated workspace lockfile updated **only** the `repoticker-core` and `repoticker-desktop` versions from `0.1.0` to `0.2.0`; core Cargo.toml, desktop Cargo.toml and tauri.conf.json also updated. No unrelated dependency change.
 - [x] Owner committed all four files, commit `9fda2d725d8178fd0d24dc0465fe0201d6feb422` (`chore(release): prepare version 0.2.0`) and pushed `dev`; working tree was clean.
 - [x] Exact versioned commit passed [Preflight #39775627536](https://github.com/morozhenko-apps/repoticker/actions/runs/39775627536): Rust format/core/Clippy, JS and release tests, Linux desktop compile, and aggregate gate, all successful.
-- [ ] Locally build **0.2.0** Linux DEB/AppImage with the existing Tauri CLI; validate package identity, filenames and version, and perform actual KDE tray/Settings/Auth/About smoke.
-- [ ] Inspect pre-existing installed `repo-ticker` version and signed APT candidate; never assume an installed 0.1.0 is still present or that a private local DEB tests *signed APT upgrade*.
+- [x] Locally build **0.2.0** Linux DEB/AppImage with Tauri CLI and verify DEB name/version/architecture; rebuilt after KDE source fixes. AppImage starts on KDE Wayland. [ ] Complete GTK log and explicitly itemized About/auth smoke.
+- [x] Inspect installed `repo-ticker` 0.1.0 and signed APT candidate 0.1.0; local DEB upgrade to 0.2.0 succeeded. [ ] Signed APT upgrade remains post-publication.
 - [ ] Live denied/revoked token and KWallet recovery evidence, independent Windows physical evidence or disclosure, and protected tag/main promotion remain open.
 
 This is a verified **development candidate**, not a published release or

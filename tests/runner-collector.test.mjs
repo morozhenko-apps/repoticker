@@ -114,3 +114,39 @@ test("same run in both active statuses has only one jobs query", async () => {
   assert.equal(reads, 1);
   assert.equal(snapshot.counts.running, 1);
 });
+
+test("rate-limited repo preserves independent runner inventory without leaking source text", async () => {
+  const snapshot = await collectRunnerState({
+    ...config,
+    get: async path => {
+      if (path.includes("/repos/org/second/"))
+        throw Error("GitHub API rate limited.");
+      return mockGithub(path);
+    },
+  });
+  assert.equal(snapshot.coverage.runners, true);
+  assert.equal(snapshot.counts.busy, 1);
+  assert.equal(snapshot.coverage.jobs, false);
+  assert.equal(snapshot.counts.running, null);
+  assert.equal(snapshot.counts.queued, null);
+  assert.ok(snapshot.errors.some(x =>
+    x.scope === "org/second" && x.reason === "rate_limited"));
+  assert.doesNotMatch(JSON.stringify(snapshot.errors), /token|private/);
+});
+
+test("runner permission denial does not erase complete Actions jobs", async () => {
+  const snapshot = await collectRunnerState({
+    ...config,
+    get: async path => {
+      if (path.startsWith("/orgs/")) throw Error("GitHub API permission denied.");
+      return mockGithub(path);
+    },
+  });
+  assert.equal(snapshot.coverage.runners, false);
+  assert.equal(snapshot.counts.busy, null);
+  assert.equal(snapshot.coverage.jobs, true);
+  assert.equal(snapshot.counts.running, 1);
+  assert.equal(snapshot.counts.queued, 3);
+  assert.ok(snapshot.errors.some(x =>
+    x.scope === "runners" && x.reason === "permission_denied"));
+});

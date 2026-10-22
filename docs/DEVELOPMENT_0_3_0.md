@@ -176,6 +176,47 @@ or data conversion required, and published v0.2 is unaffected.
   tag after acceptance. Otherwise continue development on `dev`
   without version bump, promotion or tag.
 
+## Next implementation: Settings startup without local Git scan — 2026-10-22
+
+**Code + focused tests:** `dev` commit
+`d099c1704f90cdfa47dc232c294d92c183554cc3`.
+
+The shipped 0.2.0 Settings startup first awaited `get_snapshot`,
+which ran `git::discover_all` and `git::inspect` across every
+configured root, **then** read `github_auth_status` and read the wallet
+**again** via `refreshGithub`. Listing the Monitor account made
+yet another `get_snapshot` request concurrently with the installations
+REST call. This created unnecessary local Git and credential-store work
+before the settings could display authorized state.
+
+Architectural correction on `dev`:
+
+- A small native `get_settings_config` IPC returns only persisted,
+  nonsecret `roots`, `language` and `github_monitor_org`;
+  no local Git scan and no secret store read. Existing `get_snapshot`
+  remains authoritative for the card's live repository inspection.
+- Settings first checks persisted config and native wallet status
+  **concurrently** with `Promise.all`, using the resulting initial
+  native auth result rather than immediately reading KWallet a
+  second time. Monitor scope selection obtains a config-only
+  `get_monitor_scope` value instead of a full snapshot.
+- Initial Settings presentation now says **Checking connection...**
+  and hides Connect/Disconnect while native auth has not been checked.
+  A thrown wallet read leaves **Connection unavailable**, not a
+  falsely authoritative disconnected state; the failure message is
+  displayed. Actual absence of credentials resolves to Not connected.
+- Focused Settings fixtures now use the lightweight native read
+  commands, check no `get_snapshot` call occurs, and verify a
+  single initial wallet read and initial non-misleading status.
+
+**CI / physical status:** implementation was committed, but final
+Preflight and independent cold/warm timing evidence must be checked
+before considering this correction accepted. This removes known
+serialization and false initial Settings labels but is **not**
+evidence that the owner's entire staggered startup delay is fixed.
+Network and Git inspection still take time in their legitimate
+independent paths. No new release/version bump is required.
+
 ## Stop factors and invariant boundaries
 
 If later stages require a changed persistent model, GitHub App

@@ -101,11 +101,15 @@ Scope and rollback:
 3. [x] Deterministic Node contract tests: the collector obtains the
    persisted scope without calling `get_snapshot`; source-level native
    contract check that command reads `read_config`, not git::inspect.
-4. [ ] Final CI Preflight stable Rust/JS/native Linux gate **once** after
-   planned edits; do not run full Mode B or repeatedly rerun CI.
-5. [ ] Commit code and focused tests atomically, update this
-   documentation in a **separate docs-only commit**; record exact SHA,
-   CI run, and any unvalidated physical acceptance.
+4. [x] Final CI Preflight stable Rust/JS/native Linux gate **once** after
+   planned edits; [run #39848341263](https://github.com/morozhenko-apps/repoticker/actions/runs/39848341263)
+   **SUCCESS 4/4** on exact code/test SHA
+   `66cfa3a34590a5bd53dd45dba2e6cc8ee97453d4`.
+   No full Mode B or repeated test suite.
+5. [x] Commit code and focused tests atomically (`66cfa3a`),
+   documentation separately (`5fa5db3` and this checkpoint).
+   Source CI is green, but **KDE cold/warm startup time and
+   complete problem resolution remain unvalidated**.
 
 Rollback: revert the one code/test commit. No credential migration
 or data conversion required, and published v0.2 is unaffected.
@@ -127,6 +131,20 @@ or data conversion required, and published v0.2 is unaffected.
   The UI can still display temporary false `Not connected` from
   independent Settings/auth state, and local repo display still scans
   the Git tree; both are explicitly scheduled in later stages.
+
+### A1 final verification
+
+- The commit `66cfa3a` passed
+  [Preflight #39848341263](https://github.com/morozhenko-apps/repoticker/actions/runs/39848341263):
+  Node UI/source contracts, Rust formatting/core/Clippy, Linux desktop
+  compile, aggregate Preflight all **successful**.
+- There are no changes to GitHub OAuth scopes, external HTTP behavior,
+  token storage, local Git mutation rules or persisted configuration.
+- This **does not** demonstrate that the reported startup delay has
+  disappeared. Proceed to A2 profiling and A3 honest startup state.
+- v0.2 delivery issue #9 was closed after APT version availability
+  confirmation, and aftercare was transferred to #4 (auth),
+  #13 (Windows) and #14 (independent signed upgrade).
 
 ## Follow-up stages (not implemented by A1)
 

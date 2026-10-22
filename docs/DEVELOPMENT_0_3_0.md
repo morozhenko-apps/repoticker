@@ -359,6 +359,34 @@ proof that all remote API latency has been fixed. After CI, compare
 physical cold-start traces and specifically the count of full Git
 scans and monitor-collection-to-visible delay.
 
+## A2b implementation checkpoint — 2026-10-22
+
+Code + focused tests committed on `dev` as
+[`ba65f2c`](https://github.com/morozhenko-apps/repoticker/commit/ba65f2cf76fea6c2d98139ef11382e54b51573c0)
+without changing `main`, release tags or version metadata.
+
+- A dedicated read-only `github_monitor_snapshot` native command
+  returns three sanitized values directly from `MonitorCache` and
+  does not touch local Git or the credential store.
+- GitHub monitor/auth/scope events now update only the compact
+  metric strip; the repository list and its scroll are unchanged.
+  Local config changes, startup and completed Git actions continue
+  to call the full scan.
+- A revision check retains newer monitor data when a previously
+  started Git scan returns late. An IPC request sequence rejects
+  out-of-order replies between concurrent remote-state events.
+- Pure Node tests cover partial-state merging, stale result ordering,
+  invalid presentation and source contracts for event routing.
+  Rust tests cover the native cache projection and initial status.
+- [Preflight #39854735114](https://github.com/morozhenko-apps/repoticker/actions/runs/39854735114)
+  was queued for the code commit. **Do not mark CI passed until
+  the run completes.**
+- The submitted physical trace preceded this change. To validate
+  improvement, rebuild from updated `dev`, capture a new opt-in
+  startup log and compare the number of `git.snapshot_ipc` spans
+  and collect-to-card delay. Longer-term Git repository inspection
+  may still need separate optimization.
+
 ## Stop factors and invariant boundaries
 
 If later stages require a changed persistent model, GitHub App

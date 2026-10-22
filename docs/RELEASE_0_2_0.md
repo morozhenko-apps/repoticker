@@ -102,6 +102,41 @@ This is a verified **development candidate**, not a published release or
 signed APT upgrade. Keep `main` and all public 0.1.0 artifacts unchanged
 until physical acceptance and explicit release admission.
 
+## Local Linux release bundles — owner evidence (2026-10-22)
+
+- [x] The owner updated `dev` to docs commit `aff5fb8` (package
+  sources are the previously CI-verified version commit `9fda2d7`)
+  and ran `cargo tauri build --bundles deb,appimage` on Ubuntu KDE.
+  The release build completed and yielded both local artifacts:
+  `target/release/bundle/deb/RepoTicker_0.2.0_amd64.deb`
+  (7.95 MiB) and
+  `target/release/bundle/appimage/RepoTicker_0.2.0_amd64.AppImage`
+  (87.83 MiB).
+- [x] `dpkg-deb -f` confirmed `Package: repo-ticker`,
+  `Version: 0.2.0`, `Architecture: amd64`.
+- [x] Local owner-reported SHA256, *not independently verified published
+  release signatures*: DEB
+  `2f8e89ddd83ca606db4e4dd792fe4724cd91af6e7d433248a0990b82706f6a45`;
+  AppImage
+  `64559bd05b4b77b170367420652c700b2760788e88f53fc6cb9d1382f1f2d7ef`.
+- [x] Pre-upgrade installed package `repo-ticker` is `0.1.0`
+  (`dpkg-query: install ok installed 0.1.0`), and signed production
+  APT candidate is still `0.1.0` at
+  `https://download.morozhenko.com/dist/RepoTicker/apt`.
+- [ ] **Next:** physical local DEB upgrade `0.1.0 → 0.2.0`
+  using the locally built `.deb`; verify version in About, config
+  persistence, keyring-backed GitHub login, self-hosted runner and
+  job tooltip, and restart. This is **not** a signed APT repository
+  upgrade; independent APT upgrade must be checked after authorized
+  release publication.
+- [ ] Exercise AppImage separately after closing the DEB instance.
+  Check runtime and version; never run two RepoTicker instances
+  concurrently during keyring/settings acceptance.
+
+No tag, `main` promotion, R2 upload, signed APT publication, Windows
+runtime validation or authenticated failure-path acceptance is implied
+by the local packaging result.
+
 ## Release blocker matrix
 
 | Area | Evidence | Release gate |

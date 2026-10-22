@@ -1,4 +1,5 @@
 import { summarizeRunnerState } from "./runner-state.mjs";
+import { githubFailureReason } from "./github-errors.mjs";
 
 /** Read-only GitHub REST collection. Auth stays inside the injected native
  * transport get(path); this module never receives a token or makes a fetch.
@@ -66,8 +67,8 @@ export async function collectRunnerState({
       page => "/orgs/" + encodeURIComponent(org) + "/actions/runners?per_page=100&page=" + page,
       "runners", maxRunnerPages
     );
-  } catch {
-    errors.push({ scope: "runners", reason: "unavailable" });
+  } catch (error) {
+    errors.push({ scope: "runners", reason: githubFailureReason(error) });
   }
   if (!runnerPage.complete) errors.push({ scope: "runners", reason: "incomplete" });
 
@@ -102,9 +103,9 @@ export async function collectRunnerState({
         if (!page.complete) complete = false;
         jobs.push(...page.items);
       }
-    } catch {
+    } catch (error) {
       complete = false;
-      reason = "unavailable";
+      reason = githubFailureReason(error);
     }
     return { repository, jobs, complete, reason };
   });

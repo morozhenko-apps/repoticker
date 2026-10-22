@@ -198,6 +198,40 @@ by the local packaging result.
   log was supplied after the build; absence of Gtk-CRITICAL warnings
   cannot be asserted from build output alone.
 
+## KDE geometry and GTK log acceptance — 2026-10-22
+
+- [x] Owner ran the **rebuilt** `0.2.0` AppImage on KDE Wayland with
+  `REPOTICKER_UI_DEBUG=1`, then inspected
+  `/tmp/repoticker-0.2.0-gtk.log`.
+- [x] `grep -cE 'Gtk-CRITICAL|GLib-CRITICAL'` returned **0**.
+  This closes the *observed* GTK min/max constraint warning
+  reproduction for the provided session (not a proof that no GTK
+  warning could ever occur).
+- [x] Compact GTK allocation verified as
+  `requested=122 actual=390x122` with
+  `margins=(211, 100)`. Expanded repositories window verified as
+  `requested=510 actual=390x510`; 510px is intentional
+  **expanded** geometry, not unintended compact-card growth.
+- [ ] The last diagnostic line when requesting compact again is
+  `RepoTicker resize: height=122 margins=(211,100) allocated=1x1`.
+  This is a geometry-transition observation, **not a settled compact
+  allocation**. The excerpt does not show the final allocation
+  following this request; do not claim the final return-to-compact
+  size was measured. If there is a visible problem on returning,
+  capture subsequent `GTK geometry: requested=122` entries.
+- [ ] Independent user confirmation of normal action-button cursor,
+  About displaying `0.2.0`, retained GitHub authorization after
+  app restart, and any token-denial/KWallet failure acceptance
+  are still open. Startup first shows a false disconnect and delays
+  repository/runner results; this specific issue is explicitly
+  deferred to **v0.3.0 issue #12**.
+- [ ] Windows physical testing or a clearly stated unverified-platform
+  limitation, signed APT publication and post-release APT upgrade
+  remain separate.
+
+Evidence is owner-provided runtime log, not a simulated CI fixture.
+No runtime code change or new build was made by recording these results.
+
 ## Release blocker matrix
 
 | Area | Evidence | Release gate |
@@ -287,7 +321,7 @@ These acceptance steps are **not executed** by this documentation commit.
 - [x] Draft scope, version rationale, gates and exact promotion sequence.
 - [ ] Close/authenticate remaining P2 reliability acceptance tasks.
 - [x] Cargo-generated `0.2.0` package bump and lockfile synchronized in `dev` (`9fda2d7`).
-- [ ] Release candidate STABLE CI green.
+- [x] Release candidate Rust, JS and Linux compile Preflight [#39826251376](https://github.com/morozhenko-apps/repoticker/actions/runs/39826251376) green 4/4 on code/test SHA `18f400f`.
 - [ ] Linux APT upgrade and KDE smoke accepted.
 - [ ] Windows runtime verified or limitation disclosed.
 - [ ] Main promotion and protected tagged publish approved and executed.

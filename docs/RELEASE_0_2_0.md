@@ -17,8 +17,9 @@ tooltips, subsequent content/layout correction and functional GitHub
 connection. This does **not** prove Windows runtime, token expiry/recovery,
 installer upgrade or billing free-allowance depletion semantics.
 
-**Release state: PREPARATION ONLY.** Neither `main`, package versions,
-immutable tags, APT metadata nor published downloads are modified here.
+**Release state: PREPARATION ONLY.** Version markers and Cargo.lock are now
+set to `0.2.0` on `dev` (commit `9fda2d7`). `main`, immutable tags,
+APT metadata and published downloads are not modified here.
 `dev` and `main` are the only Git branches. No additional feature branch
 is needed.
 
@@ -86,6 +87,20 @@ are the explicitly planned v0.3.0 hardening; 0.2.0 must not claim
 them implemented. On a failure this slice can be rolled back in isolated
 code/test commits, leaving the previously working authorized monitor and
 KWallet untouched.
+
+## v0.2.0 version synchronization checkpoint — 2026-10-22
+
+- [x] On Alcotester, owner ran `python3 scripts/release_version.py --bump minor`, `cargo check -p repoticker-desktop`, and `cargo metadata --locked --no-deps --format-version 1`; each succeeded.
+- [x] Cargo-generated workspace lockfile updated **only** the `repoticker-core` and `repoticker-desktop` versions from `0.1.0` to `0.2.0`; core Cargo.toml, desktop Cargo.toml and tauri.conf.json also updated. No unrelated dependency change.
+- [x] Owner committed all four files, commit `9fda2d725d8178fd0d24dc0465fe0201d6feb422` (`chore(release): prepare version 0.2.0`) and pushed `dev`; working tree was clean.
+- [x] Exact versioned commit passed [Preflight #39775627536](https://github.com/morozhenko-apps/repoticker/actions/runs/39775627536): Rust format/core/Clippy, JS and release tests, Linux desktop compile, and aggregate gate, all successful.
+- [ ] Locally build **0.2.0** Linux DEB/AppImage with the existing Tauri CLI; validate package identity, filenames and version, and perform actual KDE tray/Settings/Auth/About smoke.
+- [ ] Inspect pre-existing installed `repo-ticker` version and signed APT candidate; never assume an installed 0.1.0 is still present or that a private local DEB tests *signed APT upgrade*.
+- [ ] Live denied/revoked token and KWallet recovery evidence, independent Windows physical evidence or disclosure, and protected tag/main promotion remain open.
+
+This is a verified **development candidate**, not a published release or
+signed APT upgrade. Keep `main` and all public 0.1.0 artifacts unchanged
+until physical acceptance and explicit release admission.
 
 ## Release blocker matrix
 
@@ -175,7 +190,7 @@ These acceptance steps are **not executed** by this documentation commit.
 - [x] Review release machinery and current version markers.
 - [x] Draft scope, version rationale, gates and exact promotion sequence.
 - [ ] Close/authenticate remaining P2 reliability acceptance tasks.
-- [ ] Cargo-generated `0.2.0` package bump and lockfile synchronized.
+- [x] Cargo-generated `0.2.0` package bump and lockfile synchronized in `dev` (`9fda2d7`).
 - [ ] Release candidate STABLE CI green.
 - [ ] Linux APT upgrade and KDE smoke accepted.
 - [ ] Windows runtime verified or limitation disclosed.

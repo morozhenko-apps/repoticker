@@ -414,19 +414,22 @@ into zero. This is explicitly **per collection**, not an invented
 global cap across unrelated Settings/Billing WebViews.
 
 Implementation stages:
-1. [ ] Add a small injectable async request limiter and replace only
-   the collector's raw `get` entrypoint with the bound version.
-2. [ ] Add deterministic tests with many queued workflow job
-   requests across multiple repos: measured maximum in-flight
-   count at and below the configured cap; actual totals complete.
-3. [ ] Prove permit release on a failing GitHub request and preserve
-   partial/unknown coverage, without leaking provider response data.
-4. [ ] Run the standard stable Preflight on the final code/test
-   commit once and record the exact SHA and CI evidence. Do not run
-   Mode B or demand another KDE physical smoke during this stage.
-5. [ ] Record completion evidence in a **separate docs-only commit**.
-   Track combined physical/Mode B acceptance in
-   [deferred test gate #15](https://github.com/morozhenko-apps/repoticker/issues/15).
+1. [x] Added FIFO request limiter to the collector; every runners,
+   runs and nested jobs read shares one concurrency budget.
+2. [x] Added deterministic Node test with four repositories and
+   sixteen active queued jobs; asserts full queue counts and
+   maximum concurrent GitHub REST requests of two when configured.
+3. [x] Added rejected-job request regression: no credential
+   leakage and partial/unknown coverage remains authoritative.
+4. [ ] Preflight for exact code/test SHA
+   `3d811a7792e5835630196e3f1c1475b696dfb5d4`:
+   [run #39856749723](https://github.com/morozhenko-apps/repoticker/actions/runs/39856749723).
+   At documentation checkpoint JS and Rust jobs passed; Linux
+   desktop compile still pending. Do not call overall CI green yet.
+5. [x] Code and focused tests committed atomically;
+   completion/evidence documented in this **separate docs-only commit**.
+   The combined physical/Mode B gate is independently tracked in
+   [issue #15](https://github.com/morozhenko-apps/repoticker/issues/15).
 
 Risk: limiting REST bursts can increase collection latency in large
 active-run sets; preserving the existing per-repo traversal and
@@ -434,6 +437,16 @@ full-coverage/unknown handling is essential. Compare the future
 integrated cold/warm trace before tuning the concurrency budget.
 Rollback: revert the one code/test commit. No persistent migration
 or release needed. Keep `main` and immutable v0.2.0 untouched.
+
+## Deferred aggregate verification contract
+
+The owner chose not to perform a full physical/manual regression after
+each development slice. Comprehensive KDE/Windows/GitHub/installer
+acceptance and the complete Mode B test program before the RC are
+tracked as [GitHub issue #15](https://github.com/morozhenko-apps/repoticker/issues/15).
+Targeted regression tests and branch Preflight remain mandatory for
+each relevant code change. Do not conflate deferred system acceptance
+with a passing per-commit test suite or claim release readiness.
 
 ## Stop factors and invariant boundaries
 

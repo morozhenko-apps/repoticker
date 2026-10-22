@@ -218,4 +218,4 @@ jobs:
             "$RUNNER_TEMP"/release/public/repoticker-archive-keyring.gpg \
             --repo "$GITHUB_REPOSITORY" --verify-tag \
             --title "RepoTicker $GITHUB_REF_NAME" \
-            --notes "Apache License 2.0. Author: Stanislav Moseyko (morozhenko). Linux amd64 DEB/AppImage, unsigned Windows x64 NSIS, no macOS build. APT is signed on download.morozhenko.com."
+            --notes "RepoTicker v0.2.0 adds native GitHub Device Flow, OS keyring storage, self-hosted runner and Actions job monitoring, billing hover, and KDE Wayland fixes. Linux amd64 DEB/AppImage; signed APT at download.morozhenko.com. Windows x64 NSIS is unsigned and CI-built but NOT physically tested; Windows runtime verification follows release. macOS is not shipped. Known limitations: slow staged initial GitHub connection display; physical OAuth expiry/revocation, locked wallet and offline/error recovery have not been accepted yet. No free-minute balance is inferred from billing totals. Apache License 2.0; author Stanislav Moseyko (morozhenko)."

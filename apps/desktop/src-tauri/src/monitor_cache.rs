@@ -10,11 +10,22 @@ pub struct MonitorCache {
     state: Mutex<CacheState>,
 }
 
-#[derive(Default)]
 struct CacheState {
     connected: bool,
     runner_state: Option<Value>,
     message: Option<String>,
+}
+
+impl Default for CacheState {
+    fn default() -> Self {
+        Self {
+            connected: false,
+            runner_state: None,
+            // The OS keyring has not yet been checked by the UI monitor.
+            // False here means "not verified yet", not "disconnected".
+            message: Some("Checking GitHub connection...".into()),
+        }
+    }
 }
 
 impl MonitorCache {

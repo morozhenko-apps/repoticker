@@ -427,7 +427,7 @@ fn apply_card_height(window: &gtk::ApplicationWindow, height: i32) -> Result<(),
     let viewport = child
         .downcast::<gtk::ScrolledWindow>()
         .map_err(|_| "Layer Shell viewport has unexpected type".to_owned())?;
-    set_exact_viewport_height(viewport.as_ref(), CARD_HEIGHT.load(Ordering::Acquire), height);
+    set_exact_viewport_height(&viewport, CARD_HEIGHT.load(Ordering::Acquire), height);
     viewport.set_size_request(390, height);
     CONTENT.with(|cell| {
         if let Some(content) = cell.borrow().as_ref() {

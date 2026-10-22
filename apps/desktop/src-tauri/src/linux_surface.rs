@@ -317,6 +317,19 @@ pub fn hide_usage(app: &AppHandle) -> Result<(), String> {
     on_usage_main(app, |window| window.hide())
 }
 
+/// GTK validates min<=max at each setter call, not after both setters.
+/// Grow the maximum first, shrink the minimum first, then lock both at
+/// exactly the new size. This avoids Gtk-CRITICAL during popup resizing.
+fn set_exact_viewport_height(viewport: &gtk::ScrolledWindow, previous: i32, height: i32) {
+    if height > previous {
+        viewport.set_max_content_height(height);
+        viewport.set_min_content_height(height);
+    } else {
+        viewport.set_min_content_height(height);
+        viewport.set_max_content_height(height);
+    }
+}
+
 pub async fn resize_usage(app: AppHandle, height: i32) -> Result<(), String> {
     if !(118..=320).contains(&height) {
         return Err("Invalid usage popup height".into());
@@ -331,8 +344,11 @@ pub async fn resize_usage(app: AppHandle, height: i32) -> Result<(), String> {
             if USAGE_HEIGHT.load(Ordering::Acquire) != height {
                 USAGE_VIEWPORT.with(|state| {
                     if let Some(viewport) = state.borrow().as_ref() {
-                        viewport.set_min_content_height(height);
-                        viewport.set_max_content_height(height);
+                        set_exact_viewport_height(
+                            viewport,
+                            USAGE_HEIGHT.load(Ordering::Acquire),
+                            height,
+                        );
                         viewport.set_size_request(USAGE_WIDTH, height);
                     }
                 });
@@ -411,8 +427,7 @@ fn apply_card_height(window: &gtk::ApplicationWindow, height: i32) -> Result<(),
     let viewport = child
         .downcast::<gtk::ScrolledWindow>()
         .map_err(|_| "Layer Shell viewport has unexpected type".to_owned())?;
-    viewport.set_min_content_height(height);
-    viewport.set_max_content_height(height);
+    set_exact_viewport_height(viewport.as_ref(), CARD_HEIGHT.load(Ordering::Acquire), height);
     viewport.set_size_request(390, height);
     CONTENT.with(|cell| {
         if let Some(content) = cell.borrow().as_ref() {

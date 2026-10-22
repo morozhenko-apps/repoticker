@@ -174,6 +174,21 @@ by the local packaging result.
   physically accepted, no GTK warnings remain, and unresolved Windows/
   credential-runtime gates have been explicitly disposed.
 
+## KDE RC correction CI — 2026-10-22
+
+- [x] All focused native/JS/CSS/Settings corrections in
+  [the KDE RC fix plan](RC_0_2_0_KDE_UI_FIXES.md) are committed to `dev`.
+- [x] [Preflight #39826251376](https://github.com/morozhenko-apps/repoticker/actions/runs/39826251376)
+  **4/4 SUCCESS** on code/test SHA
+  `18f400fa8191cb98e553efc8cc44c81386a6281a`.
+- [ ] Rebuild local `0.2.0` AppImage/DEB from current `dev`
+  after this source change; rerun physical KDE hover/Settings/
+  About and GTK diagnostics. Existing binaries were built **before**
+  the code changes and cannot establish correctness.
+- [ ] User-verified stable compact size, no Gtk-CRITICAL, and
+  connection status transitions. Windows and secure published
+  APT upgrade remain separate release gates.
+
 ## Release blocker matrix
 
 | Area | Evidence | Release gate |

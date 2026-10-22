@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 
 function mockNode(id = "") {
   const events = new Map();
@@ -29,14 +30,10 @@ const tick = () => new Promise(resolve => setImmediate(resolve));
 /** Execute real settings controller with a deterministic WebView/IPC fixture. */
 async function fixture(suffix, initiallyConnected) {
   const before = { window: globalThis.window, document: globalThis.document };
-  const ids = [
-    "github-monitor-scope-row", "github-monitor-scope", "github-connect",
-    "github-disconnect", "github-device-flow", "github-copy-code",
-    "github-connection-indicator", "github-account-status", "github-auth-message",
-    "github-user-code", "github-open-device", "github-cancel-device",
-    "language-trigger", "language-options", "roots-list", "root-path",
-    "add-root-form", "cancel-settings", "apply-settings", "message"
-  ];
+  // Mirror the real Settings DOM IDs so harmless form additions do not
+  // cause unrelated authorization lifecycle scenarios to fail on missing mocks.
+  const html = readFileSync(new URL("../apps/desktop/ui/settings.html", import.meta.url), "utf8");
+  const ids = [...new Set([...html.matchAll(/\\bid="([^"]+)"/g)].map(match => match[1]))];
   const elements = new Map(ids.map(id => [id, mockNode(id)]));
   const listeners = new Map();
   const calls = [];

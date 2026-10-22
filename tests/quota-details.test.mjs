@@ -50,3 +50,23 @@ test("billing hover stacks only compact verified owner fields", () => {
   assert.equal(details.message, "");
   assert.ok(details.sections.every(x => x.message === null));
 });
+
+test("initial credential check and data loading say Connecting, not Connect GitHub", () => {
+  for (const kind of ["runners", "tasks", "billing"]) {
+    const unverified = buildHoverDetails(null, kind, false, "Checking GitHub connection...");
+    assert.equal(unverified.status, "Connecting");
+    assert.equal(unverified.connected, false);
+    assert.match(unverified.message, /Checking GitHub connection/);
+    assert.doesNotMatch(unverified.message, /Connect GitHub in Settings/);
+    const authorized = buildHoverDetails(null, kind, true, "Connecting to GitHub...");
+    assert.equal(authorized.status, "Connecting");
+    assert.match(authorized.message, /Connecting to GitHub/);
+    assert.equal(authorized.sections.length, 0);
+  }
+  const disconnected = buildHoverDetails(null, "runners", false, null);
+  assert.equal(disconnected.status, "Not connected");
+  assert.match(disconnected.message, /Connect GitHub in Settings/);
+  const failed = buildHoverDetails(null, "tasks", true, "GitHub API rate limited.");
+  assert.equal(failed.status, "Tasks unavailable");
+  assert.match(failed.message, /rate limited/);
+});

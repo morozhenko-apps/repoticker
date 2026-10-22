@@ -84,7 +84,10 @@ mod tests {
     #[test]
     fn only_fixed_nonsecret_startup_milestones_are_accepted() {
         assert_eq!(allowed_stage("card.start"), Some("card.start"));
-        assert_eq!(allowed_stage("settings.config_auth_ready"), Some("settings.config_auth_ready"));
+        assert_eq!(
+            allowed_stage("settings.config_auth_ready"),
+            Some("settings.config_auth_ready")
+        );
         for unsafe_input in [
             "github.token=ghu_secret",
             "card.start\nTOKEN=secret",

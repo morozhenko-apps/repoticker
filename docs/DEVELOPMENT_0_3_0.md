@@ -998,7 +998,7 @@ a distinct explicit decision, not a silent migration.
 
 ### Staged implementation, invariants and validation
 
-1. [ ] Extend `Config` with a defaulted repo-name vector and
+1. [x] Extend `Config` with a defaulted repo-name vector and
    add config-only native `get_monitor_selection` returning
    `{ org, repositories }` from a **single config read**.
    Keep existing `get_monitor_scope` and other public/read-only
@@ -1009,7 +1009,7 @@ a distinct explicit decision, not a silent migration.
    names, counts >100 and duplicates; don't persist GitHub credentials
    or change local Git paths. Invalidate ETag and emit the existing
    scope event only after a successful save.
-2. [ ] Settings offers an `All accessible` (default) vs
+2. [x] Settings offers an `All accessible` (default) vs
    `Selected` mode and a bounded, scrollable set of checkboxes.
    Populate them through the existing authorized installation
    repository REST endpoints, with normal paging and zero new
@@ -1018,7 +1018,7 @@ a distinct explicit decision, not a silent migration.
    the on-disk choice. Display unavailable/partial inventory
    honestly and avoid losing saved selections silently. No new
    persistent UI/window state beyond the config vector.
-3. [ ] Collector filters the enumerated authorized repos
+3. [x] Collector filters the enumerated authorized repos
    **before** the expensive Actions runs/jobs requests.
    With nonempty selected list, require complete coverage of
    those exact selected repo names; a missing selected repo,
@@ -1028,7 +1028,7 @@ a distinct explicit decision, not a silent migration.
    retain the existing explicit 100-repo upper bound and
    truncation/unknown semantics. No change to org runner count
    or global native REST concurrency/rate gate.
-4. [ ] Native format/default/validation and Settings/monitor
+4. [x] Native format/default/validation and Settings/monitor
    deterministic tests for legacy config, all/default,
    subset selection, cross-org injection, >100 names, invalid
    names, account-switch reset, partial/missing repos, pagination
@@ -1049,6 +1049,60 @@ old binary discards the new subset**. The released v0.2.0
 continues to monitor all available repos; no behavior claim
 about reverse-migration retaining new selection. Avoid promoting
 to `main` or publishing a release without platform acceptance.
+
+### A8 implementation checkpoint (2026-10-23)
+
+- Code/test implementation
+  [`d91c209`](https://github.com/morozhenko-apps/repoticker/commit/d91c2091d3f191ff7282f8e0625f04e92bfc192b)
+  and Settings UI
+  [`2166b59`](https://github.com/morozhenko-apps/repoticker/commit/2166b59dfa0c498f19f9abc87f85ab190e83f8c1).
+  Focused diagnostic fixes
+  [`d5a1d32`](https://github.com/morozhenko-apps/repoticker/commit/d5a1d3258835371250b23d0b2dc6a4a03fa222a9)
+  and additional native/Settings regression tests
+  [`00a43ab`](https://github.com/morozhenko-apps/repoticker/commit/00a43ab2ba5f5f9ba1f36c05a46d42a3377d621a).
+  Code and docs were **committed separately**; no release tag
+  or version metadata was modified.
+- New optional persisted JSON property
+  `github_monitor_repositories: Vec<String>` defaults to
+  the old all-repositories behavior on pre-existing config files.
+  Strict native owner/repo validation and 100-selected-repo cap
+  prevent injection or accidental cross-account configuration.
+- Native `get_monitor_selection` reads owner and selected
+  repositories in **one** config transaction. The existing
+  `github_set_monitor_org` accepts an optional repositories
+  argument and writes the two values together; previous
+  same-org callers remain compatible, and switching accounts
+  clears their old selection. The old `get_monitor_scope`
+  remains registered for compatibility.
+- Settings exposes all vs selected mode and search/filter
+  for up to 100 displayed at once from at most 10 authorized
+  repository pages; no additional GitHub permissions.
+  A saved selection remains a draft until OK, Cancel does
+  not write it, and unavailable inventory does not erase
+  previously saved names. More than 100 chosen repos
+  cannot be committed.
+- Collector filters authorized repository names *before*
+  requesting Actions runs/jobs; a missing previously
+  selected repo blocks misleading complete coverage and
+  reports unavailable/unknown instead of zero. All mode
+  retains the existing 100-repo cap and incomplete coverage
+  semantics. Native token/rate-limit/ETag and local Git
+  safety boundaries are unchanged.
+- **Current final code/test candidate:** `00a43ab2ba5f5f9ba1f36c05a46d42a3377d621a`;
+  [Preflight #39996389975](https://github.com/morozhenko-apps/repoticker/actions/runs/39996389975)
+  **pending at this checkpoint**. The earlier corrected
+  source `d5a1d32` passed Rust format/core/Clippy and
+  JS, but desktop was still running when more tests
+  were committed. Do not claim latest full CI green
+  until it completes. Native Rust desktop unit tests
+  are not executed by the standard cargo-check Preflight.
+- **Deferred physical gate #15:** repeat KDE/Windows Settings
+  open/Cancel/OK, switch accounts with an existing selection,
+  offline list failure preserving selections, a revoked
+  repository, >100 repos and search/filter, old
+  `config.json` migration and downgrade caveat.
+  Do not begin Mode B until all other features and
+  L10N-20 (#16) have completed.
 
 ## Stop factors and invariant boundaries
 

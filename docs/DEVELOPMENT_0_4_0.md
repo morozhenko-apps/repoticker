@@ -692,3 +692,86 @@ checkpoint. The final aggregate 4/4 gate must be checked on the
 exact SHA before declaring source-level completion.
 Actual KDE/Windows file-manager and native clipboard interaction
 remains part of physical acceptance #15.
+
+## P1-SCAN1 — bounded local Git inspection and reduced subprocesses
+
+Status: **Mode A / development**, 2026-10-23. Scope: `dev`
+only, no version bump, tag, `main` promotion or broad Mode B campaign.
+
+### Evidence / root-cause protocol
+
+The owner's previous opt-in startup trace documented **5–7 sec
+per full local scan** for the then-current repository inventory,
+with Git inspection dominant. `main.rs::scan` performs a serial
+`for path in repositories { git::inspect(&path) }`, so independent
+Git checkouts are unnecessarily blocked by earlier checkouts.
+
+Each `inspect` currently checks six in-progress operation markers
+by running `git rev-parse --git-path <marker>` once per marker.
+This produces up to **six Git child processes per repository**
+before the normal status result can be classified.
+
+Plausible bottlenecks assessed: (1) serial per-checkout inspection
+(confirmed); (2) six separate operation-marker Git invocations
+(confirmed); (3) actual `git status` latency on large working trees
+(unmeasured, **do not** skip its accuracy checks); (4) expensive local
+Git worktrees/submodules (requires real-case data); (5) discovery
+directory enumeration (previously around 60–100 ms only);
+(6) slow GitHub monitor REST requests (independent and decoupled);
+(7) repeated local scans on monitor events (already addressed by A2b,
+retain no rescan contract).
+
+### Design / safety invariants
+
+1. Inspect discovered canonical checkouts with a **fixed upper
+   bound of four** independent Git workers, reusing the tested
+   `bounded_map` worker engine. No per-repo shell, no new
+   background polling or Git network calls. Preserve full
+   `git::inspect` verification, dirty tracked/untracked status,
+   branch/upstream, ahead/behind and Safe pull eligibility.
+2. The existing per-checkout `git_operation_in_progress` must
+   inspect all six markers, but resolve the **absolute per-worktree
+   Git admin directory once** via
+   `git rev-parse --absolute-git-dir`. Git itself resolves this
+   directory in normal checkouts and in linked worktrees.
+   Joining each known literal marker in Rust replaces six separate
+   `git rev-parse --git-path` subprocesses with one. This is
+   not a reference mutation or a Git status shortcut.
+3. Keep discovery/root boundary unchanged: enrolled root and
+   direct-child checkout rules, no symlink traversal, no arbitrary
+   recursion. Keep returned rows deterministically sorted by name/path
+   and **preserve input-order errors** despite out-of-order workers.
+   Every single repository error remains visible and isolated.
+4. If the user has zero/one repositories, behavior is unchanged
+   without additional timer, wait or fake progress. Cancellation of
+   Fetch, separate Safe pull lock and GitHub monitor cache are not
+   altered. Never assert a speedup absent before/after timings on
+   the same real machine/repository set.
+5. Accept that external Git clients can modify checkouts while
+   inspection runs; the existing action-specific re-inspection
+   and `--ff-only` remain the mutation safety gates.
+
+### Plan / gates
+
+1. [ ] Add bounded, deterministic `git::inspect_all` to core
+   and use from desktop scan, retaining error order and stable
+   repository projections.
+2. [ ] Replace marker subprocess loop, validate correspondence
+   between Git `--absolute-git-dir` and `--git-path` on both
+   regular and explicitly enrolled linked worktrees.
+3. [ ] Real Git and focused JS/Rust tests for clean/dirty, behind,
+   missing/broken checkout, marker detection, boundedness and
+   no mutation/network in inspection.
+4. [ ] Run one final exact-source stable Preflight after changes:
+   Rustfmt, Rust unit/integration + Clippy, JS and release
+   contracts, Linux desktop compile.
+5. [ ] Commit evidence separately, track physical KDE cold/warm
+   startup comparison in [issue #12](https://github.com/morozhenko-apps/repoticker/issues/12)
+   and broader acceptance in #15.
+
+Rollback is a revert of the code/tests commit(s). No persisted data,
+Git remote configuration, login, permissions, card geometry, or
+release artifacts change. A real performance claim requires a
+comparative `REPOTICKER_STARTUP_DEBUG=1` sample on Alcotester
+showing `git.inspect_all` and `git.scan_total` timing from the
+same enrolled checkout inventory.

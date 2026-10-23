@@ -1088,14 +1088,18 @@ to `main` or publishing a release without platform acceptance.
   retains the existing 100-repo cap and incomplete coverage
   semantics. Native token/rate-limit/ETag and local Git
   safety boundaries are unchanged.
-- **Current final code/test candidate:** `00a43ab2ba5f5f9ba1f36c05a46d42a3377d621a`;
-  [Preflight #39996389975](https://github.com/morozhenko-apps/repoticker/actions/runs/39996389975)
-  **pending at this checkpoint**. The earlier corrected
-  source `d5a1d32` passed Rust format/core/Clippy and
-  JS, but desktop was still running when more tests
-  were committed. Do not claim latest full CI green
-  until it completes. Native Rust desktop unit tests
-  are not executed by the standard cargo-check Preflight.
+- **Current final code/test candidate:** `fe858862e81bb615333e2cd0419bc5bbe8165578`;
+  [Preflight #39996749369](https://github.com/morozhenko-apps/repoticker/actions/runs/39996749369)
+  **pending at this checkpoint**. Earlier exact-SHA
+  [#39996389975](https://github.com/morozhenko-apps/repoticker/actions/runs/39996389975)
+  passed JS but found only Rustfmt whitespace differences
+  in the newly added native unit assertions; adjusted in
+  separate formatting commit `fe85886`. The previous
+  corrected `d5a1d32` candidate passed Rust and JS,
+  with Linux desktop still running when superseded.
+  Do not claim final CI green until all jobs complete.
+  Native Rust desktop unit tests are not executed by
+  the normal desktop `cargo check` Preflight.
 - **Deferred physical gate #15:** repeat KDE/Windows Settings
   open/Cancel/OK, switch accounts with an existing selection,
   offline list failure preserving selections, a revoked

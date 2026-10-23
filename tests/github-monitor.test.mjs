@@ -362,3 +362,34 @@ test("offline errors publish unknown counts, not stale successful counts", async
   assert.equal(messages.at(-1).runnerState, null);
   assert.match(messages.at(-1).message, /network unavailable/);
 });
+
+test("native disconnect remains immediate while REST cooldown is active", async () => {
+  let connected = true;
+  let attempts = 0;
+  let clock = 1000;
+  const listeners = new Map();
+  const messages = [];
+  startGithubMonitoring({
+    now: () => clock, schedule: () => {},
+    event: { listen: (name, callback) => { listeners.set(name, callback); } },
+    invoke: async (name, args) => {
+      if (name === "github_auth_status") return { connected };
+      if (name === "get_monitor_scope") return "team";
+      if (name === "github_api_cooldown_seconds") return 180;
+      if (name === "github_monitor_publish") { messages.push(args); return; }
+      throw Error("Unexpected command " + name);
+    },
+    collect: async () => {
+      attempts++;
+      throw Error("GitHub API rate limited.");
+    }
+  });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(attempts, 1);
+  connected = false;
+  listeners.get("repoticker-github-auth")({ payload: { status: "disconnected" } });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(messages.at(-1).connected, false);
+  assert.equal(messages.at(-1).runnerState, null);
+  assert.equal(attempts, 1, "disconnect must not request more GitHub REST data");
+});

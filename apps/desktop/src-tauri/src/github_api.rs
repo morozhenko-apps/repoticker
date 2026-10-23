@@ -8,7 +8,7 @@ use reqwest::{header, redirect::Policy, Client, Url};
 use serde_json::{json, Value};
 use tauri::{AppHandle, Manager};
 
-use crate::{github_rate_gate, github_session};
+use crate::{github_etag_cache, github_rate_gate, github_session};
 
 const MAX_BODY: usize = 2 * 1024 * 1024;
 const PAGE_CAP: u32 = 10;
@@ -290,18 +290,31 @@ pub async fn github_api_get(app: AppHandle, path: String) -> Result<Value, Strin
         return Err("GitHub API rate limited.".into());
     }
     let token = github_session::github_access_token(&app).await?;
+    let cached = app.state::<github_etag_cache::GitHubETagCache>();
+    let lookup = cached.snapshot(&path);
     let transport = app.state::<GitHubRestClient>();
     let client = transport.client()?;
-    let mut response = client
+    let mut request = client
         .get(format!("https://api.github.com{path}"))
         .header(header::ACCEPT, "application/vnd.github+json")
         .header("X-GitHub-Api-Version", API_VERSION)
         .header(header::USER_AGENT, "RepoTicker/0.1")
-        .bearer_auth(&token)
+        .bearer_auth(&token);
+    if let Some(etag) = &lookup.etag {
+        request = request.header(header::IF_NONE_MATCH, etag.as_str());
+    }
+    let mut response = request
         .send()
         .await
         .map_err(|_| "GitHub API network error.")?;
+    if response.status() == reqwest::StatusCode::NOT_MODIFIED {
+        return cached.not_modified(&path, &lookup)
+            .ok_or_else(|| "GitHub conditional response unavailable.".into());
+    }
     if !response.status().is_success() {
+        if matches!(response.status().as_u16(), 401 | 403 | 404) {
+            cached.invalidate();
+        }
         let remaining = response
             .headers()
             .get("x-ratelimit-remaining")
@@ -325,6 +338,9 @@ pub async fn github_api_get(app: AppHandle, path: String) -> Result<Value, Strin
         }
         return Err(api_http_failure(response.status().as_u16(), remaining, retry_after).into());
     }
+    let etag = response.headers().get(header::ETAG)
+        .and_then(|etag| etag.to_str().ok())
+        .map(str::to_owned);
     let mut bytes = Vec::new();
     while let Some(chunk) = response
         .chunk()
@@ -338,7 +354,12 @@ pub async fn github_api_get(app: AppHandle, path: String) -> Result<Value, Strin
     }
     let value: Value =
         serde_json::from_slice(&bytes).map_err(|_| "GitHub API returned invalid JSON.")?;
-    project(&path, value)
+    let projected = project(&path, value)?;
+    if !cached.unchanged(lookup.generation) {
+        return Err("GitHub authorization changed. Retry.".into());
+    }
+    cached.save(&path, lookup.generation, etag.as_deref(), &projected);
+    Ok(projected)
 }
 
 #[cfg(test)]

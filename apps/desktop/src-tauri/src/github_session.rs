@@ -23,6 +23,7 @@ use tokio::sync::{Mutex, Notify};
 use crate::{
     github_native::{CredentialRecord, GithubOAuthHttp, NativeAuthError, NativeCredentialStore},
     github_oauth_wire::PollReply,
+    github_etag_cache::GitHubETagCache,
 };
 
 #[derive(Default)]
@@ -243,6 +244,7 @@ pub async fn github_auth_status(app: AppHandle) -> Result<GitHubAuthStatus, Stri
 pub async fn github_begin(app: AppHandle) -> Result<GitHubAuthChallenge, String> {
     let state = app.state::<Arc<GitHubAuthManager>>().inner().clone();
     let attempt = state.invalidate();
+    app.state::<GitHubETagCache>().invalidate();
     publish(&app, "requesting");
     {
         let _guard = state.vault_gate.lock().await;
@@ -363,7 +365,10 @@ async fn poll_authorization(
                 };
                 if state.active(attempt) {
                     match outcome {
-                        Ok(()) => publish(&app, "connected"),
+                        Ok(()) => {
+                            app.state::<GitHubETagCache>().invalidate();
+                            publish(&app, "connected");
+                        },
                         Err(error) => {
                             publish_with_reason(&app, "failed", Some(reason_category(error)));
                         }
@@ -406,6 +411,7 @@ pub fn github_cancel(app: AppHandle) {
 pub async fn github_disconnect(app: AppHandle) -> Result<(), String> {
     let state = app.state::<Arc<GitHubAuthManager>>().inner().clone();
     state.invalidate();
+    app.state::<GitHubETagCache>().invalidate();
     let _guard = state.vault_gate.lock().await;
     delete_credential().await.map_err(public_error)?;
     publish(&app, "disconnected");
@@ -441,6 +447,7 @@ pub async fn github_access_token(app: &AppHandle) -> Result<String, String> {
             // Replacing the entire token pair in one OS credential entry is
             // essential: GitHub invalidates the old refresh token on use.
             store_credential(rotated).await.map_err(public_error)?;
+            app.state::<GitHubETagCache>().invalidate();
             let next = read_credential().await.map_err(public_error)?;
             next.map(|record| record.access_token)
                 .ok_or_else(|| public_error(NativeAuthError::KeychainUnavailable))

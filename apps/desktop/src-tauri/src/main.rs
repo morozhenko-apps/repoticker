@@ -1,6 +1,7 @@
 //! RepoTicker desktop: local-only roots, Git provider and tray card.
 mod app_icon;
 mod github_api;
+mod github_etag_cache;
 mod github_native;
 mod github_oauth_wire;
 mod github_rate_gate;
@@ -773,6 +774,7 @@ fn github_set_monitor_org(app: AppHandle, org: Option<String>) -> Result<(), Str
     let mut config = read_config(&app)?;
     config.github_monitor_org = org;
     write_config(&app, &config)?;
+    app.state::<github_etag_cache::GitHubETagCache>().invalidate();
     let _ = app.emit("repoticker-github-scope-changed", ());
     Ok(())
 }
@@ -852,6 +854,7 @@ fn main() {
         .manage(monitor_cache::MonitorCache::default())
         .manage(github_rate_gate::GitHubRateGate::default())
         .manage(github_api::GitHubRestClient::default())
+        .manage(github_etag_cache::GitHubETagCache::default())
         .manage(std::sync::Arc::new(
             github_session::GitHubAuthManager::default(),
         ))

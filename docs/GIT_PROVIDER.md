@@ -14,6 +14,18 @@ Installed Git supplies current branch/detached status, upstream, ahead/behind, d
 
 The repository drawer shows individual operations and in-flight progress. A successful action is deliberately silent in the final compact card; individual errors remain visible.
 
+**Unreleased dev P1-SCAN1:** local snapshots now inspect independent
+enrolled checkouts with a fixed maximum of four Git workers using
+the existing bounded executor, restoring discovery order before
+projecting each success or error. Git operation marker checks
+resolve the absolute per-worktree Git admin directory only once
+and test all six marker files/directories locally, including
+linked worktrees. Branch/upstream, dirty state, ahead/behind,
+and Safe pull safety are unchanged. Measured wall-clock
+improvement requires KDE before/after instrumentation; see
+[P1-SCAN1](DEVELOPMENT_0_4_0.md) and startup issue #12.
+Published v0.2.0 remains unchanged.
+
 **Unreleased dev UI actions:** Each repository's shared popup has
 Fetch, Safe pull and Open on GitHub, plus Open folder and Copy path.
 The last two native actions open only the canonical, currently enrolled

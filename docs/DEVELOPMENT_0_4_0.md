@@ -800,3 +800,19 @@ same enrolled checkout inventory.
 - Native before/after `REPOTICKER_STARTUP_DEBUG=1` benchmarking
   remains on owner hardware in issue #12, and linked-worktree
   physical acceptance remains in #15.
+
+### P1-SCAN1 CI correction checkpoint
+
+- Initial candidate `12bd7f0` passed Node/JS source contracts,
+  but Rustfmt found four differences in new integration tests.
+  The format-first Rust job did not execute the core tests.
+- Correction [`3600eef`](https://github.com/morozhenko-apps/repoticker/commit/3600eef204938696202a0b9ce4702d71fc72873b)
+  applies the four Rustfmt hunks; production Git logic unchanged.
+- Current exact candidate: `3600eef204938696202a0b9ce4702d71fc72873b`.
+  [Preflight #40036260294](https://github.com/morozhenko-apps/repoticker/actions/runs/40036260294)
+  was pending at this documentation checkpoint. Rust core
+  and desktop build acceptance are not yet established.
+- The historical 5–7-second local-scan trace is from the
+  older serial version, not a benchmark of this optimization.
+  Cold/warm comparisons on identical repository sets remain
+  required with `REPOTICKER_STARTUP_DEBUG=1`.

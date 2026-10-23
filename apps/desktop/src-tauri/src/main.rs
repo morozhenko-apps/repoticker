@@ -10,12 +10,12 @@ mod monitor_cache;
 mod startup_diagnostics;
 
 use repoticker_core::{
-    git::{self, GitError, OperationOutcome, RepoSnapshot},
+    git::{self, FetchCancellation, GitError, OperationOutcome, RepoSnapshot},
     SyncDecision,
 };
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicU8, Ordering};
-use std::{fs, path::PathBuf, sync::Mutex};
+use std::{fs, path::PathBuf, sync::{Arc, Mutex}};
 #[cfg(target_os = "linux")]
 mod linux_surface;
 #[cfg(target_os = "linux")]
@@ -31,6 +31,19 @@ use tauri::{AppHandle, Emitter, Manager};
 
 #[derive(Default)]
 struct OperationLock(Mutex<()>);
+
+#[derive(Default)]
+struct ActiveFetch(Mutex<Option<Arc<FetchCancellation>>>);
+
+struct ActiveFetchLease<'a>(&'a ActiveFetch);
+
+impl Drop for ActiveFetchLease<'_> {
+    fn drop(&mut self) {
+        if let Ok(mut active) = self.0.0.lock() {
+            *active = None;
+        }
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Config {
@@ -241,6 +254,11 @@ fn git_action_result(
             status: "skipped".into(),
             message: decision_label(decision),
         },
+        Err(GitError(error)) if error == git::FETCH_CANCELLED => ActionResult {
+            path,
+            status: "cancelled".into(),
+            message: error,
+        },
         Err(GitError(error)) => ActionResult {
             path,
             status: "error".into(),
@@ -259,6 +277,16 @@ fn execute(
     }
     let state = app.state::<OperationLock>();
     let _guard = state.0.lock().map_err(|_| "Git operation lock poisoned")?;
+    let active_fetch = app.state::<ActiveFetch>();
+    let cancellation = if operation == "fetch" {
+        let token = Arc::new(FetchCancellation::default());
+        *active_fetch.0.lock().map_err(|_| "Fetch state unavailable")? =
+            Some(Arc::clone(&token));
+        Some(token)
+    } else {
+        None
+    };
+    let _fetch_lease = cancellation.as_ref().map(|_| ActiveFetchLease(&active_fetch));
     let config = read_config(app)?;
     let (repositories, failures) = git::discover_all(&roots_as_paths(&config));
     if let Some(requested) = only_path {
@@ -303,7 +331,10 @@ fn execute(
             targets,
             4,
             |path| {
-                let outcome = git::fetch(&path);
+                let outcome = git::fetch_with_cancel(
+                    &path,
+                    cancellation.as_ref().expect("active Fetch token"),
+                );
                 (path, outcome)
             },
             |path, already_done, _| {
@@ -325,7 +356,11 @@ fn execute(
                     done,
                     total,
                     "complete",
-                    Some(if outcome.is_ok() { "fetched" } else { "error" }),
+                    Some(match outcome {
+                        Ok(_) => "fetched",
+                        Err(GitError(error)) if error == git::FETCH_CANCELLED => "cancelled",
+                        Err(_) => "error",
+                    }),
                 );
             },
         );
@@ -436,6 +471,20 @@ fn remove_root(app: AppHandle, root: String) -> Result<Vec<String>, String> {
     write_config(&app, &config)?;
     let _ = app.emit("repoticker-config-changed", ());
     Ok(config.roots)
+}
+
+#[tauri::command]
+fn cancel_git_fetch(app: AppHandle) -> Result<bool, String> {
+    let token = app
+        .state::<ActiveFetch>()
+        .0
+        .lock()
+        .map_err(|_| "Fetch state unavailable")?
+        .clone();
+    match token {
+        Some(token) => token.cancel().map_err(|error| error.to_string()),
+        None => Ok(false),
+    }
 }
 
 #[tauri::command]
@@ -966,6 +1015,7 @@ fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_clipboard_manager::init())
         .manage(OperationLock::default())
+        .manage(ActiveFetch::default())
         .manage(monitor_cache::MonitorCache::default())
         .manage(github_rate_gate::GitHubRateGate::default())
         .manage(github_api::GitHubRestClient::default())
@@ -1104,6 +1154,7 @@ fn main() {
             start_card_drag,
             stop_card_drag,
             perform_git_action,
+            cancel_git_fetch,
             set_card_view,
             hide_card
         ])

@@ -28,6 +28,7 @@ let monitorRevision = 0;
 let monitorRequest = 0;
 let snapshot = emptySnapshot;
 let busy = false;
+let fetchCancelling = false;
 let view = "compact";
 let progress = null;
 let idleTimer = null;
@@ -136,7 +137,12 @@ function updateActionState() {
   const hasRepos = snapshot.repositories.length > 0;
   const eligible = pullReadyCommitCount(snapshot.repositories);
   const isRunning = busy || (progress && progress.phase !== "finish");
-  byId("fetch-all").disabled = isRunning || !hasRepos;
+  const fetching = progress?.operation === "fetch" && progress.phase !== "finish";
+  byId("fetch-all").disabled = fetchCancelling ||
+    (isRunning && !fetching) || (!isRunning && !hasRepos);
+  byId("fetch-all").title = fetching
+    ? "Cancel the current Fetch; some remote references may already be updated"
+    : "Fetch remote references for enrolled repositories";
   byId("sync-all").disabled = isRunning || eligible === 0;
   for (const [operation, id] of [["fetch", "fetch-all"], ["safe_pull", "sync-all"]]) {
     const button = byId(id);
@@ -145,7 +151,8 @@ function updateActionState() {
     if (active) {
       const pct = progress.total
         ? Math.round(100 * progress.completed / progress.total) : 100;
-      button.querySelector(".action-label").textContent = pct + "%";
+      button.querySelector(".action-label").textContent =
+        operation === "fetch" ? (fetchCancelling ? "Stopping..." : "Cancel") : pct + "%";
     } else {
       button.querySelector(".action-label").textContent =
         operation === "fetch" ? "Fetch" : "Safe pull";
@@ -301,6 +308,19 @@ function consumeResults(results) {
     showError(errors.length + " Git operation error(s): " + errors[0].message);
   }
 }
+async function cancelActiveFetch() {
+  if (fetchCancelling) return;
+  fetchCancelling = true;
+  updateActionState();
+  try {
+    const accepted = await invoke("cancel_git_fetch");
+    if (!accepted) fetchCancelling = false;
+  } catch (error) {
+    fetchCancelling = false;
+    showError(error);
+  }
+  updateActionState();
+}
 async function runGitAction(operation, repoPath = null) {
   if (busy) return;
   busy = true;
@@ -316,6 +336,7 @@ async function runGitAction(operation, repoPath = null) {
   } finally {
     busy = false;
     progress = null;
+    fetchCancelling = false;
     updateActionState();
     render(snapshot);
   }
@@ -351,7 +372,13 @@ byId("hide-card").addEventListener("click", async () => {
   try { await invoke("hide_card"); resetView(); }
   catch (error) { showError(error); }
 });
-byId("fetch-all").addEventListener("click", () => runGitAction("fetch"));
+byId("fetch-all").addEventListener("click", () => {
+  if (progress?.operation === "fetch" && progress.phase !== "finish") {
+    void cancelActiveFetch();
+  } else if (!busy) {
+    void runGitAction("fetch");
+  }
+});
 byId("sync-all").addEventListener("click", () => runGitAction("safe_pull"));
 document.addEventListener("keydown", event => {
   if (event.key === "Escape") {
@@ -377,6 +404,7 @@ window.__TAURI__?.event?.listen?.("repoticker-git-progress", event => {
     if (payload.status === "error") progress.errors.add(payload.path);
   }
   if (payload.phase === "finish") {
+    fetchCancelling = false;
     // Clear after native tray operations finish; GUI invocations clear in finally.
     if (!busy) progress = null;
   }

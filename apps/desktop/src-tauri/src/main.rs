@@ -731,9 +731,7 @@ fn get_about_info() -> AboutInfo {
     }
 }
 
-#[tauri::command]
-fn open_project_website() -> Result<(), String> {
-    let url = "https://morozhenko.com";
+fn launch_browser(url: &str) -> Result<(), String> {
     #[cfg(target_os = "linux")]
     let mut command = std::process::Command::new("xdg-open");
     #[cfg(target_os = "macos")]
@@ -744,7 +742,12 @@ fn open_project_website() -> Result<(), String> {
         .arg(url)
         .spawn()
         .map(|_| ())
-        .map_err(|error| format!("Cannot open website: {error}"))
+        .map_err(|error| format!("Cannot open browser: {error}"))
+}
+
+#[tauri::command]
+fn open_project_website() -> Result<(), String> {
+    launch_browser("https://morozhenko.com")
 }
 
 /// Open an allowlisted GitHub Actions job in the user's web browser.
@@ -775,17 +778,24 @@ fn open_actions_job(url: String) -> Result<(), String> {
     {
         return Err("Untrusted GitHub Actions URL".into());
     }
-    #[cfg(target_os = "linux")]
-    let mut command = std::process::Command::new("xdg-open");
-    #[cfg(target_os = "macos")]
-    let mut command = std::process::Command::new("open");
-    #[cfg(target_os = "windows")]
-    let mut command = std::process::Command::new("explorer");
-    command
-        .arg(url)
-        .spawn()
-        .map(|_| ())
-        .map_err(|error| format!("Cannot open GitHub Actions job: {error}"))
+    launch_browser(&url)
+
+/// Open only the canonical GitHub origin of a currently enrolled checkout.
+/// A WebView-supplied path cannot cause arbitrary URL or filesystem opening.
+#[tauri::command]
+async fn open_repository_on_github(app: AppHandle, repo_path: String) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let config = read_config(&app)?;
+        let (repositories, _) = git::discover_all(&roots_as_paths(&config));
+        let selected = std::path::PathBuf::from(&repo_path);
+        if !repositories.contains(&selected) {
+            return Err("Repository is not enrolled or no longer valid".into());
+        }
+        let url = git::github_origin_url(&selected).map_err(|error| error.to_string())?;
+        launch_browser(&url)
+    })
+    .await
+    .map_err(|error| error.to_string())?
 }
 
 #[tauri::command]
@@ -1162,6 +1172,7 @@ fn main() {
             github_session::github_copy_user_code,
             get_about_info,
             open_actions_job,
+            open_repository_on_github,
             show_usage_popup,
             get_usage_popup_kind,
             hide_usage_popup,

@@ -432,6 +432,46 @@ fn git_operation_in_progress(repo: &Path) -> Result<bool, GitError> {
     Ok(false)
 }
 
+
+/// Translate supported GitHub origin remotes into a canonical browser URL.
+/// Never pass arbitrary remote URLs, query strings, credentials or local paths
+/// to the external browser.
+pub fn github_remote_to_browser_url(remote: &str) -> Option<String> {
+    let remote = remote.trim();
+    let path = remote
+        .strip_prefix("https://github.com/")
+        .or_else(|| remote.strip_prefix("git@github.com:"))
+        .or_else(|| remote.strip_prefix("ssh://git@github.com/"))?;
+    let mut segments = path.split('/');
+    let owner = segments.next()?;
+    let raw_repo = segments.next()?;
+    if segments.next().is_some() {
+        return None;
+    }
+    let name = raw_repo.strip_suffix(".git").unwrap_or(raw_repo);
+    let safe = |part: &str| {
+        !part.is_empty()
+            && part != "."
+            && part != ".."
+            && part.bytes().all(|c| c.is_ascii_alphanumeric() || b"_.-".contains(&c))
+    };
+    if !safe(owner) || !safe(name) {
+        return None;
+    }
+    Some(format!("https://github.com/{owner}/{name}"))
+}
+
+/// Resolve origin only for an enrolled, verified Git checkout on user action.
+/// No network access or background Git scan is performed here.
+pub fn github_origin_url(repo: &Path) -> Result<String, GitError> {
+    if !verified_checkout(repo)? {
+        return Err(GitError("Repository is no longer valid".into()));
+    }
+    let remote = required(repo, &["remote", "get-url", "origin"])?;
+    github_remote_to_browser_url(&remote)
+        .ok_or_else(|| GitError("Origin is not a supported GitHub repository".into()))
+}
+
 /// No worktree files are modified. Fetch all configured remotes.
 pub fn fetch(repo: &Path) -> Result<OperationOutcome, GitError> {
     if !verified_checkout(repo)? {

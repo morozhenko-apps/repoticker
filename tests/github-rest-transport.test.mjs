@@ -28,7 +28,7 @@ test("each read still applies native token, validates route, enforces rate gate 
   assert.ok(handler, "missing authorized native REST handler");
   assert.match(handler, /if !valid_path\(&path\)/);
   assert.match(handler, /gate\.remaining_seconds\(\) > 0/);
-  assert.match(handler, /github_session::github_access_token\(&app\)\.await/);
+  assert.match(handler, /github_session::github_access_token_with_cache\(&app, &path\)\.await/);
   assert.match(handler, /let client = transport\.client\(\)\?/);
   assert.match(handler, /\.bearer_auth\(&token\)/);
   assert.match(handler, /\.redirect\(Policy::none\(\)\)|let client = transport\.client\(\)\?/);
@@ -59,4 +59,15 @@ test("ETag caching is native, generation-scoped and never serves unvalidated 304
   assert.match(session, /store_credential\(rotated\)[\s\S]*?GitHubETagCache>\(\)\.invalidate\(\)/);
   assert.match(main, /fn github_set_monitor_org[\s\S]*?GitHubETagCache>\(\)\s*\.invalidate\(\)/);
   assert.doesNotMatch(cache, /access_token|refresh_token|bearer_auth|localStorage/);
+  // The snapshot and the token must be created within one native vault lock.
+  const tokenGetter = session.match(
+    /pub async fn github_access_token_with_cache\([\s\S]*?\n\}/
+  )?.[0];
+  assert.ok(tokenGetter);
+  assert.match(tokenGetter, /vault_gate\.lock\(\)\.await/);
+  assert.match(tokenGetter, /GitHubETagCache>\(\)\.snapshot\(path\)/);
+  assert.match(tokenGetter, /Ok\(\(token, lookup\)\)/);
+  assert.ok(tokenGetter.indexOf("vault_gate.lock().await") <
+    tokenGetter.indexOf("snapshot(path)"));
+  assert.doesNotMatch(native, /let token = github_session::github_access_token\(/);
 });

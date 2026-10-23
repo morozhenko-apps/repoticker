@@ -21,7 +21,7 @@ use tauri_plugin_clipboard_manager::ClipboardExt;
 use tokio::sync::{Mutex, Notify};
 
 use crate::{
-    github_etag_cache::GitHubETagCache,
+    github_etag_cache::{CacheLookup, GitHubETagCache},
     github_native::{CredentialRecord, GithubOAuthHttp, NativeAuthError, NativeCredentialStore},
     github_oauth_wire::PollReply,
 };
@@ -420,11 +420,15 @@ pub async fn github_disconnect(app: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
-/// Native-only accessor for the upcoming Actions/runner REST collector.
-/// Handles both tokens as a single rotated keychain credential generation.
-/// This method is NEVER registered as a Tauri JS command.
-#[allow(dead_code)]
-pub async fn github_access_token(app: &AppHandle) -> Result<String, String> {
+/// Native-only credential and ETag generation snapshot.
+/// Both must be captured under the SAME vault lock, otherwise a disconnect
+/// can occur between token retrieval and the cache lookup, pairing an
+/// older account token with the next account's generation/ETag.
+/// This function is NEVER registered as a Tauri JS command.
+pub async fn github_access_token_with_cache(
+    app: &AppHandle,
+    path: &str,
+) -> Result<(String, CacheLookup), String> {
     let _token = crate::startup_diagnostics::Span::new("github.token_acquisition");
     let state = app.state::<Arc<GitHubAuthManager>>().inner().clone();
     let _guard = state.vault_gate.lock().await;
@@ -436,9 +440,9 @@ pub async fn github_access_token(app: &AppHandle) -> Result<String, String> {
         access_expires_at: current.access_expires_at,
         refresh_expires_at: current.refresh_expires_at,
     };
-    match expiration.decide(unix_now(), 300) {
-        TokenAction::UseAccessToken => Ok(current.access_token),
-        TokenAction::Reauthorize => Err(public_error(NativeAuthError::Expired)),
+    let token = match expiration.decide(unix_now(), 300) {
+        TokenAction::UseAccessToken => current.access_token,
+        TokenAction::Reauthorize => return Err(public_error(NativeAuthError::Expired)),
         TokenAction::Refresh => {
             let http = GithubOAuthHttp::new().map_err(public_error)?;
             let lease = http
@@ -446,15 +450,19 @@ pub async fn github_access_token(app: &AppHandle) -> Result<String, String> {
                 .await
                 .map_err(public_error)?;
             let rotated = CredentialRecord::from_lease(lease, unix_now()).map_err(public_error)?;
-            // Replacing the entire token pair in one OS credential entry is
-            // essential: GitHub invalidates the old refresh token on use.
+            // The OS vault contains the entire rotated token pair atomically.
             store_credential(rotated).await.map_err(public_error)?;
             app.state::<GitHubETagCache>().invalidate();
             let next = read_credential().await.map_err(public_error)?;
             next.map(|record| record.access_token)
-                .ok_or_else(|| public_error(NativeAuthError::KeychainUnavailable))
+                .ok_or_else(|| public_error(NativeAuthError::KeychainUnavailable))?
         }
-    }
+    };
+    // Do not drop the vault guard before capturing this cache generation.
+    // A concurrent disconnect or credential replacement invalidates the
+    // generation only after it acquires this same lock.
+    let lookup = app.state::<GitHubETagCache>().snapshot(path);
+    Ok((token, lookup))
 }
 
 #[tauri::command]

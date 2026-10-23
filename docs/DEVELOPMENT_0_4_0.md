@@ -409,3 +409,22 @@ editors, platform-specific Windows rename/flush semantics require
 real-device acceptance, and an interrupted rename may leave the
 prior backup (not necessarily the newest edit). Schema and
 public release unchanged.
+
+### P1-G3 source and CI formatting checkpoint
+
+- Core atomic JSON adapter: `79f8979`; native transactions: `6b76fed`;
+  cleanup: `e05f9f0`; KDE margin fix: `27fddf3`;
+  test contract correction: `03ecfdb`; mechanical Rustfmt:
+  [`adfd71c`](https://github.com/morozhenko-apps/repoticker/commit/adfd71cf1dca626f6bb35b75eb05a20e351c54e4).
+- Source test diagnostics from prior, superseded candidate `27fddf3`:
+  Rust format-only differences (17 hunks), and an obsolete source
+  regex for the staging rename field. The core tests did not execute
+  because the Rust workflow enforces formatting first.
+- All exact 17 Rustfmt hunks were applied from the CI log. The
+  source-regex mismatch was corrected without changing production logic.
+- **Final exact-SHA stable candidate:** `adfd71cf1dca626f6bb35b75eb05a20e351c54e4`;
+  [Preflight #40030876982](https://github.com/morozhenko-apps/repoticker/actions/runs/40030876982)
+  was running as of this checkpoint. Do not treat a previous
+  cancelled run as passing or as an executed core test.
+- Physical KDE/Windows verification remains in
+  [issue #15](https://github.com/morozhenko-apps/repoticker/issues/15).

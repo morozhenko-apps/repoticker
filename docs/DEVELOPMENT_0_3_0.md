@@ -786,13 +786,17 @@ They do **not** alter the published `v0.2.0` tag or `main`.
   Node contracts cover callsite invariants, and fake
   collector tests cover account/scope transitions.
 - [ ] **Final code/test gate pending:** [Preflight
-  #39988906679](https://github.com/morozhenko-apps/repoticker/actions/runs/39988906679)
-  for `51936a4b2efa473380de629eb26260f278e9365c`.
-  Prior diagnostic attempts caught a Rust syntax error from
-  a test rewrite (fixed), remaining Rustfmt differences
-  (fixed) and an overstrict JS source-regex (fixed).
-  The new run must pass all jobs before this slice
-  can be marked CI-validated. No physical acceptance yet.
+  #39989254643](https://github.com/morozhenko-apps/repoticker/actions/runs/39989254643)
+  on `e626be70de0a9ea970e4b3d82aef996920be9970`.
+  An earlier candidate [#39988906679](https://github.com/morozhenko-apps/repoticker/actions/runs/39988906679)
+  passed Rust format/core/Clippy and reached desktop compile,
+  but its JS suite failed because a source-contract regex
+  incorrectly prohibited valid Rustfmt whitespace before
+  `.invalidate()`. The regex was corrected in `e626be7`;
+  it still asserts the required invalidation. Initial ETag
+  Rust syntax and formatting failures were already repaired.
+  Do not mark the final candidate CI-green until the exact
+  latest SHA passes all required jobs. No physical acceptance yet.
 - [ ] Combined KDE/Windows regression, live ETag/304,
   identity switch, rate-limit/backoff, cold/warm timing
   remain deferred to [#15](https://github.com/morozhenko-apps/repoticker/issues/15).

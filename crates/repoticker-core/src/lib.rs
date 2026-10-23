@@ -1,6 +1,7 @@
 //! RepoTicker domain rules and Git provider.
 
 pub mod bounded;
+pub mod config_store;
 pub mod git;
 pub mod github_auth;
 

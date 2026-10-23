@@ -6,7 +6,8 @@ use std::{
     collections::BTreeSet,
     env, fmt, fs,
     path::{Path, PathBuf},
-    process::{Command, Output},
+    process::{Command, Output, Stdio},
+    sync::Mutex,
 };
 
 #[derive(Debug, Clone)]
@@ -19,6 +20,144 @@ impl fmt::Display for GitError {
 }
 
 impl std::error::Error for GitError {}
+
+pub const FETCH_CANCELLED: &str = "Git fetch cancelled";
+
+#[derive(Default)]
+struct FetchChildren {
+    cancelled: bool,
+    running: BTreeSet<u32>,
+}
+
+/// One explicit Fetch operation owns this cancellation authority.
+/// It never targets other processes or a running Safe pull.
+#[derive(Default)]
+pub struct FetchCancellation {
+    children: Mutex<FetchChildren>,
+}
+
+impl FetchCancellation {
+    pub fn is_cancelled(&self) -> bool {
+        self.children.lock().map(|state| state.cancelled).unwrap_or(true)
+    }
+
+    /// Request cancellation once and terminate only registered child groups.
+    /// The mutex also orders cancellation against concurrent child registration.
+    pub fn cancel(&self) -> Result<bool, GitError> {
+        let mut state = self
+            .children
+            .lock()
+            .map_err(|_| GitError("Fetch cancellation state unavailable".into()))?;
+        if state.cancelled {
+            return Ok(false);
+        }
+        state.cancelled = true;
+        let mut first_error = None;
+        for &pid in &state.running {
+            if let Err(error) = terminate_fetch_group(pid) {
+                if first_error.is_none() {
+                    first_error = Some(error);
+                }
+            }
+        }
+        if let Some(error) = first_error {
+            return Err(error);
+        }
+        Ok(true)
+    }
+
+    fn register(&self, pid: u32) -> Result<bool, GitError> {
+        let mut state = self
+            .children
+            .lock()
+            .map_err(|_| GitError("Fetch cancellation state unavailable".into()))?;
+        if state.cancelled {
+            return Ok(false);
+        }
+        state.running.insert(pid);
+        Ok(true)
+    }
+
+    fn unregister(&self, pid: u32) {
+        if let Ok(mut state) = self.children.lock() {
+            state.running.remove(&pid);
+        }
+    }
+}
+
+#[cfg(unix)]
+fn terminate_fetch_group(pid: u32) -> Result<(), GitError> {
+    let group = i32::try_from(pid).map_err(|_| GitError("Invalid Git process ID".into()))?;
+    // SAFETY: the process was started in its own group with this exact PID.
+    // Negative PID targets the owned group, never RepoTicker's process group.
+    unsafe extern "C" {
+        fn kill(pid: i32, signal: i32) -> i32;
+    }
+    const SIGKILL: i32 = 9;
+    if unsafe { kill(-group, SIGKILL) } != 0 {
+        let error = std::io::Error::last_os_error();
+        if error.kind() != std::io::ErrorKind::NotFound {
+            return Err(GitError(format!("Cannot cancel Git fetch: {error}")));
+        }
+    }
+    Ok(())
+}
+
+#[cfg(windows)]
+fn terminate_fetch_group(pid: u32) -> Result<(), GitError> {
+    // Windows taskkill /T targets descendants of the exact child PID.
+    // No shell, user-controlled command or process-name-wide termination.
+    let result = Command::new("taskkill.exe")
+        .args(["/PID", &pid.to_string(), "/T", "/F"])
+        .output()
+        .map_err(|err| GitError(format!("Cannot start Git fetch cancellation: {err}")))?;
+    if !result.status.success() {
+        // A process that exited between registration and cancellation
+        // may no longer be targetable; subsequent wait observes its result.
+        return Ok(());
+    }
+    Ok(())
+}
+
+#[cfg(not(any(unix, windows)))]
+fn terminate_fetch_group(_pid: u32) -> Result<(), GitError> {
+    Err(GitError("Fetch cancellation is unsupported on this platform".into()))
+}
+
+fn run_cancellable_command(
+    command: &mut Command,
+    cancel: &FetchCancellation,
+    after_spawn: impl FnOnce(),
+    after_register: impl FnOnce(),
+) -> Result<Output, GitError> {
+    if cancel.is_cancelled() {
+        return Err(GitError(FETCH_CANCELLED.into()));
+    }
+    command.stdout(Stdio::piped()).stderr(Stdio::piped());
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
+        command.process_group(0);
+    }
+    let child = command
+        .spawn()
+        .map_err(|err| GitError(format!("Failed to launch git: {err}")))?;
+    let pid = child.id();
+    after_spawn();
+    if !cancel.register(pid)? {
+        terminate_fetch_group(pid)?;
+        let _ = child.wait_with_output();
+        return Err(GitError(FETCH_CANCELLED.into()));
+    }
+    after_register();
+    let result = child.wait_with_output();
+    cancel.unregister(pid);
+    if cancel.is_cancelled() {
+        return Err(GitError(FETCH_CANCELLED.into()));
+    }
+    result.map_err(|err| GitError(format!("Failed to wait for git: {err}")))
+}
+
 
 #[derive(Debug, Clone)]
 pub struct RepoSnapshot {
@@ -292,6 +431,40 @@ pub fn fetch(repo: &Path) -> Result<OperationOutcome, GitError> {
     Ok(OperationOutcome::Fetched)
 }
 
+/// Fetch with explicit cooperative cancellation and owned child-process
+/// termination. No forced Git worktree mutation is performed on cancellation.
+/// The Git remote-tracking refs may have been partially updated.
+pub fn fetch_with_cancel(
+    repo: &Path,
+    cancel: &FetchCancellation,
+) -> Result<OperationOutcome, GitError> {
+    if cancel.is_cancelled() {
+        return Err(GitError(FETCH_CANCELLED.into()));
+    }
+    if !verified_checkout(repo)? {
+        return Err(GitError("Repository is no longer valid".into()));
+    }
+    if cancel.is_cancelled() {
+        return Err(GitError(FETCH_CANCELLED.into()));
+    }
+    let args = ["fetch", "--all", "--prune", "--quiet"];
+    let mut command = Command::new("git");
+    command
+        .arg("-C")
+        .arg(repo)
+        .args(args)
+        .env("GIT_TERMINAL_PROMPT", "0");
+    let output = run_cancellable_command(&mut command, cancel, || {}, || {})?;
+    if !output.status.success() {
+        return Err(GitError(format!(
+            "git {}: {}",
+            args.join(" "),
+            stderr(&output)
+        )));
+    }
+    Ok(OperationOutcome::Fetched)
+}
+
 /// Resolve an immutable commit argument instead of passing a moving
 /// upstream expression to the final Git mutation.
 fn commit_oid(repo: &Path, revision: &str) -> Result<String, GitError> {
@@ -526,5 +699,68 @@ mod concurrent_git_tests {
         );
         assert!(checkout.root.join("first.txt").is_file());
         assert!(!checkout.root.join("alternate.txt").exists());
+    }
+}
+
+
+#[cfg(all(test, unix))]
+mod fetch_cancellation_tests {
+    use super::{run_cancellable_command, FetchCancellation, FETCH_CANCELLED};
+    use std::{
+        process::Command,
+        sync::{mpsc, Arc},
+        thread,
+        time::Duration,
+    };
+
+    #[test]
+    fn cancelled_before_launch_does_not_start_a_child() {
+        let cancellation = FetchCancellation::default();
+        assert!(cancellation.cancel().expect("cancel"));
+        assert!(!cancellation.cancel().expect("idempotent cancel"));
+        let mut command = Command::new("sleep");
+        command.arg("300");
+        let error = run_cancellable_command(
+            &mut command,
+            &cancellation,
+            || panic!("cancelled child must not spawn"),
+            || panic!("cancelled child must not register"),
+        ).expect_err("cancelled");
+        assert_eq!(error.0, FETCH_CANCELLED);
+    }
+
+    #[test]
+    fn cancelling_after_registration_terminates_the_process_group() {
+        let cancellation = Arc::new(FetchCancellation::default());
+        let (tx, rx) = mpsc::channel();
+        let running = Arc::clone(&cancellation);
+        let waiter = thread::spawn(move || {
+            // Test-only shell deliberately spawns a descendant to verify
+            // owned process-group termination; production invokes Git by argv.
+            let mut command = Command::new("sh");
+            command.args(["-c", "sleep 300 & wait"]);
+            run_cancellable_command(&mut command, &running, || {}, || {
+                tx.send(()).expect("started message");
+            })
+        });
+        rx.recv_timeout(Duration::from_secs(5))
+            .expect("child registered without a sleep");
+        assert!(cancellation.cancel().expect("cancel active process"));
+        let error = waiter.join().expect("thread completed").expect_err("cancelled");
+        assert_eq!(error.0, FETCH_CANCELLED);
+    }
+
+    #[test]
+    fn cancel_between_spawn_and_registration_prevents_a_leaked_child() {
+        let cancellation = FetchCancellation::default();
+        let mut command = Command::new("sh");
+        command.args(["-c", "sleep 300 & wait"]);
+        let error = run_cancellable_command(
+            &mut command,
+            &cancellation,
+            || { cancellation.cancel().expect("cancel before registration"); },
+            || panic!("cancelled process must never register"),
+        ).expect_err("cancelled");
+        assert_eq!(error.0, FETCH_CANCELLED);
     }
 }

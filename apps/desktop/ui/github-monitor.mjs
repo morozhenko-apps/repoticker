@@ -112,7 +112,6 @@ export function startGithubMonitoring({ invoke, event, onError = () => {},
       if (force) rerun = true;
       return;
     }
-    if (now() < cooldownUntil) return;
     if (!force && now() - lastAttempt < minIntervalMs) return;
     busy = true;
     lastAttempt = now();

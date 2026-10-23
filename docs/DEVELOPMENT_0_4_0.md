@@ -762,10 +762,10 @@ retain no rescan contract).
 3. [x] Real Git and focused JS/Rust tests for clean/dirty, behind,
    missing/broken checkout, marker detection, boundedness and
    no mutation/network in inspection.
-4. [ ] Run one final exact-source stable Preflight after changes:
+4. [x] Run one final exact-source stable Preflight after changes:
    Rustfmt, Rust unit/integration + Clippy, JS and release
    contracts, Linux desktop compile.
-5. [ ] Commit evidence separately, track physical KDE cold/warm
+5. [x] Commit evidence separately, track physical KDE cold/warm
    startup comparison in [issue #12](https://github.com/morozhenko-apps/repoticker/issues/12)
    and broader acceptance in #15.
 
@@ -816,3 +816,20 @@ same enrolled checkout inventory.
   older serial version, not a benchmark of this optimization.
   Cold/warm comparisons on identical repository sets remain
   required with `REPOTICKER_STARTUP_DEBUG=1`.
+
+### P1-SCAN1 verified core and UI test counts
+
+- Exact source/test SHA: `3600eef204938696202a0b9ce4702d71fc72873b`.
+  [Preflight #40036260294](https://github.com/morozhenko-apps/repoticker/actions/runs/40036260294)
+  completed its Rust formatting, core tests and Clippy job with
+  **SUCCESS**: 32 unit + 13 Git integration + 3 GitHub origin
+  integration = **48 Rust tests passed, 0 failed**.
+- JS/release job also **SUCCESS**: 146 Node tests and
+  10 Python release contract tests, all passed.
+- Linux desktop compilation and aggregate Preflight job were
+  still in progress at this checkpoint. Do not claim
+  source-level 4/4 success before checking the exact final run.
+- No physical before/after KDE performance measurement has been
+  executed for this commit. Continue to record wall-clock
+  evidence in issue #12 rather than attributing a precise
+  percentage or seconds gained.

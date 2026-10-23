@@ -30,8 +30,10 @@ export async function listAvailableInstallations(get) {
   return { items: result, complete: false };
 }
 
-export async function listInstalledRepositories(get, owner, installationId) {
+export async function listInstalledRepositories(get, owner, installationId,
+  selection = []) {
   const repositories = [];
+  const requested = new Set(selection.map(name => name.toLowerCase()));
   let complete = true;
   for (let page = 1; page <= INSTALL_PAGE_LIMIT; page++) {
     const payload = await get("/user/installations/" + installationId +
@@ -40,7 +42,8 @@ export async function listInstalledRepositories(get, owner, installationId) {
     for (const repo of payload.repositories) {
       if (typeof repo?.full_name === "string" &&
           repo.full_name.split("/")[0].toLowerCase() === owner.toLowerCase() &&
-          ACCOUNT_NAME.test(repo.full_name.split("/")[1] || "")) {
+          ACCOUNT_NAME.test(repo.full_name.split("/")[1] || "") &&
+          (!requested.size || requested.has(repo.full_name.toLowerCase()))) {
         repositories.push(repo.full_name);
       }
     }
@@ -48,18 +51,37 @@ export async function listInstalledRepositories(get, owner, installationId) {
     if (page === INSTALL_PAGE_LIMIT) complete = false;
   }
   const unique = [...new Set(repositories)];
+  // For explicit subsets, unrelated inaccessible pages do not fabricate
+  // completion. All selected names must be present and authorized.
+  const matching = requested.size === 0 || requested.size ===
+    new Set(unique.map(name => name.toLowerCase())).size;
   return { items: unique.slice(0, 100),
-    complete: complete && unique.length <= 100 };
+    complete: matching && (requested.size > 0 ? true : complete && unique.length <= 100) };
 }
 
-export async function collectForAccount({ get, account, selected, collect = collectRunnerState }) {
+export async function collectForAccount({
+  get, account, selected, selectedRepositories = [], collect = collectRunnerState
+}) {
   const available = await listAvailableInstallations(get);
   if (!available.complete) return { state: null, reason: "GitHub installation list incomplete." };
   const install = available.items.find(x => x.name.toLowerCase() === (selected || account || "").toLowerCase()) ??
     (available.items.length === 1 && !selected ? available.items[0] : null);
   if (!install) return { state: null, reason: available.items.length
     ? "Select a GitHub account in Settings." : "No accessible GitHub App installation." };
-  const repos = await listInstalledRepositories(get, install.name, install.id);
+  if (!Array.isArray(selectedRepositories) || selectedRepositories.length > 100 ||
+      selectedRepositories.some(name => typeof name !== "string" ||
+        name.split("/").length !== 2 ||
+        name.split("/")[0].toLowerCase() !== install.name.toLowerCase() ||
+        !ACCOUNT_NAME.test(name.split("/")[1]))) {
+    throw Error("Invalid selected repositories.");
+  }
+  const repos = await listInstalledRepositories(
+    get, install.name, install.id, selectedRepositories
+  );
+  if (selectedRepositories.length && !repos.complete) {
+    return { state: null, repositoryCount: selectedRepositories.length,
+      reason: "Some selected GitHub repositories are unavailable." };
+  }
   if (!repos.items.length) {
     return { state: null, reason: "No accessible repositories for " + install.name + "." };
   }
@@ -160,10 +182,13 @@ export function startGithubMonitoring({ invoke, event, onError = () => {},
         await publish(true, null, "Connecting to GitHub...", revision);
       // Config-only read: the full snapshot inspects every local Git repo.
       // GitHub polling must never depend on completion of that scan.
-      const selected = await invoke("get_monitor_scope");
+      const selection = await invoke("get_monitor_selection");
       if (revision !== selectionRevision) return;
       if (first) onStage("monitor.scope_ready");
-      const result = await collect({ get, selected });
+      const result = await collect({
+        get, selected: selection.github_monitor_org,
+        selectedRepositories: selection.github_monitor_repositories
+      });
       if (revision !== selectionRevision) return;
       if (first) onStage("monitor.collect_ready");
       minIntervalMs = monitorRefreshDelay(result.repositoryCount ?? 100);

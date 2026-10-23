@@ -154,7 +154,7 @@ test("monitor says Connecting after native authorization before slow data collec
   const collect = async () => collecting;
   const invoke = async (name, args) => {
     if (name === "github_auth_status") return { connected: true };
-    if (name === "get_monitor_scope") return "team";
+    if (name === "get_monitor_selection") return { github_monitor_org: "team", github_monitor_repositories: [] };
     if (name === "github_monitor_publish") {
       messages.push(args);
       return;
@@ -204,11 +204,11 @@ test("disconnected native credential check never claims Connecting or authorized
 test("GitHub monitor uses config-only scope without invoking the local Git scan", async () => {
   const native = readFileSync(
     new URL("../apps/desktop/src-tauri/src/main.rs", import.meta.url), "utf8");
-  const getter = native.match(/fn get_monitor_scope\([\s\S]*?\n\}/)?.[0];
+  const getter = native.match(/fn get_monitor_selection\([\s\S]*?\n\}/)?.[0];
   assert.ok(getter, "read-only native monitor scope command must exist");
-  assert.match(getter, /read_config\(&app\)\?\.github_monitor_org/);
+  assert.match(getter, /read_config\(&app\)\?/);
   assert.doesNotMatch(getter, /scan\(|git::discover|git::inspect/);
-  assert.match(native, /generate_handler!\[[\s\S]*?get_monitor_scope,/);
+  assert.match(native, /generate_handler!\[[\s\S]*?get_monitor_selection,/);
 
   const commands = [];
   const published = [];
@@ -217,7 +217,7 @@ test("GitHub monitor uses config-only scope without invoking the local Git scan"
     invoke: async (name, args) => {
       commands.push(name);
       if (name === "github_auth_status") return { connected: true };
-      if (name === "get_monitor_scope") return "team";
+      if (name === "get_monitor_selection") return { github_monitor_org: "team", github_monitor_repositories: [] };
       if (name === "github_monitor_publish") {
         published.push(args);
         return;
@@ -234,7 +234,7 @@ test("GitHub monitor uses config-only scope without invoking the local Git scan"
   });
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(selectedFromCollector, "team");
-  assert.equal(commands.filter(name => name === "get_monitor_scope").length, 1);
+  assert.equal(commands.filter(name => name === "get_monitor_selection").length, 1);
   assert.equal(commands.includes("get_snapshot"), false);
   assert.deepEqual(published.map(p => p.message),
     ["Connecting to GitHub...", "No accessible repositories."]);
@@ -248,7 +248,7 @@ test("first monitor startup reports only allowlisted nonsecret milestones in ord
   startGithubMonitoring({
     invoke: async (command, args) => {
       if (command === "github_auth_status") return { connected: true };
-      if (command === "get_monitor_scope") return "team";
+      if (command === "get_monitor_selection") return "team";
       if (command === "github_monitor_publish") {
         pending.push(args);
         return null;
@@ -275,7 +275,7 @@ test("429 backoff prevents timer and forced card refresh from hitting GitHub ear
   const scheduleCallbacks = [];
   const invoke = async (name, args) => {
     if (name === "github_auth_status") return { connected: true };
-    if (name === "get_monitor_scope") return "team";
+    if (name === "get_monitor_selection") return { github_monitor_org: "team", github_monitor_repositories: [] };
     if (name === "github_api_cooldown_seconds") return 180;
     if (name === "github_monitor_publish") { messages.push(args); return null; }
     throw Error("Unexpected command: " + name);
@@ -311,7 +311,7 @@ test("partially rate-limited collection carries covered counts and honors cooldo
   const messages = [];
   const invoke = async (name, args) => {
     if (name === "github_auth_status") return { connected: true };
-    if (name === "get_monitor_scope") return "team";
+    if (name === "get_monitor_selection") return { github_monitor_org: "team", github_monitor_repositories: [] };
     if (name === "github_api_cooldown_seconds") return 90;
     if (name === "github_monitor_publish") { messages.push(args); return; }
     throw Error("Unexpected command: " + name);
@@ -341,7 +341,7 @@ test("offline errors publish unknown counts, not stale successful counts", async
   const refresh = startGithubMonitoring({
     invoke: async (name, args) => {
       if (name === "github_auth_status") return { connected: true };
-      if (name === "get_monitor_scope") return "team";
+      if (name === "get_monitor_selection") return { github_monitor_org: "team", github_monitor_repositories: [] };
       if (name === "github_monitor_publish") { messages.push(args); return null; }
       throw Error("Unexpected command " + name);
     },
@@ -374,7 +374,7 @@ test("native disconnect remains immediate while REST cooldown is active", async 
     event: { listen: (name, callback) => { listeners.set(name, callback); } },
     invoke: async (name, args) => {
       if (name === "github_auth_status") return { connected };
-      if (name === "get_monitor_scope") return "team";
+      if (name === "get_monitor_selection") return { github_monitor_org: "team", github_monitor_repositories: [] };
       if (name === "github_api_cooldown_seconds") return 180;
       if (name === "github_monitor_publish") { messages.push(args); return; }
       throw Error("Unexpected command " + name);
@@ -402,7 +402,7 @@ test("slow prior Monitor account response cannot overwrite newly selected accoun
   const started = [];
   const invoke = async (name, args) => {
     if (name === "github_auth_status") return { connected: true };
-    if (name === "get_monitor_scope") return selected.shift() ?? "new";
+    if (name === "get_monitor_selection") return { github_monitor_org: selected.shift() ?? "new", github_monitor_repositories: [] };
     if (name === "github_monitor_publish") { publications.push(args); return; }
     throw Error("Unexpected IPC " + name);
   };
@@ -441,7 +441,7 @@ test("late failed collector cannot replace disconnected auth state", async () =>
   startGithubMonitoring({
     invoke: async (name, args) => {
       if (name === "github_auth_status") return { connected };
-      if (name === "get_monitor_scope") return "team";
+      if (name === "get_monitor_selection") return { github_monitor_org: "team", github_monitor_repositories: [] };
       if (name === "github_monitor_publish") { messages.push(args); return; }
       throw Error("Unexpected IPC " + name);
     },
@@ -469,7 +469,7 @@ test("disconnect clears previous counts without waiting for a blocked collector"
   const refresh = startGithubMonitoring({
     invoke: async (name, args) => {
       if (name === "github_auth_status") return { connected: authorized };
-      if (name === "get_monitor_scope") return "team";
+      if (name === "get_monitor_selection") return { github_monitor_org: "team", github_monitor_repositories: [] };
       if (name === "github_monitor_publish") { writes.push(args); return; }
       throw Error("Unexpected IPC: " + name);
     },
@@ -515,7 +515,7 @@ test("scope switch immediately clears other account counts while collection rema
   const refresh = startGithubMonitoring({
     invoke: async (name, args) => {
       if (name === "github_auth_status") return { connected: true };
-      if (name === "get_monitor_scope") return account;
+      if (name === "get_monitor_selection") return { github_monitor_org: account, github_monitor_repositories: [] };
       if (name === "github_monitor_publish") { writes.push(args); return; }
       throw Error("Unexpected IPC: " + name);
     },
@@ -559,7 +559,7 @@ test("delayed native publication cannot overwrite later disconnect", async () =>
   startGithubMonitoring({
     invoke: async (name, args) => {
       if (name === "github_auth_status") return { connected: authorized };
-      if (name === "get_monitor_scope") return "team";
+      if (name === "get_monitor_selection") return { github_monitor_org: "team", github_monitor_repositories: [] };
       if (name === "github_monitor_publish") {
         if (!releaseFirstWrite) {
           return new Promise(resolve => {
@@ -599,7 +599,7 @@ test("scope changes during async cooldown read cannot publish old account result
     now: () => clock,
     invoke: async (name, args) => {
       if (name === "github_auth_status") return { connected: true };
-      if (name === "get_monitor_scope") return getScope();
+      if (name === "get_monitor_selection") return { github_monitor_org: getScope(), github_monitor_repositories: [] };
       if (name === "github_api_cooldown_seconds")
         return new Promise(resolve => { resolveCooldown = resolve; });
       if (name === "github_monitor_publish") { writes.push(args); return; }
@@ -628,4 +628,75 @@ test("scope changes during async cooldown read cannot publish old account result
   clock += 90_000;
   await refresh(true);
   assert.equal(writes.at(-1).runnerState.counts.running, 2);
+});
+
+test("selected repositories filter Actions calls before counting jobs", async () => {
+  const observed = [];
+  const get = async path => {
+    if (path.startsWith("/user/installations?"))
+      return { installations: [installation(3, "team")] };
+    if (path.startsWith("/user/installations/3/repositories?"))
+      return { repositories: [
+        { full_name: "team/one" }, { full_name: "team/two" }
+      ] };
+    throw Error("Unexpected REST path");
+  };
+  const result = await collectForAccount({
+    get, selected: "team", selectedRepositories: ["team/two"],
+    collect: async ({ org, repositories }) => {
+      observed.push([org, ...repositories]);
+      return { counts: { running: 1, queued: 0 },
+        coverage: { jobs: true }, errors: [] };
+    }
+  });
+  assert.deepEqual(observed, [["team", "team/two"]]);
+  assert.equal(result.state.counts.running, 1);
+  assert.equal(result.repositoryCount, 1);
+});
+
+test("revoked selected repository never fabricates complete job counts", async () => {
+  const get = async path => path.startsWith("/user/installations?")
+    ? { installations: [installation(3, "team")] }
+    : { repositories: [{ full_name: "team/one" }] };
+  let collected = false;
+  const result = await collectForAccount({
+    get, selected: "team", selectedRepositories: ["team/one", "team/revoked"],
+    collect: async () => { collected = true; }
+  });
+  assert.equal(collected, false);
+  assert.equal(result.state, null);
+  assert.match(result.reason, /unavailable/);
+});
+
+test("selected repo outside first 100 remains addressable within authorized pagination", async () => {
+  const get = async path => {
+    if (path.startsWith("/user/installations?"))
+      return { installations: [installation(3, "team")] };
+    if (path.includes("page=1"))
+      return { repositories: Array.from({ length: 100 }, (_, i) =>
+        ({ full_name: "team/project" + i })) };
+    return { repositories: [{ full_name: "team/target" }] };
+  };
+  const result = await collectForAccount({
+    get, selected: "team", selectedRepositories: ["team/target"],
+    collect: async ({ repositories }) => {
+      assert.deepEqual(repositories, ["team/target"]);
+      return { counts: { running: 0, queued: 0 },
+        coverage: { jobs: true }, errors: [] };
+    }
+  });
+  assert.equal(result.state.counts.queued, 0);
+});
+
+test("native persisted selection defaults to all and validates account ownership", () => {
+  const source = readFileSync(
+    new URL("../apps/desktop/src-tauri/src/main.rs", import.meta.url), "utf8"
+  );
+  assert.match(source, /#\[serde\(default\)\]\s*github_monitor_repositories: Vec<String>/);
+  assert.match(source, /fn get_monitor_selection\([\s\S]*?read_config\(&app\)\?/);
+  assert.match(source, /fn github_set_monitor_org\([\s\S]*?validate_monitor_repositories/);
+  assert.match(source, /fn validate_monitor_repositories\([\s\S]*?eq_ignore_ascii_case/);
+  assert.match(source, /config\.github_monitor_repositories = selected/);
+  assert.match(source, /changed_account => Vec::new\(\)/);
+  assert.match(source, /generate_handler!\[[\s\S]*?get_monitor_selection,/);
 });

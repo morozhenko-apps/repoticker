@@ -43,6 +43,8 @@ struct Config {
     card_right_margin: Option<i32>,
     #[serde(default)]
     github_monitor_org: Option<String>,
+    #[serde(default)]
+    github_monitor_repositories: Vec<String>,
 }
 
 fn default_language() -> String {
@@ -132,6 +134,7 @@ fn read_config(app: &AppHandle) -> Result<Config, String> {
             card_bottom_margin: None,
             card_right_margin: None,
             github_monitor_org: None,
+            github_monitor_repositories: Vec::new(),
         });
     }
     let content = fs::read(&path).map_err(|err| format!("Cannot read config: {err}"))?;
@@ -369,6 +372,23 @@ fn get_monitor_scope(app: AppHandle) -> Result<Option<String>, String> {
     Ok(read_config(&app)?.github_monitor_org)
 }
 
+/// Read the monitored account and its repository filter in one config read,
+/// avoiding mixed old/new account selections between IPC calls.
+#[derive(Serialize)]
+struct MonitorSelection {
+    github_monitor_org: Option<String>,
+    github_monitor_repositories: Vec<String>,
+}
+
+#[tauri::command]
+fn get_monitor_selection(app: AppHandle) -> Result<MonitorSelection, String> {
+    let config = read_config(&app)?;
+    Ok(MonitorSelection {
+        github_monitor_org: config.github_monitor_org,
+        github_monitor_repositories: config.github_monitor_repositories,
+    })
+}
+
 /// Settings must not wait for `git::discover_all` and `git::inspect`.
 /// This returns only the persisted, non-secret settings shown in its form.
 #[derive(Serialize)]
@@ -376,6 +396,7 @@ struct SettingsConfig {
     roots: Vec<String>,
     language: String,
     github_monitor_org: Option<String>,
+    github_monitor_repositories: Vec<String>,
 }
 
 #[tauri::command]
@@ -386,6 +407,7 @@ fn get_settings_config(app: AppHandle) -> Result<SettingsConfig, String> {
         roots: config.roots,
         language: config.language,
         github_monitor_org: config.github_monitor_org,
+        github_monitor_repositories: config.github_monitor_repositories,
     })
 }
 
@@ -763,8 +785,42 @@ fn close_settings(app: AppHandle) -> Result<(), String> {
     window.hide().map_err(|err| err.to_string())
 }
 
+/// A missing `repositories` argument preserves the selection for legacy
+/// same-account callers; an explicit empty list means "monitor all".
+fn validate_monitor_repositories(
+    org: Option<&str>,
+    repositories: Vec<String>,
+) -> Result<Vec<String>, String> {
+    if repositories.len() > 100 || (!repositories.is_empty() && org.is_none()) {
+        return Err("Invalid GitHub repository selection.".into());
+    }
+    let mut selected = Vec::new();
+    for repository in repositories {
+        let Some((owner, name)) = repository.split_once('/') else {
+            return Err("Invalid GitHub repository selection.".into());
+        };
+        if !org.is_some_and(|account| owner.eq_ignore_ascii_case(account))
+            || !github_api::valid_name(owner)
+            || !github_api::valid_name(name)
+            || name.contains('/')
+            || name == "."
+            || name == ".."
+            || selected.iter().any(|item: &String| item.eq_ignore_ascii_case(&repository))
+        {
+            return Err("Invalid GitHub repository selection.".into());
+        }
+        selected.push(repository);
+    }
+    selected.sort_unstable_by_key(|name| name.to_ascii_lowercase());
+    Ok(selected)
+}
+
 #[tauri::command]
-fn github_set_monitor_org(app: AppHandle, org: Option<String>) -> Result<(), String> {
+fn github_set_monitor_org(
+    app: AppHandle,
+    org: Option<String>,
+    repositories: Option<Vec<String>>,
+) -> Result<(), String> {
     if org
         .as_ref()
         .is_some_and(|name| !github_api::valid_name(name))
@@ -772,7 +828,18 @@ fn github_set_monitor_org(app: AppHandle, org: Option<String>) -> Result<(), Str
         return Err("Invalid GitHub account.".into());
     }
     let mut config = read_config(&app)?;
+    let changed_account = match (config.github_monitor_org.as_deref(), org.as_deref()) {
+        (Some(previous), Some(next)) => !previous.eq_ignore_ascii_case(next),
+        (None, None) => false,
+        _ => true,
+    };
+    let selected = match repositories {
+        Some(names) => validate_monitor_repositories(org.as_deref(), names)?,
+        None if changed_account => Vec::new(),
+        None => config.github_monitor_repositories.clone(),
+    };
     config.github_monitor_org = org;
+    config.github_monitor_repositories = selected;
     write_config(&app, &config)?;
     app.state::<github_etag_cache::GitHubETagCache>()
         .invalidate();
@@ -959,6 +1026,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             get_snapshot,
             get_monitor_scope,
+            get_monitor_selection,
             get_settings_config,
             startup_diagnostics::trace_startup_stage,
             github_session::github_auth_status,

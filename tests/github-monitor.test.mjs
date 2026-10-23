@@ -248,7 +248,9 @@ test("first monitor startup reports only allowlisted nonsecret milestones in ord
   startGithubMonitoring({
     invoke: async (command, args) => {
       if (command === "github_auth_status") return { connected: true };
-      if (command === "get_monitor_selection") return "team";
+      if (command === "get_monitor_selection") return {
+        github_monitor_org: "team", github_monitor_repositories: []
+      };
       if (command === "github_monitor_publish") {
         pending.push(args);
         return null;
@@ -594,7 +596,7 @@ test("scope changes during async cooldown read cannot publish old account result
   let account = "old";
   let clock = 1_000;
   let resolveCooldown;
-  const getScope = async () => account;
+  const getScope = () => account;
   const refresh = startGithubMonitoring({
     now: () => clock,
     invoke: async (name, args) => {
@@ -672,7 +674,7 @@ test("selected repo outside first 100 remains addressable within authorized pagi
   const get = async path => {
     if (path.startsWith("/user/installations?"))
       return { installations: [installation(3, "team")] };
-    if (path.includes("page=1"))
+    if (/[?&]page=1(?:&|$)/.test(path))
       return { repositories: Array.from({ length: 100 }, (_, i) =>
         ({ full_name: "team/project" + i })) };
     return { repositories: [{ full_name: "team/target" }] };

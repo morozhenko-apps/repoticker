@@ -805,7 +805,9 @@ fn validate_monitor_repositories(
             || name.contains('/')
             || name == "."
             || name == ".."
-            || selected.iter().any(|item: &String| item.eq_ignore_ascii_case(&repository))
+            || selected
+                .iter()
+                .any(|item: &String| item.eq_ignore_ascii_case(&repository))
         {
             return Err("Invalid GitHub repository selection.".into());
         }

@@ -178,8 +178,10 @@ async function refreshMonitorScopes() {
     placeholder.value = "";
     placeholder.textContent = "Choose account";
     select.append(placeholder);
-    const accounts = data.installations.map(i => i?.account?.login)
-      .filter(name => typeof name === "string" && /^[a-zA-Z0-9_.-]+$/.test(name));
+    const accounts = data.installations.filter(i =>
+      REPO_NAME.test(i?.account?.login || "") &&
+      Number.isSafeInteger(i?.id) && i.id > 0
+    ).map(i => i.account.login);
     availableAccounts = new Map(data.installations
       .filter(i => REPO_NAME.test(i?.account?.login || "") &&
         Number.isSafeInteger(i?.id) && i.id > 0)

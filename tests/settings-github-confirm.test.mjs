@@ -40,6 +40,7 @@ async function fixture(suffix, initiallyConnected) {
   let connected = initiallyConnected;
   let phase = connected ? "connected" : "idle";
   let monitorOrg = connected ? "one" : null;
+  let monitorRepositories = [];
   let closed = false;
   let tokenRemoved = false;
   const document = {
@@ -58,15 +59,22 @@ async function fixture(suffix, initiallyConnected) {
           calls.push([command, args]);
           switch (command) {
             case "get_settings_config": return {
-              roots: ["/repos"], language: "en", github_monitor_org: monitorOrg
+              roots: ["/repos"], language: "en", github_monitor_org: monitorOrg,
+              github_monitor_repositories: monitorRepositories
             };
             case "get_monitor_scope": return monitorOrg;
             case "github_auth_status": return { connected, phase };
-            case "github_api_get": return {
-              installations: [
-                { account: { login: "one" } }, { account: { login: "two" } }
-              ]
-            };
+            case "github_api_get":
+              if (args.path.includes("/repositories?"))
+                return { repositories: [
+                  { full_name: "one/core" }, { full_name: "one/docs" },
+                  { full_name: "two/api" }, { full_name: "two/web" }
+                ].filter(item => item.full_name.startsWith(
+                  monitorOrg === "two" || args.path.includes("/2/") ? "two/" : "one/")) };
+              return { installations: [
+                { id: 1, account: { login: "one" } },
+                { id: 2, account: { login: "two" } }
+              ] };
             case "github_begin":
               phase = "pending";
               return { userCode: "ABCD-1234" };
@@ -80,6 +88,7 @@ async function fixture(suffix, initiallyConnected) {
               return undefined;
             case "github_set_monitor_org":
               monitorOrg = args.org;
+              monitorRepositories = args.repositories ?? monitorRepositories;
               return undefined;
             case "save_settings": return undefined;
             case "close_settings": closed = true; return undefined;
@@ -110,6 +119,7 @@ async function fixture(suffix, initiallyConnected) {
     get closed() { return closed; },
     get tokenRemoved() { return tokenRemoved; },
     get monitorOrg() { return monitorOrg; },
+    get monitorRepositories() { return monitorRepositories; },
     async dispatchAuth() {
       await listeners.get("repoticker-github-auth")?.({});
       await tick();
@@ -191,5 +201,47 @@ test("cancel pending Device Flow invalidates polling without claiming connection
     assert.equal(ui.closed, true);
     assert.equal(ui.tokenRemoved, false);
     assert.ok(ui.calls.some(([name]) => name === "github_cancel"));
+  } finally { ui.restore(); }
+});
+
+test("selected GitHub repositories remain drafts until OK and Cancel never writes them", async () => {
+  const ui = await fixture("repo-subset-cancel", true);
+  try {
+    assert.equal(ui.node("github-repo-mode").value, "all");
+    ui.node("github-repo-mode").value = "selected";
+    await ui.node("github-repo-mode").fire("change");
+    assert.equal(ui.node("apply-settings").disabled, true,
+      "selected mode requires at least one repository");
+    const list = ui.node("github-repo-list");
+    const choice = list.children.find(item => item.children[1]?.textContent === "one/core");
+    assert.ok(choice, "available GitHub repository must be selectable");
+    const checkbox = choice.children[0];
+    checkbox.checked = true;
+    await checkbox.fire("change");
+    assert.equal(ui.node("apply-settings").disabled, false);
+    assert.equal(ui.monitorRepositories.length, 0, "draft not yet persisted");
+    await ui.node("cancel-settings").fire("click");
+    assert.deepEqual(ui.monitorRepositories, []);
+    assert.ok(!ui.calls.some(([cmd]) => cmd === "github_set_monitor_org"));
+  } finally { ui.restore(); }
+});
+
+test("OK persists a repository subset together with its account selection", async () => {
+  const ui = await fixture("repo-subset-save", true);
+  try {
+    ui.node("github-repo-mode").value = "selected";
+    await ui.node("github-repo-mode").fire("change");
+    const item = ui.node("github-repo-list").children.find(row =>
+      row.children[1]?.textContent === "one/core");
+    assert.ok(item);
+    item.children[0].checked = true;
+    await item.children[0].fire("change");
+    await ui.node("apply-settings").fire("click");
+    assert.deepEqual(ui.monitorRepositories, ["one/core"]);
+    const saved = ui.calls.filter(([name]) => name === "github_set_monitor_org");
+    assert.deepEqual(saved.at(-1)[1], {
+      org: "one", repositories: ["one/core"]
+    });
+    assert.equal(ui.closed, true);
   } finally { ui.restore(); }
 });

@@ -35,11 +35,136 @@ let githubScopeTouched = false;
 let githubWasConnectedAtOpen = false;
 let githubStartedHere = false;
 let githubStarting = false;
+let availableAccounts = new Map();
+let repoInventory = [];
+let repoInventoryComplete = false;
+let repoInventoryReady = false;
+let repoInventoryRevision = 0;
+let selectedRepoNames = new Set();
+let originalRepoNames = [];
+let repoMode = "all";
+let repoChoiceTouched = false;
+
+const REPO_NAME = /^[a-zA-Z0-9_.-]+$/;
+function normalizeRepoDraft() {
+  return repoMode === "all" ? [] : [...selectedRepoNames].sort();
+}
+function updateRepoDirty() {
+  repoChoiceTouched = JSON.stringify(normalizeRepoDraft()) !==
+    JSON.stringify(originalRepoNames);
+  updateApply();
+}
+function repoChoiceValid() {
+  if (repoMode === "all") return true;
+  if (selectedRepoNames.size === 0 || selectedRepoNames.size > 100) return false;
+  if (!repoChoiceTouched) return true; // Preserve existing config if API is offline.
+  return repoInventoryReady && [...selectedRepoNames].every(name =>
+    repoInventory.includes(name));
+}
+function renderRepoChoices() {
+  byId("github-repo-mode").value = repoMode;
+  const list = byId("github-repo-list");
+  const filter = byId("github-repo-filter");
+  const show = repoMode === "selected";
+  list.hidden = !show;
+  filter.hidden = !show;
+  list.replaceChildren();
+  if (!show) {
+    byId("github-repo-status").textContent =
+      "All accessible repositories will be monitored.";
+    return;
+  }
+  const query = filter.value.trim().toLowerCase();
+  const visible = repoInventory.filter(name =>
+    name.toLowerCase().includes(query));
+  for (const name of visible.slice(0, 100)) {
+    const label = document.createElement("label");
+    label.className = "github-repo-choice";
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.value = name;
+    checkbox.checked = selectedRepoNames.has(name);
+    checkbox.addEventListener("change", () => {
+      if (checkbox.checked) selectedRepoNames.add(name);
+      else selectedRepoNames.delete(name);
+      updateRepoDirty();
+      renderRepoChoices();
+    });
+    const title = document.createElement("span");
+    title.textContent = name;
+    label.append(checkbox, title);
+    list.append(label);
+  }
+  const unavailable = [...selectedRepoNames].filter(name =>
+    !repoInventory.includes(name)).length;
+  byId("github-repo-status").textContent = !repoInventoryReady
+    ? "Repository list unavailable. Existing selection is preserved."
+    : selectedRepoNames.size === 0 ? "Choose at least one repository."
+    : unavailable ? unavailable + " selected repositories are no longer accessible."
+    : selectedRepoNames.size + " selected of " + repoInventory.length +
+      " accessible" + (repoInventoryComplete ? "" : " (inventory truncated)") +
+      (visible.length > 100 ? "; filter to find more" : "");
+}
+
+async function refreshRepoInventory() {
+  const revision = ++repoInventoryRevision;
+  const id = availableAccounts.get(selectedScope);
+  const panel = byId("github-repo-controls");
+  panel.hidden = !githubConnected || !id || !selectedScope;
+  repoInventory = [];
+  repoInventoryReady = false;
+  repoInventoryComplete = false;
+  renderRepoChoices();
+  if (panel.hidden) return;
+  try {
+    const all = new Set();
+    let complete = false;
+    for (let page = 1; page <= 10; page++) {
+      const payload = await invoke("github_api_get", { path:
+        "/user/installations/" + id + "/repositories?per_page=100&page=" + page });
+      if (!Array.isArray(payload?.repositories)) throw Error("Invalid repository list");
+      for (const item of payload.repositories) {
+        const name = item?.full_name;
+        if (typeof name !== "string") continue;
+        const parts = name.split("/");
+        if (parts.length === 2 &&
+            parts[0].toLowerCase() === selectedScope.toLowerCase() &&
+            REPO_NAME.test(parts[1])) all.add(name);
+      }
+      if (payload.repositories.length < 100) {
+        complete = true;
+        break;
+      }
+    }
+    if (revision !== repoInventoryRevision) return;
+    repoInventory = [...all].sort((a, b) => a.localeCompare(b));
+    repoInventoryComplete = complete;
+    repoInventoryReady = true;
+  } catch {
+    if (revision !== repoInventoryRevision) return;
+    // Never erase a previously saved selection due to network failure.
+    repoInventoryReady = false;
+  }
+  renderRepoChoices();
+  updateApply();
+}
+byId("github-repo-mode").addEventListener("change", event => {
+  if (!githubConnected || !selectedScope) return;
+  repoMode = event.target.value === "selected" ? "selected" : "all";
+  if (repoMode === "all") selectedRepoNames.clear();
+  updateRepoDirty();
+  renderRepoChoices();
+});
+byId("github-repo-filter").addEventListener("input", renderRepoChoices);
 
 async function refreshMonitorScopes() {
   const row = byId("github-monitor-scope-row");
   row.hidden = !githubConnected;
-  if (!githubConnected) return;
+  if (!githubConnected) {
+    ++repoInventoryRevision;
+    byId("github-repo-controls").hidden = true;
+    return;
+  }
   try {
     const [config, data] = await Promise.all([
       invoke("get_monitor_scope"),
@@ -55,6 +180,10 @@ async function refreshMonitorScopes() {
     select.append(placeholder);
     const accounts = data.installations.map(i => i?.account?.login)
       .filter(name => typeof name === "string" && /^[a-zA-Z0-9_.-]+$/.test(name));
+    availableAccounts = new Map(data.installations
+      .filter(i => REPO_NAME.test(i?.account?.login || "") &&
+        Number.isSafeInteger(i?.id) && i.id > 0)
+      .map(i => [i.account.login, i.id]));
     for (const name of [...new Set(accounts)].sort()) {
       const option = document.createElement("option");
       option.value = name;
@@ -68,6 +197,7 @@ async function refreshMonitorScopes() {
       githubScopeTouched = false;
     }
     select.value = selectedScope || "";
+    await refreshRepoInventory();
     updateApply();
   } catch {
     githubMessage("GitHub authorized; cannot list available installations.", true);
@@ -77,7 +207,14 @@ async function refreshMonitorScopes() {
 byId("github-monitor-scope").addEventListener("change", event => {
   selectedScope = event.target.value || "";
   githubScopeTouched = selectedScope !== (githubScopeAtOpen || "");
+  // One monitored account at a time; changing it never retains the
+  // previous account's private repository list.
+  repoMode = "all";
+  selectedRepoNames.clear();
+  byId("github-repo-filter").value = "";
+  updateRepoDirty();
   githubMessage("Press OK to confirm the monitoring account.");
+  void refreshRepoInventory();
   updateApply();
 });
 
@@ -277,8 +414,8 @@ function isDirty() {
 function updateApply() {
   const authNeedsConfirmation = githubConnected && githubStartedHere;
   byId("apply-settings").disabled =
-    saving || githubStarting || githubPending ||
-    !(isDirty() || authNeedsConfirmation || githubScopeTouched);
+    saving || githubStarting || githubPending || !repoChoiceValid() ||
+    !(isDirty() || authNeedsConfirmation || githubScopeTouched || repoChoiceTouched);
 }
 function renderRoots() {
   const list = byId("roots-list");
@@ -323,6 +460,10 @@ async function refresh() {
   githubStarting = false;
   githubScopeTouched = false;
   githubScopeAtOpen = snapshot.github_monitor_org || "";
+  originalRepoNames = [...(snapshot.github_monitor_repositories || [])].sort();
+  selectedRepoNames = new Set(originalRepoNames);
+  repoMode = originalRepoNames.length ? "selected" : "all";
+  repoChoiceTouched = false;
   selectedScope = null;
   original = {
     roots: [...(snapshot.roots || [])],
@@ -406,8 +547,9 @@ byId("cancel-settings").addEventListener("click", async () => {
   }
 });
 byId("apply-settings").addEventListener("click", async () => {
-  if (saving || githubPending || githubStarting ||
-      !(isDirty() || githubScopeTouched || (githubConnected && githubStartedHere))) return;
+  if (saving || githubPending || githubStarting || !repoChoiceValid() ||
+      !(isDirty() || githubScopeTouched || repoChoiceTouched ||
+        (githubConnected && githubStartedHere))) return;
   saving = true;
   updateApply();
   try {
@@ -421,9 +563,14 @@ byId("apply-settings").addEventListener("click", async () => {
       // Commit the account selection only on explicit OK. Reapplying the
       // selection also sends repoticker-github-scope-changed to refresh
       // the running monitor/card while they remain visible.
-      await invoke("github_set_monitor_org", { org: selectedScope || null });
+      const repositories = normalizeRepoDraft();
+      await invoke("github_set_monitor_org", {
+        org: selectedScope || null, repositories
+      });
       githubScopeTouched = false;
       githubScopeAtOpen = selectedScope || "";
+      originalRepoNames = repositories;
+      repoChoiceTouched = false;
       await refreshMonitorScopes();
     }
     githubStartedHere = false;

@@ -59,6 +59,18 @@
         <input id="github-worker-url" disabled placeholder="https://your-worker.example">
       </label>
     </div>
+    <div id="github-repo-controls" class="github-repo-controls" hidden>
+      <div class="github-repo-heading">
+        <label for="github-repo-mode">Monitor repositories</label>
+        <select id="github-repo-mode">
+          <option value="all">All accessible</option>
+          <option value="selected">Selected</option>
+        </select>
+      </div>
+      <input id="github-repo-filter" type="search" placeholder="Filter repositories" aria-label="Filter repositories" hidden>
+      <div id="github-repo-list" class="github-repo-list" role="group" aria-label="Repositories to monitor" hidden></div>
+      <span id="github-repo-status" class="hint" role="status">All accessible repositories will be monitored.</span>
+    </div>
   </section>
   <div class="settings-footer">
     <span id="message" role="status" aria-live="polite"></span>

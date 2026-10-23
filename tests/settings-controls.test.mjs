@@ -46,7 +46,8 @@ test("Device Flow buttons register and invoke native commands after JS startup",
     calls.push({ command, args });
     switch (command) {
       case "get_settings_config": return {
-        roots: [], language: "en", github_monitor_org: null
+        roots: [], language: "en", github_monitor_org: null,
+        github_monitor_repositories: []
       };
       case "get_monitor_scope": return null;
       case "github_auth_status": return { connected: false, phase: "idle", reason: null };

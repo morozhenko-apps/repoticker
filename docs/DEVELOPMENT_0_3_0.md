@@ -555,11 +555,11 @@ regression test `6df3846` and Rustfmt-only `0da9625`.
   refresh suppression, partial counts staying unknown,
   offline successful-to-unavailable transition, and
   disconnect during cooldown.
-- [ ] Exact latest source CI: [Preflight
-  #39910983490](https://github.com/morozhenko-apps/repoticker/actions/runs/39910983490)
-  for code/test SHA `0da9625c5d37a7d4c17e235fa9808ec5681fb89b`.
-  Earlier attempt failed only Rustfmt; corrected in the
-  latest SHA. Confirm all jobs before calling the patch CI-green.
+- [x] Source CI [Preflight #39910983490](https://github.com/morozhenko-apps/repoticker/actions/runs/39910983490)
+  completed **SUCCESS 4/4**, exact source SHA
+  `0da9625c5d37a7d4c17e235fa9808ec5681fb89b`,
+  including Linux desktop compile. GitHub 429/offline physical
+  acceptance remains separate in issue #15.
 - [ ] Real 403/429, offline, locked wallet and account-change
   physical acceptance remain deferred to
   [aggregate acceptance issue #15](https://github.com/morozhenko-apps/repoticker/issues/15)
@@ -623,6 +623,41 @@ during the deferred integrated test gate; when auth changes, no
 credential is stored on this reusable transport. Revert the
 single code/test commit to return to a client per request.
 No version bump, `main` promotion or public release.
+
+## A5 — shared REST client implementation checkpoint (2026-10-23)
+
+- [x] Code commit [`0ef3837`](https://github.com/morozhenko-apps/repoticker/commit/0ef3837d40cd026ebf5877f566117f5b2fad06be)
+  adds `GitHubRestClient` as a Tauri-managed, lazily initialized
+  process-local `reqwest::Client`. Native requests now reuse
+  transport connections, keeping the original no-redirect and
+  15-second timeout configuration. The shared client does
+  **not** cache JSON or store default Authorization headers;
+  every request still obtains a native token and applies
+  `.bearer_auth(&token)` separately.
+- [x] A focused Rust test asserts that one native client is
+  reused and its default request has **no Authorization header**.
+  Separate Node source-contract tests in [`4ec49e4`](https://github.com/morozhenko-apps/repoticker/commit/4ec49e40d3e11e7d778de18bbf1bfc4c3c37cb4f)
+  enforce one client builder and unchanged transport/security
+  boundaries. Runtime execution of the native Rust unit test
+  itself must be separately evidenced; the normal Preflight
+  runs core Rust tests and desktop `cargo check`, not desktop
+  unit-test binaries.
+- [ ] Latest code/test CI
+  [#39952378779](https://github.com/morozhenko-apps/repoticker/actions/runs/39952378779)
+  targets exact SHA `4ec49e40d3e11e7d778de18bbf1bfc4c3c37cb4f`.
+  Do not mark green until the run completes. Normal
+  Preflight checks the Node contracts and compiles desktop.
+- [ ] Physical cold/warm REST latency comparison and live
+  account-switch/disconnect boundary remain in
+  [deferred integration #15](https://github.com/morozhenko-apps/repoticker/issues/15).
+  No release, version bump or main promotion is requested.
+
+Why this scope: per-collection GitHub API response caching or
+shared private installation/repository payload caching would
+require explicit validation of identity/scope invalidation,
+credential transitions and response freshness. The A5
+transport-only refactor avoids introducing those semantics
+or a new privacy/authorization boundary.
 
 ## Stop factors and invariant boundaries
 

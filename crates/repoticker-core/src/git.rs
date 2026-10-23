@@ -316,16 +316,15 @@ pub fn discover_all(roots: &[PathBuf]) -> (Vec<PathBuf>, Vec<String>) {
 
 /// Resolve an exact canonical checkout against the user's enrolled roots.
 /// Unregistered paths and implicit linked worktree children are rejected.
-pub fn resolve_enrolled_checkout(
-    roots: &[PathBuf],
-    requested: &str,
-) -> Result<PathBuf, GitError> {
+pub fn resolve_enrolled_checkout(roots: &[PathBuf], requested: &str) -> Result<PathBuf, GitError> {
     let selected = normalize_root(requested)?;
     let (repositories, _) = discover_all(roots);
     if repositories.binary_search(&selected).is_ok() {
         Ok(selected)
     } else {
-        Err(GitError("Repository is not enrolled or no longer valid".into()))
+        Err(GitError(
+            "Repository is not enrolled or no longer valid".into(),
+        ))
     }
 }
 

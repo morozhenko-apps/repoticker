@@ -236,11 +236,9 @@ fn enrolled_checkout_resolution_accepts_only_canonical_discovered_repositories()
         f.seed.to_str().expect("UTF-8 path")
     )
     .is_err());
-    assert!(git::resolve_enrolled_checkout(
-        std::slice::from_ref(&f.base),
-        "relative/path"
-    )
-    .is_err());
+    assert!(
+        git::resolve_enrolled_checkout(std::slice::from_ref(&f.base), "relative/path").is_err()
+    );
     assert!(git::resolve_enrolled_checkout(
         std::slice::from_ref(&f.base),
         f.base.join("not-found").to_str().expect("UTF-8 path")

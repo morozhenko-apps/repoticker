@@ -831,11 +831,10 @@ async fn open_repository_folder(app: AppHandle, repo_path: String) -> Result<(),
 #[tauri::command]
 async fn copy_repository_path(app: AppHandle, repo_path: String) -> Result<(), String> {
     let owned = app.clone();
-    let selected = tauri::async_runtime::spawn_blocking(move || {
-        enrolled_repository(&owned, &repo_path)
-    })
-    .await
-    .map_err(|error| error.to_string())??;
+    let selected =
+        tauri::async_runtime::spawn_blocking(move || enrolled_repository(&owned, &repo_path))
+            .await
+            .map_err(|error| error.to_string())??;
     let text = selected
         .to_str()
         .ok_or_else(|| "Repository path cannot be copied as UTF-8".to_owned())?;

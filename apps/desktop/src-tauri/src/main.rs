@@ -15,7 +15,11 @@ use repoticker_core::{
 };
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicU8, Ordering};
-use std::{fs, path::PathBuf, sync::{Arc, Mutex}};
+use std::{
+    fs,
+    path::PathBuf,
+    sync::{Arc, Mutex},
+};
 #[cfg(target_os = "linux")]
 mod linux_surface;
 #[cfg(target_os = "linux")]
@@ -39,7 +43,7 @@ struct ActiveFetchLease<'a>(&'a ActiveFetch);
 
 impl Drop for ActiveFetchLease<'_> {
     fn drop(&mut self) {
-        if let Ok(mut active) = self.0.0.lock() {
+        if let Ok(mut active) = self.0 .0.lock() {
             *active = None;
         }
     }
@@ -280,13 +284,17 @@ fn execute(
     let active_fetch = app.state::<ActiveFetch>();
     let cancellation = if operation == "fetch" {
         let token = Arc::new(FetchCancellation::default());
-        *active_fetch.0.lock().map_err(|_| "Fetch state unavailable")? =
-            Some(Arc::clone(&token));
+        *active_fetch
+            .0
+            .lock()
+            .map_err(|_| "Fetch state unavailable")? = Some(Arc::clone(&token));
         Some(token)
     } else {
         None
     };
-    let _fetch_lease = cancellation.as_ref().map(|_| ActiveFetchLease(&active_fetch));
+    let _fetch_lease = cancellation
+        .as_ref()
+        .map(|_| ActiveFetchLease(&active_fetch));
     let config = read_config(app)?;
     let (repositories, failures) = git::discover_all(&roots_as_paths(&config));
     if let Some(requested) = only_path {

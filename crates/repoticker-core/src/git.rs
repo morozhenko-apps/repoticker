@@ -38,7 +38,10 @@ pub struct FetchCancellation {
 
 impl FetchCancellation {
     pub fn is_cancelled(&self) -> bool {
-        self.children.lock().map(|state| state.cancelled).unwrap_or(true)
+        self.children
+            .lock()
+            .map(|state| state.cancelled)
+            .unwrap_or(true)
     }
 
     /// Request cancellation once and terminate only registered child groups.
@@ -119,7 +122,9 @@ fn terminate_fetch_group(pid: u32) -> Result<(), GitError> {
 
 #[cfg(not(any(unix, windows)))]
 fn terminate_fetch_group(_pid: u32) -> Result<(), GitError> {
-    Err(GitError("Fetch cancellation is unsupported on this platform".into()))
+    Err(GitError(
+        "Fetch cancellation is unsupported on this platform".into(),
+    ))
 }
 
 fn run_cancellable_command(
@@ -163,7 +168,6 @@ fn run_cancellable_command(
     }
     result.map_err(|err| GitError(format!("Failed to wait for git: {err}")))
 }
-
 
 #[derive(Debug, Clone)]
 pub struct RepoSnapshot {
@@ -708,7 +712,6 @@ mod concurrent_git_tests {
     }
 }
 
-
 #[cfg(all(test, unix))]
 mod fetch_cancellation_tests {
     use super::{run_cancellable_command, FetchCancellation, FETCH_CANCELLED};
@@ -731,7 +734,8 @@ mod fetch_cancellation_tests {
             &cancellation,
             || panic!("cancelled child must not spawn"),
             || panic!("cancelled child must not register"),
-        ).expect_err("cancelled");
+        )
+        .expect_err("cancelled");
         assert_eq!(error.0, FETCH_CANCELLED);
     }
 
@@ -745,14 +749,22 @@ mod fetch_cancellation_tests {
             // owned process-group termination; production invokes Git by argv.
             let mut command = Command::new("sh");
             command.args(["-c", "sleep 300 & wait"]);
-            run_cancellable_command(&mut command, &running, || {}, || {
-                tx.send(()).expect("started message");
-            })
+            run_cancellable_command(
+                &mut command,
+                &running,
+                || {},
+                || {
+                    tx.send(()).expect("started message");
+                },
+            )
         });
         rx.recv_timeout(Duration::from_secs(5))
             .expect("child registered without a sleep");
         assert!(cancellation.cancel().expect("cancel active process"));
-        let error = waiter.join().expect("thread completed").expect_err("cancelled");
+        let error = waiter
+            .join()
+            .expect("thread completed")
+            .expect_err("cancelled");
         assert_eq!(error.0, FETCH_CANCELLED);
     }
 
@@ -764,9 +776,12 @@ mod fetch_cancellation_tests {
         let error = run_cancellable_command(
             &mut command,
             &cancellation,
-            || { cancellation.cancel().expect("cancel before registration"); },
+            || {
+                cancellation.cancel().expect("cancel before registration");
+            },
             || panic!("cancelled process must never register"),
-        ).expect_err("cancelled");
+        )
+        .expect_err("cancelled");
         assert_eq!(error.0, FETCH_CANCELLED);
     }
 }

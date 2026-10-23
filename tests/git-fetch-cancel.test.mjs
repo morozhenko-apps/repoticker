@@ -15,7 +15,8 @@ test("Fetch cancellation belongs to registered child groups, not all Git process
   assert.match(core, /command\.process_group\(0\)/);
   assert.match(core, /kill\(-group, SIGKILL\)/);
   assert.match(core, /taskkill\.exe/);
-  assert.match(core, /if !cancel\.register\(pid\)\?/);
+  assert.match(core, /match cancel\.register\(pid\) \{/);
+  assert.match(core, /Ok\(false\) => \{/);
   assert.match(core, /pub fn fetch_with_cancel\(/);
   assert.doesNotMatch(core.match(/pub fn safe_pull\([\s\S]*?\n\}/)?.[0] ?? "", /cancel|SIGKILL|taskkill/);
 });

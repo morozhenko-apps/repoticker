@@ -753,13 +753,13 @@ retain no rescan contract).
 
 ### Plan / gates
 
-1. [ ] Add bounded, deterministic `git::inspect_all` to core
+1. [x] Add bounded, deterministic `git::inspect_all` to core
    and use from desktop scan, retaining error order and stable
    repository projections.
-2. [ ] Replace marker subprocess loop, validate correspondence
+2. [x] Replace marker subprocess loop, validate correspondence
    between Git `--absolute-git-dir` and `--git-path` on both
    regular and explicitly enrolled linked worktrees.
-3. [ ] Real Git and focused JS/Rust tests for clean/dirty, behind,
+3. [x] Real Git and focused JS/Rust tests for clean/dirty, behind,
    missing/broken checkout, marker detection, boundedness and
    no mutation/network in inspection.
 4. [ ] Run one final exact-source stable Preflight after changes:
@@ -775,3 +775,28 @@ release artifacts change. A real performance claim requires a
 comparative `REPOTICKER_STARTUP_DEBUG=1` sample on Alcotester
 showing `git.inspect_all` and `git.scan_total` timing from the
 same enrolled checkout inventory.
+
+### P1-SCAN1 source checkpoint
+
+- Source/tests committed on `dev` as
+  [`12bd7f0`](https://github.com/morozhenko-apps/repoticker/commit/12bd7f0036ae66f1cf840a738006f7a9453f76eb).
+  A fixed four-worker `git::inspect_all` reuses the bounded core
+  executor and restores discovery order with an explicit index
+  before presenting per-repository successes or errors.
+- The six known operation-marker checks now query one
+  `git rev-parse --absolute-git-dir` per checkout, then test the
+  marker paths locally. No change to `inspect` dirty/upstream,
+  actual FastForward classification or `safe_pull` mutation rules.
+- Three new real Git integration regressions cover stable
+  input-order and isolated errors, unfinished rebase marker
+  preventing Safe pull, and all Git marker paths in normal
+  and explicitly linked worktrees. JS checks confirm bounded
+  scanning and the retained six marker names.
+- **Initial exact code/test SHA:**
+  `12bd7f0036ae66f1cf840a738006f7a9453f76eb`;
+  [Preflight #40036202153](https://github.com/morozhenko-apps/repoticker/actions/runs/40036202153)
+  was queued at this checkpoint. Do not claim tests/compile
+  or improved wall-clock performance before evidence.
+- Native before/after `REPOTICKER_STARTUP_DEBUG=1` benchmarking
+  remains on owner hardware in issue #12, and linked-worktree
+  physical acceptance remains in #15.

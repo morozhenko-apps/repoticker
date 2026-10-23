@@ -1148,20 +1148,20 @@ is an identified race path, not a claim of physical reproduction.
 
 ### Stages, contracts and rollback
 
-1. [ ] Extract the existing pure installation-pagination function into a
+1. [x] Extract the existing pure installation-pagination function into a
    shared UI module. Monitor and Settings must call **the same**
    implementation; preserve the monitor's public export and the
    existing 10-page / 100-item-per-page bounds and API permissions.
-2. [ ] Settings loads the complete bounded installation inventory,
+2. [x] Settings loads the complete bounded installation inventory,
    preserves an explicitly edited uncommitted account, and reports
    incomplete enumeration without implying that absent accounts are
    unauthorized. No new persisted fields, permissions, polling cadence,
    or local Git operations.
-3. [ ] Guard async Settings account-list publications against outdated
+3. [x] Guard async Settings account-list publications against outdated
    refreshes and disconnects; stale successes/errors must not rewrite
    the current DOM/account state. Clear account/repo controls when the
    native connection is confirmed absent.
-4. [ ] Add deterministic Settings controller tests for a selected
+4. [x] Add deterministic Settings controller tests for a selected
    installation on the second page, 10-page truncation messaging,
    and stale in-flight completion after disconnect. Preserve the A8
    transactional OK/Cancel and selected-repo invariants.
@@ -1176,3 +1176,13 @@ No security boundary, public native IPC, Git safety, GitHub App scope,
 persistent config format, release tag or `main` change is authorized
 by this slice. Rollback is a revert of the A9 code/test commit, preserving
 the released v0.2.0 binary and all persisted settings.
+
+### A9 implementation status
+
+- Code plus regressions: `1991f696` on `dev`.
+- VM test fixture compatibility correction: `88563cfd`. The initial
+  candidate passed the new cases but the legacy classic-script harness
+  could not parse the Settings ESM import; it now injects the real helper.
+- Final stable workflow: https://github.com/morozhenko-apps/repoticker/actions/runs/40000453665
+  (pending at this checkpoint). Native desktop Rust tests and physical
+  KDE/Windows authorization/selection acceptance remain deferred to #15.

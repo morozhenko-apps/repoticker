@@ -448,6 +448,83 @@ Targeted regression tests and branch Preflight remain mandatory for
 each relevant code change. Do not conflate deferred system acceptance
 with a passing per-commit test suite or claim release readiness.
 
+## A4 — rate-limit and offline recovery without request storms (2026-10-23)
+
+**Root cause and scope.** The current native GitHub REST command
+classifies 403/429 as a redacted `rate_limited` string but throws
+away `Retry-After` / `X-RateLimit-Reset`. Other WebViews and
+subsequent collector requests can immediately repeat the same
+request. The monitor's 60-second scheduling tick is already bounded,
+but it does not explicitly honor a server-supplied reset deadline.
+A partial collector can retain known job/runner counts; it cannot
+treat uncollected counts as zero. Existing `githubFailureReason`
+sanitizes provider error bodies, and the UI does not have access to
+a bearer token.
+
+**Decision (internal native transport, no OAuth scope/model changes):**
+
+1. [ ] Add a process-wide, in-memory `GitHubRateGate` in the Tauri
+   app state, shared across all native GitHub read-only REST IPC
+   callers. Respect a bounded integer `Retry-After` first,
+   `X-RateLimit-Reset` when the primary budget is depleted,
+   otherwise use one conservative fixed fallback. For HTTP 403,
+   enforce only when the existing classification identifies rate
+   limiting; for 429 always enforce. Never log raw headers, HTTP
+   bodies, URLs or tokens. Gate with a monotonic deadline; do not
+   persist it or sleep inside HTTP requests. Expired state
+   automatically stops blocking.
+2. [ ] Expose an internal read-only `github_api_cooldown_seconds`
+   returning the remaining bounded whole seconds (or zero).
+   This contains no token, account or REST metadata. The native
+   gate is authoritative even if the webview restarts. No
+   public API or on-disk configuration change.
+3. [ ] In `startGithubMonitoring`, consume the native cooldown
+   after an identified `rate_limited` failure including a
+   *partial* collector failure. Continue using the existing
+   app-lifetime 60-second schedule tick, but skip refreshes
+   while the deadline has not expired, even for explicit
+   card-show requests. Never poll more frequently, never
+   schedule arbitrary sleeps, and allow normal monitoring
+   after cooldown. Explicit disconnect must still update
+   auth/presentation immediately, without GitHub REST.
+4. [ ] On a full network or rate-limit failure, expose the known
+   `network`/`rate_limited` cause and render live counts as
+   **unknown** (not zero or silently stale). On *partial* failures,
+   preserve only explicitly covered counts from the collector;
+   retain existing redacted status messages. Do not add a
+   visually unsupported stale-badge API or display old numbers
+   as live.
+5. [ ] Focused Rust tests for bounded reset header parsing,
+   monotonic gate expiration and distinction between 403
+   permission vs rate limit; Node tests with injected fake
+   clock/tick ensuring 429 cooldown suppresses REST requests,
+   negative/offline failures don't fabricate zeros and the
+   collector's partial failure path still communicates
+   `rate_limited`. Existing Device Flow, credentials and Git
+   operations must be untouched.
+6. [ ] Single final stable Preflight on code/test candidate;
+   classify any external APT mirror timeouts separately from
+   build/test defects. Document final results in a **separate
+   docs-only commit** and link aggregate physical acceptance
+   [#15](https://github.com/morozhenko-apps/repoticker/issues/15).
+   No `main` promotion or version bump.
+
+**Boundaries:** HTTP-date `Retry-After` is not parsed without a
+new parser dependency; for unsupported forms, the bounded fallback
+applies unless numeric reset is present. This is intentionally a
+safe backoff, not a retry library. Network recovery runs on the
+existing monitor schedule; offline network errors do not trigger
+subminute retries. There are no new permissions, persisted formats,
+backend services, or unauthenticated API requests.
+
+**Previous CI classification:** Exact code/test SHA `3d811a7`
+passed Rust/JS; desktop did not compile because the GitHub runner
+timed out fetching the Ubuntu `libwebkit2gtk-4.1-0` apt package
+after multiple mirrors failed (not a compiler error). Full job
+[result](https://github.com/morozhenko-apps/repoticker/actions/runs/39856749723).
+Keep that evidence explicit rather than treating it as a code failure
+or marking Linux desktop successful.
+
 ## Stop factors and invariant boundaries
 
 If later stages require a changed persistent model, GitHub App

@@ -32,6 +32,8 @@ Safe pull deliberately **does not fetch**. It reads the already-fetched upstream
 
 Eligibility is re-inspected inside the actual operation to reduce TOCTOU risks. Git itself remains final authority. Dirty, detached, no-upstream, ahead-only, diverged or unfinished repositories are skipped, not auto-repaired. There is **no** stash, automatic merge commit, rebase, forced update, reset, checkout switch or deletion.
 
+**Unreleased P1 dev hardening (2026-10-23):** `safe_pull` now resolves the exact already-fetched upstream commit OID and revalidates its identity along with HEAD, branch, upstream ref name and eligibility. The final `--ff-only` merge targets that pinned OID rather than re-resolving the moving `@{upstream}` expression. Changed upstream identity or tip aborts before mutation. This does not provide a cross-process Git transaction against modifications during the final native command. See [P1 development checkpoint](DEVELOPMENT_0_4_0.md). Published v0.2.0 retains its original behavior.
+
 A repository may change upstream after the last Fetch. Run Fetch to refresh remote refs before Safe pull when current upstream state is needed; clicking Safe pull alone performs no network request.
 
 ## Known limitations

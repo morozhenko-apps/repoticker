@@ -51,14 +51,14 @@ Validate the OID as 40/64 ASCII hex before passing it as argv.
 
 ### Implementation stages and gates
 
-1. [ ] Keep public `safe_pull(repo)` and `OperationOutcome` unchanged.
+1. [x] Keep public `safe_pull(repo)` and `OperationOutcome` unchanged.
    Introduce a private, testable operation with controlled checkpoints
    to simulate precisely timed external ref changes using real Git.
-2. [ ] Pin and revalidate upstream identity/OID and HEAD before the
+2. [x] Pin and revalidate upstream identity/OID and HEAD before the
    actual merge. Abort with existing actionable concurrent-change
    error when any invariant changes; use pinned OID for the merge.
    Do not modify `fetch`, the GitHub monitor, or Settings.
-3. [ ] Deterministic real-Git tests:
+3. [x] Deterministic real-Git tests:
    - same behind-count but different upstream tip during recheck
      produces error and leaves HEAD/worktree untouched;
    - upstream reconfigured to a distinct tracking ref with equal
@@ -91,3 +91,35 @@ entire series of `inspect` calls. An external process may still
 modify the checkout during the final native Git operation. This slice
 does not claim to solve cancellation/timeouts, hooks or every
 worktree/index conflict, all retained in the broader P1 roadmap.
+
+## P1-G1 implementation checkpoint — 2026-10-23
+
+- **Native/core source and deterministic real-Git regressions** committed
+  on `dev` as [`00183c3`](https://github.com/morozhenko-apps/repoticker/commit/00183c3fd236d2a867728e1d69ef84856fbe8cfa).
+  The code reads full verified 40/64-digit commit IDs and compares
+  current HEAD, current upstream name, upstream commit ID and
+  `SyncDecision` against the initial observation. The mutation
+  uses `git merge --ff-only --quiet <validated full OID>`.
+- Three deterministic race fixtures use **real local Git** and
+  checkpoint callbacks without sleeps or network: equal behind-count
+  ref move, equal behind-count upstream reconfiguration, and a ref
+  move immediately before the merge subprocess. Stable normal-case
+  integration tests remain in the core suite.
+- First source [Preflight #40022648349](https://github.com/morozhenko-apps/repoticker/actions/runs/40022648349)
+  reported **Rustfmt-only** differences and did not execute the core
+  test step. The corresponding [`a80f045`](https://github.com/morozhenko-apps/repoticker/commit/a80f045d4d842147140074ce5cdb701feaf97df6)
+  is a mechanical formatting correction taken from the CI diff.
+- A separate local Git diagnostic reproduced two distinct upstream
+  commits with unchanged `HEAD...@{upstream}` ahead/behind values
+  `0 1` before/after a tracking-ref move; merging the pinned first
+  OID advanced to the first commit, not the changed upstream target.
+  This validates the underlying Git behavior, **not** the compiled
+  RepoTicker Rust tests or physical desktop acceptance.
+- **Final stable Preflight candidate:** `a80f045d4d842147140074ce5cdb701feaf97df6`;
+  [workflow #40022758425](https://github.com/morozhenko-apps/repoticker/actions/runs/40022758425)
+  was pending at this checkpoint. Do not claim it passed without
+  inspecting the exact run's final jobs.
+- **Still deferred:** native KDE/Windows process-race smoke, hostile
+  hooks/config, long-running SSH/Git cancellation, atomic config,
+  and cross-process operation contention. No release, tag or `main`
+  promotion. This stage's physical verification remains in #15.

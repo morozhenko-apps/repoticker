@@ -531,10 +531,11 @@ pub fn hide(app: &AppHandle) -> Result<(), String> {
 fn persist_now(app: &AppHandle) -> Result<(), String> {
     MARGINS.with(|state| {
         let (bottom, right) = *state.borrow();
-        let mut config = crate::read_config(app)?;
-        config.card_bottom_margin = Some(bottom);
-        config.card_right_margin = Some(right);
-        crate::write_config(app, &config)
+        crate::update_config(app, |config| {
+            config.card_bottom_margin = Some(bottom);
+            config.card_right_margin = Some(right);
+            Ok(((), true))
+        })
     })
 }
 

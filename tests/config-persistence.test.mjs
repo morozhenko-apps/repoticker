@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const main = readFileSync(new URL("../apps/desktop/src-tauri/src/main.rs", import.meta.url), "utf8");
+const surface = readFileSync(new URL("../apps/desktop/src-tauri/src/linux_surface.rs", import.meta.url), "utf8");
 const store = readFileSync(new URL("../crates/repoticker-core/src/config_store.rs", import.meta.url), "utf8");
 
 test("desktop settings updates use one managed JSON transaction gate", () => {
@@ -29,4 +30,10 @@ test("atomic JSON writer keeps old config and recovery evidence", () => {
   assert.match(store, /pub fn read_json</);
   assert.match(store, /pub fn save_json</);
   assert.match(store, /pub struct JsonStore/);
+});
+
+test("Linux drag margin persistence cannot bypass serialized config updates", () => {
+  assert.match(surface, /fn persist_now\([\s\S]*?crate::update_config\(app,/);
+  assert.doesNotMatch(surface, /crate::write_config\(/);
+  assert.doesNotMatch(surface, /let mut config = crate::read_config\(app\)\?/);
 });

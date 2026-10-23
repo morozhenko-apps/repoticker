@@ -787,6 +787,44 @@ fn close_settings(app: AppHandle) -> Result<(), String> {
 
 /// A missing `repositories` argument preserves the selection for legacy
 /// same-account callers; an explicit empty list means "monitor all".
+
+#[cfg(test)]
+mod monitor_selection_tests {
+    use super::*;
+
+    #[test]
+    fn legacy_config_without_repositories_defaults_to_all() {
+        let old = serde_json::json!({
+            "roots": [],
+            "language": "en",
+            "github_monitor_org": "team"
+        });
+        let config: Config = serde_json::from_value(old).unwrap();
+        assert!(config.github_monitor_repositories.is_empty());
+    }
+
+    #[test]
+    fn selected_repositories_require_same_account_and_valid_names() {
+        assert_eq!(
+            validate_monitor_repositories(
+                Some("Team"),
+                vec!["team/zebra".to_owned(), "Team/alpha".to_owned()]
+            )
+            .unwrap(),
+            vec!["Team/alpha", "team/zebra"]
+        );
+        assert!(validate_monitor_repositories(Some("team"), vec!["other/private".into()]).is_err());
+        assert!(validate_monitor_repositories(Some("team"), vec!["team/../bad".into()]).is_err());
+        assert!(validate_monitor_repositories(Some("team"), vec!["team/repo".into(), "TEAM/REPO".into()]).is_err());
+        assert!(validate_monitor_repositories(None, vec!["team/repo".into()]).is_err());
+        assert!(validate_monitor_repositories(
+            Some("team"),
+            (0..101).map(|i| format!("team/repo{i}")).collect()
+        ).is_err());
+        assert!(validate_monitor_repositories(None, Vec::new()).unwrap().is_empty());
+    }
+}
+
 fn validate_monitor_repositories(
     org: Option<&str>,
     repositories: Vec<String>,

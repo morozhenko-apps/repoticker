@@ -100,6 +100,7 @@ function renderRepoChoices() {
   byId("github-repo-status").textContent = !repoInventoryReady
     ? "Repository list unavailable. Existing selection is preserved."
     : selectedRepoNames.size === 0 ? "Choose at least one repository."
+    : selectedRepoNames.size > 100 ? "Select at most 100 repositories."
     : unavailable ? unavailable + " selected repositories are no longer accessible."
     : selectedRepoNames.size + " selected of " + repoInventory.length +
       " accessible" + (repoInventoryComplete ? "" : " (inventory truncated)") +

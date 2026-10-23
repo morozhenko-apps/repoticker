@@ -28,7 +28,7 @@ function mockNode(id = "") {
 const tick = () => new Promise(resolve => setImmediate(resolve));
 
 /** Execute real settings controller with a deterministic WebView/IPC fixture. */
-async function fixture(suffix, initiallyConnected) {
+async function fixture(suffix, initiallyConnected, initialRepositories = []) {
   const before = { window: globalThis.window, document: globalThis.document };
   // Mirror the real Settings DOM IDs so harmless form additions do not
   // cause unrelated authorization lifecycle scenarios to fail on missing mocks.
@@ -40,7 +40,7 @@ async function fixture(suffix, initiallyConnected) {
   let connected = initiallyConnected;
   let phase = connected ? "connected" : "idle";
   let monitorOrg = connected ? "one" : null;
-  let monitorRepositories = [];
+  let monitorRepositories = [...initialRepositories];
   let closed = false;
   let tokenRemoved = false;
   const document = {
@@ -243,5 +243,24 @@ test("OK persists a repository subset together with its account selection", asyn
       org: "one", repositories: ["one/core"]
     });
     assert.equal(ui.closed, true);
+  } finally { ui.restore(); }
+});
+
+test("previously saved subset reopens in Selected mode, then account change resets to All", async () => {
+  const ui = await fixture("repo-account-switch", true, ["one/core"]);
+  try {
+    assert.equal(ui.node("github-repo-mode").value, "selected");
+    assert.equal(ui.node("apply-settings").disabled, true);
+    assert.deepEqual(ui.monitorRepositories, ["one/core"]);
+    ui.node("github-monitor-scope").value = "two";
+    await ui.node("github-monitor-scope").fire("change");
+    await tick();
+    assert.equal(ui.node("github-repo-mode").value, "all");
+    assert.deepEqual(ui.monitorRepositories, ["one/core"],
+      "selection is transactional until explicit OK");
+    await ui.node("apply-settings").fire("click");
+    assert.equal(ui.monitorOrg, "two");
+    assert.deepEqual(ui.monitorRepositories, [],
+      "new account must never inherit previous account repository names");
   } finally { ui.restore(); }
 });

@@ -245,3 +245,21 @@ verification, not physical inter-process race acceptance.
   KDE blocked SSH helper, cancel at batch boundaries, late cancel,
   Windows process-tree cleanup and partial Fetch ref inspection.
   No new release, main promotion or runtime acceptance is claimed.
+
+### P1-G2 CI correction checkpoint
+
+Initial source [Preflight #40026440322](https://github.com/morozhenko-apps/repoticker/actions/runs/40026440322)
+at `6d055fc` failed in the Rust-format gate and one JS
+source-contract check. Rustfmt expected layout-only differences in
+`main.rs` and `git.rs`; the assertion expected an earlier
+`if !cancel.register(pid)?` branch, although the implementation
+had already switched to `match cancel.register(pid)` with cleanup
+on registration errors. The core test gate was not reached.
+
+Code/test correction: [`11db98e`](https://github.com/morozhenko-apps/repoticker/commit/11db98ed6fb6f5ac64effa0c5120ceefe60936c5).
+All 12 exact CI Rustfmt hunks were applied and the source-contract
+test now requires the current registration match and cancelled branch.
+Latest exact-SHA [Preflight #40026763071](https://github.com/morozhenko-apps/repoticker/actions/runs/40026763071)
+is pending at this checkpoint. Do not claim source-level completion
+until Rust format/core/Clippy, JS and Linux desktop compile all pass.
+Physical KDE/Windows acceptance remains deferred to #15.

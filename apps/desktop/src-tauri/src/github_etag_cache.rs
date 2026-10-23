@@ -54,7 +54,7 @@ impl GitHubETagCache {
         } else {
             None
         };
-        CacheLookup { generation: state.&cache.snapshot("/user"), etag }
+        CacheLookup { generation: state.generation, etag }
     }
 
     pub fn unchanged(&self, generation: u64) -> bool {
@@ -141,7 +141,7 @@ mod tests {
         cache.invalidate();
         assert!(!cache.unchanged(old.generation));
         assert!(cache.not_modified(path, &old).is_none());
-        cache.save(path, &old, Some("\"private\""), &json!({"installations": [1]}));
+        assert!(!cache.save(path, &old, Some("\"private\""), &json!({"installations": [1]})));
         assert!(cache.snapshot(path).etag.is_none());
     }
 
@@ -161,9 +161,9 @@ mod tests {
     #[test]
     fn cap_and_etag_validation_prevent_unbounded_or_malformed_cache() {
         let cache = GitHubETagCache::default();
-        let generation = cache.snapshot("/user").generation;
         for index in 0..=MAX_ENTRIES {
-            cache.save(&format!("/user?page={index}"), &cache.snapshot("/user"),
+            let path = format!("/user?page={index}");
+            cache.save(&path, &cache.snapshot(&path),
                 Some("\"safe\""), &json!({"login": "user"}));
         }
         assert!(cache.snapshot("/user?page=0").etag.is_none());
@@ -173,8 +173,9 @@ mod tests {
         cache.save("/user", &cache.snapshot("/user"), Some("\"large\""),
             &json!({"payload": "x".repeat(MAX_ITEM_BYTES)}));
         assert!(cache.snapshot("/user").etag.is_none());
-        cache.save("/organizations/team/settings/billing/usage/summary?year=2026&month=10",
-            &cache.snapshot("/user"), Some("\"billing\""), &json!({"usageItems": []}));
+        let billing = "/organizations/team/settings/billing/usage/summary?year=2026&month=10";
+        cache.save(billing, &cache.snapshot(billing),
+            Some("\"billing\""), &json!({"usageItems": []}));
         assert!(cache.snapshot("/organizations/team/settings/billing/usage/summary?year=2026&month=10")
             .etag.is_none());
     }

@@ -358,7 +358,9 @@ pub async fn github_api_get(app: AppHandle, path: String) -> Result<Value, Strin
     if !cached.unchanged(lookup.generation) {
         return Err("GitHub authorization changed. Retry.".into());
     }
-    cached.save(&path, lookup.generation, etag.as_deref(), &projected);
+    if !cached.save(&path, &lookup, etag.as_deref(), &projected) {
+        return Err("GitHub authorization changed. Retry.".into());
+    }
     Ok(projected)
 }
 

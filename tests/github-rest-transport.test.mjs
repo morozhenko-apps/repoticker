@@ -48,7 +48,7 @@ test("ETag caching is native, generation-scoped and never serves unvalidated 304
   assert.match(native, /reqwest::StatusCode::NOT_MODIFIED/);
   assert.match(native, /cached\.not_modified\(&path, &lookup\)/);
   assert.match(native, /cached\.unchanged\(lookup\.generation\)/);
-  assert.match(native, /cached\.save\(&path, lookup\.generation, etag\.as_deref\(\), &projected\)/);
+  assert.match(native, /cached\.save\(&path, &lookup, etag\.as_deref\(\), &projected\)/);
   assert.match(cache, /const MAX_ENTRIES: usize = 64;/);
   assert.match(cache, /const MAX_ITEM_BYTES: usize = 64 \* 1024;/);
   assert.match(cache, /state\.generation = state\.generation\.wrapping_add\(1\)/);

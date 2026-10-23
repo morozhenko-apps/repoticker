@@ -112,9 +112,7 @@ fn terminate_fetch_group(pid: u32) -> Result<(), GitError> {
         .output()
         .map_err(|err| GitError(format!("Cannot start Git fetch cancellation: {err}")))?;
     if !result.status.success() {
-        // A process that exited between registration and cancellation
-        // may no longer be targetable; subsequent wait observes its result.
-        return Ok(());
+        return Err(GitError("Cannot stop Git fetch process tree".into()));
     }
     Ok(())
 }
@@ -144,10 +142,18 @@ fn run_cancellable_command(
         .map_err(|err| GitError(format!("Failed to launch git: {err}")))?;
     let pid = child.id();
     after_spawn();
-    if !cancel.register(pid)? {
-        terminate_fetch_group(pid)?;
-        let _ = child.wait_with_output();
-        return Err(GitError(FETCH_CANCELLED.into()));
+    match cancel.register(pid) {
+        Ok(true) => {}
+        Ok(false) => {
+            terminate_fetch_group(pid)?;
+            let _ = child.wait_with_output();
+            return Err(GitError(FETCH_CANCELLED.into()));
+        }
+        Err(error) => {
+            let _ = terminate_fetch_group(pid);
+            let _ = child.wait_with_output();
+            return Err(error);
+        }
     }
     after_register();
     let result = child.wait_with_output();

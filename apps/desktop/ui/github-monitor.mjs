@@ -95,9 +95,28 @@ export function startGithubMonitoring({ invoke, event, onError = () => {},
   let minIntervalMs = monitorRefreshDelay(100);
   let hasPublishedResult = false;
   let selectionRevision = 0;
+  // Native presentation writes must complete in the order issued.
+  // Check the revision when each queued write executes: a delayed
+  // old-account publication must not supersede a newer auth transition.
+  let publicationTail = Promise.resolve();
   const get = path => invoke("github_api_get", { path });
-  const publish = (connected, runnerState = null, message = null) =>
-    invoke("github_monitor_publish", { connected, runnerState, message });
+  function publish(connected, runnerState = null, message = null) {
+    const revision = selectionRevision;
+    const write = publicationTail.catch(() => {}).then(() => {
+      if (revision !== selectionRevision) return;
+      return invoke("github_monitor_publish", { connected, runnerState, message });
+    });
+    publicationTail = write;
+    return write;
+  }
+  function invalidatePresentation(message) {
+    selectionRevision++;
+    hasPublishedResult = false;
+    // Clear the old account's counts now; never wait for an in-flight
+    // REST collector or for the next scheduled monitoring tick.
+    void publish(false, null, message).catch(onError);
+    void refresh(true);
+  }
   async function applyCooldown(reason) {
     if (reason !== "rate_limited") return;
     try {
@@ -150,7 +169,7 @@ export function startGithubMonitoring({ invoke, event, onError = () => {},
       minIntervalMs = monitorRefreshDelay(result.repositoryCount ?? 100);
       await applyCooldown(result.failure);
       await publish(true, result.state, result.reason);
-      hasPublishedResult = true;
+      if (revision === selectionRevision) hasPublishedResult = true;
     } catch (error) {
       if (revision !== selectionRevision) return;
       if (first) onStage("monitor.failed");
@@ -159,7 +178,7 @@ export function startGithubMonitoring({ invoke, event, onError = () => {},
       // A failed live refresh must never keep old counts appearing current.
       await publish(authorized, null,
         githubFailureMessage(reason)).catch(onError);
-      hasPublishedResult = true;
+      if (revision === selectionRevision) hasPublishedResult = true;
     } finally {
       busy = false;
       if (rerun) {
@@ -169,16 +188,14 @@ export function startGithubMonitoring({ invoke, event, onError = () => {},
     }
   }
   event?.listen?.("repoticker-github-auth", evt => {
-    if (["connected", "disconnected"].includes(evt?.payload?.status)) {
-      selectionRevision++;
-      hasPublishedResult = false;
-      void refresh(true);
+    if (evt?.payload?.status === "disconnected") {
+      invalidatePresentation(null);
+    } else if (evt?.payload?.status === "connected") {
+      invalidatePresentation("Checking GitHub connection...");
     }
   });
   event?.listen?.("repoticker-github-scope-changed", () => {
-    selectionRevision++;
-    hasPublishedResult = false;
-    void refresh(true);
+    invalidatePresentation("Checking GitHub connection...");
   });
   // Refresh only while the application is running, never an API request
   // per hover, mouse movement or local Git scan.

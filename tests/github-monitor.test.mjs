@@ -459,3 +459,131 @@ test("late failed collector cannot replace disconnected auth state", async () =>
   assert.ok(!messages.some(p => p.message?.includes("network unavailable")),
     "old errors must not replace the current disconnected presentation");
 });
+
+test("disconnect clears previous counts without waiting for a blocked collector", async () => {
+  let authorized = true;
+  let collectCalls = 0;
+  let releaseOld;
+  const writes = [];
+  const handlers = new Map();
+  const refresh = startGithubMonitoring({
+    invoke: async (name, args) => {
+      if (name === "github_auth_status") return { connected: authorized };
+      if (name === "get_monitor_scope") return "team";
+      if (name === "github_monitor_publish") { writes.push(args); return; }
+      throw Error("Unexpected IPC: " + name);
+    },
+    event: { listen: (name, handler) => handlers.set(name, handler) },
+    schedule: () => {},
+    collect: async () => {
+      collectCalls++;
+      if (collectCalls === 1) return {
+        state: { coverage: { jobs: true }, counts: { running: 4 } },
+        repositoryCount: 1, reason: null
+      };
+      return new Promise(resolve => { releaseOld = resolve; });
+    }
+  });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(writes.at(-1).runnerState.counts.running, 4);
+  const pending = refresh(true);
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(typeof releaseOld, "function");
+  authorized = false;
+  handlers.get("repoticker-github-auth")({ payload: { status: "disconnected" } });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(writes.at(-1).connected, false);
+  assert.equal(writes.at(-1).runnerState, null);
+  assert.equal(writes.at(-1).message, null);
+  assert.equal(collectCalls, 2, "clearing status cannot start a second REST collection");
+  releaseOld({
+    state: { coverage: { jobs: true }, counts: { running: 900 } },
+    repositoryCount: 1, reason: null
+  });
+  await pending;
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(writes.at(-1).connected, false);
+  assert.ok(!writes.some(w => w.runnerState?.counts?.running === 900));
+});
+
+test("scope switch immediately clears other account counts while collection remains blocked", async () => {
+  let account = "old";
+  let collectCalls = 0;
+  let releaseOld;
+  const writes = [];
+  const handlers = new Map();
+  const refresh = startGithubMonitoring({
+    invoke: async (name, args) => {
+      if (name === "github_auth_status") return { connected: true };
+      if (name === "get_monitor_scope") return account;
+      if (name === "github_monitor_publish") { writes.push(args); return; }
+      throw Error("Unexpected IPC: " + name);
+    },
+    event: { listen: (name, handler) => handlers.set(name, handler) },
+    schedule: () => {},
+    collect: async ({ selected }) => {
+      collectCalls++;
+      if (collectCalls === 1) return {
+        state: { coverage: { jobs: true }, counts: { running: 4 } },
+        repositoryCount: 1, reason: null
+      };
+      if (selected === "old") return new Promise(resolve => { releaseOld = resolve; });
+      return { state: { coverage: { jobs: true }, counts: { running: 2 } },
+        repositoryCount: 1, reason: null };
+    }
+  });
+  await new Promise(resolve => setImmediate(resolve));
+  const pending = refresh(true);
+  await new Promise(resolve => setImmediate(resolve));
+  account = "new";
+  handlers.get("repoticker-github-scope-changed")();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(writes.at(-1).runnerState, null);
+  assert.equal(writes.at(-1).message, "Checking GitHub connection...");
+  assert.equal(collectCalls, 2, "scope switch must not wait for old collector to clear metrics");
+  releaseOld({
+    state: { coverage: { jobs: true }, counts: { running: 900 } },
+    repositoryCount: 1, reason: null
+  });
+  await pending;
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(writes.at(-1).runnerState.counts.running, 2);
+  assert.ok(!writes.some(w => w.runnerState?.counts?.running === 900));
+});
+
+test("delayed native publication cannot overwrite later disconnect", async () => {
+  let authorized = true;
+  let releaseFirstWrite;
+  const writes = [];
+  const handlers = new Map();
+  startGithubMonitoring({
+    invoke: async (name, args) => {
+      if (name === "github_auth_status") return { connected: authorized };
+      if (name === "get_monitor_scope") return "team";
+      if (name === "github_monitor_publish") {
+        if (!releaseFirstWrite) {
+          return new Promise(resolve => {
+            releaseFirstWrite = () => { writes.push(args); resolve(); };
+          });
+        }
+        writes.push(args);
+        return;
+      }
+      throw Error("Unexpected IPC: " + name);
+    },
+    event: { listen: (name, handler) => handlers.set(name, handler) },
+    schedule: () => {},
+    collect: async () => {
+      throw Error("Old collection must not be reached after disconnect");
+    }
+  });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(typeof releaseFirstWrite, "function");
+  authorized = false;
+  handlers.get("repoticker-github-auth")({ payload: { status: "disconnected" } });
+  releaseFirstWrite();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(writes.at(-1).connected, false);
+  assert.equal(writes.at(-1).runnerState, null);
+  assert.ok(!writes.some(w => w.runnerState?.counts?.running === 900));
+});

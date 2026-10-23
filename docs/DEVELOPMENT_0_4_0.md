@@ -554,3 +554,80 @@ preferences, credentials, repositories or public distribution.
   dropdown is not physically accepted until KDE/Windows tests
   verify pointer hit-testing, scroll and keyboard dismissal,
   correct remote URL and preserved four-button card geometry.
+
+## P1-UI2 — local repository actions (Open folder / Copy path)
+
+Mode: **A — Feature / Refactor**. Date: 2026-10-23.
+User physically confirmed the P1-UI1 repository action-menu fix works on
+KDE. Source candidate \`3e42bc7\` also passed
+[Preflight #40032588368](https://github.com/morozhenko-apps/repoticker/actions/runs/40032588368)
+4/4; this confirms source CI, not Windows physical acceptance.
+
+### Feature contract and rationale
+
+The shared repository action menu currently offers Fetch, Safe pull,
+and Open on GitHub. Opening an enrolled local repository in the user's
+system file manager and copying its canonical absolute path are useful
+manual desktop navigation actions that complement GitHub links. These
+actions **do not** perform network, Git mutation, or config writes.
+Maintain the existing fixed four-button compact card.
+
+A security review of the existing GitHub opener showed duplicate
+in-command enrollment checking. Deduplicate this into a **pure native
+Git/core checkout resolver** shared by all three user-triggered
+navigation/copy commands. The caller passes saved enrolled roots, the
+requested path is canonicalized by existing \`normalize_root\`, and
+\`discover_all\` validates membership using existing root/direct-child
+rules. Arbitrary WebView paths may never reach the OS opener or
+clipboard, even if supplied to IPC manually. An explicitly enrolled
+linked worktree continues to be supported, but implicit traversal
+into unregistered worktrees remains forbidden.
+
+- **Open folder**: open only that validated on-disk directory with
+  the OS file manager (Linux \`xdg-open\`, Windows \`explorer.exe\`,
+  macOS \`open\`) via argv, no shell. Report native launch failures
+  as actionable UI errors.
+- **Copy path**: write the canonical absolute path using the existing
+  native clipboard plugin. Reject paths not representable as UTF-8
+  rather than silently substituting Unicode replacement characters.
+  No arbitrary client-provided clipboard text, no clipboard reads,
+  no new plugin capability or token exposure.
+- **Open on GitHub**: preserve the exact original GitHub HTTPS/SSH
+  validation and open behavior, but share enrollment verification.
+- **Menu**: now five options, same single opaque drawer-level popup;
+  maintain scrolling, edge clamp/flip, Escape, focus and outside-click
+  behavior. No duplicated menus or new compact-card buttons.
+- On successful local navigation, remain silent as with existing
+  successful Git actions. Real errors surface via the existing notice.
+  Do not introduce new persistent logs or success toasts.
+
+### Implementation stages and acceptance
+
+1. [ ] Extract tested \`resolve_enrolled_checkout\` into core Git,
+   prove canonical membership, direct-child enrollment, linked
+   worktree explicit enrollment, and non-enrolled/invalid path refusal.
+2. [ ] Reuse one native path resolver across existing GitHub open plus
+   new \`open_repository_folder\` and \`copy_repository_path\` Tauri IPC
+   commands. Write clipboard natively and open the folder argv-only.
+   Preserve cross-platform compile and no permission increase.
+3. [ ] Add two menu options and source contract tests for their native
+   handlers; maintain five-option geometry and four compact buttons.
+4. [ ] Run final stable Rustfmt/core/Clippy + JS/release +
+   Linux desktop compile Preflight once on exact code SHA, fix only
+   identified regressions, and record complete evidence in a docs-only
+   checkpoint.
+5. [ ] Defer physical KDE file-manager activation, copied Unicode
+   path, Windows Explorer, focus and external Git operations to
+   [acceptance #15](https://github.com/morozhenko-apps/repoticker/issues/15).
+
+Rollback: revert P1-UI2 executable commit(s). No schema/migration,
+Git worktree mutation, authorization scope, networking, installer,
+tag, \`main\` promotion or published version changes.
+
+### Identified limits
+
+Resolving membership runs a bounded local Git discovery pass on
+explicitly enrolled roots at the time of the click. This is not
+background polling and cannot enumerate arbitrary recursive checkout
+trees. The system file manager and clipboard can fail or be absent
+on unsupported hosts; errors must be displayed rather than faked.

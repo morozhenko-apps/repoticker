@@ -356,6 +356,27 @@ pub fn normalize_root(path: &str) -> Result<PathBuf, GitError> {
     Ok(normalized)
 }
 
+/// Inspect independent enrolled checkouts with bounded concurrency.
+/// Completion order may differ; return results in original discovery order.
+pub fn inspect_all(repositories: Vec<PathBuf>) -> Vec<(PathBuf, Result<RepoSnapshot, GitError>)> {
+    let tasks: Vec<_> = repositories.into_iter().enumerate().collect();
+    let mut inspected = crate::bounded::bounded_map(
+        tasks,
+        4,
+        |(index, path)| {
+            let result = inspect(&path);
+            (index, path, result)
+        },
+        |_, _, _| {},
+        |_, _, _| {},
+    );
+    inspected.sort_by_key(|(index, _, _)| *index);
+    inspected
+        .into_iter()
+        .map(|(_, path, result)| (path, result))
+        .collect()
+}
+
 /// Returns authoritative local refs/status. Does NOT contact any remote.
 pub fn inspect(repo: &Path) -> Result<RepoSnapshot, GitError> {
     if !verified_checkout(repo)? {
@@ -423,27 +444,22 @@ pub fn inspect(repo: &Path) -> Result<RepoSnapshot, GitError> {
 }
 
 fn git_operation_in_progress(repo: &Path) -> Result<bool, GitError> {
-    // rev-parse --git-path respects linked worktrees, unlike .git-relative checks.
-    for marker in [
+    // Git resolves the per-worktree admin directory even for linked
+    // worktrees. These markers are local to that directory.
+    let git_dir = PathBuf::from(required(repo, &["rev-parse", "--absolute-git-dir"])?);
+    if !git_dir.is_absolute() {
+        return Err(GitError("Unexpected relative Git admin directory".into()));
+    }
+    Ok([
         "MERGE_HEAD",
         "CHERRY_PICK_HEAD",
         "REVERT_HEAD",
         "rebase-merge",
         "rebase-apply",
         "sequencer",
-    ] {
-        let marker_path = required(repo, &["rev-parse", "--git-path", marker])?;
-        let marker_path = PathBuf::from(marker_path);
-        let marker_path = if marker_path.is_absolute() {
-            marker_path
-        } else {
-            repo.join(marker_path)
-        };
-        if marker_path.exists() {
-            return Ok(true);
-        }
-    }
-    Ok(false)
+    ]
+    .iter()
+    .any(|marker| git_dir.join(marker).exists()))
 }
 
 /// Translate supported GitHub origin remotes into a canonical browser URL.

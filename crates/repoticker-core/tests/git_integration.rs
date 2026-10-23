@@ -269,3 +269,88 @@ fn linked_worktree_requires_explicit_root_enrollment() {
         worktree
     );
 }
+
+
+#[test]
+fn bounded_inspect_preserves_input_order_and_per_repository_errors() {
+    let f = Fixture::new();
+    let missing = f.base.join("removed-checkout");
+    fs::write(f.local.join("untracked.txt"), "untracked").expect("dirty checkout");
+    let paths = vec![f.seed.clone(), missing.clone(), f.local.clone()];
+    let observed = git::inspect_all(paths.clone());
+    assert_eq!(
+        observed.iter().map(|(path, _)| path.clone()).collect::<Vec<_>>(),
+        paths
+    );
+    let first = observed[0].1.as_ref().expect("first checkout status");
+    assert!(!first.dirty);
+    assert_eq!(first.path, f.seed);
+    assert!(observed[1].1.is_err(), "missing checkout should be isolated");
+    let final_repo = observed[2].1.as_ref().expect("last checkout status");
+    assert!(final_repo.dirty);
+    assert_eq!(final_repo.path, f.local);
+    assert_eq!(git::inspect_all(Vec::new()).len(), 0);
+}
+
+#[test]
+fn operation_markers_still_block_safe_pull_after_single_admin_dir_resolution() {
+    let f = Fixture::new();
+    f.push_more();
+    git::fetch(&f.local).expect("fetch updated ref");
+    assert_eq!(
+        git::inspect(&f.local).expect("before marker").decision,
+        SyncDecision::FastForward { commits: 1 }
+    );
+    let rebase_dir = f.local.join(".git").join("rebase-merge");
+    fs::create_dir(&rebase_dir).expect("fake in-progress marker");
+    assert_eq!(
+        git::inspect(&f.local).expect("in-progress state").decision,
+        SyncDecision::GitOperationInProgress
+    );
+    assert_eq!(
+        git::safe_pull(&f.local).expect("safe pull must fail closed"),
+        git::OperationOutcome::Skipped(SyncDecision::GitOperationInProgress)
+    );
+    fs::remove_dir(rebase_dir).expect("clear marker");
+    assert_eq!(
+        git::inspect(&f.local).expect("after marker").decision,
+        SyncDecision::FastForward { commits: 1 }
+    );
+}
+
+#[test]
+fn all_git_operation_markers_resolve_under_absolute_git_dir_in_linked_worktree() {
+    let f = Fixture::new();
+    let linked = f.base.join("linked-marker-worktree");
+    run(
+        &f.local,
+        &[
+            "worktree",
+            "add",
+            "-b",
+            "feature/markers",
+            linked.to_str().expect("UTF-8 checkout path"),
+        ],
+    );
+    for repo in [&f.local, &linked] {
+        let absolute_git_dir = PathBuf::from(run(repo, &["rev-parse", "--absolute-git-dir"]));
+        assert!(absolute_git_dir.is_absolute());
+        assert!(absolute_git_dir.exists());
+        for marker in [
+            "MERGE_HEAD",
+            "CHERRY_PICK_HEAD",
+            "REVERT_HEAD",
+            "rebase-merge",
+            "rebase-apply",
+            "sequencer",
+        ] {
+            let expected = PathBuf::from(run(repo, &["rev-parse", "--git-path", marker]));
+            let expected = if expected.is_absolute() { expected } else { repo.join(expected) };
+            assert_eq!(absolute_git_dir.join(marker), expected);
+        }
+        let marker_dir = absolute_git_dir.join("rebase-merge");
+        fs::create_dir(&marker_dir).expect("marker directory");
+        assert!(git::inspect(repo).is_ok());
+        fs::remove_dir(marker_dir).expect("remove marker");
+    }
+}

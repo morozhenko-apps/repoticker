@@ -213,8 +213,8 @@ fn scan(app: &AppHandle) -> Result<Snapshot, String> {
     let mut summaries = Vec::new();
     {
         let _inspect = startup_diagnostics::Span::new("git.inspect_all");
-        for path in repositories {
-            match git::inspect(&path) {
+        for (path, result) in git::inspect_all(repositories) {
+            match result {
                 Ok(status) => summaries.push(present(status)),
                 Err(err) => errors.push(format!("{}: {err}", path.display())),
             }

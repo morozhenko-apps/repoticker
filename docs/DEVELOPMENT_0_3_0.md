@@ -957,6 +957,99 @@ queued UI status event rather than claiming a universal hard
 limit on its count. This prevents completion-order reversals
 without inventing a new server-side permission model.
 
+## A8 — opt-in repository selection for GitHub monitor (2026-10-23)
+
+**Mode A feature; documented before code.** Owner requested the next
+GitHub monitored-repository selection implementation after confirmed
+Preflight [#39993970289](https://github.com/morozhenko-apps/repoticker/actions/runs/39993970289)
+**SUCCESS 4/4** on the previous code candidate. Work continues only
+on `dev` without release/version bump.
+
+### Source and architectural contract
+
+Current `Config` persists `github_monitor_org: Option<String>`
+but no repository selection; collector enumerates authorized
+installation repos and monitors up to 100, marking truncated
+inventories incomplete. Existing `github_set_monitor_org`
+writes the selected account, and Settings only commits the
+account when the user confirms **OK**.
+
+Two stable representations were evaluated:
+- **A (selected)**: additive `github_monitor_repositories: Vec<String>`
+  with `#[serde(default)]`. Empty means **all accessible repos**
+  (the exact legacy behavior); nonempty means an explicitly
+  selected subset for the single current Monitor account.
+  On real account change reset to all. Strict validation ensures
+  <=100 unique `owner/repo` values matching selected account.
+  Pros: backward compatible, small persistent extension, no
+  config migration, transactional with the account update.
+  Cons: switching away from an account intentionally discards its
+  prior subset; zero-of-zero selection is not a monitoring mode.
+- **B (deferred alternative)**: optional per-account selection map.
+  Pros: restores subsets after account switches.
+  Cons: larger data model, lifecycle/identity/security complexity,
+  and retention of private repository names for accounts no longer
+  selected, beyond the current single-monitor product model.
+
+Use **A**, consistent with the user's approval to proceed with a
+compatible selection extension; no external app/Cloudflare service.
+A future account-specific preference product requirement would need
+a distinct explicit decision, not a silent migration.
+
+### Staged implementation, invariants and validation
+
+1. [ ] Extend `Config` with a defaulted repo-name vector and
+   add config-only native `get_monitor_selection` returning
+   `{ org, repositories }` from a **single config read**.
+   Keep existing `get_monitor_scope` and other public/read-only
+   contracts. Extend existing `github_set_monitor_org` with an
+   *optional* list. Old callers with no list preserve a prior
+   same-org subset, resetting to all on org change; new Settings
+   commits account and list atomically. Reject invalid/cross-owner
+   names, counts >100 and duplicates; don't persist GitHub credentials
+   or change local Git paths. Invalidate ETag and emit the existing
+   scope event only after a successful save.
+2. [ ] Settings offers an `All accessible` (default) vs
+   `Selected` mode and a bounded, scrollable set of checkboxes.
+   Populate them through the existing authorized installation
+   repository REST endpoints, with normal paging and zero new
+   GitHub permissions. Selection remains a draft until **OK**.
+   Account change resets the draft subset to All; Cancel preserves
+   the on-disk choice. Display unavailable/partial inventory
+   honestly and avoid losing saved selections silently. No new
+   persistent UI/window state beyond the config vector.
+3. [ ] Collector filters the enumerated authorized repos
+   **before** the expensive Actions runs/jobs requests.
+   With nonempty selected list, require complete coverage of
+   those exact selected repo names; a missing selected repo,
+   interrupted/incomplete pagination or permission loss makes
+   job running/queued coverage unknown rather than silently
+   counting a smaller subset as complete. For all-repos mode
+   retain the existing explicit 100-repo upper bound and
+   truncation/unknown semantics. No change to org runner count
+   or global native REST concurrency/rate gate.
+4. [ ] Native format/default/validation and Settings/monitor
+   deterministic tests for legacy config, all/default,
+   subset selection, cross-org injection, >100 names, invalid
+   names, account-switch reset, partial/missing repos, pagination
+   and OK/Cancel rollback; use source-contract tests where
+   desktop Rust native unit binaries are deferred. Existing
+   ETag generation and in-flight monitor revision checks must
+   continue to invalidate stale metrics on a commit.
+5. [ ] One final stable Preflight after the code/test edit;
+   documentation evidence in a separate docs-only commit.
+   Combined physical KDE/Windows/UI/auth/account selection
+   acceptance remains in [#15](https://github.com/morozhenko-apps/repoticker/issues/15).
+   Do not start full Mode B or L10N-20 until its roadmap gate.
+
+**Rollback:** revert one code/test commit. The additive,
+serde-defaulted field is safely ignored by the published old
+binary, but **downgrading and then rewriting settings with the
+old binary discards the new subset**. The released v0.2.0
+continues to monitor all available repos; no behavior claim
+about reverse-migration retaining new selection. Avoid promoting
+to `main` or publishing a release without platform acceptance.
+
 ## Stop factors and invariant boundaries
 
 If later stages require a changed persistent model, GitHub App

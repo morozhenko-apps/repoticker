@@ -263,3 +263,16 @@ Latest exact-SHA [Preflight #40026763071](https://github.com/morozhenko-apps/rep
 is pending at this checkpoint. Do not claim source-level completion
 until Rust format/core/Clippy, JS and Linux desktop compile all pass.
 Physical KDE/Windows acceptance remains deferred to #15.
+
+### P1-G2 core and JS test evidence
+
+Exact code SHA: `11db98ed6fb6f5ac64effa0c5120ceefe60936c5`.
+[Preflight #40026763071](https://github.com/morozhenko-apps/repoticker/actions/runs/40026763071)
+has verified the Rust format/core/Clippy job **SUCCESS** with
+21 Rust unit tests + 8 Git integration tests = 29 passed, 0 failed.
+The JS workflow was also **SUCCESS**, including 133 passing Node tests
+and 10 passing Python release-contract tests. Linux desktop compilation
+was **in progress** as of this checkpoint; do not claim 4/4 until
+that exact job and aggregate final gate pass. The source tests do
+not replace physical KDE/Windows cancellation/SSH-helper acceptance
+tracked in #15.

@@ -393,3 +393,69 @@ test("native disconnect remains immediate while REST cooldown is active", async 
   assert.equal(messages.at(-1).runnerState, null);
   assert.equal(attempts, 1, "disconnect must not request more GitHub REST data");
 });
+
+test("slow prior Monitor account response cannot overwrite newly selected account", async () => {
+  const listeners = new Map();
+  const pending = [];
+  const selected = ["old", "new"];
+  const publications = [];
+  const started = [];
+  const invoke = async (name, args) => {
+    if (name === "github_auth_status") return { connected: true };
+    if (name === "get_monitor_scope") return selected.shift() ?? "new";
+    if (name === "github_monitor_publish") { publications.push(args); return; }
+    throw Error("Unexpected IPC " + name);
+  };
+  startGithubMonitoring({
+    invoke, schedule: () => {},
+    event: { listen: (name, callback) => listeners.set(name, callback) },
+    collect: ({ selected: scope }) => {
+      started.push(scope);
+      return new Promise(resolve => pending.push(resolve));
+    }
+  });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(started, ["old"]);
+  listeners.get("repoticker-github-scope-changed")();
+  pending.shift()({
+    state: { counts: { running: 900 }, coverage: { jobs: true } },
+    repositoryCount: 1, reason: null
+  });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(started, ["old", "new"]);
+  assert.ok(!publications.some(p => p.runnerState?.counts?.running === 900),
+    "old account data must never become visible after scope change");
+  pending.shift()({
+    state: { counts: { running: 2 }, coverage: { jobs: true } },
+    repositoryCount: 1, reason: null
+  });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(publications.at(-1).runnerState.counts.running, 2);
+});
+
+test("late failed collector cannot replace disconnected auth state", async () => {
+  let connected = true;
+  let release;
+  const messages = [];
+  const listeners = new Map();
+  startGithubMonitoring({
+    invoke: async (name, args) => {
+      if (name === "github_auth_status") return { connected };
+      if (name === "get_monitor_scope") return "team";
+      if (name === "github_monitor_publish") { messages.push(args); return; }
+      throw Error("Unexpected IPC " + name);
+    },
+    event: { listen: (name, cb) => listeners.set(name, cb) },
+    schedule: () => {},
+    collect: () => new Promise((resolve, reject) => { release = reject; })
+  });
+  await new Promise(resolve => setImmediate(resolve));
+  connected = false;
+  listeners.get("repoticker-github-auth")({ payload: { status: "disconnected" } });
+  release(Error("GitHub API network error."));
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(messages.at(-1).connected, false);
+  assert.equal(messages.at(-1).runnerState, null);
+  assert.ok(!messages.some(p => p.message?.includes("network unavailable")),
+    "old errors must not replace the current disconnected presentation");
+});

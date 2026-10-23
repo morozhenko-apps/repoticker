@@ -94,6 +94,7 @@ export function startGithubMonitoring({ invoke, event, onError = () => {},
   let cooldownUntil = 0;
   let minIntervalMs = monitorRefreshDelay(100);
   let hasPublishedResult = false;
+  let selectionRevision = 0;
   const get = path => invoke("github_api_get", { path });
   const publish = (connected, runnerState = null, message = null) =>
     invoke("github_monitor_publish", { connected, runnerState, message });
@@ -117,11 +118,13 @@ export function startGithubMonitoring({ invoke, event, onError = () => {},
     lastAttempt = now();
     let authorized = false;
     const first = !hasPublishedResult;
+    const revision = selectionRevision;
     try {
       if (first) onStage("monitor.auth_start");
       const auth = await invoke("github_auth_status");
       authorized = auth.connected === true;
       if (first) onStage("monitor.auth_ready");
+      if (revision !== selectionRevision) return;
       if (!authorized) {
         hasPublishedResult = false;
         await publish(false);
@@ -139,14 +142,17 @@ export function startGithubMonitoring({ invoke, event, onError = () => {},
       // Config-only read: the full snapshot inspects every local Git repo.
       // GitHub polling must never depend on completion of that scan.
       const selected = await invoke("get_monitor_scope");
+      if (revision !== selectionRevision) return;
       if (first) onStage("monitor.scope_ready");
       const result = await collect({ get, selected });
+      if (revision !== selectionRevision) return;
       if (first) onStage("monitor.collect_ready");
       minIntervalMs = monitorRefreshDelay(result.repositoryCount ?? 100);
       await applyCooldown(result.failure);
       await publish(true, result.state, result.reason);
       hasPublishedResult = true;
     } catch (error) {
+      if (revision !== selectionRevision) return;
       if (first) onStage("monitor.failed");
       const reason = githubFailureReason(error);
       await applyCooldown(reason);
@@ -164,11 +170,16 @@ export function startGithubMonitoring({ invoke, event, onError = () => {},
   }
   event?.listen?.("repoticker-github-auth", evt => {
     if (["connected", "disconnected"].includes(evt?.payload?.status)) {
+      selectionRevision++;
       hasPublishedResult = false;
       void refresh(true);
     }
   });
-  event?.listen?.("repoticker-github-scope-changed", () => { hasPublishedResult = false; void refresh(true); });
+  event?.listen?.("repoticker-github-scope-changed", () => {
+    selectionRevision++;
+    hasPublishedResult = false;
+    void refresh(true);
+  });
   // Refresh only while the application is running, never an API request
   // per hover, mouse movement or local Git scan.
   schedule(() => { void refresh(); }, REFRESH_MS);

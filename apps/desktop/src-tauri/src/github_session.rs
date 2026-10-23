@@ -411,8 +411,10 @@ pub fn github_cancel(app: AppHandle) {
 pub async fn github_disconnect(app: AppHandle) -> Result<(), String> {
     let state = app.state::<Arc<GitHubAuthManager>>().inner().clone();
     state.invalidate();
-    app.state::<GitHubETagCache>().invalidate();
     let _guard = state.vault_gate.lock().await;
+    // Order cache invalidation with token reads under the SAME vault lock.
+    // A GET using an old credential always carries the old generation.
+    app.state::<GitHubETagCache>().invalidate();
     delete_credential().await.map_err(public_error)?;
     publish(&app, "disconnected");
     Ok(())

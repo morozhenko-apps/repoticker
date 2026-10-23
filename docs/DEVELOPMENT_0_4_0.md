@@ -336,16 +336,16 @@ incident reports.
 
 ### Implementation / regression gates
 
-1. [ ] Extract JSON persistence adapter with explicit path argument,
+1. [x] Extract JSON persistence adapter with explicit path argument,
    ordinary serializer/deserializer, atomic write and backup recovery.
    Test newly created file, backup of previous valid version, malformed
    primary restoration with preserved quarantine, missing primary with
    backup, two invalid copies fail closed, missing files use caller's
    defaults, denied paths and abandoned staging cleanup.
-2. [ ] Apply `ConfigStoreGate` to every native read and update.
+2. [x] Apply `ConfigStoreGate` to every native read and update.
    Convert all config-mutating commands to a closure-based serialized
    transaction. Retain existing validation and public Tauri arguments.
-3. [ ] Add core real-filesystem tests and focused source checks
+3. [x] Add core real-filesystem tests and focused source checks
    confirming every settings mutator uses transactional update and
    never bypasses the atomic writer.
 4. [ ] Run final stable Preflight once for exact code SHA:
@@ -373,3 +373,39 @@ remain separate acceptance items.
 Rollback via the P1-G3 code commit returns to the prior writer without
 altering schema; pre-existing `.bak` and quarantined `.corrupt.*`
 files are non-authoritative to the old binary and should be retained.
+
+### P1-G3 implementation checkpoint
+
+- `79f89794ce0e2c4c54053e74210bfa54c7bd914b`:
+  `repoticker-core::config_store` atomic JSON adapter and real
+  filesystem tests. Existing JSON format and defaults remain intact.
+  A corrupt primary is quarantined and recovered from a validated
+  `.bak` snapshot; invalid copies fail closed.
+- `6b76fedfd3d0de46b541ed1245bdc271068c6c0a`:
+  `JsonStore` per-process transaction mutex managed by Tauri;
+  all five Settings/account/language/root native mutations are now
+  serialized and source-checked. Core tests also exercise concurrent
+  read/modify/write threads with real filesystem updates.
+- `e05f9f01ebe295e09a52d2b26ba7babd259241a5`:
+  stage/quarantine lifecycle cleanup without leaked guard memory and
+  removal of obsolete direct-file import.
+- `27fddf3712bf1d0f0d0958544db99411698cb271`:
+  source audit discovered the **sixth** config mutation: KDE card
+  drag margin persistence in `linux_surface.rs`. It now uses the
+  same transaction gate, preventing lost Settings updates when drag
+  and Settings save overlap.
+- Added real filesystem test cases for healthy write/backup,
+  damaged primary with preserved original, missing primary,
+  two invalid copies, failed backup write, abandoned staging,
+  old serde defaults and sixteen concurrent increment updates.
+  Exact test counts are pending final CI.
+- **Exact code candidate:** `27fddf3712bf1d0f0d0958544db99411698cb271`.
+  [Preflight #40030663598](https://github.com/morozhenko-apps/repoticker/actions/runs/40030663598)
+  was pending at this checkpoint. Do not claim core/desktop
+  compilation or physical filesystem acceptance without evidence.
+
+Remaining risks: no inter-process file locking against external
+editors, platform-specific Windows rename/flush semantics require
+real-device acceptance, and an interrupted rename may leave the
+prior backup (not necessarily the newest edit). Schema and
+public release unchanged.

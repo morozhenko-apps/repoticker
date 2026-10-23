@@ -111,7 +111,9 @@ function showRepoMenu(button, repoPath) {
 for (const [label, operation] of [
   ["Fetch", "fetch"],
   ["Safe pull", "safe_pull"],
-  ["Open on GitHub", "open_github"]
+  ["Open on GitHub", "open_github"],
+  ["Open folder", "open_folder"],
+  ["Copy path", "copy_path"]
 ]) {
   const item = addText(repoMenu, "button", label);
   item.type = "button";
@@ -120,9 +122,14 @@ for (const [label, operation] of [
     const path = menuRepoPath;
     hideRepoMenus();
     if (!path) return;
-    if (operation === "open_github") {
+    const nativeActions = {
+      open_github: "open_repository_on_github",
+      open_folder: "open_repository_folder",
+      copy_path: "copy_repository_path"
+    };
+    if (Object.hasOwn(nativeActions, operation)) {
       try {
-        await invoke("open_repository_on_github", { repoPath: path });
+        await invoke(nativeActions[operation], { repoPath: path });
       } catch (error) {
         showError(error);
       }

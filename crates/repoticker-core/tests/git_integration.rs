@@ -218,3 +218,56 @@ fn safe_pull_uses_fetched_refs_without_implicit_network() {
         git::OperationOutcome::Updated(1)
     );
 }
+
+#[test]
+fn enrolled_checkout_resolution_accepts_only_canonical_discovered_repositories() {
+    let f = Fixture::new();
+    assert_eq!(
+        git::resolve_enrolled_checkout(
+            std::slice::from_ref(&f.base),
+            f.local.to_str().expect("UTF-8 path"),
+        )
+        .expect("enrolled direct child"),
+        f.local
+    );
+    // An unrelated checkout is not authorized just because it is valid.
+    assert!(git::resolve_enrolled_checkout(
+        std::slice::from_ref(&f.local),
+        f.seed.to_str().expect("UTF-8 path")
+    )
+    .is_err());
+    assert!(git::resolve_enrolled_checkout(
+        std::slice::from_ref(&f.base),
+        "relative/path"
+    )
+    .is_err());
+    assert!(git::resolve_enrolled_checkout(
+        std::slice::from_ref(&f.base),
+        f.base.join("not-found").to_str().expect("UTF-8 path")
+    )
+    .is_err());
+}
+
+#[test]
+fn linked_worktree_requires_explicit_root_enrollment() {
+    let f = Fixture::new();
+    let worktree = f.base.join("linked-checkout");
+    run(
+        &f.local,
+        &[
+            "worktree",
+            "add",
+            "-b",
+            "feature/linked",
+            worktree.to_str().expect("UTF-8 worktree path"),
+        ],
+    );
+    assert!(worktree.join(".git").is_file());
+    let path = worktree.to_str().expect("UTF-8 worktree path");
+    assert!(git::resolve_enrolled_checkout(std::slice::from_ref(&f.base), path).is_err());
+    assert_eq!(
+        git::resolve_enrolled_checkout(std::slice::from_ref(&worktree), path)
+            .expect("explicitly enrolled linked worktree"),
+        worktree
+    );
+}

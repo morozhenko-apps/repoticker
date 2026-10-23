@@ -32,6 +32,7 @@ use tauri::{
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
 };
 use tauri::{AppHandle, Emitter, Manager};
+use tauri_plugin_clipboard_manager::ClipboardExt;
 
 #[derive(Default)]
 struct OperationLock(Mutex<()>);
@@ -781,22 +782,66 @@ fn open_actions_job(url: String) -> Result<(), String> {
     launch_browser(&url)
 }
 
+/// Central enrollment boundary for user-triggered repository actions.
+fn enrolled_repository(app: &AppHandle, repo_path: &str) -> Result<PathBuf, String> {
+    let config = read_config(app)?;
+    git::resolve_enrolled_checkout(&roots_as_paths(&config), repo_path)
+        .map_err(|error| error.to_string())
+}
+
 /// Open only the canonical GitHub origin of a currently enrolled checkout.
 /// A WebView-supplied path cannot cause arbitrary URL or filesystem opening.
 #[tauri::command]
 async fn open_repository_on_github(app: AppHandle, repo_path: String) -> Result<(), String> {
     tauri::async_runtime::spawn_blocking(move || {
-        let config = read_config(&app)?;
-        let (repositories, _) = git::discover_all(&roots_as_paths(&config));
-        let selected = std::path::PathBuf::from(&repo_path);
-        if !repositories.contains(&selected) {
-            return Err("Repository is not enrolled or no longer valid".into());
-        }
+        let selected = enrolled_repository(&app, &repo_path)?;
         let url = git::github_origin_url(&selected).map_err(|error| error.to_string())?;
         launch_browser(&url)
     })
     .await
     .map_err(|error| error.to_string())?
+}
+
+/// File manager navigation never accepts arbitrary WebView-supplied paths.
+fn launch_file_manager(path: &std::path::Path) -> Result<(), String> {
+    #[cfg(target_os = "linux")]
+    let mut command = std::process::Command::new("xdg-open");
+    #[cfg(target_os = "macos")]
+    let mut command = std::process::Command::new("open");
+    #[cfg(target_os = "windows")]
+    let mut command = std::process::Command::new("explorer.exe");
+    command
+        .arg(path)
+        .spawn()
+        .map(|_| ())
+        .map_err(|error| format!("Cannot open repository folder: {error}"))
+}
+
+#[tauri::command]
+async fn open_repository_folder(app: AppHandle, repo_path: String) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let selected = enrolled_repository(&app, &repo_path)?;
+        launch_file_manager(&selected)
+    })
+    .await
+    .map_err(|error| error.to_string())?
+}
+
+/// Clipboard access is write-only and limited to the verified checkout path.
+#[tauri::command]
+async fn copy_repository_path(app: AppHandle, repo_path: String) -> Result<(), String> {
+    let owned = app.clone();
+    let selected = tauri::async_runtime::spawn_blocking(move || {
+        enrolled_repository(&owned, &repo_path)
+    })
+    .await
+    .map_err(|error| error.to_string())??;
+    let text = selected
+        .to_str()
+        .ok_or_else(|| "Repository path cannot be copied as UTF-8".to_owned())?;
+    app.clipboard()
+        .write_text(text)
+        .map_err(|_| "Cannot copy repository path to system clipboard".to_owned())
 }
 
 #[tauri::command]
@@ -1174,6 +1219,8 @@ fn main() {
             get_about_info,
             open_actions_job,
             open_repository_on_github,
+            open_repository_folder,
+            copy_repository_path,
             show_usage_popup,
             get_usage_popup_kind,
             hide_usage_popup,

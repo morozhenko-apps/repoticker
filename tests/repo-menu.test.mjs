@@ -33,7 +33,9 @@ test("menu contains Fetch, Safe pull and native enrolled GitHub open with dismis
   assert.match(ui, /\["Fetch", "fetch"\]/);
   assert.match(ui, /\["Safe pull", "safe_pull"\]/);
   assert.match(ui, /\["Open on GitHub", "open_github"\]/);
-  assert.match(ui, /"open_repository_on_github", \{ repoPath: path \}/);
+  assert.match(ui, /\["Open folder", "open_folder"\]/);
+  assert.match(ui, /\["Copy path", "copy_path"\]/);
+  assert.match(ui, /open_github: "open_repository_on_github"/);
   assert.match(ui, /aria-controls", "repo-menu"/);
   assert.match(ui, /byId\("repo-list"\)\.addEventListener\("scroll", \(\) => hideRepoMenus\(\)/);
   assert.match(ui, /function render\(next\) \{\s*hideRepoMenus\(\)/);

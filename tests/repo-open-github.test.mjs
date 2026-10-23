@@ -7,8 +7,9 @@ const git = readFileSync(new URL("../crates/repoticker-core/src/git.rs", import.
 
 test("native opener resolves only enrolled GitHub origins rather than WebView-supplied URLs", () => {
   const handler = native.match(/async fn open_repository_on_github\([\s\S]*?\n\}/)?.[0] ?? "";
-  assert.match(handler, /git::discover_all\(&roots_as_paths\(&config\)\)/);
-  assert.match(handler, /repositories\.contains\(&selected\)/);
+  const authorization = native.match(/fn enrolled_repository\([\s\S]*?\n\}/)?.[0] ?? "";
+  assert.match(authorization, /git::resolve_enrolled_checkout\(&roots_as_paths\(&config\), repo_path\)/);
+  assert.match(handler, /enrolled_repository\(&app, &repo_path\)/);
   assert.match(handler, /git::github_origin_url\(&selected\)/);
   assert.match(handler, /launch_browser\(&url\)/);
   assert.doesNotMatch(handler, /git::fetch|git::safe_pull|remote.*fetch/);

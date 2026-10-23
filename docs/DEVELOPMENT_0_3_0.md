@@ -574,6 +574,56 @@ remain visible only with coverage explicitly marked incomplete.
 This slice does not add durable stale data storage or new
 persistent settings.
 
+## A5 — reuse one native REST HTTP client (2026-10-23)
+
+**Mode A / refactor; plan recorded before changing code.**
+
+Source evidence: `github_api_get` currently calls
+`reqwest::Client::builder()` for **every** read-only GitHub REST GET.
+A monitoring pass can issue dozens of reads. Building one client
+per request prevents its connection pool from reusing keep-alive
+connections across a pass, and can add repeated TLS/connect
+overhead. The owner's earlier trace has 78 run-list requests
+around 0.49 seconds each, but contains no TCP/TLS timing.
+Therefore the impact is plausible, **not yet measured**.
+
+Decision: create `GitHubRestClient`, a Tauri-managed service with
+`OnceLock<Result<reqwest::Client, &'static str>>` holding
+exactly the same nonredirecting, 15-second timeout client used by
+`github_api_get` today. Initialize it lazily on first approved
+REST read; share a borrowed client reference across all reads
+from card, Settings and usage WebViews. The `bearer_auth(token)`
+header remains **per request**, never a client default. No token
+or response JSON is stored in this transport; GitHub status is
+always refetched with normal authentication and cooldown checks.
+Existing strict path whitelist, redacted error vocabulary, 2 MiB
+body limit and native rate gate remain unchanged.
+
+1. [ ] Extract the reqwest client builder into the managed
+   `GitHubRestClient` using Tauri `State` lookup; no new
+   permissions or persistent data.
+2. [ ] Replace only the per-request builder in `github_api_get`
+   with the borrowed reusable client.
+3. [ ] Add Rust tests proving client is reused (pointer identity)
+   and preserving required timeout and redirect policy, plus
+   a source/behavior contract for per-request bearer auth
+   instead of stored credentials.
+4. [ ] Run the normal stable Preflight once on the finished
+   code/test commit, record exact SHA and CI result.
+5. [ ] Update implementation/evidence in a **separate
+   documentation-only commit**. Defer physical
+   before/after startup measurements to
+   [issue #15](https://github.com/morozhenko-apps/repoticker/issues/15).
+
+**Risk / rollback:** keep-alive reuse can change transport-level
+connection behavior or retain pooled sockets between polls;
+response projection, GET semantics and access control must not
+change. Compare live latency and scope-change/disconnect behavior
+during the deferred integrated test gate; when auth changes, no
+credential is stored on this reusable transport. Revert the
+single code/test commit to return to a client per request.
+No version bump, `main` promotion or public release.
+
 ## Stop factors and invariant boundaries
 
 If later stages require a changed persistent model, GitHub App

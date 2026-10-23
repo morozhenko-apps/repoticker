@@ -811,6 +811,48 @@ many paginated Actions requests fit in 64 in-memory entries.
 Do not claim a measured speedup, quota reduction or complete
 live recovery without physical evidence.
 
+## A6 follow-up: atomic GitHub bearer/ETag generation pairing
+
+**Mode A correctness fix, 2026-10-23.**
+
+- Confirmed race window: native REST previously awaited
+  `github_access_token` and only afterwards read
+  `GitHubETagCache.snapshot(path)`; a credential switch could
+  take place between those operations. Invalidating old cached
+  JSON did not prevent associating an earlier token with a
+  later generation.
+- Changed the native-only accessor to
+  `github_access_token_with_cache(app, path)` returning the
+  bearer token **and exact-path cache lookup together**, while
+  holding the existing `vault_gate` lock. Refresh-token
+  rotation invalidates ETags before this snapshot. The
+  disconnect path also invalidates ETags while holding the
+  same vault lock, so the order is now deterministic.
+- Core Git safety, persistent format, HTTP payload
+  projection, API permission boundaries and UI-visible
+  credential contract are unchanged. The accessor remains
+  **native-only**, never a JavaScript IPC command.
+- Source/contract regression asserts native lock coverage,
+  cache snapshot ordering, unchanged native per-request
+  bearer auth and absence of the old unsafe two-step
+  callsite.
+- Implementation [`10b5c82`](https://github.com/morozhenko-apps/repoticker/commit/10b5c82217a685f97058d69b7374fa5b33604e82),
+  plus Rustfmt correction `8445641`.
+  [Exact code/test Preflight #39991004085](https://github.com/morozhenko-apps/repoticker/actions/runs/39991004085)
+  **not finished at this documentation checkpoint**.
+  Do not label it passed until all jobs complete.
+- **Still deferred**: physical session-switch and logout
+  timing, native desktop Rust unit-test binaries and
+  combined KDE/Windows acceptance in [#15](https://github.com/morozhenko-apps/repoticker/issues/15).
+
+**Next planned final feature before RC:** after all remaining
+functional/platform work, implement
+[L10N-20 with 20 context audits](localization/LOCALE_CONTEXT_AUDIT.md)
+per [issue #16](https://github.com/morozhenko-apps/repoticker/issues/16).
+Then freeze v0.9.0 and run complete Mode B. This
+localization scope is a **future feature**, not an
+implemented translation in the current `dev` binary.
+
 ## Stop factors and invariant boundaries
 
 If later stages require a changed persistent model, GitHub App

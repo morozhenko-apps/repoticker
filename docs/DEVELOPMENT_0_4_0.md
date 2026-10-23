@@ -603,14 +603,14 @@ into unregistered worktrees remains forbidden.
 
 ### Implementation stages and acceptance
 
-1. [ ] Extract tested \`resolve_enrolled_checkout\` into core Git,
+1. [x] Extract tested \`resolve_enrolled_checkout\` into core Git,
    prove canonical membership, direct-child enrollment, linked
    worktree explicit enrollment, and non-enrolled/invalid path refusal.
-2. [ ] Reuse one native path resolver across existing GitHub open plus
+2. [x] Reuse one native path resolver across existing GitHub open plus
    new \`open_repository_folder\` and \`copy_repository_path\` Tauri IPC
    commands. Write clipboard natively and open the folder argv-only.
    Preserve cross-platform compile and no permission increase.
-3. [ ] Add two menu options and source contract tests for their native
+3. [x] Add two menu options and source contract tests for their native
    handlers; maintain five-option geometry and four compact buttons.
 4. [ ] Run final stable Rustfmt/core/Clippy + JS/release +
    Linux desktop compile Preflight once on exact code SHA, fix only
@@ -631,3 +631,30 @@ explicitly enrolled roots at the time of the click. This is not
 background polling and cannot enumerate arbitrary recursive checkout
 trees. The system file manager and clipboard can fail or be absent
 on unsupported hosts; errors must be displayed rather than faked.
+ 
+### Implementation checkpoint
+
+- Code and source-contract tests committed as
+  [`798f604`](https://github.com/morozhenko-apps/repoticker/commit/798f604b198285c983d5d46ac81ae0d7a54ca745).
+  The Git provider gained `resolve_enrolled_checkout`, a common
+  canonicalized root/direct-child enrollment authorization function.
+  Existing GitHub opening now uses the same check as both local actions.
+- `open_repository_folder` starts only the OS file manager on
+  the validated absolute checkout path via argv; `copy_repository_path`
+  uses the existing native clipboard manager to write only that path.
+  Both commands resolve membership on a blocking worker, avoiding
+  desktop UI blocking on Git discovery.
+- Five menu items: Fetch, Safe pull, Open on GitHub, Open folder,
+  Copy path. No new compact-card button, process polling, config
+  field, network call or Git mutation.
+- Added core integration cases for an enrolled child, unrelated
+  checkout rejection, missing/relative paths, and explicitly
+  enrolled linked worktree versus implicitly discovered child.
+  Added JS source contracts for all three native navigation
+  commands, argv-only folder opener, clipboard-write-only flow
+  and the five-item popup.
+- Final exact source candidate: `798f604b198285c983d5d46ac81ae0d7a54ca745`.
+  [Preflight #40034754778](https://github.com/morozhenko-apps/repoticker/actions/runs/40034754778)
+  was in progress at this checkpoint. Do not claim test/desktop
+  success before inspecting final jobs. Native KDE/Windows
+  acceptance remains deferred to issue #15.

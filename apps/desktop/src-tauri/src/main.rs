@@ -815,13 +815,20 @@ mod monitor_selection_tests {
         );
         assert!(validate_monitor_repositories(Some("team"), vec!["other/private".into()]).is_err());
         assert!(validate_monitor_repositories(Some("team"), vec!["team/../bad".into()]).is_err());
-        assert!(validate_monitor_repositories(Some("team"), vec!["team/repo".into(), "TEAM/REPO".into()]).is_err());
+        assert!(validate_monitor_repositories(
+            Some("team"),
+            vec!["team/repo".into(), "TEAM/REPO".into()]
+        )
+        .is_err());
         assert!(validate_monitor_repositories(None, vec!["team/repo".into()]).is_err());
         assert!(validate_monitor_repositories(
             Some("team"),
             (0..101).map(|i| format!("team/repo{i}")).collect()
-        ).is_err());
-        assert!(validate_monitor_repositories(None, Vec::new()).unwrap().is_empty());
+        )
+        .is_err());
+        assert!(validate_monitor_repositories(None, Vec::new())
+            .unwrap()
+            .is_empty());
     }
 }
 

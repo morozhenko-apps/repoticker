@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
+import { listAvailableInstallations } from "../apps/desktop/ui/github-installations.mjs";
 
 const html = readFileSync(
   new URL("../apps/desktop/ui/settings.html", import.meta.url), "utf8"
@@ -67,9 +68,15 @@ test("Device Flow buttons register and invoke native commands after JS startup",
     },
     addEventListener() {},
   };
-  // Any nonexistent HTML binding throws here, just as it does in WebKitGTK.
-  runInNewContext(js, {
-    document, window,
+  // vm.Script executes the actual Settings controller in an isolated realm,
+  // while its ESM dependency is supplied as the real imported function.
+  // Fail closed if the controller's single known import changes.
+  const importLine =
+    'import { listAvailableInstallations } from "./github-installations.mjs";\n';
+  assert.equal(js.startsWith(importLine), true,
+    "Settings harness must recognize its real ESM dependency");
+  runInNewContext(js.slice(importLine.length), {
+    document, window, listAvailableInstallations,
     setInterval: () => 1,
     clearInterval() {},
   }, { filename: "settings.mjs" });

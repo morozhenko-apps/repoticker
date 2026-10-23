@@ -428,3 +428,16 @@ public release unchanged.
   cancelled run as passing or as an executed core test.
 - Physical KDE/Windows verification remains in
   [issue #15](https://github.com/morozhenko-apps/repoticker/issues/15).
+
+### P1-G3 verified core and UI test counts
+
+Exact code/test SHA: `adfd71cf1dca626f6bb35b75eb05a20e351c54e4`.
+[Preflight #40030876982](https://github.com/morozhenko-apps/repoticker/actions/runs/40030876982)
+reported Rust format, `repoticker-core` unit/integration tests and
+Clippy **SUCCESS**: 32 unit tests and 8 Git integration tests,
+40 Rust tests passing, 0 failures. JS workflow was also **SUCCESS**:
+136 Node tests, 0 failures, plus 10 Python release contract tests.
+Linux desktop compile remained in progress when these counts were
+collected, so the aggregate 4/4 source acceptance is not yet
+established. This check is source CI evidence only; native
+KDE/Windows interrupted-save/recovery remains open in issue #15.

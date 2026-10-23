@@ -17,7 +17,8 @@ pub struct GitHubRateGate {
 impl GitHubRateGate {
     pub fn remaining_seconds(&self) -> u64 {
         let until = self.until.lock().unwrap_or_else(|err| err.into_inner());
-        let left = until.map(|time| time.saturating_duration_since(Instant::now()))
+        let left = until
+            .map(|time| time.saturating_duration_since(Instant::now()))
             .unwrap_or_default();
         // Ceiling rather than floor: never resume network before server reset.
         u64::try_from(left.as_millis().saturating_add(999) / 1000)
@@ -35,7 +36,10 @@ impl GitHubRateGate {
 }
 
 fn bounded_seconds(input: Option<&str>) -> Option<u64> {
-    input?.parse::<u64>().ok().map(|seconds| seconds.clamp(1, MAX_SECONDS))
+    input?
+        .parse::<u64>()
+        .ok()
+        .map(|seconds| seconds.clamp(1, MAX_SECONDS))
 }
 
 /// Only a real 403 rate-limit classification or HTTP 429 activates the gate.
@@ -47,9 +51,7 @@ pub fn backoff_duration(
     reset: Option<&str>,
     now_unix: u64,
 ) -> Option<Duration> {
-    if status != 429 && !(status == 403 &&
-        (remaining == Some("0") || retry_after.is_some()))
-    {
+    if status != 429 && !(status == 403 && (remaining == Some("0") || retry_after.is_some())) {
         return None;
     }
     let from_reset = reset
@@ -64,8 +66,10 @@ pub fn backoff_duration(
 }
 
 pub fn now_unix() -> u64 {
-    SystemTime::now().duration_since(UNIX_EPOCH)
-        .unwrap_or_default().as_secs()
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs()
 }
 
 /// Bounded numeric status only, never raw provider metadata.
@@ -81,24 +85,39 @@ mod tests {
     #[test]
     fn rate_gate_respects_retry_after_then_reset_and_bounded_fallback() {
         let now = 1_800_000_000;
-        assert_eq!(backoff_duration(429, None, Some("12"), Some("1800003000"), now),
-            Some(Duration::from_secs(12)));
-        assert_eq!(backoff_duration(403, Some("0"), None, Some("1800000125"), now),
-            Some(Duration::from_secs(125)));
-        assert_eq!(backoff_duration(429, None, Some("99999999999"), None, now),
-            Some(Duration::from_secs(MAX_SECONDS)));
-        assert_eq!(backoff_duration(429, None, Some("Wed, 21 Oct 2026 07:00:00 GMT"), None, now),
-            Some(Duration::from_secs(FALLBACK_SECONDS)));
-        assert_eq!(backoff_duration(429, None, Some("not-number"), None, now),
-            Some(Duration::from_secs(FALLBACK_SECONDS)));
-        assert_eq!(backoff_duration(429, None, Some("0"), None, now),
-            Some(Duration::from_secs(1)));
+        assert_eq!(
+            backoff_duration(429, None, Some("12"), Some("1800003000"), now),
+            Some(Duration::from_secs(12))
+        );
+        assert_eq!(
+            backoff_duration(403, Some("0"), None, Some("1800000125"), now),
+            Some(Duration::from_secs(125))
+        );
+        assert_eq!(
+            backoff_duration(429, None, Some("99999999999"), None, now),
+            Some(Duration::from_secs(MAX_SECONDS))
+        );
+        assert_eq!(
+            backoff_duration(429, None, Some("Wed, 21 Oct 2026 07:00:00 GMT"), None, now),
+            Some(Duration::from_secs(FALLBACK_SECONDS))
+        );
+        assert_eq!(
+            backoff_duration(429, None, Some("not-number"), None, now),
+            Some(Duration::from_secs(FALLBACK_SECONDS))
+        );
+        assert_eq!(
+            backoff_duration(429, None, Some("0"), None, now),
+            Some(Duration::from_secs(1))
+        );
     }
 
     #[test]
     fn permission_errors_never_enter_rate_gate() {
         assert_eq!(backoff_duration(403, Some("12"), None, None, 100), None);
-        assert_eq!(backoff_duration(401, Some("0"), Some("50"), None, 100), None);
+        assert_eq!(
+            backoff_duration(401, Some("0"), Some("50"), None, 100),
+            None
+        );
         assert_eq!(backoff_duration(404, None, None, None, 100), None);
         assert_eq!(backoff_duration(503, None, Some("60"), None, 100), None);
     }

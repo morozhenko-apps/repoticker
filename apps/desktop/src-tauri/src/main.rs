@@ -1,9 +1,9 @@
 //! RepoTicker desktop: local-only roots, Git provider and tray card.
 mod app_icon;
 mod github_api;
-mod github_rate_gate;
 mod github_native;
 mod github_oauth_wire;
+mod github_rate_gate;
 mod github_session;
 mod monitor_cache;
 mod startup_diagnostics;

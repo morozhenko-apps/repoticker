@@ -295,7 +295,10 @@ pub async fn github_api_get(app: AppHandle, path: String) -> Result<Value, Strin
             .get("x-ratelimit-reset")
             .and_then(|header| header.to_str().ok());
         if let Some(duration) = github_rate_gate::backoff_duration(
-            response.status().as_u16(), remaining, retry_after, reset,
+            response.status().as_u16(),
+            remaining,
+            retry_after,
+            reset,
             github_rate_gate::now_unix(),
         ) {
             gate.defer(duration);

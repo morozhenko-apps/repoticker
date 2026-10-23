@@ -441,3 +441,73 @@ Linux desktop compile remained in progress when these counts were
 collected, so the aggregate 4/4 source acceptance is not yet
 established. This check is source CI evidence only; native
 KDE/Windows interrupted-save/recovery remains open in issue #15.
+
+## P1-UI1 — interactive repository action menu and GitHub shortcut (2026-10-23)
+
+### User evidence and diagnosis
+
+The owner supplied a KDE Wayland screenshot: the repository ellipsis
+opens a nearly transparent-looking menu with unclickable rows; labels
+from neighboring repository rows paint through the menu.
+
+Confirmed in `apps/desktop/ui/style.css`: every `.repo-row` declares
+`isolation: isolate` and `position: relative`, and the menu is an
+absolute descendant of that row. Each isolated row is a separate
+stacking context, so `.repo-menu { z-index: 12 }` cannot lift its
+children above later sibling rows. The scrolling `.rows` container
+can also clip the menu at the edge. This is a paint/hit-testing
+problem, **not** an opacity bug or an intentional disabled state.
+
+Candidate causes considered: (1) isolated stacking context (confirmed);
+(2) nested scroll clipping (confirmed by DOM/CSS structure);
+(3) menu opacity (CSS has opaque background);
+(4) inherited button disabled state (buttons are not disabled);
+(5) global transparent GTK window (not required to explain the
+overlap); (6) pointer capture from drag gesture (buttons explicitly
+excluded); (7) refresh recreating rows (separate lifecycle risk).
+
+### Design / acceptance
+
+- Use **one** reusable action-menu element, as a sibling of the
+  scrollable repository list and a child of the repository drawer.
+  Position it relative to the drawer using the triggering ellipsis
+  button's actual client rectangle, clamp inside drawer bounds,
+  and open upward near the drawer's bottom. Preserve opaque
+  background, adequate hit target and z-order.
+- Update `aria-expanded` and menu focus/escape/outside-click
+  behavior. Hide the menu on scrolling, row refresh, drawer close,
+  card hide and active selection change. Avoid a menu anchored
+  to a detached/removed row.
+- Keep exactly the existing four compact action buttons and existing
+  per-repository Fetch/Safe pull semantics. Add a third action
+  `Open on GitHub`: browser URL resolved **on demand** by native
+  Git from the enrolled checkout's configured `origin` remote,
+  supporting HTTPS and standard SSH GitHub remotes. Do not add Git
+  subprocesses to background scans. Do not accept browser URLs from
+  arbitrary frontend input; require explicit root enrollment,
+  exact `github.com` host, validated owner/repo path, and an
+  argv-based browser invocation. Non-GitHub/missing origin returns
+  a visible explanation instead of opening an arbitrary URL.
+- Add deterministic menu geometry/lifecycle tests, URL parsing
+  and real Git origin tests, native enrollment/browser security
+  contract tests; one complete STABLE Preflight for exact SHA.
+  Physical hover/click/keyboard and scroll acceptance stays
+  in [issue #15](https://github.com/morozhenko-apps/repoticker/issues/15).
+- No config changes, Git mutation policy changes, new platform
+  dependencies, publishing/tag/main promotion or release.
+
+### Steps
+
+1. [ ] Extract pure menu geometry and install a drawer-level popup
+   with working event handling, viewport-aware placement and tests.
+2. [ ] Add origin-to-GitHub URL translation in the core Git provider,
+   with positive and injection/foreign-host tests.
+3. [ ] Add native enrolled-path-only open command and reusable
+   existing OS external-browser launch behavior.
+4. [ ] Run final Preflight; record exact source SHA and test results
+   in a docs-only commit, not conflated with code.
+5. [ ] Keep physical KDE/Windows click and browser acceptance open.
+
+Rollback: revert the UI1 code/test commit(s); restores prior menu
+placement and removes the third command without altering saved
+preferences, credentials, repositories or public distribution.

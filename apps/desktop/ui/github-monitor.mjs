@@ -100,8 +100,8 @@ export function startGithubMonitoring({ invoke, event, onError = () => {},
   // old-account publication must not supersede a newer auth transition.
   let publicationTail = Promise.resolve();
   const get = path => invoke("github_api_get", { path });
-  function publish(connected, runnerState = null, message = null) {
-    const revision = selectionRevision;
+  function publish(connected, runnerState = null, message = null,
+    revision = selectionRevision) {
     const write = publicationTail.catch(() => {}).then(() => {
       if (revision !== selectionRevision) return;
       return invoke("github_monitor_publish", { connected, runnerState, message });
@@ -146,18 +146,18 @@ export function startGithubMonitoring({ invoke, event, onError = () => {},
       if (revision !== selectionRevision) return;
       if (!authorized) {
         hasPublishedResult = false;
-        await publish(false);
+        await publish(false, null, null, revision);
         return;
       }
       // Native credential validation precedes this message. Never say
       // "Connect GitHub" while an authorized account is loading.
       if (now() < cooldownUntil) {
-        await publish(true, null, githubFailureMessage("rate_limited"));
+        await publish(true, null, githubFailureMessage("rate_limited"), revision);
         hasPublishedResult = true;
         return;
       }
       if (!hasPublishedResult)
-        await publish(true, null, "Connecting to GitHub...");
+        await publish(true, null, "Connecting to GitHub...", revision);
       // Config-only read: the full snapshot inspects every local Git repo.
       // GitHub polling must never depend on completion of that scan.
       const selected = await invoke("get_monitor_scope");
@@ -168,7 +168,7 @@ export function startGithubMonitoring({ invoke, event, onError = () => {},
       if (first) onStage("monitor.collect_ready");
       minIntervalMs = monitorRefreshDelay(result.repositoryCount ?? 100);
       await applyCooldown(result.failure);
-      await publish(true, result.state, result.reason);
+      await publish(true, result.state, result.reason, revision);
       if (revision === selectionRevision) hasPublishedResult = true;
     } catch (error) {
       if (revision !== selectionRevision) return;
@@ -177,7 +177,7 @@ export function startGithubMonitoring({ invoke, event, onError = () => {},
       await applyCooldown(reason);
       // A failed live refresh must never keep old counts appearing current.
       await publish(authorized, null,
-        githubFailureMessage(reason)).catch(onError);
+        githubFailureMessage(reason), revision).catch(onError);
       if (revision === selectionRevision) hasPublishedResult = true;
     } finally {
       busy = false;

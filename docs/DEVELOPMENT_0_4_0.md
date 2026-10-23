@@ -675,3 +675,20 @@ on unsupported hosts; errors must be displayed rather than faked.
   Physical acceptance of the newly added local actions,
   Unicode clipboard paths, explicit worktrees and Windows
   file manager remains tracked in [issue #15](https://github.com/morozhenko-apps/repoticker/issues/15).
+
+### Verified P1-UI2 test counts
+
+Source code/test candidate \`3bb4a8f024a55e9e4d30230838dbd96a522a0cb1\`.
+[Preflight #40034851785](https://github.com/morozhenko-apps/repoticker/actions/runs/40034851785)
+reported the Rust format/core tests/Clippy job **SUCCESS**:
+32 core unit tests + 10 Git integration tests (including two new
+enrollment/worktree cases) + 3 GitHub remote integration tests =
+**45 passed, 0 failed**. The JS/release job was also **SUCCESS**:
+**144 Node tests** and **10 Python release tests** passed with
+zero failures.
+
+Linux desktop compilation was still in progress at this
+checkpoint. The final aggregate 4/4 gate must be checked on the
+exact SHA before declaring source-level completion.
+Actual KDE/Windows file-manager and native clipboard interaction
+remains part of physical acceptance #15.

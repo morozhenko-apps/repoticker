@@ -10,6 +10,7 @@ mod monitor_cache;
 mod startup_diagnostics;
 
 use repoticker_core::{
+    config_store::JsonStore,
     git::{self, FetchCancellation, GitError, OperationOutcome, RepoSnapshot},
     SyncDecision,
 };
@@ -142,29 +143,34 @@ fn config_path(app: &AppHandle) -> Result<PathBuf, String> {
         .map_err(|err| format!("Cannot determine config directory: {err}"))
 }
 
-fn read_config(app: &AppHandle) -> Result<Config, String> {
-    let path = config_path(app)?;
-    if !path.exists() {
-        return Ok(Config {
-            roots: Vec::new(),
-            language: default_language(),
-            card_bottom_margin: None,
-            card_right_margin: None,
-            github_monitor_org: None,
-            github_monitor_repositories: Vec::new(),
-        });
+fn default_config() -> Config {
+    Config {
+        roots: Vec::new(),
+        language: default_language(),
+        card_bottom_margin: None,
+        card_right_margin: None,
+        github_monitor_org: None,
+        github_monitor_repositories: Vec::new(),
     }
-    let content = fs::read(&path).map_err(|err| format!("Cannot read config: {err}"))?;
-    serde_json::from_slice::<Config>(&content)
-        .map_err(|err| format!("Cannot parse config {}: {err}", path.display()))
 }
 
-fn write_config(app: &AppHandle, config: &Config) -> Result<(), String> {
+fn read_config(app: &AppHandle) -> Result<Config, String> {
     let path = config_path(app)?;
-    let parent = path.parent().ok_or("Invalid config path")?;
-    fs::create_dir_all(parent).map_err(|err| format!("Cannot create config directory: {err}"))?;
-    let content = serde_json::to_vec_pretty(config).map_err(|err| err.to_string())?;
-    fs::write(&path, content).map_err(|err| format!("Cannot save config: {err}"))
+    Ok(app
+        .state::<JsonStore>()
+        .read::<Config>(&path)?
+        .unwrap_or_else(default_config))
+}
+
+/// All native configuration edits must run inside this one serialized
+/// read/modify/write transaction, not separate read_config/save calls.
+fn update_config<R>(
+    app: &AppHandle,
+    change: impl FnOnce(&mut Config) -> Result<(R, bool), String>,
+) -> Result<R, String> {
+    let path = config_path(app)?;
+    app.state::<JsonStore>()
+        .update(&path, default_config, change)
 }
 
 fn roots_as_paths(config: &Config) -> Vec<PathBuf> {
@@ -459,26 +465,31 @@ fn add_root(app: AppHandle, root: String) -> Result<Vec<String>, String> {
     let canonical = git::normalize_root(&root).map_err(|err| err.to_string())?;
     git::discover(&canonical).map_err(|err| err.to_string())?;
     let text = canonical.to_string_lossy().into_owned();
-    let mut config = read_config(&app)?;
-    if !config.roots.contains(&text) {
-        config.roots.push(text);
-        config.roots.sort();
-        write_config(&app, &config)?;
+    let (roots, changed) = update_config(&app, |config| {
+        let changed = !config.roots.contains(&text);
+        if changed {
+            config.roots.push(text);
+            config.roots.sort();
+        }
+        Ok(((config.roots.clone(), changed), changed))
+    })?;
+    if changed {
         let _ = app.emit("repoticker-config-changed", ());
     }
-    Ok(config.roots)
+    Ok(roots)
 }
 
 #[tauri::command]
 fn remove_root(app: AppHandle, root: String) -> Result<Vec<String>, String> {
-    let mut config = read_config(&app)?;
-    if !config.roots.contains(&root) {
-        return Err("Root is not enrolled".into());
-    }
-    config.roots.retain(|value| value != &root);
-    write_config(&app, &config)?;
+    let roots = update_config(&app, |config| {
+        if !config.roots.contains(&root) {
+            return Err("Root is not enrolled".into());
+        }
+        config.roots.retain(|value| value != &root);
+        Ok((config.roots.clone(), true))
+    })?;
     let _ = app.emit("repoticker-config-changed", ());
-    Ok(config.roots)
+    Ok(roots)
 }
 
 #[tauri::command]
@@ -825,10 +836,11 @@ fn save_settings(app: AppHandle, roots: Vec<String>, language: String) -> Result
         }
     }
     validated.sort();
-    let mut config = read_config(&app)?;
-    config.roots = validated;
-    config.language = language;
-    write_config(&app, &config)?;
+    update_config(&app, |config| {
+        config.roots = validated;
+        config.language = language;
+        Ok(((), true))
+    })?;
     let _ = app.emit("repoticker-config-changed", ());
     Ok(())
 }
@@ -931,20 +943,21 @@ fn github_set_monitor_org(
     {
         return Err("Invalid GitHub account.".into());
     }
-    let mut config = read_config(&app)?;
-    let changed_account = match (config.github_monitor_org.as_deref(), org.as_deref()) {
-        (Some(previous), Some(next)) => !previous.eq_ignore_ascii_case(next),
-        (None, None) => false,
-        _ => true,
-    };
-    let selected = match repositories {
-        Some(names) => validate_monitor_repositories(org.as_deref(), names)?,
-        None if changed_account => Vec::new(),
-        None => config.github_monitor_repositories.clone(),
-    };
-    config.github_monitor_org = org;
-    config.github_monitor_repositories = selected;
-    write_config(&app, &config)?;
+    update_config(&app, |config| {
+        let changed_account = match (config.github_monitor_org.as_deref(), org.as_deref()) {
+            (Some(previous), Some(next)) => !previous.eq_ignore_ascii_case(next),
+            (None, None) => false,
+            _ => true,
+        };
+        let selected = match repositories {
+            Some(names) => validate_monitor_repositories(org.as_deref(), names)?,
+            None if changed_account => Vec::new(),
+            None => config.github_monitor_repositories.clone(),
+        };
+        config.github_monitor_org = org;
+        config.github_monitor_repositories = selected;
+        Ok(((), true))
+    })?;
     app.state::<github_etag_cache::GitHubETagCache>()
         .invalidate();
     let _ = app.emit("repoticker-github-scope-changed", ());
@@ -956,9 +969,10 @@ fn set_language(app: AppHandle, language: String) -> Result<(), String> {
     if language != "en" && language != "ru" {
         return Err("Unsupported language".into());
     }
-    let mut config = read_config(&app)?;
-    config.language = language;
-    write_config(&app, &config)?;
+    update_config(&app, |config| {
+        config.language = language;
+        Ok(((), true))
+    })?;
     let _ = app.emit("repoticker-config-changed", ());
     Ok(())
 }
@@ -1024,6 +1038,7 @@ fn main() {
         .plugin(tauri_plugin_clipboard_manager::init())
         .manage(OperationLock::default())
         .manage(ActiveFetch::default())
+        .manage(JsonStore::default())
         .manage(monitor_cache::MonitorCache::default())
         .manage(github_rate_gate::GitHubRateGate::default())
         .manage(github_api::GitHubRestClient::default())

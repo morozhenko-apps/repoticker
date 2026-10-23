@@ -157,6 +157,37 @@ pub fn save_json<T: Serialize + DeserializeOwned>(
         .map_err(|err| format!("Cannot save config {}: {err}", path.display()))
 }
 
+
+/// Serialize all per-process read/modify/write transactions, including
+/// backup recovery, under a single mutex. The desktop manages one instance.
+#[derive(Default)]
+pub struct JsonStore(std::sync::Mutex<()>);
+
+impl JsonStore {
+    pub fn read<T: DeserializeOwned>(&self, path: &Path) -> Result<Option<T>, String> {
+        let _guard = self.0.lock().map_err(|_| "Config store lock poisoned")?;
+        read_json(path)
+    }
+
+    pub fn update<T, R>(
+        &self,
+        path: &Path,
+        default: impl FnOnce() -> T,
+        change: impl FnOnce(&mut T) -> Result<(R, bool), String>,
+    ) -> Result<R, String>
+    where
+        T: Serialize + DeserializeOwned,
+    {
+        let _guard = self.0.lock().map_err(|_| "Config store lock poisoned")?;
+        let mut config = read_json(path)?.unwrap_or_else(default);
+        let (result, changed) = change(&mut config)?;
+        if changed {
+            save_json(path, &config)?;
+        }
+        Ok(result)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -295,4 +326,40 @@ mod tests {
             Some(Preferences { roots: vec!["/old".into()], language: "en".into() })
         );
     }
+
+    #[test]
+    fn concurrent_changes_are_serialized_as_complete_transactions() {
+        let f = Fixture::new();
+        let store = std::sync::Arc::new(JsonStore::default());
+        let jobs: Vec<_> = (0..16)
+            .map(|_| {
+                let store = std::sync::Arc::clone(&store);
+                let path = f.path.clone();
+                std::thread::spawn(move || {
+                    store.update(&path, || 0u32, |counter| {
+                        *counter += 1;
+                        Ok(((), true))
+                    }).expect("atomic counter update");
+                })
+            })
+            .collect();
+        for job in jobs {
+            job.join().expect("thread finished");
+        }
+        assert_eq!(store.read::<u32>(&f.path).unwrap(), Some(16));
+    }
+
+    #[test]
+    fn unchanged_transaction_skips_disk_write_and_backup_rotation() {
+        let f = Fixture::new();
+        let store = JsonStore::default();
+        let value = store.update(&f.path, || Fixture::pref("en"), |prefs| {
+            assert_eq!(prefs.language, "en");
+            Ok((prefs.language.clone(), false))
+        }).unwrap();
+        assert_eq!(value, "en");
+        assert!(!f.path.exists());
+        assert!(!backup_path(&f.path).exists());
+    }
+
 }

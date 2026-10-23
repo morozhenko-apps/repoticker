@@ -93,12 +93,21 @@ impl GitHubETagCache {
 
     /// A successful 200 without a suitable ETag evicts the old path entry.
     /// Do not store potentially stale JSON if auth/scope changed mid-request.
-    pub fn save(&self, path: &str, lookup: &CacheLookup, etag: Option<&str>, value: &Value) -> bool {
+    pub fn save(
+        &self,
+        path: &str,
+        lookup: &CacheLookup,
+        etag: Option<&str>,
+        value: &Value,
+    ) -> bool {
         let mut state = self.inner.lock().unwrap_or_else(|err| err.into_inner());
         if state.generation != lookup.generation {
             return false;
         }
-        let current_etag = state.entries.iter().find(|entry| entry.path == path)
+        let current_etag = state
+            .entries
+            .iter()
+            .find(|entry| entry.path == path)
             .map(|entry| entry.etag.as_str());
         if current_etag != lookup.etag.as_deref() {
             // A newer in-flight request has already published an updated
@@ -137,11 +146,21 @@ mod tests {
         let path = "/user/installations?per_page=100&page=1";
         let fresh = cache.snapshot(path);
         assert!(cache.not_modified(path, &fresh).is_none());
-        cache.save(path, &fresh, Some("W/\"abc\""), &json!({"installations": []}));
+        cache.save(
+            path,
+            &fresh,
+            Some("W/\"abc\""),
+            &json!({"installations": []}),
+        );
         let saved = cache.snapshot(path);
         assert_eq!(saved.etag.as_deref(), Some("W/\"abc\""));
-        assert_eq!(cache.not_modified(path, &saved), Some(json!({"installations": []})));
-        assert!(cache.not_modified("/user/installations?per_page=100&page=2", &saved).is_none());
+        assert_eq!(
+            cache.not_modified(path, &saved),
+            Some(json!({"installations": []}))
+        );
+        assert!(cache
+            .not_modified("/user/installations?per_page=100&page=2", &saved)
+            .is_none());
     }
 
     #[test]
@@ -149,11 +168,21 @@ mod tests {
         let cache = GitHubETagCache::default();
         let path = "/user/installations?per_page=100&page=1";
         let old = cache.snapshot(path);
-        cache.save(path, &old, Some("\"private\""), &json!({"installations": [1]}));
+        cache.save(
+            path,
+            &old,
+            Some("\"private\""),
+            &json!({"installations": [1]}),
+        );
         cache.invalidate();
         assert!(!cache.unchanged(old.generation));
         assert!(cache.not_modified(path, &old).is_none());
-        assert!(!cache.save(path, &old, Some("\"private\""), &json!({"installations": [1]})));
+        assert!(!cache.save(
+            path,
+            &old,
+            Some("\"private\""),
+            &json!({"installations": [1]})
+        ));
         assert!(cache.snapshot(path).etag.is_none());
     }
 
@@ -167,7 +196,10 @@ mod tests {
         assert!(cache.save(path, &older, Some("\"old\""), &json!({"updated": 1})));
         let current = cache.snapshot(path);
         assert_eq!(current.etag.as_deref(), Some("\"new\""));
-        assert_eq!(cache.not_modified(path, &current), Some(json!({"updated": 2})));
+        assert_eq!(
+            cache.not_modified(path, &current),
+            Some(json!({"updated": 2}))
+        );
     }
 
     #[test]
@@ -175,20 +207,42 @@ mod tests {
         let cache = GitHubETagCache::default();
         for index in 0..=MAX_ENTRIES {
             let path = format!("/user?page={index}");
-            cache.save(&path, &cache.snapshot(&path),
-                Some("\"safe\""), &json!({"login": "user"}));
+            cache.save(
+                &path,
+                &cache.snapshot(&path),
+                Some("\"safe\""),
+                &json!({"login": "user"}),
+            );
         }
         assert!(cache.snapshot("/user?page=0").etag.is_none());
-        assert_eq!(cache.snapshot("/user?page=64").etag.as_deref(), Some("\"safe\""));
-        cache.save("/user", &cache.snapshot("/user"), Some("x\nInjected: secret"), &json!({}));
+        assert_eq!(
+            cache.snapshot("/user?page=64").etag.as_deref(),
+            Some("\"safe\"")
+        );
+        cache.save(
+            "/user",
+            &cache.snapshot("/user"),
+            Some("x\nInjected: secret"),
+            &json!({}),
+        );
         assert!(cache.snapshot("/user").etag.is_none());
-        cache.save("/user", &cache.snapshot("/user"), Some("\"large\""),
-            &json!({"payload": "x".repeat(MAX_ITEM_BYTES)}));
+        cache.save(
+            "/user",
+            &cache.snapshot("/user"),
+            Some("\"large\""),
+            &json!({"payload": "x".repeat(MAX_ITEM_BYTES)}),
+        );
         assert!(cache.snapshot("/user").etag.is_none());
         let billing = "/organizations/team/settings/billing/usage/summary?year=2026&month=10";
-        cache.save(billing, &cache.snapshot(billing),
-            Some("\"billing\""), &json!({"usageItems": []}));
-        assert!(cache.snapshot("/organizations/team/settings/billing/usage/summary?year=2026&month=10")
-            .etag.is_none());
+        cache.save(
+            billing,
+            &cache.snapshot(billing),
+            Some("\"billing\""),
+            &json!({"usageItems": []}),
+        );
+        assert!(cache
+            .snapshot("/organizations/team/settings/billing/usage/summary?year=2026&month=10")
+            .etag
+            .is_none());
     }
 }

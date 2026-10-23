@@ -592,9 +592,11 @@ test("scope changes during async cooldown read cannot publish old account result
   const listeners = new Map();
   const writes = [];
   let account = "old";
+  let clock = 1_000;
   let resolveCooldown;
   const getScope = async () => account;
-  startGithubMonitoring({
+  const refresh = startGithubMonitoring({
+    now: () => clock,
     invoke: async (name, args) => {
       if (name === "github_auth_status") return { connected: true };
       if (name === "get_monitor_scope") return getScope();
@@ -620,5 +622,10 @@ test("scope changes during async cooldown read cannot publish old account result
   resolveCooldown(90);
   await new Promise(resolve => setImmediate(resolve));
   assert.ok(!writes.some(w => w.runnerState?.counts?.running === 900));
+  // The native rate limit is global to this GitHub credential, so the
+  // new account also remains unknown until the server cooldown expires.
+  assert.equal(writes.at(-1).runnerState, null);
+  clock += 90_000;
+  await refresh(true);
   assert.equal(writes.at(-1).runnerState.counts.running, 2);
 });

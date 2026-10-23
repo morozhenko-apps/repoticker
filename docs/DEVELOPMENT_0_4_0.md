@@ -532,3 +532,25 @@ preferences, credentials, repositories or public distribution.
   [Preflight #40032393519](https://github.com/morozhenko-apps/repoticker/actions/runs/40032393519)
   was queued at this documentation checkpoint. Tests and KDE
   physical hit-testing should not be called accepted yet.
+
+### P1-UI1 source verification checkpoint
+
+- Initial `4328b2c` Preflight stopped before Rust compilation
+  because a shared-browser refactor omitted one closing brace
+  in `open_actions_job`; the same Rust job identified mechanical
+  Rustfmt differences in the new Git code and real-Git fixtures.
+  The JavaScript tests on this candidate succeeded.
+- Code/tests correction: [`3e42bc7`](https://github.com/morozhenko-apps/repoticker/commit/3e42bc7061d6d35dbfcb746e29cb8fd9faf5ba85)
+  closed the native function, preserved the prior Actions URL
+  allowlist and applied all seven Rustfmt source hunks.
+- Exact-SHA [Preflight #40032588368](https://github.com/morozhenko-apps/repoticker/actions/runs/40032588368):
+  Rust format/core tests/Clippy job **SUCCESS**: 32 core unit
+  + 8 existing Git integration + 3 new GitHub origin integration
+  = **43 Rust tests passed**. JavaScript/release contract job
+  **SUCCESS**: **141 Node tests** and **10 Python tests** passed.
+  Linux desktop compilation remained in progress when recorded;
+  do not mark 4/4 success unless the exact aggregate gate passes.
+- Browser opening remains an intentional user action only. The
+  dropdown is not physically accepted until KDE/Windows tests
+  verify pointer hit-testing, scroll and keyboard dismissal,
+  correct remote URL and preserved four-button card geometry.

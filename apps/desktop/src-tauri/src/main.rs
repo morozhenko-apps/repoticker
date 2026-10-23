@@ -779,6 +779,7 @@ fn open_actions_job(url: String) -> Result<(), String> {
         return Err("Untrusted GitHub Actions URL".into());
     }
     launch_browser(&url)
+}
 
 /// Open only the canonical GitHub origin of a currently enrolled checkout.
 /// A WebView-supplied path cannot cause arbitrary URL or filesystem opening.

@@ -432,7 +432,6 @@ fn git_operation_in_progress(repo: &Path) -> Result<bool, GitError> {
     Ok(false)
 }
 
-
 /// Translate supported GitHub origin remotes into a canonical browser URL.
 /// Never pass arbitrary remote URLs, query strings, credentials or local paths
 /// to the external browser.
@@ -453,7 +452,9 @@ pub fn github_remote_to_browser_url(remote: &str) -> Option<String> {
         !part.is_empty()
             && part != "."
             && part != ".."
-            && part.bytes().all(|c| c.is_ascii_alphanumeric() || b"_.-".contains(&c))
+            && part
+                .bytes()
+                .all(|c| c.is_ascii_alphanumeric() || b"_.-".contains(&c))
     };
     if !safe(owner) || !safe(name) {
         return None;

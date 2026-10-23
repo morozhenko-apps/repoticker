@@ -276,3 +276,100 @@ was **in progress** as of this checkpoint; do not claim 4/4 until
 that exact job and aggregate final gate pass. The source tests do
 not replace physical KDE/Windows cancellation/SSH-helper acceptance
 tracked in #15.
+
+## P1-G3 — atomic configuration transactions and last-good recovery (2026-10-23)
+
+### Evidence and problem
+
+The desktop stores ordinary non-secret preferences in per-user
+`config.json`, but `main.rs::write_config` uses `fs::write` directly.
+An interrupted/failed write can truncate the only valid copy. Five
+native mutators independently perform `read_config` -> mutate ->
+`write_config`; concurrent Tauri commands can each read the same
+old state and silently overwrite one another's changes. A malformed
+JSON primary currently prevents the UI from starting local scanning
+and Settings; no recovery path exists.
+
+Plausible causes of damage or lost settings include: (1) truncated
+direct writes on termination/disk full; (2) read-modify-write races
+between Tauri commands; (3) malformed manual edits; (4) filesystem
+permission/readonly errors; (5) interrupted rename or directory-sync
+after write; (6) backup missing/corrupted; (7) an external process
+editing this same file. The confirmed design failures are **(1) and
+(2)**. The remaining cases are acceptance/test inputs, not invented
+incident reports.
+
+### Design / invariants
+
+- Keep the **existing JSON schema and defaults**, package identity and
+  file location; no schema migration or user action on healthy config.
+  Do not store GitHub access tokens in config or backups.
+- Implement a portable, independently tested JSON file adapter in
+  `repoticker-core`; the Tauri layer continues to own `Config`
+  and its validation. Writes stage a unique exclusive temporary file
+  **beside the destination**, write/flush its bytes, sync the file,
+  then atomically rename into place. Sync containing directory on Unix
+  for crash-durability. Protect temp/backup contents with owner-only
+  Unix permissions. On failure, keep the existing primary intact and
+  remove abandoned staging files where feasible.
+- Before replacing an existing *valid* primary, atomically snapshot it
+  into `config.json.bak`. This backup represents the prior last-good
+  configuration, intentionally not necessarily the newest. A first
+  install without a previous primary has no backup until a later save.
+  Refuse to replace a valid backup with malformed content.
+- Read precedence: valid primary wins; missing primary + valid backup,
+  or malformed primary + valid backup, recovers the backup into primary.
+  Preserve the malformed original in an exclusive
+  `config.json.corrupt.*` quarantine before recovery. Never silently
+  initialize defaults if an existing config or backup is invalid and
+  no valid recovery exists. Return a clear, actionable error, preserving
+  both files. Recovery is idempotent; concurrent local operations are
+  serialized.
+- Protect the entire desktop read-modify-write transaction using one
+  Tauri-managed mutex. A standalone read also takes that lock, so
+  read-triggered recovery cannot race a native write. Emit config
+  changed events **after** releasing the lock. This gate is per-process:
+  external editors/second processes are not mutually excluded.
+- Do **not** change Git safety behavior, card geometry, user locale
+  selection or monitoring credentials. Unknown future JSON fields
+  retain current serde behavior (not a new compatibility promise).
+
+### Implementation / regression gates
+
+1. [ ] Extract JSON persistence adapter with explicit path argument,
+   ordinary serializer/deserializer, atomic write and backup recovery.
+   Test newly created file, backup of previous valid version, malformed
+   primary restoration with preserved quarantine, missing primary with
+   backup, two invalid copies fail closed, missing files use caller's
+   defaults, denied paths and abandoned staging cleanup.
+2. [ ] Apply `ConfigStoreGate` to every native read and update.
+   Convert all config-mutating commands to a closure-based serialized
+   transaction. Retain existing validation and public Tauri arguments.
+3. [ ] Add core real-filesystem tests and focused source checks
+   confirming every settings mutator uses transactional update and
+   never bypasses the atomic writer.
+4. [ ] Run final stable Preflight once for exact code SHA:
+   Rustfmt, core tests, Clippy, JS/release contracts and Linux
+   desktop compile. If it fails, repair root cause and rerun affected
+   checks, not blanket repetitive suites.
+5. [ ] Commit final evidence in a separate docs-only commit and add
+   physical KDE/Windows config corruption/recovery, permissions and
+   interrupted-save tests to issue #15. No `main` promotion, tag,
+   version bump or release.
+
+### Recovery limitations and rollback
+
+The backup is deliberately the **previous** known-good snapshot, so
+a recovery can lose the single newest settings edit, but never invent
+values. Restore of a readable malformed primary keeps diagnostic
+evidence outside the active config path; it never triggers an
+unprompted deletion of repositories. If backup and primary are both
+invalid or a repair cannot be written, report error instead of wiping
+preferences. Interruption between distinct file replacements still
+permits either old or new complete JSON, not torn JSON. The
+cross-process editor case and Windows physical filesystem behavior
+remain separate acceptance items.
+
+Rollback via the P1-G3 code commit returns to the prior writer without
+altering schema; pre-existing `.bak` and quarantined `.corrupt.*`
+files are non-authoritative to the old binary and should be retained.

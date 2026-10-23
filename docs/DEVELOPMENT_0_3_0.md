@@ -751,6 +751,62 @@ Design / security invariants:
 Rollback: revert the ETag code/test commit. No migration or
 persistent settings change.
 
+## A6 implementation checkpoint — 2026-10-23
+
+Code and focused regressions implemented exclusively on `dev`,
+starting with [`05b08e1`](https://github.com/morozhenko-apps/repoticker/commit/05b08e119065ffdd7eac6b0bea0ef37349a5cbcb).
+Follow-up correctness and formatting commits:
+`cbb1c69`, `b93a065`, `2c11bef`, `e12b59b`,
+`414a4be`, and `51936a4`.
+They do **not** alter the published `v0.2.0` tag or `main`.
+
+- [x] Native `GitHubETagCache`: bounded to 64 entries,
+  max 64 KiB of sanitized JSON per entry, exact validated
+  request paths, bounded validated ETag, memory only.
+  Billing summaries are excluded. Native conditional
+  requests use authenticated `If-None-Match`.
+- [x] Strict 304 handling: only a matching entry in the
+  current auth/scope generation may satisfy a 304.
+  Missing/evicted/mismatched cache is reported as unknown
+  rather than stale/zero data. A fresh 200 still passes
+  normal JSON parsing, maximum-body validation and
+  `project()`, with no ETag requirement for success.
+- [x] Authoritative invalidation at Device Flow begin,
+  credential grant, native refresh, disconnect and Monitor
+  scope write. In-flight older HTTP results are guarded.
+  Disconnect invalidation occurs under the pre-existing
+  vault lock so it serializes with token reads.
+- [x] Monitor collection revision guard prevents an old
+  account's delayed results/errors from replacing the
+  newly selected account or disconnected state. No new
+  poll/sleep/retry loop added.
+- [x] Native cache tests cover matching/absent 304, auth
+  generation invalidation, out-of-order 200, bounds,
+  invalid ETags and uncached billing.
+  Node contracts cover callsite invariants, and fake
+  collector tests cover account/scope transitions.
+- [ ] **Final code/test gate pending:** [Preflight
+  #39988906679](https://github.com/morozhenko-apps/repoticker/actions/runs/39988906679)
+  for `51936a4b2efa473380de629eb26260f278e9365c`.
+  Prior diagnostic attempts caught a Rust syntax error from
+  a test rewrite (fixed), remaining Rustfmt differences
+  (fixed) and an overstrict JS source-regex (fixed).
+  The new run must pass all jobs before this slice
+  can be marked CI-validated. No physical acceptance yet.
+- [ ] Combined KDE/Windows regression, live ETag/304,
+  identity switch, rate-limit/backoff, cold/warm timing
+  remain deferred to [#15](https://github.com/morozhenko-apps/repoticker/issues/15).
+  The normal desktop Preflight compiles desktop but does not
+  execute all desktop-native Rust unit-test binaries.
+
+**Key limitation:** no response is served merely because it
+was seen before. A cached projection is used only after a
+successful authorized server `304 Not Modified`; the
+network request is still made. At most a subset of the
+many paginated Actions requests fit in 64 in-memory entries.
+Do not claim a measured speedup, quota reduction or complete
+live recovery without physical evidence.
+
 ## Stop factors and invariant boundaries
 
 If later stages require a changed persistent model, GitHub App

@@ -876,25 +876,25 @@ metrics. A native publication from an old revision must
 not overwrite the most recent auth/scope transition.
 
 Decision, preserving internal IPC/persistent contracts:
-1. [ ] Serialize card-monitor presentation publications
-   **within the monitor controller** using a bounded
-   promise chain. Check `selectionRevision` at the moment
-   each pending publication executes. Never log tokens or
-   move credentials outside the existing native vault.
-2. [ ] On account-scope or auth event, advance revision
+1. [x] Serialize card-monitor publication IPC calls
+   **within the monitor controller** using one promise chain.
+   Check the initiating `selectionRevision` when each
+   queued publication executes. Never log tokens or move
+   credentials outside the existing native vault.
+2. [x] On account-scope or auth event, advance revision
    and immediately request cache invalidation:
    disconnect → `connected=false`, `runnerState=null`;
    connect/scope transition → `runnerState=null` with
    explicit `Checking GitHub connection...` (unknown,
    not fabricated disconnected/zero). Do this even when
    `busy=true`, without running GitHub REST.
-3. [ ] Keep at most one pending forced rerun. The old
+3. [x] Keep at most one pending forced rerun. The old
    collector will be discarded on revision mismatch.
    Preserve the fixed monitoring cadence, token/rate-limit
    handling, Git status and `unknown != zero` invariant.
    Do not add sleeps, polling or force network calls on
    every card/show event.
-4. [ ] Deterministic JS tests with held collectors and
+4. [x] Deterministic JS tests with held collectors and
    delayed native `github_monitor_publish` proving that
    disconnection and scope selection invalidate previous
    visible metrics BEFORE the old network request resolves;
@@ -912,6 +912,42 @@ to the user-selected account model. A directly invoked
 `github_monitor_publish` is a local Tauri command; the
 serialization guarantee covers the monitor controller's
 calls, not hypothetical third-party WebViews.
+
+### A7 implementation checkpoint (2026-10-23)
+
+- Source fix [`d060651`](https://github.com/morozhenko-apps/repoticker/commit/d0606514a856fd8ead8daba0be8d098fd5a891e0)
+  immediately clears cached runner/job metrics on auth and scope
+  events, without waiting for prior GitHub REST collection.
+  Native presentation publications use one serialized promise
+  chain with generation check. A connected/scope transition
+  displays `Checking GitHub connection...`, disconnect clears
+  credentials-derived UI counts without representing unknown
+  values as zero.
+- Follow-up [`5375ace`](https://github.com/morozhenko-apps/repoticker/commit/5375aced030bf7c2f23c04333d79bbdc47b4ed3f)
+  explicitly stamps **all** async refresh publications with
+  their originating revision. Even when `applyCooldown` awaits
+  native rate-limit metadata, a scope switch suppresses the
+  obsolete result.
+- Focused regressions at [`5c47778`](https://github.com/morozhenko-apps/repoticker/commit/5c4777807205254d120e19f1723f512aa5e80222)
+  hold an old collector *unresolved* while a disconnect or
+  account change occurs; they assert immediate unknown/cleared
+  metrics, no old result leak, a serialized delayed native
+  publication, and stale cooldown completion rejection.
+- [ ] [Exact-code Preflight #39993630373](https://github.com/morozhenko-apps/repoticker/actions/runs/39993630373)
+  on `5c4777807205254d120e19f1723f512aa5e80222`
+  was **pending** at this checkpoint. Previous runs were
+  superseded/cancelled by new commits and must not be
+  treated as success or failure of the final code.
+- Physical KDE/Windows credential and old-scope visible
+  transition checks are deferred to
+  [integration issue #15](https://github.com/morozhenko-apps/repoticker/issues/15).
+  No version bump, release or `main` promotion.
+
+**Boundedness note:** at most one forced *REST rerun* can be
+pending, but the native publication chain serializes each
+queued UI status event rather than claiming a universal hard
+limit on its count. This prevents completion-order reversals
+without inventing a new server-side permission model.
 
 ## Stop factors and invariant boundaries
 

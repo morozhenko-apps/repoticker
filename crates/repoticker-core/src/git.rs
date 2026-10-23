@@ -292,28 +292,201 @@ pub fn fetch(repo: &Path) -> Result<OperationOutcome, GitError> {
     Ok(OperationOutcome::Fetched)
 }
 
-/// Fast-forward using local fetched upstream refs; no implicit network access.
-/// Fetch first to refresh remote refs. Recheck eligibility immediately before
-/// any branch mutation; do not merge, rebase, stash or reset.
-pub fn safe_pull(repo: &Path) -> Result<OperationOutcome, GitError> {
+/// Resolve an immutable commit argument instead of passing a moving
+/// upstream expression to the final Git mutation.
+fn commit_oid(repo: &Path, revision: &str) -> Result<String, GitError> {
+    let oid = required(repo, &["rev-parse", "--verify", revision])?;
+    if !matches!(oid.len(), 40 | 64) || !oid.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+        return Err(GitError("Invalid Git commit object ID".into()));
+    }
+    Ok(oid)
+}
+
+/// A private seam for deterministic inter-process change tests. Checkpoints
+/// do not modify Git state in production; they are invoked as no-op closures.
+fn safe_pull_with_checkpoints(
+    repo: &Path,
+    after_first_check: impl FnOnce(),
+    before_merge: impl FnOnce(),
+) -> Result<OperationOutcome, GitError> {
     let state = inspect(repo)?;
     match state.decision {
         SyncDecision::FastForward { commits } => {
-            let expected_head = required(repo, &["rev-parse", "HEAD"])?;
-            // Defensive recheck to limit races with other local agents.
+            let expected_head = commit_oid(repo, "HEAD^{commit}")?;
+            let expected_upstream_tip = commit_oid(repo, "@{upstream}^{commit}")?;
+            after_first_check();
+
+            // Detect changes to either side of the proposed fast-forward,
+            // even when ahead/behind counts remain numerically identical.
             let again = inspect(repo)?;
             if again.branch != state.branch
+                || again.upstream != state.upstream
                 || again.decision != state.decision
-                || required(repo, &["rev-parse", "HEAD"])? != expected_head
+                || commit_oid(repo, "HEAD^{commit}")? != expected_head
+                || commit_oid(repo, "@{upstream}^{commit}")? != expected_upstream_tip
             {
                 return Err(GitError(
                     "Repository changed during sync; retry manually".into(),
                 ));
             }
-            required(repo, &["merge", "--ff-only", "--quiet", "@{upstream}"])?;
+
+            before_merge();
+            // Git resolves only this already-validated commit, not whatever
+            // @{upstream} may point to after our final inspection.
+            required(repo, &["merge", "--ff-only", "--quiet", &expected_upstream_tip])?;
             Ok(OperationOutcome::Updated(commits))
         }
         SyncDecision::UpToDate => Ok(OperationOutcome::AlreadyCurrent),
         other => Ok(OperationOutcome::Skipped(other)),
+    }
+}
+
+/// Fast-forward using local fetched upstream refs; no implicit network access.
+/// Fetch first to refresh remote refs. Recheck eligibility and both ref tips
+/// before branch mutation; never merge, rebase, stash or reset automatically.
+pub fn safe_pull(repo: &Path) -> Result<OperationOutcome, GitError> {
+    safe_pull_with_checkpoints(repo, || {}, || {})
+}
+
+#[cfg(test)]
+mod concurrent_git_tests {
+    use super::{safe_pull_with_checkpoints, OperationOutcome};
+    use std::{
+        fs,
+        path::{Path, PathBuf},
+        process::Command,
+        time::{SystemTime, UNIX_EPOCH},
+    };
+
+    struct Checkout {
+        root: PathBuf,
+        base: String,
+        first_tip: String,
+        alternate_tip: String,
+    }
+
+    impl Drop for Checkout {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.root);
+        }
+    }
+
+    fn git(root: &Path, args: &[&str]) -> String {
+        let output = Command::new("git")
+            .arg("-C")
+            .arg(root)
+            .args(args)
+            .env("GIT_TERMINAL_PROMPT", "0")
+            .output()
+            .expect("git must be installed");
+        assert!(
+            output.status.success(),
+            "git {:?} failed: {}",
+            args,
+            String::from_utf8_lossy(&output.stderr)
+        );
+        String::from_utf8_lossy(&output.stdout).trim().into()
+    }
+
+    impl Checkout {
+        fn new() -> Self {
+            let nanos = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .expect("clock")
+                .as_nanos();
+            let root = std::env::temp_dir().join(format!(
+                "repoticker-upstream-race-{}-{}-{:?}",
+                std::process::id(),
+                nanos,
+                std::thread::current().id()
+            ));
+            fs::create_dir_all(&root).expect("fixture directory");
+            git(&root, &["init", "-b", "dev"]);
+            git(&root, &["config", "user.name", "RepoTicker tests"]);
+            git(&root, &["config", "user.email", "repoticker@example.invalid"]);
+            fs::write(root.join("base.txt"), "base\n").expect("base file");
+            git(&root, &["add", "base.txt"]);
+            git(&root, &["commit", "-m", "base"]);
+            let base = git(&root, &["rev-parse", "HEAD"]);
+
+            fs::write(root.join("first.txt"), "first\n").expect("first branch");
+            git(&root, &["add", "first.txt"]);
+            git(&root, &["commit", "-m", "first"]);
+            let first_tip = git(&root, &["rev-parse", "HEAD"]);
+            git(&root, &["reset", "--hard", &base]);
+
+            fs::write(root.join("alternate.txt"), "alternate\n").expect("alternate branch");
+            git(&root, &["add", "alternate.txt"]);
+            git(&root, &["commit", "-m", "alternate"]);
+            let alternate_tip = git(&root, &["rev-parse", "HEAD"]);
+            git(&root, &["reset", "--hard", &base]);
+
+            git(&root, &["remote", "add", "origin", "."]);
+            git(&root, &["remote", "add", "other", "."]);
+            git(&root, &["update-ref", "refs/remotes/origin/dev", &first_tip]);
+            git(&root, &["update-ref", "refs/remotes/other/dev", &alternate_tip]);
+            git(&root, &["branch", "--set-upstream-to", "origin/dev", "dev"]);
+
+            Self { root, base, first_tip, alternate_tip }
+        }
+
+        fn unchanged(&self) {
+            assert_eq!(git(&self.root, &["rev-parse", "HEAD"]), self.base);
+            assert!(!self.root.join("first.txt").exists());
+            assert!(!self.root.join("alternate.txt").exists());
+            assert!(git(&self.root, &["status", "--porcelain"]).is_empty());
+        }
+    }
+
+    #[test]
+    fn moving_upstream_to_equally_distant_commit_aborts_without_changes() {
+        let checkout = Checkout::new();
+        let result = safe_pull_with_checkpoints(
+            &checkout.root,
+            || {
+                git(&checkout.root, &[
+                    "update-ref", "refs/remotes/origin/dev", &checkout.alternate_tip
+                ]);
+            },
+            || panic!("must not reach merge after changed upstream tip"),
+        );
+        assert!(result.expect_err("changed OID must fail").0.contains("changed during sync"));
+        checkout.unchanged();
+    }
+
+    #[test]
+    fn repointing_upstream_to_equally_distant_ref_aborts_without_changes() {
+        let checkout = Checkout::new();
+        let result = safe_pull_with_checkpoints(
+            &checkout.root,
+            || {
+                git(&checkout.root, &[
+                    "branch", "--set-upstream-to", "other/dev", "dev"
+                ]);
+            },
+            || panic!("must not merge a different upstream"),
+        );
+        assert!(result.expect_err("changed upstream name must fail").0.contains("changed during sync"));
+        checkout.unchanged();
+    }
+
+    #[test]
+    fn moving_upstream_after_final_check_cannot_redirect_pinned_merge() {
+        let checkout = Checkout::new();
+        assert_eq!(
+            safe_pull_with_checkpoints(
+                &checkout.root,
+                || {},
+                || {
+                    git(&checkout.root, &[
+                        "update-ref", "refs/remotes/origin/dev", &checkout.alternate_tip
+                    ]);
+                }
+            ).expect("pinned fast-forward"),
+            OperationOutcome::Updated(1)
+        );
+        assert_eq!(git(&checkout.root, &["rev-parse", "HEAD"]), checkout.first_tip);
+        assert!(checkout.root.join("first.txt").is_file());
+        assert!(!checkout.root.join("alternate.txt").exists());
     }
 }

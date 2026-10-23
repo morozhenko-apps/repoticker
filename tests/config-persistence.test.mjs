@@ -25,7 +25,7 @@ test("atomic JSON writer keeps old config and recovery evidence", () => {
   assert.match(store, /fn atomic_replace\(/);
   assert.match(store, /create_new\(true\)/);
   assert.match(store, /file\.sync_all\(\)/);
-  assert.match(store, /fs::rename\(&temporary\.0, path\)/);
+  assert.match(store, /fs::rename\(&temporary\.path, path\)/);
   assert.match(store, /fn quarantine_corrupt\(/);
   assert.match(store, /pub fn read_json</);
   assert.match(store, /pub fn save_json</);

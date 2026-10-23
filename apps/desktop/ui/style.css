@@ -12,7 +12,7 @@ button:focus-visible, input:focus-visible, .status-hover:focus-visible { outline
 [hidden] { display: none !important; }
 
 .card { height: 100%; width: 100%; display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden; position: relative; background: #e9ecef; border: 1px solid #c7cbd0; border-radius: 17px; padding: 9px 10px 10px; box-shadow: inset 0 1px 0 #ffffffbb; color: #242b30; }
-.drawer { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 0; border-bottom: 1px solid #d1d5d9; margin-bottom: 6px; }
+.drawer { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 0; border-bottom: 1px solid #d1d5d9; margin-bottom: 6px; position: relative; isolation: isolate; }
 .rows { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; }
 .repo-row { min-height: 35px; padding: 2px 7px; display: flex; gap: 9px; align-items: center; position: relative; font-size: 14px; border-bottom: 1px solid #d8dce0; }
 .repo-name { flex: 1; min-width: 0; font-weight: 400; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; }
@@ -23,8 +23,8 @@ button:focus-visible, input:focus-visible, .status-hover:focus-visible { outline
 .repo-delta.is-behind { color: #246da0; }
 .repo-more { width: 28px; height: 29px; font-size: 20px; border-radius: 5px; flex-shrink: 0; }
 .repo-more:hover { background: color-mix(in srgb, CanvasText 9%, transparent); }
-.repo-menu { position: absolute; right: 9px; top: 31px; z-index: 12; background: #f9fafb; border: 1px solid #c7cbd0; border-radius: 7px; padding: 4px; box-shadow: 0 5px 15px #0003; min-width: 114px; display: flex; flex-direction: column; }
-.repo-menu button { text-align: left; border-radius: 4px; font-size: 13px; padding: 6px 9px; }
+.drawer > .repo-menu { position: absolute; z-index: 30; background: #ffffff; color: #242b30; border: 1px solid #aeb8c1; border-radius: 7px; padding: 4px; box-shadow: 0 7px 20px #0004; min-width: 155px; display: flex; flex-direction: column; pointer-events: auto; }
+.repo-menu button { text-align: left; border-radius: 4px; font-size: 13px; padding: 9px 11px; min-height: 35px; white-space: nowrap; }
 .repo-menu button:hover { background: color-mix(in srgb, CanvasText 10%, transparent); }
 .empty { margin: 12px 15px; font-size: 13px; color: GrayText; }
 

@@ -3,6 +3,7 @@ import { createNativeDragGesture } from "./native-drag.mjs";
 import { startGithubMonitoring } from "./github-monitor.mjs";
 import { compactStatus } from "./status-metrics.mjs";
 import { mergeMonitorPresentation, reconcileScanPresentation } from "./monitor-presentation.mjs";
+import { placeRepoMenu } from "./repo-menu.mjs";
 
 const emptySnapshot = {
   roots: [], repositories: [], errors: [],
@@ -72,12 +73,87 @@ function addText(parent, tag, value, className = "") {
   parent.append(el);
   return el;
 }
-function hideRepoMenus() {
-  document.querySelectorAll(".repo-menu").forEach(menu => { menu.hidden = true; });
-  document.querySelectorAll(".repo-more").forEach(button => {
+const repoMenu = byId("repo-menu");
+const repoDrawer = byId("repo-drawer");
+let menuAnchor = null;
+let menuRepoPath = null;
+
+function hideRepoMenus(restoreFocus = false) {
+  const previouslyFocused = menuAnchor;
+  repoMenu.hidden = true;
+  menuRepoPath = null;
+  menuAnchor = null;
+  document.querySelectorAll(".repo-more[aria-expanded='true']").forEach(button => {
     button.setAttribute("aria-expanded", "false");
   });
+  if (restoreFocus && previouslyFocused?.isConnected) previouslyFocused.focus();
 }
+
+function showRepoMenu(button, repoPath) {
+  const alreadyOpen = menuAnchor === button && !repoMenu.hidden;
+  hideRepoMenus();
+  if (alreadyOpen) return;
+  menuAnchor = button;
+  menuRepoPath = repoPath;
+  repoMenu.hidden = false;
+  const position = placeRepoMenu(
+    button.getBoundingClientRect(),
+    repoDrawer.getBoundingClientRect(),
+    repoMenu.getBoundingClientRect()
+  );
+  repoMenu.style.left = position.left + "px";
+  repoMenu.style.top = position.top + "px";
+  repoMenu.style.width = position.width + "px";
+  button.setAttribute("aria-expanded", "true");
+  repoMenu.querySelector("button")?.focus();
+}
+
+for (const [label, operation] of [
+  ["Fetch", "fetch"],
+  ["Safe pull", "safe_pull"],
+  ["Open on GitHub", "open_github"]
+]) {
+  const item = addText(repoMenu, "button", label);
+  item.type = "button";
+  item.setAttribute("role", "menuitem");
+  item.addEventListener("click", async () => {
+    const path = menuRepoPath;
+    hideRepoMenus();
+    if (!path) return;
+    if (operation === "open_github") {
+      try {
+        await invoke("open_repository_on_github", { repoPath: path });
+      } catch (error) {
+        showError(error);
+      }
+    } else {
+      void runGitAction(operation, path);
+    }
+  });
+}
+
+repoMenu.addEventListener("keydown", event => {
+  const items = [...repoMenu.querySelectorAll("button")];
+  const current = items.indexOf(document.activeElement);
+  let target = null;
+  if (event.key === "ArrowDown") target = items[(current + 1) % items.length];
+  if (event.key === "ArrowUp") target = items[(current + items.length - 1) % items.length];
+  if (event.key === "Home") target = items[0];
+  if (event.key === "End") target = items[items.length - 1];
+  if (target) {
+    event.preventDefault();
+    target.focus();
+  }
+});
+
+document.addEventListener("pointerdown", event => {
+  if (!repoMenu.hidden &&
+      !repoMenu.contains(event.target) &&
+      !event.target.closest(".repo-more")) hideRepoMenus();
+});
+byId("repo-list").addEventListener("scroll", () => hideRepoMenus(), { passive: true });
+window.addEventListener("resize", () => hideRepoMenus());
+
 function makeRepoRow(repo) {
   const row = document.createElement("div");
   row.className = "repo-row";
@@ -110,26 +186,8 @@ function makeRepoRow(repo) {
   button.title = "Git operations";
   button.setAttribute("aria-label", "Git operations for " + repo.name);
   button.setAttribute("aria-expanded", "false");
-  const menu = document.createElement("div");
-  menu.className = "repo-menu";
-  menu.hidden = true;
-  for (const [label, operation] of [["Fetch", "fetch"], ["Safe pull", "safe_pull"]]) {
-    const item = addText(menu, "button", label);
-    item.type = "button";
-    item.addEventListener("click", () => {
-      hideRepoMenus();
-      runGitAction(operation, repo.path);
-    });
-  }
-  button.addEventListener("click", () => {
-    const open = menu.hidden;
-    hideRepoMenus();
-    if (open) {
-      menu.hidden = false;
-      button.setAttribute("aria-expanded", "true");
-    }
-  });
-  row.append(menu);
+  button.setAttribute("aria-controls", "repo-menu");
+  button.addEventListener("click", () => showRepoMenu(button, repo.path));
   return row;
 }
 
@@ -255,6 +313,7 @@ function traceMonitorReady() {
   }
 }
 function render(next) {
+  hideRepoMenus();
   snapshot = next;
   renderMonitorMetrics(next.runner_state);
   const list = byId("repo-list");
@@ -381,6 +440,11 @@ byId("fetch-all").addEventListener("click", () => {
 });
 byId("sync-all").addEventListener("click", () => runGitAction("safe_pull"));
 document.addEventListener("keydown", event => {
+  if (event.key === "Escape" && !repoMenu.hidden) {
+    event.preventDefault();
+    hideRepoMenus(true);
+    return;
+  }
   if (event.key === "Escape") {
     if (quotaExpanded) { void setQuotaOpen(false); return; }
     if (view !== "compact") openView(view);
@@ -418,6 +482,7 @@ window.__TAURI__?.event?.listen?.("repoticker-git-progress", event => {
   });
 });
 window.__TAURI__?.event?.listen?.("repoticker-card-hidden", () => {
+  hideRepoMenus();
   cardVisible = false;
   cancelAutoHide();
   resetQuota();

@@ -39,7 +39,7 @@ A repository may change upstream after the last Fetch. Run Fetch to refresh remo
 ## Known limitations
 
 - No background fetch/pull or automatic startup sync in v0.1.0; all mutation is explicitly user-triggered.
-- No Git subprocess timeouts/cancellation or comprehensive treatment of SSH prompt/hung helpers. `GIT_TERMINAL_PROMPT=0` prevents ordinary terminal Git prompts.
+- **Published v0.2.0:** no Git subprocess cancellation or comprehensive treatment of SSH prompt/hung helpers. `GIT_TERMINAL_PROMPT=0` prevents ordinary terminal Git prompts. The `dev` P1-G2 implementation adds explicit **Fetch-only** cancellation, including its owned child-process group/tree; it does not kill Safe pull. Partial remote-tracking ref updates during cancellation are possible and do not change the worktree. See [P1 development plan](DEVELOPMENT_0_4_0.md).
 - External clients can change a checkout during operations; the application lock serializes only RepoTicker operations within one process.
 - Native Git configuration, LFS, worktrees, hooks and credential helpers need broader hostile-input and cross-platform acceptance.
 - Config JSON updates do not yet use atomic replacement or schema migration.

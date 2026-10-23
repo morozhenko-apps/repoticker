@@ -67,12 +67,12 @@ Validate the OID as 40/64 ASCII hex before passing it as argv.
      the original validated commit, not the new ref;
    - normal fast-forward and existing refusal cases continue
      to behave unchanged. No sleep, shell, or network.
-4. [ ] Review source/diffs/format; run the final STABLE Preflight once
+4. [x] Review source/diffs/format; run the final STABLE Preflight once
    on the complete code-and-test candidate, including core integration
    tests and desktop compile. Native physical testing for actual
    third-party concurrent process races remains deferred to
    [issue #15](https://github.com/morozhenko-apps/repoticker/issues/15).
-5. [ ] Record evidence, exact SHA, remaining risks and rollback in a
+5. [x] Record evidence, exact SHA, remaining risks and rollback in a
    separate docs-only commit. No new release, tags, `main` promotion
    or full v0.9 Mode B campaign.
 
@@ -176,14 +176,14 @@ visible.
 
 ### Milestones and validation
 
-1. [ ] Add cancellable native Git Fetch subprocess execution, with
+1. [x] Add cancellable native Git Fetch subprocess execution, with
    child-group lifecycle, generation-controlled cancellation and
    deterministic tests for cancel before launch, during a live
    process and launch/cancel races. Preserve old `fetch` contract.
-2. [ ] Wire desktop active-operation state and cancel IPC independently
+2. [x] Wire desktop active-operation state and cancel IPC independently
    of `OperationLock`; ensure it can interrupt a blocked worker.
    Clear active operation only after all workers return.
-3. [ ] Reuse the existing Fetch action UI for Cancel/Stopping, without
+3. [x] Reuse the existing Fetch action UI for Cancel/Stopping, without
    changing compact card dimensions, Safe pull semantics or other
    controls. Add source/model interaction tests for the cancellation
    state and native IPC wiring.
@@ -204,3 +204,44 @@ A SIGKILL/taskkill can interrupt Git ref maintenance; the next Fetch
 is responsible for recovering ordinary remote-tracking freshness.
 An external helper that explicitly detaches into a new process group
 or escapes Windows's process tree is outside this slice's guarantee.
+
+### P1-G1 verified final gate
+
+[Preflight #40022758425](https://github.com/morozhenko-apps/repoticker/actions/runs/40022758425)
+for `a80f045d4d842147140074ce5cdb701feaf97df6` was
+**completed SUCCESS** (4/4: Rust format/core/Clippy, JS, Linux
+desktop compile and aggregate gate). This confirms source-level
+verification, not physical inter-process race acceptance.
+
+### P1-G2 implementation checkpoint
+
+- `2cc5430712472ae4df530f43aa34d9d63e148eb8`:
+  explicit `FetchCancellation` keyed to its owned Git child processes.
+  A cancellable Fetch uses the existing argv-only Git command plus
+  a process group on Unix / native Windows `taskkill /PID /T /F`.
+  Cancellation registers PIDs before waiting and orders registration
+  with the cancel flag under one lock. A stopped Fetch reports
+  `Git fetch cancelled`, distinct from a successful Fetch.
+- `e8c1d8d93e54d04f8256a468e5bb4a91326b9c8a`:
+  desktop `ActiveFetch` state and independent `cancel_git_fetch`
+  IPC, existing four-button compact UI and three source/security
+  regression tests. The Fetch action becomes Cancel/Stopping only
+  while Fetch is running; Safe pull still runs sequentially, without
+  any new kill/cancel path.
+- `6d055fc9876ba04aa48fe76335caf29ddf9126d9`:
+  Windows process-tree termination errors fail closed; a registration
+  state failure cleans up the freshly spawned child group.
+- Test additions: three real subprocess lifecycle tests in Rust
+  (pre-cancel before spawn, cancel registered live group with a
+  descendant, cancel between process spawn and registry insert)
+  and three JS source/interface contracts. These tests have been
+  committed but must not be reported passing before final CI.
+- Final candidate source SHA:
+  `6d055fc9876ba04aa48fe76335caf29ddf9126d9`.
+  [Preflight #40026440322](https://github.com/morozhenko-apps/repoticker/actions/runs/40026440322)
+  **pending as of this checkpoint**. Exact status and any errors
+  must be checked, not inferred from source changes.
+- Physical acceptance remains open in [issue #15](https://github.com/morozhenko-apps/repoticker/issues/15):
+  KDE blocked SSH helper, cancel at batch boundaries, late cancel,
+  Windows process-tree cleanup and partial Fetch ref inspection.
+  No new release, main promotion or runtime acceptance is claimed.

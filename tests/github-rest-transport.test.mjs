@@ -46,7 +46,7 @@ test("ETag caching is native, generation-scoped and never serves unvalidated 304
   assert.match(main, /\.manage\(github_etag_cache::GitHubETagCache::default\(\)\)/);
   assert.match(native, /\.header\(header::IF_NONE_MATCH, etag\.as_str\(\)\)/);
   assert.match(native, /reqwest::StatusCode::NOT_MODIFIED/);
-  assert.match(native, /cached\\s*\\.not_modified\\(&path, &lookup\\)/);
+  assert.match(native, /cached\s*\.not_modified\(&path, &lookup\)/);
   assert.match(native, /cached\.unchanged\(lookup\.generation\)/);
   assert.match(native, /cached\.save\(&path, &lookup, etag\.as_deref\(\), &projected\)/);
   assert.match(cache, /const MAX_ENTRIES: usize = 64;/);

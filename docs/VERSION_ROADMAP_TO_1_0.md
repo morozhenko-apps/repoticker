@@ -39,6 +39,15 @@ release gate. Numbering can be consolidated or skipped with documented
 reason; v0.9 Mode B and the final v1.0 acceptance gates remain mandatory.
 Never reinterpret the plan as permission to release untested code.
 
+**Owner addition (2026-10-23): L10N-20 is the mandatory final feature milestone**
+after all other functional/platform development and BEFORE starting the
+v0.9.0 Mode B campaign. Translate every UI surface into the
+[20 canonical PersonalLanding languages](localization/LOCALE_CONTEXT_AUDIT.md),
+complete an independent **contextual audit for each language**, and
+resolve findings before RC freeze. The internal L10N-20 checkpoint
+does not require its own published minor release.
+[Tracking issue #16](https://github.com/morozhenko-apps/repoticker/issues/16).
+
 ## Version milestones
 
 | Version | Target feature contract | Current evidence/status | Mode B exit work |
@@ -47,10 +56,11 @@ Never reinterpret the plan as permission to release untested code.
 | **v0.2.0** | P2: GitHub App Device Flow, OS keyring, self-hosted runner status, Actions job counts and separate hover views; opt-in read-only billing | **Published 2026-10-22.** Signed APT index offers `repo-ticker 0.2.0` on Alcotester. Windows physical runtime and selected live failure paths remain unverified | Auth/session transition and bounded GitHub response contracts; per-account failures, fake clock/pagination, no secret leakage; record matrix gaps |
 | **v0.3.0** | P2 hardening: expiry/refresh/revocation, API `401/403/404/429`, rate limits, offline/stale, ETags/conditional polling where supportable; monitored-repository selection; **fix slow staged startup and premature GitHub ‘Not connected’ display ([#12](https://github.com/morozhenko-apps/repoticker/issues/12))** | **Started in `dev`**; [v0.3 development plan](DEVELOPMENT_0_3_0.md), first slice removes full Git scan from monitor scope lookup; cold/warm timing, wallet and remote startup still pending | Focused startup-state, authorization and API adapter regression tests; full Mode B remains scheduled for v0.9.0 |
 | **v0.4.0** | P1 hardening: terminate long Git/SSH tasks, external concurrent changes, linked worktrees, submodules, hooks, multiple remotes, adversarial configs; atomic configuration and recovery | Planned | Local Git/filesystem and `ff-only` invariant matrices; N1/N2/N4/N5/N6/N7/N12, mutation checks against unsafe Git changes |
-| **v0.5.0** | P1/P4: native CI notifications, autostart, monitoring preferences, complete EN/RU UI localization, settings/error clarity and accessibility basics | Planned | Settings and event integration matrix; N8 timezone/DST, N9 cancel/close/reopen, N10 redaction, N12 persistence; critical UI E2E only |
+| **v0.5.0** | P1/P4: native CI notifications, autostart, monitoring preferences, EN/RU localization foundation, settings/error clarity and accessibility basics | Planned | Settings and event integration matrix; N8 timezone/DST, N9 cancel/close/reopen, N10 redaction, N12 persistence; critical UI E2E only |
 | **v0.6.0** | **Optional P3:** opt-in unattended Git sync with explicit schedule, unchanged safe `ff-only` invariants and cancellation | Conditional product milestone; OFF by default, not a v1.0 prerequisite if explicitly deferred | If shipped: destructive-state/race/state-machine and restart/recovery tests; Mode B applies in full before enabling, never bypassed |
 | **v0.7.0** | **Optional P3:** Hybrid webhook relay, signed/replay-safe events, optional Cloudflare Worker/DO and Docker/VPS, websocket/reconnect and authoritative REST fallback | Conditional product milestone; no mandatory cloud backend for local-first v1.0 | If shipped: HMAC/replay/dedup/tenant isolation/queue ordering, N3–N7/N9/N10 and chaos/failure-path tests prior to enabling |
 | **v0.8.0** | P4 platform/distribution: Windows native lifecycle and installers, signed APT upgrade/rollback policy, high-DPI/multimonitor, portable settings/credentials, KDE regression, accessibility | Partially implemented; Windows runtime and upgrade not physically verified | Linux and Windows physical matrix; signed APT install/upgrade/remove, corrupted config/keyring/permission denial, multi-screen, native UI E2E |
+| **L10N-20 (after v0.8, before v0.9)** | Mandatory last feature: 20 canonical UI locales with contextual audit **per locale** across all card/tray/Settings/About/status/GitHub/Git/errors/notifications; RTL, fonts, placeholders, long texts and safe terminology | Planned, **not implemented**. [Localization matrix](localization/LOCALE_CONTEXT_AUDIT.md) and [#16](https://github.com/morozhenko-apps/repoticker/issues/16). Must finish **before** Mode B RC source freeze | 20/20 translated complete UI and separate context audit signoff; all locale-critical findings resolved before starting full Mode B |
 | **v0.9.0** | **Release Candidate + complete Mode B audit**: no new major functionality, defect correction, stable API/UX, migration compatibility, coverage and security review | Not started | **All 12 Mode B stages and every applicable Positive/N1–N12 cell resolved; stable/flaky and CI verification on frozen RC SHA; critical real-device integration accepted** |
 | **v1.0.0** | Public **stable** contract for documented supported OSes and enabled features; upgrade/restore, security, reproducible release, support/runbooks | Target, not yet released | Gate: approved Mode B completion report, stable CI/release checks, verified installers and no unwaived critical failures |
 
@@ -64,7 +74,7 @@ and physically accepted. Do not claim Windows support from NSIS build alone.
 
 ## Mode B — Testing: binding test program before v1.0
 
-**Full campaign starts at v0.9.0.** Earlier versions (v0.2–v0.8) must still include normal targeted feature/regression tests and final stable CI, but do not require exhaustive Mode B branch/matrix/mutation deliverables. The preliminary October source scan is archived as exploratory material, **not** a prerequisite to further feature implementation.
+**Full campaign starts at v0.9.0, only AFTER L10N-20 is finished and all 20 context audits have passed.** Earlier feature milestones (v0.2–v0.8 plus L10N-20) must still include normal targeted feature/regression tests and final stable CI, but do not require exhaustive Mode B branch/matrix/mutation deliverables. The preliminary October source scan is archived as exploratory material, **not** a prerequisite to further feature implementation.
 
 The **latest approved agent SSOT** is the user-provided `AGENT.md`,
 sections 8.1 and 5.2. Testing is its own primary **MODE B**, used for
@@ -92,7 +102,7 @@ feature tests were added in Mode A.
 5. **Test matrix:** rows are artifacts, columns are **Positive and N1–N12**.
    Every cell is `Covered`, `Planned`, or `N/A — reason`; never blank.
 6. **Interaction matrix:** meaningful combinations of independent states
-   (e.g. auth × scope × API coverage × card visible; Git dirtiness ×
+   (e.g. auth × scope × API coverage × card visible × UI locale/RTL; Git dirtiness ×
    remote state × concurrent operation; upgrade × keyring state).
 7. **Coverage estimate:** expected test cases per category and module,
    with a reasoned count; no symbolic one-test-per-category sampling.
@@ -148,7 +158,7 @@ feature tests were added in Mode A.
 | N5 Race conditions | simultaneous Git clients, token refresh vs disconnect, stale hover/monitor result, duplicate jobs |
 | N6 Corrupt/stale data | broken settings JSON, stale schema, missing pagination fields, corrupt response, expired tokens |
 | N7 Security/permissions | token/keyring denial, route allowlists, symlink/hook abuse, unauthorized org scope, HMAC if enabled |
-| N8 Time/locale | refresh-clock changes, OAuth expiration, UTC billing periods, timezone/DST, EN/RU labels |
+| N8 Time/locale | refresh-clock changes, OAuth expiration, UTC billing periods, timezone/DST, 20-language UI labels, plural/placeholder parity, RTL/fonts and language override persistence |
 | N9 User interruption | Settings Cancel/OK, app termination, tray Hide/Open, suspend/resume, interrupted install |
 | N10 Privacy/PII | no access/refresh token in WebView, logs, diagnostics, crash text, app configs or billing projection |
 | N11 Monetization | **N/A to product entitlements:** RepoTicker is free with no purchase or subscription. Billing display is informational and must still be validated under N1/N6/N7/N8/N10. Reassess if monetization is added |
@@ -170,6 +180,7 @@ campaign*; this roadmap alone is **not** the completed inventory:
 - `docs/testing/MODE_B_MATRIX.md`: Positive+N1–N12 for each artifact.
 - `docs/testing/MODE_B_COVERAGE.md`: per-production-module actual
   function/branch measurements and independent mutation outcomes.
+- `docs/localization/LOCALE_CONTEXT_AUDIT.md`: 20 independent locale-context review records and findings, completed before Mode B; no invented reviewer approvals.
 - `docs/testing/MODE_B_FINAL_REPORT.md`: actual command/SHA/status,
   stable/flaky runs, applicable test counts, residual risks, Linux/Windows
   physical acceptance, reproducible release assets and explicit YES/NO gate.
@@ -188,6 +199,7 @@ Keep production code, test changes and documentation in logically atomic
 commits; **docs-only commits separate from code/test commits**.
 
 A 1.0.0 tag is permitted only after:
+- L10N-20 has **20/20 contextual audit signoffs** after all enabled functionality and before Mode B RC freeze.
 - v0.9 RC has a **COMPLETE** Mode B report (all applicable maps/matrices
   and failure gates closed; any waivers must be justified and must not
   cover a critical security/data-loss bug).
@@ -204,6 +216,8 @@ A 1.0.0 tag is permitted only after:
 
 ## Tracking
 
+- [20-locale feature and contextual audit #16](https://github.com/morozhenko-apps/repoticker/issues/16)
+- [Deferred integration acceptance #15](https://github.com/morozhenko-apps/repoticker/issues/15)
 - [Mode B before v1.0 acceptance issue #10](https://github.com/morozhenko-apps/repoticker/issues/10)
 - [v0.2 release readiness issue #9](https://github.com/morozhenko-apps/repoticker/issues/9)
 - [GitHub integration reliability issue #4](https://github.com/morozhenko-apps/repoticker/issues/4)
@@ -218,4 +232,5 @@ A 1.0.0 tag is permitted only after:
 - [ ] Preliminary [branch map](testing/MODE_B_BRANCH_MAP.md) is parked; it must be regenerated/reconciled against the v0.9.0 RC source. No full audit or quality metrics claimed.
 - [ ] STABLE/known-FLAKY split wired to CI for the pre-1.0 gate.
 - [ ] v0.2 release candidate built/tagged/published; unchanged here.
+- [ ] L10N-20: 20/20 UI languages and per-language context audit accepted **before** v0.9 Mode B starts.
 - [ ] v0.9 RC and v1.0 product/OS/QA acceptance achieved.

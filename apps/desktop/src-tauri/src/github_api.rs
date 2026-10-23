@@ -37,7 +37,6 @@ impl GitHubRestClient {
     }
 }
 
-
 /// A fixed, redacted error vocabulary shared with the JS monitor policy.
 /// Do not return GitHub response bodies, account names or HTTP header values.
 fn api_http_failure(

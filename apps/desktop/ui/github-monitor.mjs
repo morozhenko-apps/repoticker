@@ -1,4 +1,6 @@
 import { collectRunnerState } from "./runner-collector.mjs";
+import { listAvailableInstallations } from "./github-installations.mjs";
+export { listAvailableInstallations } from "./github-installations.mjs";
 import { githubFailureReason, githubFailureMessage, mostImportantGithubFailure } from "./github-errors.mjs";
 
 // Existing job classification is reused; bearer tokens remain in native Rust.
@@ -13,22 +15,6 @@ export function monitorRefreshDelay(repositoryCount) {
 const INSTALL_PAGE_LIMIT = 10;
 const ACCOUNT_NAME = /^[a-zA-Z0-9_.-]+$/;
 
-export async function listAvailableInstallations(get) {
-  const result = [];
-  for (let page = 1; page <= INSTALL_PAGE_LIMIT; page++) {
-    const response = await get("/user/installations?per_page=100&page=" + page);
-    if (!Array.isArray(response?.installations)) throw Error("Invalid installations response");
-    for (const item of response.installations) {
-      const name = item?.account?.login;
-      if (typeof name === "string" && ACCOUNT_NAME.test(name) &&
-          Number.isSafeInteger(item.id) && item.id > 0) {
-        result.push({ name, id: item.id });
-      }
-    }
-    if (response.installations.length < 100) return { items: result, complete: true };
-  }
-  return { items: result, complete: false };
-}
 
 export async function listInstalledRepositories(get, owner, installationId,
   selection = []) {

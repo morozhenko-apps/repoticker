@@ -28,7 +28,7 @@ function mockNode(id = "") {
 const tick = () => new Promise(resolve => setImmediate(resolve));
 
 /** Execute real settings controller with a deterministic WebView/IPC fixture. */
-async function fixture(suffix, initiallyConnected, initialRepositories = []) {
+async function fixture(suffix, initiallyConnected, initialRepositories = [], options = {}) {
   const before = { window: globalThis.window, document: globalThis.document };
   // Mirror the real Settings DOM IDs so harmless form additions do not
   // cause unrelated authorization lifecycle scenarios to fail on missing mocks.
@@ -43,6 +43,9 @@ async function fixture(suffix, initiallyConnected, initialRepositories = []) {
   let monitorRepositories = [...initialRepositories];
   let closed = false;
   let tokenRemoved = false;
+  let releaseInstallations = null;
+  const delayedInstallations = options.deferInstallations
+    ? new Promise(resolve => { releaseInstallations = resolve; }) : null;
   const document = {
     getElementById(id) {
       if (!elements.has(id)) throw Error("Unknown Settings element " + id);
@@ -71,6 +74,11 @@ async function fixture(suffix, initiallyConnected, initialRepositories = []) {
                   { full_name: "two/api" }, { full_name: "two/web" }
                 ].filter(item => item.full_name.startsWith(
                   monitorOrg === "two" || args.path.includes("/2/") ? "two/" : "one/")) };
+              if (delayedInstallations) return delayedInstallations;
+              if (options.installationPages) {
+                const page = Number(args.path.match(/[?&]page=(\d+)/)?.[1] ?? 1);
+                return { installations: options.installationPages[page - 1] ?? [] };
+              }
               return { installations: [
                 { id: 1, account: { login: "one" } },
                 { id: 2, account: { login: "two" } }
@@ -120,6 +128,7 @@ async function fixture(suffix, initiallyConnected, initialRepositories = []) {
     get tokenRemoved() { return tokenRemoved; },
     get monitorOrg() { return monitorOrg; },
     get monitorRepositories() { return monitorRepositories; },
+    releaseInstallations: payload => releaseInstallations?.(payload),
     async dispatchAuth() {
       await listeners.get("repoticker-github-auth")?.({});
       await tick();
@@ -262,5 +271,69 @@ test("previously saved subset reopens in Selected mode, then account change rese
     assert.equal(ui.monitorOrg, "two");
     assert.deepEqual(ui.monitorRepositories, [],
       "new account must never inherit previous account repository names");
+  } finally { ui.restore(); }
+});
+
+test("Settings enumerates authorized GitHub App installations beyond the first page", async () => {
+  const first = Array.from({ length: 100 }, (_, index) =>
+    ({ id: index + 10, account: { login: "account" + index } }));
+  const ui = await fixture("installations-page-two", true, [], {
+    installationPages: [first, [{ id: 999, account: { login: "one" } }]]
+  });
+  try {
+    const pages = ui.calls.filter(([name, args]) => name === "github_api_get" &&
+      args.path.startsWith("/user/installations?"));
+    assert.deepEqual(pages.map(([, args]) => Number(
+      args.path.match(/[?&]page=(\d+)/)?.[1])), [1, 2]);
+    assert.equal(ui.node("github-monitor-scope").value, "one");
+    assert.ok(ui.node("github-monitor-scope").children.some(option =>
+      option.value === "one"));
+    assert.equal(ui.node("github-repo-controls").hidden, false,
+      "saved page-two account must load its authorized repositories");
+    assert.equal(ui.node("apply-settings").disabled, true,
+      "inventory refresh must not commit an unchanged account");
+  } finally { ui.restore(); }
+});
+
+test("Settings reports bounded installation-list truncation without inventing an account", async () => {
+  const pages = Array.from({ length: 10 }, (_, page) =>
+    Array.from({ length: 100 }, (_, index) => ({
+      id: 100 + page * 100 + index,
+      account: { login: "account" + (page * 100 + index) }
+    })));
+  const ui = await fixture("installations-truncated", true, [], {
+    installationPages: pages
+  });
+  try {
+    const requests = ui.calls.filter(([name, args]) => name === "github_api_get" &&
+      args.path.startsWith("/user/installations?"));
+    assert.equal(requests.length, 10);
+    assert.match(ui.node("github-auth-message").textContent,
+      /installation list incomplete/i);
+    assert.equal(ui.node("github-monitor-scope").value, "");
+    assert.equal(ui.node("apply-settings").disabled, true);
+    assert.equal(ui.monitorOrg, "one",
+      "partial inventory must never erase persisted account selection");
+  } finally { ui.restore(); }
+});
+
+test("late installation API response cannot resurrect Settings account controls after disconnect", async () => {
+  const ui = await fixture("installations-after-disconnect", true, [], {
+    deferInstallations: true
+  });
+  try {
+    assert.equal(ui.node("github-monitor-scope-row").hidden, false);
+    await ui.node("github-disconnect").fire("click");
+    assert.equal(ui.node("github-monitor-scope-row").hidden, true);
+    assert.equal(ui.node("github-repo-controls").hidden, true);
+    ui.releaseInstallations({ installations: [
+      { id: 1, account: { login: "one" } }
+    ] });
+    await tick();
+    await tick();
+    assert.equal(ui.node("github-monitor-scope-row").hidden, true);
+    assert.equal(ui.node("github-repo-controls").hidden, true);
+    assert.equal(ui.node("github-connection-indicator").textContent, "Not connected");
+    assert.equal(ui.monitorOrg, "one", "native disconnection is not account selection");
   } finally { ui.restore(); }
 });

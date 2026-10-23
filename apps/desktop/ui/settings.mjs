@@ -1,3 +1,4 @@
+import { listAvailableInstallations } from "./github-installations.mjs";
 // Settings are transactional: editing never writes on disk until Apply.
 const byId = id => document.getElementById(id);
 
@@ -44,6 +45,7 @@ let selectedRepoNames = new Set();
 let originalRepoNames = [];
 let repoMode = "all";
 let repoChoiceTouched = false;
+let monitorScopesRevision = 0;
 
 const REPO_NAME = /^[a-zA-Z0-9_.-]+$/;
 function normalizeRepoDraft() {
@@ -158,51 +160,63 @@ byId("github-repo-mode").addEventListener("change", event => {
 });
 byId("github-repo-filter").addEventListener("input", renderRepoChoices);
 
+function clearMonitorScopes() {
+  // Reject late inventory and repository requests after native disconnect.
+  ++monitorScopesRevision;
+  ++repoInventoryRevision;
+  availableAccounts = new Map();
+  repoInventory = [];
+  repoInventoryReady = false;
+  repoInventoryComplete = false;
+  byId("github-monitor-scope-row").hidden = true;
+  byId("github-repo-controls").hidden = true;
+}
+
 async function refreshMonitorScopes() {
+  const revision = ++monitorScopesRevision;
   const row = byId("github-monitor-scope-row");
   row.hidden = !githubConnected;
   if (!githubConnected) {
-    ++repoInventoryRevision;
-    byId("github-repo-controls").hidden = true;
+    clearMonitorScopes();
     return;
   }
   try {
-    const [config, data] = await Promise.all([
+    // The same bounded, permission-aware installation inventory is used
+    // by Settings and the background monitor; never assume page 1 is all.
+    const [config, inventory] = await Promise.all([
       invoke("get_monitor_scope"),
-      invoke("github_api_get", { path: "/user/installations?per_page=100&page=1" })
+      listAvailableInstallations(path => invoke("github_api_get", { path }))
     ]);
+    if (revision !== monitorScopesRevision || !githubConnected) return;
     traceStartup("settings.installations_ready");
-    if (!Array.isArray(data.installations)) throw Error("Invalid GitHub installations");
     const select = byId("github-monitor-scope");
     select.replaceChildren();
     const placeholder = document.createElement("option");
     placeholder.value = "";
     placeholder.textContent = "Choose account";
     select.append(placeholder);
-    const accounts = data.installations.filter(i =>
-      REPO_NAME.test(i?.account?.login || "") &&
-      Number.isSafeInteger(i?.id) && i.id > 0
-    ).map(i => i.account.login);
-    availableAccounts = new Map(data.installations
-      .filter(i => REPO_NAME.test(i?.account?.login || "") &&
-        Number.isSafeInteger(i?.id) && i.id > 0)
-      .map(i => [i.account.login, i.id]));
-    for (const name of [...new Set(accounts)].sort()) {
+    availableAccounts = new Map(inventory.items.map(item => [item.name, item.id]));
+    const accounts = [...availableAccounts.keys()].sort();
+    for (const name of accounts) {
       const option = document.createElement("option");
       option.value = name;
       option.textContent = name;
       select.append(option);
     }
     if (githubScopeAtOpen === null) githubScopeAtOpen = config || "";
-    const suggestion = config || (accounts.length === 1 ? accounts[0] : "");
-    if (!githubScopeTouched || !accounts.includes(selectedScope)) {
-      selectedScope = suggestion;
-      githubScopeTouched = false;
-    }
-    select.value = selectedScope || "";
+    const suggestion = config ||
+      (inventory.complete && accounts.length === 1 ? accounts[0] : "");
+    // An explicit draft selection must never be overwritten by a late
+    // refresh; an incomplete listing does not prove a saved account gone.
+    if (!githubScopeTouched) selectedScope = suggestion;
+    select.value = accounts.includes(selectedScope) ? selectedScope : "";
+    if (!inventory.complete) githubMessage(
+      "GitHub installation list incomplete. Some accounts may be unavailable.", true);
     await refreshRepoInventory();
+    if (revision !== monitorScopesRevision || !githubConnected) return;
     updateApply();
   } catch {
+    if (revision !== monitorScopesRevision || !githubConnected) return;
     githubMessage("GitHub authorized; cannot list available installations.", true);
   }
 }
@@ -304,13 +318,16 @@ const githubFailureLabels = Object.freeze({
 });
 
 async function refreshGithub(knownAuth = null) {
+  const authRevision = ++monitorScopesRevision;
   try {
     // The initial auth status is already captured by Settings initialization.
     // Avoid a redundant second OS wallet read on cold open.
     const auth = knownAuth ?? await invoke("github_auth_status");
+    if (authRevision !== monitorScopesRevision) return;
     githubChecking = false;
     githubCheckFailed = false;
     githubConnected = auth.connected === true;
+    if (!githubConnected) clearMonitorScopes();
     githubPending = !githubConnected &&
       ["requesting", "pending", "awaiting_approval", "saving_credentials"].includes(auth.phase);
     if (!githubPending) byId("github-user-code").textContent = "";
@@ -324,6 +341,8 @@ async function refreshGithub(knownAuth = null) {
     if (githubConnected) await refreshMonitorScopes();
     updateApply();
   } catch (error) {
+    if (authRevision !== monitorScopesRevision) return;
+    clearMonitorScopes();
     githubChecking = false;
     githubCheckFailed = true;
     githubButtons();
@@ -390,6 +409,7 @@ byId("github-disconnect").addEventListener("click", async () => {
     await invoke("github_disconnect");
     stopGithubStatusUpdates();
     githubConnected = false;
+    clearMonitorScopes();
     githubPending = false;
     byId("github-user-code").textContent = "";
     githubButtons();
@@ -418,6 +438,7 @@ function updateApply() {
   const authNeedsConfirmation = githubConnected && githubStartedHere;
   byId("apply-settings").disabled =
     saving || githubStarting || githubPending || !repoChoiceValid() ||
+    (githubScopeTouched && !!selectedScope && !availableAccounts.has(selectedScope)) ||
     !(isDirty() || authNeedsConfirmation || githubScopeTouched || repoChoiceTouched);
 }
 function renderRoots() {
@@ -551,6 +572,7 @@ byId("cancel-settings").addEventListener("click", async () => {
 });
 byId("apply-settings").addEventListener("click", async () => {
   if (saving || githubPending || githubStarting || !repoChoiceValid() ||
+      (githubScopeTouched && !!selectedScope && !availableAccounts.has(selectedScope)) ||
       !(isDirty() || githubScopeTouched || repoChoiceTouched ||
         (githubConnected && githubStartedHere))) return;
   saving = true;

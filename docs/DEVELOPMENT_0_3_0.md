@@ -664,6 +664,41 @@ credential transitions and response freshness. The A5
 transport-only refactor avoids introducing those semantics
 or a new privacy/authorization boundary.
 
+## A6 race review — auth serialization and monitor publication
+
+Additional review found two cross-boundary race windows that must be
+closed **before** ETag is accepted:
+
+- **Disconnect vs token read**: an authorized REST request can be
+  taking its token while the user disconnects. ETag invalidation
+  must happen while holding the existing native
+  `GitHubAuthManager.vault_gate` and before credential deletion
+  (not before acquiring that gate). This establishes an order:
+  any token acquired before disconnect carries the old ETag
+  generation and cannot be returned later; after deletion the
+  credential cannot be acquired. Cache generation is always
+  checked on the return path, including 304 and successful 200.
+- **Monitor scope/auth events vs an in-flight collector**:
+  an old scoped collection may finish after a new Monitor account
+  is selected or credentials have changed. Track a local
+  collector generation, advance it on scope/auth changes, and
+  discard obsolete results/errors rather than publishing stale
+  metrics or a false disconnected state. A bounded rerun
+  already exists and remains the only rescheduling mechanism.
+  No additional polling is introduced.
+- **Concurrent 200 writes**: the cache must not allow an old
+  200 response to replace a newer ETag under the same
+  generation. Each save compares the ETag observed when the
+  request started with the latest cache ETag before updating.
+- **Validation:** native cache tests for invalidation, late 200
+  and 304/missing-entry behavior; fake delayed collector test
+  for account/auth change during an in-flight request.
+  Full physical testing remains deferred in #15.
+
+These corrections are internal to the existing native/session
+security boundary and do not change credential storage, app
+permissions, persisted data or published release semantics.
+
 ## A6 — authenticated conditional ETag reads (implementation plan, 2026-10-23)
 
 GitHub's official REST best practices describe authenticated

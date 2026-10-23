@@ -289,8 +289,7 @@ pub async fn github_api_get(app: AppHandle, path: String) -> Result<Value, Strin
     if gate.remaining_seconds() > 0 {
         return Err("GitHub API rate limited.".into());
     }
-    let (token, lookup) =
-        github_session::github_access_token_with_cache(&app, &path).await?;
+    let (token, lookup) = github_session::github_access_token_with_cache(&app, &path).await?;
     let cached = app.state::<github_etag_cache::GitHubETagCache>();
     let transport = app.state::<GitHubRestClient>();
     let client = transport.client()?;

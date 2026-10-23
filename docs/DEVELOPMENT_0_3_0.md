@@ -463,7 +463,7 @@ a bearer token.
 
 **Decision (internal native transport, no OAuth scope/model changes):**
 
-1. [ ] Add a process-wide, in-memory `GitHubRateGate` in the Tauri
+1. [x] Add a process-wide, in-memory `GitHubRateGate` in the Tauri
    app state, shared across all native GitHub read-only REST IPC
    callers. Respect a bounded integer `Retry-After` first,
    `X-RateLimit-Reset` when the primary budget is depleted,
@@ -473,12 +473,12 @@ a bearer token.
    bodies, URLs or tokens. Gate with a monotonic deadline; do not
    persist it or sleep inside HTTP requests. Expired state
    automatically stops blocking.
-2. [ ] Expose an internal read-only `github_api_cooldown_seconds`
+2. [x] Expose an internal read-only `github_api_cooldown_seconds`
    returning the remaining bounded whole seconds (or zero).
    This contains no token, account or REST metadata. The native
    gate is authoritative even if the webview restarts. No
    public API or on-disk configuration change.
-3. [ ] In `startGithubMonitoring`, consume the native cooldown
+3. [x] In `startGithubMonitoring`, consume the native cooldown
    after an identified `rate_limited` failure including a
    *partial* collector failure. Continue using the existing
    app-lifetime 60-second schedule tick, but skip refreshes
@@ -487,14 +487,14 @@ a bearer token.
    schedule arbitrary sleeps, and allow normal monitoring
    after cooldown. Explicit disconnect must still update
    auth/presentation immediately, without GitHub REST.
-4. [ ] On a full network or rate-limit failure, expose the known
+4. [x] On a full network or rate-limit failure, expose the known
    `network`/`rate_limited` cause and render live counts as
    **unknown** (not zero or silently stale). On *partial* failures,
    preserve only explicitly covered counts from the collector;
    retain existing redacted status messages. Do not add a
    visually unsupported stale-badge API or display old numbers
    as live.
-5. [ ] Focused Rust tests for bounded reset header parsing,
+5. [x] Focused Rust tests for bounded reset header parsing,
    monotonic gate expiration and distinction between 403
    permission vs rate limit; Node tests with injected fake
    clock/tick ensuring 429 cooldown suppresses REST requests,
@@ -524,6 +524,55 @@ after multiple mirrors failed (not a compiler error). Full job
 [result](https://github.com/morozhenko-apps/repoticker/actions/runs/39856749723).
 Keep that evidence explicit rather than treating it as a code failure
 or marking Linux desktop successful.
+
+## A4 implementation and evidence (2026-10-23)
+
+This is the next continuous `dev` work slice; it is **not** a new
+published RepoTicker version. Code/tests are at
+[`4543dfe`](https://github.com/morozhenko-apps/repoticker/commit/4543dfe852cb4e75f21aa15b403ca4e15200c025),
+followed by a disconnect-correctness fix `d12f743`, a dedicated
+regression test `6df3846` and Rustfmt-only `0da9625`.
+
+- [x] A single in-memory native `GitHubRateGate` now protects
+  all Tauri GitHub API GET IPC callers. Numeric `Retry-After`
+  takes priority, otherwise `X-RateLimit-Reset` when recognized,
+  otherwise bounded 120-second fallback. Gate is monotonic,
+  clamps to 24 h, and does not expose headers/URLs/tokens.
+- [x] Internal read-only IPC `github_api_cooldown_seconds`
+  returns only remaining whole seconds, so the WebView can skip
+  collections that cannot succeed before the server deadline.
+- [x] The monitor recognizes both complete and partial
+  `rate_limited` responses. When the gate is active, it
+  blocks further REST collection even if the card is shown.
+  The normal fixed one-minute scheduling tick is unchanged;
+  there are no tight retries or independent polling loops.
+  Explicit GitHub disconnect is processed immediately via native
+  status even while REST cooldown applies.
+- [x] Native parsing and deadline tests cover HTTP 429,
+  depleted-primary-budget 403, normal permission-denied 403,
+  bounded/unparseable headers and monotonic deadline retention.
+  Deterministic JS fake-clock tests cover forced/timer
+  refresh suppression, partial counts staying unknown,
+  offline successful-to-unavailable transition, and
+  disconnect during cooldown.
+- [ ] Exact latest source CI: [Preflight
+  #39910983490](https://github.com/morozhenko-apps/repoticker/actions/runs/39910983490)
+  for code/test SHA `0da9625c5d37a7d4c17e235fa9808ec5681fb89b`.
+  Earlier attempt failed only Rustfmt; corrected in the
+  latest SHA. Confirm all jobs before calling the patch CI-green.
+- [ ] Real 403/429, offline, locked wallet and account-change
+  physical acceptance remain deferred to
+  [aggregate acceptance issue #15](https://github.com/morozhenko-apps/repoticker/issues/15)
+  and [auth issue #4](https://github.com/morozhenko-apps/repoticker/issues/4).
+  No release/tag/branch promotion is requested.
+
+Caveat: with HTTP-date-form `Retry-After` and no numeric reset
+header, the conservative fallback is used. Remote monitoring
+shows unknown live totals rather than silently carrying stale
+numbers through a full network failure; known partial counts
+remain visible only with coverage explicitly marked incomplete.
+This slice does not add durable stale data storage or new
+persistent settings.
 
 ## Stop factors and invariant boundaries
 

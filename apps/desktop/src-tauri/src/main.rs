@@ -851,6 +851,7 @@ fn main() {
         .manage(OperationLock::default())
         .manage(monitor_cache::MonitorCache::default())
         .manage(github_rate_gate::GitHubRateGate::default())
+        .manage(github_api::GitHubRestClient::default())
         .manage(std::sync::Arc::new(
             github_session::GitHubAuthManager::default(),
         ))

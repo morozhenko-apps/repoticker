@@ -2,7 +2,7 @@
 //! The UI may request ONLY documented Actions, account and billing read routes.
 //! OAuth bearer strings never cross IPC; error responses are not returned.
 
-use std::{collections::HashSet, time::Duration};
+use std::{collections::HashSet, sync::OnceLock, time::Duration};
 
 use reqwest::{header, redirect::Policy, Client, Url};
 use serde_json::{json, Value};
@@ -13,6 +13,30 @@ use crate::{github_rate_gate, github_session};
 const MAX_BODY: usize = 2 * 1024 * 1024;
 const PAGE_CAP: u32 = 10;
 const API_VERSION: &str = "2022-11-28";
+
+/// One process-local native REST transport across monitoring, Settings and
+/// usage. The client retains TCP/TLS connections, not bearer tokens or JSON.
+/// A failed initialization is reported using a fixed, redacted error.
+#[derive(Default)]
+pub struct GitHubRestClient {
+    client: OnceLock<Result<Client, &'static str>>,
+}
+
+impl GitHubRestClient {
+    fn client(&self) -> Result<&Client, String> {
+        self.client
+            .get_or_init(|| {
+                Client::builder()
+                    .redirect(Policy::none())
+                    .timeout(Duration::from_secs(15))
+                    .build()
+                    .map_err(|_| "Cannot initialize GitHub API client.")
+            })
+            .as_ref()
+            .map_err(|reason| (*reason).to_owned())
+    }
+}
+
 
 /// A fixed, redacted error vocabulary shared with the JS monitor policy.
 /// Do not return GitHub response bodies, account names or HTTP header values.
@@ -267,11 +291,8 @@ pub async fn github_api_get(app: AppHandle, path: String) -> Result<Value, Strin
         return Err("GitHub API rate limited.".into());
     }
     let token = github_session::github_access_token(&app).await?;
-    let client = Client::builder()
-        .redirect(Policy::none())
-        .timeout(Duration::from_secs(15))
-        .build()
-        .map_err(|_| "Cannot initialize GitHub API client.")?;
+    let transport = app.state::<GitHubRestClient>();
+    let client = transport.client()?;
     let mut response = client
         .get(format!("https://api.github.com{path}"))
         .header(header::ACCEPT, "application/vnd.github+json")
@@ -324,6 +345,22 @@ pub async fn github_api_get(app: AppHandle, path: String) -> Result<Value, Strin
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn rest_client_reuses_connections_but_never_stores_auth_headers() {
+        let transport = GitHubRestClient::default();
+        let first = transport.client().expect("native HTTP client");
+        let second = transport.client().expect("same native HTTP client");
+        assert!(std::ptr::eq(first, second));
+
+        let request = first
+            .get("https://api.github.com/user")
+            .build()
+            .expect("build read-only GitHub request");
+        // No client-level default authorization, so each GET must explicitly
+        // obtain its current native credential and set bearer_auth itself.
+        assert!(!request.headers().contains_key(header::AUTHORIZATION));
+    }
 
     #[test]
     fn only_documented_read_routes_are_allowed() {

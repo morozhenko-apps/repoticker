@@ -587,3 +587,38 @@ test("delayed native publication cannot overwrite later disconnect", async () =>
   assert.equal(writes.at(-1).runnerState, null);
   assert.ok(!writes.some(w => w.runnerState?.counts?.running === 900));
 });
+
+test("scope changes during async cooldown read cannot publish old account result", async () => {
+  const listeners = new Map();
+  const writes = [];
+  let account = "old";
+  let resolveCooldown;
+  const getScope = async () => account;
+  startGithubMonitoring({
+    invoke: async (name, args) => {
+      if (name === "github_auth_status") return { connected: true };
+      if (name === "get_monitor_scope") return getScope();
+      if (name === "github_api_cooldown_seconds")
+        return new Promise(resolve => { resolveCooldown = resolve; });
+      if (name === "github_monitor_publish") { writes.push(args); return; }
+      throw Error("Unexpected IPC: " + name);
+    },
+    event: { listen: (name, callback) => listeners.set(name, callback) },
+    schedule: () => {},
+    collect: async ({ selected }) => selected === "old"
+      ? { state: { coverage: { jobs: false }, counts: { running: 900 } },
+          failure: "rate_limited", repositoryCount: 1, reason: "Limited" }
+      : { state: { coverage: { jobs: true }, counts: { running: 2 } },
+          repositoryCount: 1, reason: null }
+  });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(typeof resolveCooldown, "function");
+  account = "new";
+  listeners.get("repoticker-github-scope-changed")();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(writes.at(-1).runnerState, null);
+  resolveCooldown(90);
+  await new Promise(resolve => setImmediate(resolve));
+  assert.ok(!writes.some(w => w.runnerState?.counts?.running === 900));
+  assert.equal(writes.at(-1).runnerState.counts.running, 2);
+});

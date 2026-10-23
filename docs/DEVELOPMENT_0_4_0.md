@@ -123,3 +123,84 @@ worktree/index conflict, all retained in the broader P1 roadmap.
   hooks/config, long-running SSH/Git cancellation, atomic config,
   and cross-process operation contention. No release, tag or `main`
   promotion. This stage's physical verification remains in #15.
+
+
+## P1-G2 — explicit, bounded-scope Fetch cancellation (2026-10-23)
+
+### Evidence, limits, and root-cause protocol
+
+Existing `git::invoke` executes Git with `Command::output()`. For a
+hung `git fetch` (SSH transport, credential helper, remote connection),
+that blocks indefinitely, offers no live child handle, and holds the
+desktop's per-operation lock. The UI disables Fetch while busy; there
+is no cancellation command. Fetch is bounded to four parallel repos
+but an entire batch waits on all workers, so one stuck child can stall
+the whole batch.
+
+Plausible causes for an actual stall are: (1) unreachable/slow remote
+server; (2) SSH transport process waiting on interactive authentication;
+(3) external Git credential helper not honoring terminal prompt settings;
+(4) proxy/network connection hanging; (5) Git hooks/configured process
+helpers blocking; (6) long-lived repository lock or external Git
+operation; (7) an event/IPC presentation failure. The **confirmed
+architectural limitation** is the absence of a cancellable child
+process lifecycle; actual remote causes remain unmeasured.
+
+### Scope and decisions
+
+Implement explicit user-triggered cancellation of **Fetch only**.
+Never abruptly kill an already executing `git merge --ff-only`:
+interrupting a worktree/index mutation can leave partial state.
+Retain native `perform_git_action` and `git::fetch` for compatibility;
+add only a local Tauri IPC `cancel_git_fetch`. Reuse the existing
+Fetch button in the same four-button compact layout: it becomes
+`Cancel` during an active Fetch and `Stopping...` when acknowledged.
+Tray-started Fetch is also cancellable from the card when visible.
+
+For cancellable Fetch, launch Git as an owned, independently terminated
+OS child process (process group on Unix; process-tree stop on Windows).
+Keep cancellation authority strictly tied to the current RepoTicker
+fetch generation/owned child PIDs. Use a single locked cancellation
+registry to resolve cancel-before-spawn and spawn-after-cancel races.
+A cancelled future batch must not start new Git remote calls.
+Cancellation must not use sleeps, busy polling, arbitrary per-repo
+timeouts, forced Git ref resets, global process-name killing, or
+shell-interpolated user data.
+
+Preserve `GIT_TERMINAL_PROMPT=0`, bounded stderr handling and argv-only
+invocation. If an interrupted Fetch updated some tracking refs, state
+is **partial/unknown until freshly inspected**; never claim a
+transactional rollback or touch worktree files. The UI must report
+`cancelled` independently from an error, and keep real failures
+visible.
+
+### Milestones and validation
+
+1. [ ] Add cancellable native Git Fetch subprocess execution, with
+   child-group lifecycle, generation-controlled cancellation and
+   deterministic tests for cancel before launch, during a live
+   process and launch/cancel races. Preserve old `fetch` contract.
+2. [ ] Wire desktop active-operation state and cancel IPC independently
+   of `OperationLock`; ensure it can interrupt a blocked worker.
+   Clear active operation only after all workers return.
+3. [ ] Reuse the existing Fetch action UI for Cancel/Stopping, without
+   changing compact card dimensions, Safe pull semantics or other
+   controls. Add source/model interaction tests for the cancellation
+   state and native IPC wiring.
+4. [ ] One final stable test gate after implementation. Run Rust
+   core tests, JS contracts, Rustfmt/Clippy, Linux desktop compile
+   through exact-SHA Preflight. Record failures honestly; no mid-task
+   repetitive suite runs.
+5. [ ] Commit evidence separately. KDE cancel of a truly blocking
+   SSH/credential-helper transport and Windows process-tree termination
+   remain **physical acceptance** in issue #15.
+
+Rollback: revert code/test commit(s); published v0.2.0 and existing
+per-user config remain unchanged. No GitHub App permission, local Git
+selection, credential migration, tag, or release change.
+
+Limits: cancellation is user-requested, not a hidden automatic timeout.
+A SIGKILL/taskkill can interrupt Git ref maintenance; the next Fetch
+is responsible for recovering ordinary remote-tracking freshness.
+An external helper that explicitly detaches into a new process group
+or escapes Windows's process tree is outside this slice's guarantee.

@@ -664,6 +664,58 @@ credential transitions and response freshness. The A5
 transport-only refactor avoids introducing those semantics
 or a new privacy/authorization boundary.
 
+## A6 — authenticated conditional ETag reads (implementation plan, 2026-10-23)
+
+GitHub's official REST best practices describe authenticated
+`If-None-Match` requests, which may return `304 Not Modified`
+when the same representation is unchanged. Only such a **server
+validated** result may reuse an earlier representation; a prior
+successful response alone does not prove currentness. This slice
+reduces payload transfer and may spare primary rate-limit quota,
+but it does **not** avoid the conditional HTTP request.
+
+Design / security invariants:
+1. [ ] Add a bounded, process-local **native** ETag cache; key by
+   the exact already-validated GET path (query and pagination
+   included) and an in-memory authorization/scope **generation**.
+   Store only the existing sanitized `project()` representation
+   and an allowlisted, short valid ETag, never bearer tokens,
+   refresh tokens, provider bodies/headers or disk data.
+   Exclude billing responses. Cap to 64 entries, 64 KiB
+   per projected value and FIFO eviction.
+2. [ ] Apply `If-None-Match` only when a same-generation
+   cached projection exists. A successful 200 projects and
+   validates JSON as usual, then updates the cache. A 304 is
+   accepted only when the **current native generation still
+   matches**, the exact URL matches and the ETag entry is present.
+   Never convert 304 with a missing/mismatched entry into an
+   empty array or zero. Errors, 401/403 and offline response
+   paths preserve sanitized failure/unknown semantics.
+3. [ ] Invalidate cached data and advance generation on OAuth
+   begin/reconnect, successful new authorization, disconnect,
+   native access-token refresh and changed Monitor account.
+   Reject late in-flight responses from prior generations
+   rather than permitting old private data to reappear.
+   A new process starts with an empty cache, even if the OS
+   keyring retains the credential.
+4. [ ] Keep strict existing URL whitelist, native access token
+   per request, global REST rate gate, 15-second timeout,
+   TLS HTTP client pooling, max body size and event cadence
+   unchanged. Never cache API permissions or use a disk cache.
+5. [ ] Deterministic Rust native-cache tests for bounded
+   capacity, invalidation, exact-path/ETag matching, and
+   304/current vs 304/missing; Node source/security
+   contracts. Record CI on exact SHA; desktop native tests
+   remain part of the deferred explicit native test gate
+   [#15](https://github.com/morozhenko-apps/repoticker/issues/15).
+   Keep docs changes separate from code.
+6. [ ] Compare physical rate-limit/payload results only during
+   the deferred integrated tests, not after every slice.
+   Published `v0.2.0` / `main` remain untouched.
+
+Rollback: revert the ETag code/test commit. No migration or
+persistent settings change.
+
 ## Stop factors and invariant boundaries
 
 If later stages require a changed persistent model, GitHub App

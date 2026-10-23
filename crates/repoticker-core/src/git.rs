@@ -333,7 +333,10 @@ fn safe_pull_with_checkpoints(
             before_merge();
             // Git resolves only this already-validated commit, not whatever
             // @{upstream} may point to after our final inspection.
-            required(repo, &["merge", "--ff-only", "--quiet", &expected_upstream_tip])?;
+            required(
+                repo,
+                &["merge", "--ff-only", "--quiet", &expected_upstream_tip],
+            )?;
             Ok(OperationOutcome::Updated(commits))
         }
         SyncDecision::UpToDate => Ok(OperationOutcome::AlreadyCurrent),
@@ -403,7 +406,10 @@ mod concurrent_git_tests {
             fs::create_dir_all(&root).expect("fixture directory");
             git(&root, &["init", "-b", "dev"]);
             git(&root, &["config", "user.name", "RepoTicker tests"]);
-            git(&root, &["config", "user.email", "repoticker@example.invalid"]);
+            git(
+                &root,
+                &["config", "user.email", "repoticker@example.invalid"],
+            );
             fs::write(root.join("base.txt"), "base\n").expect("base file");
             git(&root, &["add", "base.txt"]);
             git(&root, &["commit", "-m", "base"]);
@@ -423,11 +429,22 @@ mod concurrent_git_tests {
 
             git(&root, &["remote", "add", "origin", "."]);
             git(&root, &["remote", "add", "other", "."]);
-            git(&root, &["update-ref", "refs/remotes/origin/dev", &first_tip]);
-            git(&root, &["update-ref", "refs/remotes/other/dev", &alternate_tip]);
+            git(
+                &root,
+                &["update-ref", "refs/remotes/origin/dev", &first_tip],
+            );
+            git(
+                &root,
+                &["update-ref", "refs/remotes/other/dev", &alternate_tip],
+            );
             git(&root, &["branch", "--set-upstream-to", "origin/dev", "dev"]);
 
-            Self { root, base, first_tip, alternate_tip }
+            Self {
+                root,
+                base,
+                first_tip,
+                alternate_tip,
+            }
         }
 
         fn unchanged(&self) {
@@ -444,13 +461,21 @@ mod concurrent_git_tests {
         let result = safe_pull_with_checkpoints(
             &checkout.root,
             || {
-                git(&checkout.root, &[
-                    "update-ref", "refs/remotes/origin/dev", &checkout.alternate_tip
-                ]);
+                git(
+                    &checkout.root,
+                    &[
+                        "update-ref",
+                        "refs/remotes/origin/dev",
+                        &checkout.alternate_tip,
+                    ],
+                );
             },
             || panic!("must not reach merge after changed upstream tip"),
         );
-        assert!(result.expect_err("changed OID must fail").0.contains("changed during sync"));
+        assert!(result
+            .expect_err("changed OID must fail")
+            .0
+            .contains("changed during sync"));
         checkout.unchanged();
     }
 
@@ -460,13 +485,17 @@ mod concurrent_git_tests {
         let result = safe_pull_with_checkpoints(
             &checkout.root,
             || {
-                git(&checkout.root, &[
-                    "branch", "--set-upstream-to", "other/dev", "dev"
-                ]);
+                git(
+                    &checkout.root,
+                    &["branch", "--set-upstream-to", "other/dev", "dev"],
+                );
             },
             || panic!("must not merge a different upstream"),
         );
-        assert!(result.expect_err("changed upstream name must fail").0.contains("changed during sync"));
+        assert!(result
+            .expect_err("changed upstream name must fail")
+            .0
+            .contains("changed during sync"));
         checkout.unchanged();
     }
 
@@ -478,14 +507,23 @@ mod concurrent_git_tests {
                 &checkout.root,
                 || {},
                 || {
-                    git(&checkout.root, &[
-                        "update-ref", "refs/remotes/origin/dev", &checkout.alternate_tip
-                    ]);
+                    git(
+                        &checkout.root,
+                        &[
+                            "update-ref",
+                            "refs/remotes/origin/dev",
+                            &checkout.alternate_tip,
+                        ],
+                    );
                 }
-            ).expect("pinned fast-forward"),
+            )
+            .expect("pinned fast-forward"),
             OperationOutcome::Updated(1)
         );
-        assert_eq!(git(&checkout.root, &["rev-parse", "HEAD"]), checkout.first_tip);
+        assert_eq!(
+            git(&checkout.root, &["rev-parse", "HEAD"]),
+            checkout.first_tip
+        );
         assert!(checkout.root.join("first.txt").is_file());
         assert!(!checkout.root.join("alternate.txt").exists());
     }

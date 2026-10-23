@@ -929,15 +929,23 @@ calls, not hypothetical third-party WebViews.
   native rate-limit metadata, a scope switch suppresses the
   obsolete result.
 - Focused regressions at [`5c47778`](https://github.com/morozhenko-apps/repoticker/commit/5c4777807205254d120e19f1723f512aa5e80222)
+  and corrected fake-clock expectation [`b6cb4fb`](https://github.com/morozhenko-apps/repoticker/commit/b6cb4fbcedf3ae7a05cd9399a9ac344870906a45)
   hold an old collector *unresolved* while a disconnect or
   account change occurs; they assert immediate unknown/cleared
   metrics, no old result leak, a serialized delayed native
   publication, and stale cooldown completion rejection.
-- [ ] [Exact-code Preflight #39993630373](https://github.com/morozhenko-apps/repoticker/actions/runs/39993630373)
-  on `5c4777807205254d120e19f1723f512aa5e80222`
-  was **pending** at this checkpoint. Previous runs were
-  superseded/cancelled by new commits and must not be
-  treated as success or failure of the final code.
+- [ ] [Exact-code Preflight #39993970289](https://github.com/morozhenko-apps/repoticker/actions/runs/39993970289)
+  for `b6cb4fbcedf3ae7a05cd9399a9ac344870906a45`
+  was **pending** at this checkpoint. The prior
+  [run #39993630373](https://github.com/morozhenko-apps/repoticker/actions/runs/39993630373)
+  passed Rust format/core/Clippy and found one
+  JavaScript test-expectation mismatch: the new scope
+  cannot bypass the existing native process-wide
+  rate-limit cooldown. The corrected deterministic
+  test uses a fake clock and asserts unknown data during
+  cooldown followed by fresh collection after expiration;
+  product cooldown logic was **not** weakened. The final
+  run must pass before calling this slice CI-validated.
 - Physical KDE/Windows credential and old-scope visible
   transition checks are deferred to
   [integration issue #15](https://github.com/morozhenko-apps/repoticker/issues/15).

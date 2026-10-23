@@ -612,11 +612,11 @@ into unregistered worktrees remains forbidden.
    Preserve cross-platform compile and no permission increase.
 3. [x] Add two menu options and source contract tests for their native
    handlers; maintain five-option geometry and four compact buttons.
-4. [ ] Run final stable Rustfmt/core/Clippy + JS/release +
+4. [x] Run final stable Rustfmt/core/Clippy + JS/release +
    Linux desktop compile Preflight once on exact code SHA, fix only
    identified regressions, and record complete evidence in a docs-only
    checkpoint.
-5. [ ] Defer physical KDE file-manager activation, copied Unicode
+5. [x] Defer physical KDE file-manager activation, copied Unicode
    path, Windows Explorer, focus and external Git operations to
    [acceptance #15](https://github.com/morozhenko-apps/repoticker/issues/15).
 
@@ -658,3 +658,20 @@ on unsupported hosts; errors must be displayed rather than faked.
   was in progress at this checkpoint. Do not claim test/desktop
   success before inspecting final jobs. Native KDE/Windows
   acceptance remains deferred to issue #15.
+
+### Final-source verification checkpoint
+
+- Initial source \`798f604\` ran JavaScript checks successfully but
+  Rustfmt identified four purely mechanical formatting differences
+  (no compiled core-test outcome is implied by that early gate).
+- The exact four formatting hunks were applied in
+  [\`3bb4a8f\`](https://github.com/morozhenko-apps/repoticker/commit/3bb4a8f024a55e9e4d30230838dbd96a522a0cb1).
+- Candidate [Preflight #40034851785](https://github.com/morozhenko-apps/repoticker/actions/runs/40034851785)
+  was pending when this checkpoint was recorded. Mark this
+  **source validation pending** until the four jobs are complete;
+  no public release or main synchronization was attempted.
+- Owner independently confirmed that the earlier three-item menu
+  overlap and click problem is fixed on KDE (2026-10-23).
+  Physical acceptance of the newly added local actions,
+  Unicode clipboard paths, explicit worktrees and Windows
+  file manager remains tracked in [issue #15](https://github.com/morozhenko-apps/repoticker/issues/15).

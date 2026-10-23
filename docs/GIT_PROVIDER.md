@@ -14,6 +14,17 @@ Installed Git supplies current branch/detached status, upstream, ahead/behind, d
 
 The repository drawer shows individual operations and in-flight progress. A successful action is deliberately silent in the final compact card; individual errors remain visible.
 
+**Unreleased dev UI actions:** Each repository's shared popup has
+Fetch, Safe pull and Open on GitHub, plus Open folder and Copy path.
+The last two native actions open only the canonical, currently enrolled
+checkout path in the OS file manager or copy it through the existing
+write-only native clipboard. All three navigation/copy commands use
+the same root/direct-child enrollment resolver and do not modify
+the checkout or contact GitHub APIs. An explicitly enrolled linked
+worktree is accepted; its unregistered implicit child remains excluded.
+These additions are not part of the published v0.2.0. See
+[P1-UI2](DEVELOPMENT_0_4_0.md) and deferred physical acceptance #15.
+
 ## Manual Fetch
 
 - Command semantics: `git fetch --all --prune --quiet` for an eligible enrolled checkout, through an argv-based process invocation rather than a shell.

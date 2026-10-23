@@ -57,6 +57,6 @@ test("ETag caching is native, generation-scoped and never serves unvalidated 304
   assert.match(session, /pub async fn github_disconnect[\s\S]*?GitHubETagCache>\(\)\.invalidate\(\)/);
   assert.match(session, /pub async fn github_begin[\s\S]*?GitHubETagCache>\(\)\.invalidate\(\)/);
   assert.match(session, /store_credential\(rotated\)[\s\S]*?GitHubETagCache>\(\)\.invalidate\(\)/);
-  assert.match(main, /fn github_set_monitor_org[\s\S]*?GitHubETagCache>\(\)\.invalidate\(\)/);
+  assert.match(main, /fn github_set_monitor_org[\s\S]*?GitHubETagCache>\(\)\s*\.invalidate\(\)/);
   assert.doesNotMatch(cache, /access_token|refresh_token|bearer_auth|localStorage/);
 });

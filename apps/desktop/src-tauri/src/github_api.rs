@@ -6,9 +6,9 @@ use std::{collections::HashSet, time::Duration};
 
 use reqwest::{header, redirect::Policy, Client, Url};
 use serde_json::{json, Value};
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 
-use crate::github_session;
+use crate::{github_rate_gate, github_session};
 
 const MAX_BODY: usize = 2 * 1024 * 1024;
 const PAGE_CAP: u32 = 10;
@@ -261,6 +261,11 @@ pub async fn github_api_get(app: AppHandle, path: String) -> Result<Value, Strin
         "github.rest_other"
     };
     let _api = crate::startup_diagnostics::Span::new(stage);
+    // Shared across card, Settings and usage views; no network under cooldown.
+    let gate = app.state::<github_rate_gate::GitHubRateGate>();
+    if gate.remaining_seconds() > 0 {
+        return Err("GitHub API rate limited.".into());
+    }
     let token = github_session::github_access_token(&app).await?;
     let client = Client::builder()
         .redirect(Policy::none())
@@ -285,6 +290,16 @@ pub async fn github_api_get(app: AppHandle, path: String) -> Result<Value, Strin
             .headers()
             .get(header::RETRY_AFTER)
             .and_then(|header| header.to_str().ok());
+        let reset = response
+            .headers()
+            .get("x-ratelimit-reset")
+            .and_then(|header| header.to_str().ok());
+        if let Some(duration) = github_rate_gate::backoff_duration(
+            response.status().as_u16(), remaining, retry_after, reset,
+            github_rate_gate::now_unix(),
+        ) {
+            gate.defer(duration);
+        }
         return Err(api_http_failure(response.status().as_u16(), remaining, retry_after).into());
     }
     let mut bytes = Vec::new();

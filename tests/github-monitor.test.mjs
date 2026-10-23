@@ -267,3 +267,98 @@ test("first monitor startup reports only allowlisted nonsecret milestones in ord
   ]);
   assert.equal(pending.at(-1).message, "No accessible repositories.");
 });
+
+test("429 backoff prevents timer and forced card refresh from hitting GitHub early", async () => {
+  let clock = 1000;
+  let attempts = 0;
+  const messages = [];
+  const scheduleCallbacks = [];
+  const invoke = async (name, args) => {
+    if (name === "github_auth_status") return { connected: true };
+    if (name === "get_monitor_scope") return "team";
+    if (name === "github_api_cooldown_seconds") return 180;
+    if (name === "github_monitor_publish") { messages.push(args); return null; }
+    throw Error("Unexpected command: " + name);
+  };
+  const refresh = startGithubMonitoring({
+    invoke, now: () => clock, schedule: fn => { scheduleCallbacks.push(fn); },
+    collect: async () => {
+      attempts++;
+      if (attempts === 1) throw Error("GitHub API rate limited.");
+      return { state: { coverage: { jobs: true }, counts: { running: 2 } },
+        repositoryCount: 1, reason: null };
+    }
+  });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(attempts, 1);
+  assert.equal(messages.at(-1).runnerState, null);
+  assert.match(messages.at(-1).message, /rate limited/);
+  await refresh(true);
+  assert.equal(attempts, 1, "forced refresh cannot bypass server cooldown");
+  clock += 179_000;
+  await refresh(true);
+  assert.equal(attempts, 1);
+  clock += 1_000;
+  await refresh(true);
+  assert.equal(attempts, 2);
+  assert.equal(messages.at(-1).runnerState.counts.running, 2);
+  assert.equal(scheduleCallbacks.length, 1);
+});
+
+test("partially rate-limited collection carries covered counts and honors cooldown", async () => {
+  let clock = 1000;
+  let calls = 0;
+  const messages = [];
+  const invoke = async (name, args) => {
+    if (name === "github_auth_status") return { connected: true };
+    if (name === "get_monitor_scope") return "team";
+    if (name === "github_api_cooldown_seconds") return 90;
+    if (name === "github_monitor_publish") { messages.push(args); return; }
+    throw Error("Unexpected command: " + name);
+  };
+  const refresh = startGithubMonitoring({
+    invoke, now: () => clock, schedule: () => {},
+    collect: async () => {
+      calls++;
+      return { state: { counts: { busy: 1, running: null, queued: null },
+        coverage: { runners: true, jobs: false } },
+        failure: "rate_limited", repositoryCount: 1,
+        reason: "GitHub API rate limited. Monitoring will retry on its normal schedule." };
+    }
+  });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(calls, 1);
+  assert.equal(messages.at(-1).runnerState.counts.busy, 1);
+  assert.equal(messages.at(-1).runnerState.counts.queued, null);
+  clock += 60_000;
+  await refresh(true);
+  assert.equal(calls, 1);
+});
+
+test("offline errors publish unknown counts, not stale successful counts", async () => {
+  let calls = 0;
+  const messages = [];
+  const refresh = startGithubMonitoring({
+    invoke: async (name, args) => {
+      if (name === "github_auth_status") return { connected: true };
+      if (name === "get_monitor_scope") return "team";
+      if (name === "github_monitor_publish") { messages.push(args); return null; }
+      throw Error("Unexpected command " + name);
+    },
+    now: () => 200_000, schedule: () => {},
+    collect: async () => {
+      calls++;
+      if (calls === 1) return {
+        state: { counts: { running: 4 }, coverage: { jobs: true } },
+        repositoryCount: 1, reason: null
+      };
+      throw Error("GitHub API network error.");
+    }
+  });
+  await new Promise(resolve => setImmediate(resolve));
+  await refresh(true);
+  assert.equal(calls, 2);
+  assert.equal(messages.at(-1).connected, true);
+  assert.equal(messages.at(-1).runnerState, null);
+  assert.match(messages.at(-1).message, /network unavailable/);
+});

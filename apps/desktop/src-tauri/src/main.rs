@@ -1,6 +1,7 @@
 //! RepoTicker desktop: local-only roots, Git provider and tray card.
 mod app_icon;
 mod github_api;
+mod github_rate_gate;
 mod github_native;
 mod github_oauth_wire;
 mod github_session;
@@ -849,6 +850,7 @@ fn main() {
         .plugin(tauri_plugin_clipboard_manager::init())
         .manage(OperationLock::default())
         .manage(monitor_cache::MonitorCache::default())
+        .manage(github_rate_gate::GitHubRateGate::default())
         .manage(std::sync::Arc::new(
             github_session::GitHubAuthManager::default(),
         ))
@@ -957,6 +959,7 @@ fn main() {
             github_session::github_auth_status,
             github_session::github_flow_status,
             github_api::github_api_get,
+            github_rate_gate::github_api_cooldown_seconds,
             monitor_cache::github_monitor_publish,
             monitor_cache::github_monitor_snapshot,
             github_set_monitor_org,

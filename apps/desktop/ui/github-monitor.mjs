@@ -80,29 +80,42 @@ export async function collectForAccount({ get, account, selected, collect = coll
   const runnerOnlyPermissionDenied = state.errors.some(error =>
     error.scope === "runners" && error.reason === "permission_denied"
   ) && state.errors.every(error => error.scope === "runners");
-  return { state, repositoryCount: repos.items.length, reason: failure
+  return { state, repositoryCount: repos.items.length, failure, reason: failure
     ? githubFailureMessage(failure, runnerOnlyPermissionDenied ? "runners" : "monitor")
     : null };
 }
 
 export function startGithubMonitoring({ invoke, event, onError = () => {},
-  collect = collectForAccount, schedule = setInterval, onStage = () => {} }) {
+  collect = collectForAccount, schedule = setInterval, onStage = () => {},
+  now = () => Date.now() }) {
   let busy = false;
   let rerun = false;
   let lastAttempt = 0;
+  let cooldownUntil = 0;
   let minIntervalMs = monitorRefreshDelay(100);
   let hasPublishedResult = false;
   const get = path => invoke("github_api_get", { path });
   const publish = (connected, runnerState = null, message = null) =>
     invoke("github_monitor_publish", { connected, runnerState, message });
+  async function applyCooldown(reason) {
+    if (reason !== "rate_limited") return;
+    try {
+      const seconds = await invoke("github_api_cooldown_seconds");
+      if (Number.isSafeInteger(seconds) && seconds > 0 && seconds <= 86_400)
+        cooldownUntil = Math.max(cooldownUntil, now() + seconds * 1000);
+    } catch (error) {
+      onError(error);
+    }
+  }
   async function refresh(force = false) {
     if (busy) {
       if (force) rerun = true;
       return;
     }
-    if (!force && Date.now() - lastAttempt < minIntervalMs) return;
+    if (now() < cooldownUntil) return;
+    if (!force && now() - lastAttempt < minIntervalMs) return;
     busy = true;
-    lastAttempt = Date.now();
+    lastAttempt = now();
     let authorized = false;
     const first = !hasPublishedResult;
     try {
@@ -117,6 +130,11 @@ export function startGithubMonitoring({ invoke, event, onError = () => {},
       }
       // Native credential validation precedes this message. Never say
       // "Connect GitHub" while an authorized account is loading.
+      if (now() < cooldownUntil) {
+        await publish(true, null, githubFailureMessage("rate_limited"));
+        hasPublishedResult = true;
+        return;
+      }
       if (!hasPublishedResult)
         await publish(true, null, "Connecting to GitHub...");
       // Config-only read: the full snapshot inspects every local Git repo.
@@ -126,12 +144,16 @@ export function startGithubMonitoring({ invoke, event, onError = () => {},
       const result = await collect({ get, selected });
       if (first) onStage("monitor.collect_ready");
       minIntervalMs = monitorRefreshDelay(result.repositoryCount ?? 100);
+      await applyCooldown(result.failure);
       await publish(true, result.state, result.reason);
       hasPublishedResult = true;
     } catch (error) {
       if (first) onStage("monitor.failed");
+      const reason = githubFailureReason(error);
+      await applyCooldown(reason);
+      // A failed live refresh must never keep old counts appearing current.
       await publish(authorized, null,
-        githubFailureMessage(githubFailureReason(error))).catch(onError);
+        githubFailureMessage(reason)).catch(onError);
       hasPublishedResult = true;
     } finally {
       busy = false;

@@ -38,11 +38,16 @@ fn create_private(path: &Path) -> io::Result<File> {
     options.open(path)
 }
 
-struct StagingFile(PathBuf);
+struct StagingFile {
+    path: PathBuf,
+    cleanup: bool,
+}
 
 impl Drop for StagingFile {
     fn drop(&mut self) {
-        let _ = fs::remove_file(&self.0);
+        if self.cleanup {
+            let _ = fs::remove_file(&self.path);
+        }
     }
 }
 
@@ -64,7 +69,7 @@ fn atomic_replace(path: &Path, bytes: &[u8]) -> io::Result<()> {
     let (temporary, mut file) = loop {
         let name = sibling_name(path, "tmp");
         match create_private(&name) {
-            Ok(file) => break (StagingFile(name), file),
+            Ok(file) => break (StagingFile { path: name, cleanup: true }, file),
             Err(err) if err.kind() == io::ErrorKind::AlreadyExists => continue,
             Err(err) => return Err(err),
         }
@@ -72,7 +77,7 @@ fn atomic_replace(path: &Path, bytes: &[u8]) -> io::Result<()> {
     file.write_all(bytes)?;
     file.sync_all()?;
     drop(file);
-    fs::rename(&temporary.0, path)?;
+    fs::rename(&temporary.path, path)?;
     sync_directory(parent)
 }
 
@@ -92,13 +97,13 @@ fn quarantine_corrupt(path: &Path, raw: &[u8]) -> Result<(), String> {
             Err(err) if err.kind() == io::ErrorKind::AlreadyExists => continue,
             Err(err) => return Err(format!("Cannot preserve corrupt config: {err}")),
         };
-        let guard = StagingFile(name);
+        let mut guard = StagingFile { path: name, cleanup: true };
         file.write_all(raw)
             .and_then(|_| file.sync_all())
             .map_err(|err| format!("Cannot preserve corrupt config: {err}"))?;
         drop(file);
         // The copy survives a failed repair for independent diagnosis.
-        std::mem::forget(guard);
+        guard.cleanup = false;
         return Ok(());
     }
 }

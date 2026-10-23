@@ -16,11 +16,7 @@ use repoticker_core::{
 };
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicU8, Ordering};
-use std::{
-    fs,
-    path::PathBuf,
-    sync::{Arc, Mutex},
-};
+use std::{path::PathBuf, sync::{Arc, Mutex}};
 #[cfg(target_os = "linux")]
 mod linux_surface;
 #[cfg(target_os = "linux")]

@@ -21,9 +21,9 @@ use tauri_plugin_clipboard_manager::ClipboardExt;
 use tokio::sync::{Mutex, Notify};
 
 use crate::{
+    github_etag_cache::GitHubETagCache,
     github_native::{CredentialRecord, GithubOAuthHttp, NativeAuthError, NativeCredentialStore},
     github_oauth_wire::PollReply,
-    github_etag_cache::GitHubETagCache,
 };
 
 #[derive(Default)]
@@ -368,7 +368,7 @@ async fn poll_authorization(
                         Ok(()) => {
                             app.state::<GitHubETagCache>().invalidate();
                             publish(&app, "connected");
-                        },
+                        }
                         Err(error) => {
                             publish_with_reason(&app, "failed", Some(reason_category(error)));
                         }

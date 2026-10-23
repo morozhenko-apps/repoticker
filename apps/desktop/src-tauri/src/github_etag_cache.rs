@@ -1,8 +1,8 @@
 //! Conditional GitHub API responses, process-local and credential-bound.
 //! Contains only projected allowlisted JSON and an ETag, never credentials.
 //! A 304 can use cached JSON ONLY with the same auth/scope generation.
-use std::{collections::VecDeque, sync::Mutex};
 use serde_json::Value;
+use std::{collections::VecDeque, sync::Mutex};
 
 const MAX_ENTRIES: usize = 64;
 const MAX_ITEM_BYTES: usize = 64 * 1024;
@@ -49,16 +49,26 @@ impl GitHubETagCache {
     pub fn snapshot(&self, path: &str) -> CacheLookup {
         let state = self.inner.lock().unwrap_or_else(|err| err.into_inner());
         let etag = if cacheable(path) {
-            state.entries.iter().find(|entry| entry.path == path)
+            state
+                .entries
+                .iter()
+                .find(|entry| entry.path == path)
                 .map(|entry| entry.etag.clone())
         } else {
             None
         };
-        CacheLookup { generation: state.generation, etag }
+        CacheLookup {
+            generation: state.generation,
+            etag,
+        }
     }
 
     pub fn unchanged(&self, generation: u64) -> bool {
-        self.inner.lock().unwrap_or_else(|err| err.into_inner()).generation == generation
+        self.inner
+            .lock()
+            .unwrap_or_else(|err| err.into_inner())
+            .generation
+            == generation
     }
 
     pub fn not_modified(&self, path: &str, lookup: &CacheLookup) -> Option<Value> {
@@ -67,7 +77,9 @@ impl GitHubETagCache {
             return None;
         }
         let tag = lookup.etag.as_deref()?;
-        state.entries.iter()
+        state
+            .entries
+            .iter()
             .find(|entry| entry.path == path && entry.etag == tag)
             .map(|entry| entry.projection.clone())
     }

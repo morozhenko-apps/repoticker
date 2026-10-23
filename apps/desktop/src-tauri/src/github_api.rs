@@ -308,7 +308,8 @@ pub async fn github_api_get(app: AppHandle, path: String) -> Result<Value, Strin
         .await
         .map_err(|_| "GitHub API network error.")?;
     if response.status() == reqwest::StatusCode::NOT_MODIFIED {
-        return cached.not_modified(&path, &lookup)
+        return cached
+            .not_modified(&path, &lookup)
             .ok_or_else(|| "GitHub conditional response unavailable.".into());
     }
     if !response.status().is_success() {
@@ -338,7 +339,9 @@ pub async fn github_api_get(app: AppHandle, path: String) -> Result<Value, Strin
         }
         return Err(api_http_failure(response.status().as_u16(), remaining, retry_after).into());
     }
-    let etag = response.headers().get(header::ETAG)
+    let etag = response
+        .headers()
+        .get(header::ETAG)
         .and_then(|etag| etag.to_str().ok())
         .map(str::to_owned);
     let mut bytes = Vec::new();

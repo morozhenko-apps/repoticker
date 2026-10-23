@@ -774,7 +774,8 @@ fn github_set_monitor_org(app: AppHandle, org: Option<String>) -> Result<(), Str
     let mut config = read_config(&app)?;
     config.github_monitor_org = org;
     write_config(&app, &config)?;
-    app.state::<github_etag_cache::GitHubETagCache>().invalidate();
+    app.state::<github_etag_cache::GitHubETagCache>()
+        .invalidate();
     let _ = app.emit("repoticker-github-scope-changed", ());
     Ok(())
 }

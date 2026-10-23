@@ -853,6 +853,66 @@ Then freeze v0.9.0 and run complete Mode B. This
 localization scope is a **future feature**, not an
 implemented translation in the current `dev` binary.
 
+## A7 — immediate GitHub monitor invalidation during in-flight reads
+
+**Mode A, root-cause-driven correctness repair, 2026-10-23.**
+
+Source evidence from `apps/desktop/ui/github-monitor.mjs`:
+`selectionRevision` protects the *completion* of a pending remote
+collector, but a monitor/account/auth event during `busy=true`
+only sets `rerun=true`. It leaves the old-account
+`MonitorCache.runner_state` visible until the earlier
+network collection completes. The existing tests released the
+slow collector before asserting the new scope or disconnect
+state; they did not test the immediate transition. Separately,
+`github_monitor_publish` is an async IPC that writes the
+native cache, so an already-started old revision can race
+with a newly requested presentation.
+
+Expected: no previous-account statistics remain visible after
+a scope switch or disconnect. A pending old GitHub request is
+not a prerequisite to invalidating the current displayed
+metrics. A native publication from an old revision must
+not overwrite the most recent auth/scope transition.
+
+Decision, preserving internal IPC/persistent contracts:
+1. [ ] Serialize card-monitor presentation publications
+   **within the monitor controller** using a bounded
+   promise chain. Check `selectionRevision` at the moment
+   each pending publication executes. Never log tokens or
+   move credentials outside the existing native vault.
+2. [ ] On account-scope or auth event, advance revision
+   and immediately request cache invalidation:
+   disconnect → `connected=false`, `runnerState=null`;
+   connect/scope transition → `runnerState=null` with
+   explicit `Checking GitHub connection...` (unknown,
+   not fabricated disconnected/zero). Do this even when
+   `busy=true`, without running GitHub REST.
+3. [ ] Keep at most one pending forced rerun. The old
+   collector will be discarded on revision mismatch.
+   Preserve the fixed monitoring cadence, token/rate-limit
+   handling, Git status and `unknown != zero` invariant.
+   Do not add sleeps, polling or force network calls on
+   every card/show event.
+4. [ ] Deterministic JS tests with held collectors and
+   delayed native `github_monitor_publish` proving that
+   disconnection and scope selection invalidate previous
+   visible metrics BEFORE the old network request resolves;
+   old queued publication cannot overwrite a new state.
+   Reconfirm existing forced-refresh/cooldown semantics.
+5. [ ] One final stable Preflight after the production +
+   regression edit; if CI fails, diagnose and rerun only
+   affected checks then the required gate. Document exact
+   SHA/evidence separately, and retain physical checks in
+   [#15](https://github.com/morozhenko-apps/repoticker/issues/15).
+
+Rollback: revert one code-and-test commit. No new
+permissions, persisted configuration, UI fields, or change
+to the user-selected account model. A directly invoked
+`github_monitor_publish` is a local Tauri command; the
+serialization guarantee covers the monitor controller's
+calls, not hypothetical third-party WebViews.
+
 ## Stop factors and invariant boundaries
 
 If later stages require a changed persistent model, GitHub App

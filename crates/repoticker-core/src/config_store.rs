@@ -64,12 +64,22 @@ fn sync_directory(parent: &Path) -> io::Result<()> {
 }
 
 fn atomic_replace(path: &Path, bytes: &[u8]) -> io::Result<()> {
-    let parent = path.parent().ok_or_else(|| io::Error::other("Missing config parent"))?;
+    let parent = path
+        .parent()
+        .ok_or_else(|| io::Error::other("Missing config parent"))?;
     fs::create_dir_all(parent)?;
     let (temporary, mut file) = loop {
         let name = sibling_name(path, "tmp");
         match create_private(&name) {
-            Ok(file) => break (StagingFile { path: name, cleanup: true }, file),
+            Ok(file) => {
+                break (
+                    StagingFile {
+                        path: name,
+                        cleanup: true,
+                    },
+                    file,
+                )
+            }
             Err(err) if err.kind() == io::ErrorKind::AlreadyExists => continue,
             Err(err) => return Err(err),
         }
@@ -97,7 +107,10 @@ fn quarantine_corrupt(path: &Path, raw: &[u8]) -> Result<(), String> {
             Err(err) if err.kind() == io::ErrorKind::AlreadyExists => continue,
             Err(err) => return Err(format!("Cannot preserve corrupt config: {err}")),
         };
-        let mut guard = StagingFile { path: name, cleanup: true };
+        let mut guard = StagingFile {
+            path: name,
+            cleanup: true,
+        };
         file.write_all(raw)
             .and_then(|_| file.sync_all())
             .map_err(|err| format!("Cannot preserve corrupt config: {err}"))?;
@@ -147,10 +160,7 @@ pub fn read_json<T: DeserializeOwned>(path: &Path) -> Result<Option<T>, String> 
 /// Atomically replace a verified config. Its last valid primary is written
 /// to .bak before the new value becomes visible. A backup is not rotated on
 /// recovery and cannot be replaced by invalid primary JSON.
-pub fn save_json<T: Serialize + DeserializeOwned>(
-    path: &Path,
-    value: &T,
-) -> Result<(), String> {
+pub fn save_json<T: Serialize + DeserializeOwned>(path: &Path, value: &T) -> Result<(), String> {
     let bytes = serde_json::to_vec_pretty(value)
         .map_err(|err| format!("Cannot serialize config: {err}"))?;
     let _ = read_json::<T>(path)?;
@@ -161,7 +171,6 @@ pub fn save_json<T: Serialize + DeserializeOwned>(
     atomic_replace(path, &bytes)
         .map_err(|err| format!("Cannot save config {}: {err}", path.display()))
 }
-
 
 /// Serialize all per-process read/modify/write transactions, including
 /// backup recovery, under a single mutex. The desktop manages one instance.
@@ -230,7 +239,10 @@ mod tests {
         }
 
         fn pref(language: &str) -> Preferences {
-            Preferences { roots: vec!["/repo".into()], language: language.into() }
+            Preferences {
+                roots: vec!["/repo".into()],
+                language: language.into(),
+            }
         }
     }
 
@@ -252,9 +264,13 @@ mod tests {
         save_json(&f.path, &Fixture::pref("en")).unwrap();
         assert!(!backup_path(&f.path).exists());
         save_json(&f.path, &Fixture::pref("ru")).unwrap();
-        assert_eq!(read_json::<Preferences>(&f.path).unwrap(), Some(Fixture::pref("ru")));
         assert_eq!(
-            serde_json::from_slice::<Preferences>(&fs::read(backup_path(&f.path)).unwrap()).unwrap(),
+            read_json::<Preferences>(&f.path).unwrap(),
+            Some(Fixture::pref("ru"))
+        );
+        assert_eq!(
+            serde_json::from_slice::<Preferences>(&fs::read(backup_path(&f.path)).unwrap())
+                .unwrap(),
             Fixture::pref("en")
         );
     }
@@ -266,11 +282,23 @@ mod tests {
         save_json(&f.path, &Fixture::pref("ru")).unwrap();
         let damage = b"{invalid broken config";
         fs::write(&f.path, damage).unwrap();
-        assert_eq!(read_json::<Preferences>(&f.path).unwrap(), Some(Fixture::pref("en")));
-        assert_eq!(read_json::<Preferences>(&f.path).unwrap(), Some(Fixture::pref("en")));
-        let quarantine: Vec<_> = fs::read_dir(&f.dir).unwrap()
+        assert_eq!(
+            read_json::<Preferences>(&f.path).unwrap(),
+            Some(Fixture::pref("en"))
+        );
+        assert_eq!(
+            read_json::<Preferences>(&f.path).unwrap(),
+            Some(Fixture::pref("en"))
+        );
+        let quarantine: Vec<_> = fs::read_dir(&f.dir)
+            .unwrap()
             .map(|entry| entry.unwrap().path())
-            .filter(|p| p.file_name().unwrap().to_string_lossy().starts_with("config.json.corrupt."))
+            .filter(|p| {
+                p.file_name()
+                    .unwrap()
+                    .to_string_lossy()
+                    .starts_with("config.json.corrupt.")
+            })
             .collect();
         assert_eq!(quarantine.len(), 1);
         assert_eq!(fs::read(&quarantine[0]).unwrap(), damage);
@@ -282,7 +310,10 @@ mod tests {
         save_json(&f.path, &Fixture::pref("en")).unwrap();
         save_json(&f.path, &Fixture::pref("ru")).unwrap();
         fs::remove_file(&f.path).unwrap();
-        assert_eq!(read_json::<Preferences>(&f.path).unwrap(), Some(Fixture::pref("en")));
+        assert_eq!(
+            read_json::<Preferences>(&f.path).unwrap(),
+            Some(Fixture::pref("en"))
+        );
         assert!(f.path.exists());
     }
 
@@ -291,7 +322,9 @@ mod tests {
         let f = Fixture::new();
         fs::write(&f.path, b"{broken").unwrap();
         fs::write(backup_path(&f.path), b"{broken backup").unwrap();
-        assert!(read_json::<Preferences>(&f.path).unwrap_err().contains("backup"));
+        assert!(read_json::<Preferences>(&f.path)
+            .unwrap_err()
+            .contains("backup"));
         assert_eq!(fs::read(&f.path).unwrap(), b"{broken");
         assert_eq!(fs::read(backup_path(&f.path)).unwrap(), b"{broken backup");
     }
@@ -310,7 +343,10 @@ mod tests {
         save_json(&f.path, &Fixture::pref("en")).unwrap();
         fs::create_dir(backup_path(&f.path)).unwrap();
         assert!(save_json(&f.path, &Fixture::pref("ru")).is_err());
-        assert_eq!(read_json::<Preferences>(&f.path).unwrap(), Some(Fixture::pref("en")));
+        assert_eq!(
+            read_json::<Preferences>(&f.path).unwrap(),
+            Some(Fixture::pref("en"))
+        );
     }
 
     #[test]
@@ -319,7 +355,10 @@ mod tests {
         save_json(&f.path, &Fixture::pref("en")).unwrap();
         fs::write(f.dir.join("config.json.tmp.0000"), b"stale").unwrap();
         save_json(&f.path, &Fixture::pref("ru")).unwrap();
-        assert_eq!(read_json::<Preferences>(&f.path).unwrap(), Some(Fixture::pref("ru")));
+        assert_eq!(
+            read_json::<Preferences>(&f.path).unwrap(),
+            Some(Fixture::pref("ru"))
+        );
     }
 
     #[test]
@@ -328,7 +367,10 @@ mod tests {
         fs::write(&f.path, br#"{"roots":["/old"]}"#).unwrap();
         assert_eq!(
             read_json::<Preferences>(&f.path).unwrap(),
-            Some(Preferences { roots: vec!["/old".into()], language: "en".into() })
+            Some(Preferences {
+                roots: vec!["/old".into()],
+                language: "en".into()
+            })
         );
     }
 
@@ -341,10 +383,16 @@ mod tests {
                 let store = std::sync::Arc::clone(&store);
                 let path = f.path.clone();
                 std::thread::spawn(move || {
-                    store.update(&path, || 0u32, |counter| {
-                        *counter += 1;
-                        Ok(((), true))
-                    }).expect("atomic counter update");
+                    store
+                        .update(
+                            &path,
+                            || 0u32,
+                            |counter| {
+                                *counter += 1;
+                                Ok(((), true))
+                            },
+                        )
+                        .expect("atomic counter update");
                 })
             })
             .collect();
@@ -358,13 +406,18 @@ mod tests {
     fn unchanged_transaction_skips_disk_write_and_backup_rotation() {
         let f = Fixture::new();
         let store = JsonStore::default();
-        let value = store.update(&f.path, || Fixture::pref("en"), |prefs| {
-            assert_eq!(prefs.language, "en");
-            Ok((prefs.language.clone(), false))
-        }).unwrap();
+        let value = store
+            .update(
+                &f.path,
+                || Fixture::pref("en"),
+                |prefs| {
+                    assert_eq!(prefs.language, "en");
+                    Ok((prefs.language.clone(), false))
+                },
+            )
+            .unwrap();
         assert_eq!(value, "en");
         assert!(!f.path.exists());
         assert!(!backup_path(&f.path).exists());
     }
-
 }

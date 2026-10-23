@@ -1117,3 +1117,62 @@ untrusted external webviews, or incompatible data model, stop with
 read-only command boundary. Never expose credentials or raw provider
 responses to webviews; unknown counts are never zero; local Git remains
 manual and ff-only.
+
+## A9 — Settings installation inventory parity and stale-response safety (planned 2026-10-23)
+
+**Mode A, P2 reliability; documentation before implementation.** A8's exact
+code candidate `fe858862e81bb615333e2cd0419bc5bbe8165578`
+passed [Preflight #39996749369](https://github.com/morozhenko-apps/repoticker/actions/runs/39996749369):
+Card model/JS, Rust core/Clippy, Linux desktop compile, and aggregate gate
+were all **success**. This verifies source/compile checks, not KDE/Windows
+physical repository-picker acceptance, which remains tracked by #15.
+
+### Source evidence and failure hypothesis
+
+The monitor controller's `listAvailableInstallations` requests up to ten
+100-item pages and explicitly returns `complete: false` when truncated.
+Settings `refreshMonitorScopes` requests only
+`/user/installations?per_page=100&page=1`, then treats that page as the
+complete authorized account set. With more than 100 installations, an
+authorized account that falls on a later page can be absent from Settings
+despite being discovered by monitoring. Settings also has no generation
+guard around this multi-request account refresh; a late request can
+repopulate the dropdown after an auth change.
+
+Other candidates to distinguish with fixtures: malformed pagination
+responses, duplicate account names, actual authorization loss, rate
+limiting, and overlapping account-list refreshes. The confirmed primary
+cause of page-two omission is the hardcoded first-page request. The
+stale-response risk follows from missing post-await state checks; this
+is an identified race path, not a claim of physical reproduction.
+
+### Stages, contracts and rollback
+
+1. [ ] Extract the existing pure installation-pagination function into a
+   shared UI module. Monitor and Settings must call **the same**
+   implementation; preserve the monitor's public export and the
+   existing 10-page / 100-item-per-page bounds and API permissions.
+2. [ ] Settings loads the complete bounded installation inventory,
+   preserves an explicitly edited uncommitted account, and reports
+   incomplete enumeration without implying that absent accounts are
+   unauthorized. No new persisted fields, permissions, polling cadence,
+   or local Git operations.
+3. [ ] Guard async Settings account-list publications against outdated
+   refreshes and disconnects; stale successes/errors must not rewrite
+   the current DOM/account state. Clear account/repo controls when the
+   native connection is confirmed absent.
+4. [ ] Add deterministic Settings controller tests for a selected
+   installation on the second page, 10-page truncation messaging,
+   and stale in-flight completion after disconnect. Preserve the A8
+   transactional OK/Cancel and selected-repo invariants.
+5. [ ] Run one final STABLE Preflight on the code/test candidate. Record
+   exact SHA, per-job status, and any unfixed limitations in a
+   **separate docs-only commit**. Keep KDE/Windows, revoked/expired
+   token and real >100-account acceptance deferred to #15.
+
+The page bound remains the existing API-resource protection; incomplete
+enumeration is **unknown**, not an assertion of complete account access.
+No security boundary, public native IPC, Git safety, GitHub App scope,
+persistent config format, release tag or `main` change is authorized
+by this slice. Rollback is a revert of the A9 code/test commit, preserving
+the released v0.2.0 binary and all persisted settings.

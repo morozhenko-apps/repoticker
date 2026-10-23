@@ -270,7 +270,6 @@ fn linked_worktree_requires_explicit_root_enrollment() {
     );
 }
 
-
 #[test]
 fn bounded_inspect_preserves_input_order_and_per_repository_errors() {
     let f = Fixture::new();
@@ -279,13 +278,19 @@ fn bounded_inspect_preserves_input_order_and_per_repository_errors() {
     let paths = vec![f.seed.clone(), missing.clone(), f.local.clone()];
     let observed = git::inspect_all(paths.clone());
     assert_eq!(
-        observed.iter().map(|(path, _)| path.clone()).collect::<Vec<_>>(),
+        observed
+            .iter()
+            .map(|(path, _)| path.clone())
+            .collect::<Vec<_>>(),
         paths
     );
     let first = observed[0].1.as_ref().expect("first checkout status");
     assert!(!first.dirty);
     assert_eq!(first.path, f.seed);
-    assert!(observed[1].1.is_err(), "missing checkout should be isolated");
+    assert!(
+        observed[1].1.is_err(),
+        "missing checkout should be isolated"
+    );
     let final_repo = observed[2].1.as_ref().expect("last checkout status");
     assert!(final_repo.dirty);
     assert_eq!(final_repo.path, f.local);
@@ -345,7 +350,11 @@ fn all_git_operation_markers_resolve_under_absolute_git_dir_in_linked_worktree()
             "sequencer",
         ] {
             let expected = PathBuf::from(run(repo, &["rev-parse", "--git-path", marker]));
-            let expected = if expected.is_absolute() { expected } else { repo.join(expected) };
+            let expected = if expected.is_absolute() {
+                expected
+            } else {
+                repo.join(expected)
+            };
             assert_eq!(absolute_git_dir.join(marker), expected);
         }
         let marker_dir = absolute_git_dir.join("rebase-merge");

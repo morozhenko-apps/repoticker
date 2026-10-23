@@ -599,18 +599,18 @@ always refetched with normal authentication and cooldown checks.
 Existing strict path whitelist, redacted error vocabulary, 2 MiB
 body limit and native rate gate remain unchanged.
 
-1. [ ] Extract the reqwest client builder into the managed
+1. [x] Extract the reqwest client builder into the managed
    `GitHubRestClient` using Tauri `State` lookup; no new
    permissions or persistent data.
-2. [ ] Replace only the per-request builder in `github_api_get`
+2. [x] Replace only the per-request builder in `github_api_get`
    with the borrowed reusable client.
-3. [ ] Add Rust tests proving client is reused (pointer identity)
+3. [x] Add Rust tests proving client is reused (pointer identity)
    and preserving required timeout and redirect policy, plus
    a source/behavior contract for per-request bearer auth
    instead of stored credentials.
 4. [ ] Run the normal stable Preflight once on the finished
    code/test commit, record exact SHA and CI result.
-5. [ ] Update implementation/evidence in a **separate
+5. [x] Update implementation/evidence in a **separate
    documentation-only commit**. Defer physical
    before/after startup measurements to
    [issue #15](https://github.com/morozhenko-apps/repoticker/issues/15).
@@ -643,10 +643,15 @@ No version bump, `main` promotion or public release.
   runs core Rust tests and desktop `cargo check`, not desktop
   unit-test binaries.
 - [ ] Latest code/test CI
-  [#39952378779](https://github.com/morozhenko-apps/repoticker/actions/runs/39952378779)
-  targets exact SHA `4ec49e40d3e11e7d778de18bbf1bfc4c3c37cb4f`.
-  Do not mark green until the run completes. Normal
-  Preflight checks the Node contracts and compiles desktop.
+  [#39952610734](https://github.com/morozhenko-apps/repoticker/actions/runs/39952610734)
+  targets exact code/test + Rustfmt SHA
+  `08eef2bac620b542d5523634485b583ea03daa58`.
+  At this checkpoint Rust format/core/Clippy and JS passed,
+  Linux desktop compile was **still in progress**. The
+  earlier run found one extraneous blank line and was
+  superseded by `08eef2b`; no behavior change.
+  Normal Preflight does not run native Rust unit binaries.
+  Do not mark full CI green until desktop compilation passes.
 - [ ] Physical cold/warm REST latency comparison and live
   account-switch/disconnect boundary remain in
   [deferred integration #15](https://github.com/morozhenko-apps/repoticker/issues/15).

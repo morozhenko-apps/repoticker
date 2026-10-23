@@ -498,11 +498,11 @@ excluded); (7) refresh recreating rows (separate lifecycle risk).
 
 ### Steps
 
-1. [ ] Extract pure menu geometry and install a drawer-level popup
+1. [x] Extract pure menu geometry and install a drawer-level popup
    with working event handling, viewport-aware placement and tests.
-2. [ ] Add origin-to-GitHub URL translation in the core Git provider,
+2. [x] Add origin-to-GitHub URL translation in the core Git provider,
    with positive and injection/foreign-host tests.
-3. [ ] Add native enrolled-path-only open command and reusable
+3. [x] Add native enrolled-path-only open command and reusable
    existing OS external-browser launch behavior.
 4. [ ] Run final Preflight; record exact source SHA and test results
    in a docs-only commit, not conflated with code.
@@ -511,3 +511,24 @@ excluded); (7) refresh recreating rows (separate lifecycle risk).
 Rollback: revert the UI1 code/test commit(s); restores prior menu
 placement and removes the third command without altering saved
 preferences, credentials, repositories or public distribution.
+
+### Implementation checkpoint
+
+- [`4bb1734`](https://github.com/morozhenko-apps/repoticker/commit/4bb1734cc2aa5814bd107118f5f514f1e3ebefc8): a single opaque drawer-level menu lives outside
+  the isolated repository rows and scroll-clipped `.rows` viewport.
+  Geometry is bounded to the drawer, flips upward near its bottom,
+  and dismisses on scroll, refresh, Escape, outside pointer, hide,
+  and view reset. The UI retains exactly four compact buttons.
+- [`4328b2c`](https://github.com/morozhenko-apps/repoticker/commit/4328b2cab79b76575565b9645d2cd7a799655de9): the third action `Open on GitHub`
+  uses new native `open_repository_on_github`, rejects non-enrolled
+  checkout paths, calls `git remote get-url origin` on demand,
+  accepts only validated github.com HTTPS/SSH repository names
+  and opens a canonical HTTPS URL using the existing OS browser.
+  No automatic network fetch, token access, or remote mutation.
+- Focused regression tests: pure geometry and menu lifecycle
+  contracts, native trust-boundary checks, malicious remote URL
+  rejection and a temporary real-Git `origin` fixture.
+- Exact initial source candidate: `4328b2cab79b76575565b9645d2cd7a799655de9`;
+  [Preflight #40032393519](https://github.com/morozhenko-apps/repoticker/actions/runs/40032393519)
+  was queued at this documentation checkpoint. Tests and KDE
+  physical hit-testing should not be called accepted yet.

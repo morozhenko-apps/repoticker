@@ -1508,8 +1508,31 @@ settings or Git refs. Published v0.2.0 is unchanged.
   not only a source regex. JS source contracts keep the
   explicit submodule status option and coverage discoverable.
 - **Exact code/test source candidate:**
-  `f1522a9a6570f7c3e61200bfce38c3fe903a9cb4`.
-  [Preflight #40109193713](https://github.com/morozhenko-apps/repoticker/actions/runs/40109193713)
-  is the initial validation candidate; no CI success claim
+  `8869aaf5e46fc66b1b5e9220d04d3e5376780158`.
+  [Preflight #40109392382](https://github.com/morozhenko-apps/repoticker/actions/runs/40109392382)
+  is the latest validation candidate; no CI success claim
   before the exact run completes. KDE/Windows submodule
   smoke and configured-hook acceptance remain in issue #15.
+
+### P1-GIT-EDGE1 final-source diagnostic update
+
+- First candidate `f1522a9` reached Preflight
+  [#40109193713](https://github.com/morozhenko-apps/repoticker/actions/runs/40109193713):
+  JS/release stage succeeded; the Rust stage stopped in the
+  format-first check on eight mechanical Rustfmt hunks in
+  new Git integration fixtures (no Rust tests executed).
+- [`481a800`](https://github.com/morozhenko-apps/repoticker/commit/481a80040e3f4e0a7500e8cdc390bb86d4a2de72)
+  applies exactly those formatter hunks; no production Git
+  logic changed. Additional diagnostic with disposable Git
+  confirmed `submodule.vendor/lib.ignore=all` also hides
+  nested untracked files from implicit `git status`, while
+  the explicit `--ignore-submodules=none` restores dirtiness.
+- [`8869aaf`](https://github.com/morozhenko-apps/repoticker/commit/8869aaf5e46fc66b1b5e9220d04d3e5376780158)
+  updates the behind-pull fixture to cover this distinct
+  per-submodule configuration; ahead-push fixture covers
+  `diff.ignoreSubmodules=all`.
+- **Latest exact code/test SHA:**
+  `8869aaf5e46fc66b1b5e9220d04d3e5376780158`.
+  [Preflight #40109392382](https://github.com/morozhenko-apps/repoticker/actions/runs/40109392382)
+  was pending when recorded. No 4/4 assertion yet; physical
+  KDE/Windows acceptance remains on issue #15.

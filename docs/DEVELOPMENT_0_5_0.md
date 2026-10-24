@@ -227,14 +227,14 @@ or create OS startup entries as part of A2.
 ### Milestones and boundaries
 
 1. [x] **A2.1: Read-only completed-run facts.** Extend only the existing native
-   GitHub REST allowlist to accept paginated \`status=completed\` Actions runs;
-   project a minimal, validated \`id\`, \`run_attempt\`, \`conclusion\`,
-   \`updated_at\` tuple, without names, secrets, raw payloads or token transfer.
+   GitHub REST allowlist to accept paginated `status=completed` Actions runs;
+   project a minimal, validated `id`, `run_attempt`, `conclusion`,
+   `updated_at` tuple, without names, secrets, raw payloads or token transfer.
    Add allow/deny and projection tests for malicious paths and input.
 2. [x] **A2.2: Deterministic failure transitions.** Add a pure JS state
    machine and tests keyed by monitored account, repository, run ID and
    attempt. First complete read after process start/scope change is a
-   silent baseline. Only a newly observed \`failure\` conclusion may emit
+   silent baseline. Only a newly observed `failure` conclusion may emit
    an alert; incomplete/failed reads never synthesize a failure.
    Cap pages, repositories, memory and requests. Do not interpret
    missing active jobs or API errors as failures.
@@ -248,7 +248,7 @@ or create OS startup entries as part of A2.
 4. [ ] **A2.4: Final gate and documentation.** Run the stable Rust,
    Node, Python and Linux desktop build checks on the exact executable
    SHA, inspect all CI jobs, record counts and real-platform limitations
-   in a separate docs commit. Do not ship \`main\` or a release.
+   in a separate docs commit. Do not ship `main` or a release.
 
 **Safety and rollback:** no notification without affirmative opt-in;
 no historical failure burst on enabling; no notification on incomplete
@@ -263,16 +263,16 @@ as a working OS alert feature.
 ### A2.1–A2.2 implementation evidence
 
 - Native REST security projection and Rust tests:
-  [\`e5df4006\`](https://github.com/morozhenko-apps/repoticker/commit/e5df4006b1bf9bceff220189fa639d7dbae4be5e).
+  [`e5df4006`](https://github.com/morozhenko-apps/repoticker/commit/e5df4006b1bf9bceff220189fa639d7dbae4be5e).
   Existing queued/in-progress collection remains ID-only; the explicit
   completed status is now permitted with narrowly validated fields.
 - Pure completed-window collector and process-local per-account/repository/
   run-attempt history:
-  [\`904838d9\`](https://github.com/morozhenko-apps/repoticker/commit/904838d9c704df4f9a2e3b6c6e069f81e35481e0).
+  [`904838d9`](https://github.com/morozhenko-apps/repoticker/commit/904838d9c704df4f9a2e3b6c6e069f81e35481e0).
   It does not fetch by itself; no background completed-run traffic
   or notification side effects until native opt-in wiring exists.
 - Eleven deterministic Node tests (including later correction):
-  [\`908f7f83\`](https://github.com/morozhenko-apps/repoticker/commit/908f7f83ec99d96f458095c2dc3754b6a5f91f37).
+  [`908f7f83`](https://github.com/morozhenko-apps/repoticker/commit/908f7f83ec99d96f458095c2dc3754b6a5f91f37).
   Covers baseline silence, dedup, attempts, account changes,
   failed reads, malformed inputs, per-repository isolation,
   request/concurrency caps and reset.
@@ -287,15 +287,15 @@ as a working OS alert feature.
 
 ### A2.2 conclusion-correction follow-up
 
-- [\`1277b738\`](https://github.com/morozhenko-apps/repoticker/commit/1277b7381387473caee146b4b5fe958d2bdc8cb9)
+- [`1277b738`](https://github.com/morozhenko-apps/repoticker/commit/1277b7381387473caee146b4b5fe958d2bdc8cb9)
   preserves monotonic failure dedup when GitHub corrects an earlier
   completed conclusion for the same run attempt. Replayed/stale
   success data must not rearm an already issued failure candidate.
   Duplicate same-attempt records in a response are invalid.
-- [\`203a1fbf\`](https://github.com/morozhenko-apps/repoticker/commit/203a1fbff67e92f985224841108f58ed823e1608)
+- [`203a1fbf`](https://github.com/morozhenko-apps/repoticker/commit/203a1fbff67e92f985224841108f58ed823e1608)
   adds regression tests for corrected conclusions and duplicate
-  provider records. **Exact latest A2.1/A2.2 executable candidate:
-  \`203a1fbff67e92f985224841108f58ed823e1608\`.**
+  provider records. **Earlier A2.1/A2.2 executable candidate:
+  `203a1fbff67e92f985224841108f58ed823e1608`.**
   Validation for earlier SHAs is not transferable to this commit.
 - CI and platform acceptance must be verified separately. An inert
   transition tracker is intentionally not wired into the live monitor
@@ -308,16 +308,16 @@ The first complete A2.2 candidate [#40127311636](https://github.com/morozhenko-a
 was red for two independent, log-confirmed reasons:
 the negative test expected an "Invalid notification" message
 when the intended specific failure was "Duplicate notification
-repository"; \`cargo fmt --all --check\` requested mechanical
+repository"; `cargo fmt --all --check` requested mechanical
 formatting in the new Rust projection. Neither failure was
 evidence of a GitHub API, permission or notification runtime defect.
 
-- [\`1c645627\`](https://github.com/morozhenko-apps/repoticker/commit/1c6456271ca7ff076dac9b76492d41b3908fc768)
+- [`1c645627`](https://github.com/morozhenko-apps/repoticker/commit/1c6456271ca7ff076dac9b76492d41b3908fc768)
   applies the exact rustfmt hunk from the failed job.
-- [\`fbae51c9\`](https://github.com/morozhenko-apps/repoticker/commit/fbae51c970632faaea4ab6b1d35f3a2ebdfdb44b)
+- [`fbae51c9`](https://github.com/morozhenko-apps/repoticker/commit/fbae51c970632faaea4ab6b1d35f3a2ebdfdb44b)
   keeps the negative-path assertion strict and independently
   checks the duplicate-repository rejection.
-- **Corrected exact source/test SHA:** \`fbae51c970632faaea4ab6b1d35f3a2ebdfdb44b\`.
+- **Corrected exact source/test SHA:** `fbae51c970632faaea4ab6b1d35f3a2ebdfdb44b`.
   [Preflight #40127719281](https://github.com/morozhenko-apps/repoticker/actions/runs/40127719281)
   was pending at first inspection; its result must be checked
   before claiming the final stable gate. Earlier green desktop

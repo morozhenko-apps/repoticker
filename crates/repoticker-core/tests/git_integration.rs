@@ -454,3 +454,100 @@ fn built_in_exclusions_remain_enforced_without_custom_configuration() {
     // Built-in ignored children remain separate from explicit root choices.
     assert_eq!(git::discover(&generated).unwrap(), vec![generated]);
 }
+
+
+#[test]
+fn safe_sync_pushes_strictly_ahead_clean_branch_without_force_or_worktree_changes() {
+    let f = Fixture::new();
+    let old_remote = run(&f.seed, &["rev-parse", "refs/remotes/origin/dev"]);
+    fs::write(f.local.join("tracked.txt"), "local change\n").expect("edit local");
+    run(&f.local, &["add", "tracked.txt"]);
+    run(&f.local, &["commit", "-m", "safe ahead"]);
+    let head = run(&f.local, &["rev-parse", "HEAD"]);
+    assert_eq!(git::inspect(&f.local).unwrap().decision, SyncDecision::LocalAhead);
+    assert_eq!(git::safe_sync(&f.local).unwrap(), git::OperationOutcome::Pushed(1));
+    assert_eq!(run(&f.local, &["rev-parse", "HEAD"]), head);
+    assert_eq!(run(&f.seed, &["rev-parse", "refs/remotes/origin/dev"]), old_remote);
+    let bare = f.base.join("remote.git");
+    assert_eq!(run(&bare, &["rev-parse", "refs/heads/dev"]), head);
+    assert_eq!(git::safe_sync(&f.local).unwrap(), git::OperationOutcome::Pushed(1),
+        "remote tracking remains stale until explicit Fetch; a repeated non-force push is harmless");
+    assert_eq!(run(&bare, &["rev-parse", "refs/heads/dev"]), head);
+    git::fetch(&f.local).unwrap();
+    assert_eq!(git::safe_sync(&f.local).unwrap(), git::OperationOutcome::AlreadyCurrent);
+}
+
+#[test]
+fn safe_sync_keeps_offline_fast_forward_for_clean_behind_branch() {
+    let f = Fixture::new();
+    f.push_more();
+    git::fetch(&f.local).expect("explicit fetch");
+    assert_eq!(git::safe_sync(&f.local).unwrap(), git::OperationOutcome::Updated(1));
+    assert_eq!(run(&f.local, &["rev-parse", "HEAD"]),
+               run(&f.seed, &["rev-parse", "HEAD"]));
+}
+
+#[test]
+fn safe_sync_fails_closed_when_remote_advanced_beyond_stale_tracking_ref() {
+    let f = Fixture::new();
+    fs::write(f.local.join("tracked.txt"), "local ahead\n").unwrap();
+    run(&f.local, &["add", "tracked.txt"]);
+    run(&f.local, &["commit", "-m", "local ahead"]);
+    let local_head = run(&f.local, &["rev-parse", "HEAD"]);
+    f.push_more();
+    let remote_head = run(&f.seed, &["rev-parse", "HEAD"]);
+    assert!(git::safe_push(&f.local).is_err(), "remote must reject non-fast-forward");
+    assert_eq!(run(&f.base.join("remote.git"), &["rev-parse", "refs/heads/dev"]), remote_head);
+    assert_eq!(run(&f.local, &["rev-parse", "HEAD"]), local_head);
+}
+
+#[test]
+fn safe_sync_skips_dirty_and_diverged_and_no_upstream() {
+    let f = Fixture::new();
+    fs::write(f.local.join("untracked.txt"), "local").unwrap();
+    assert_eq!(git::safe_sync(&f.local).unwrap(),
+        git::OperationOutcome::Skipped(SyncDecision::LocalChanges));
+    fs::remove_file(f.local.join("untracked.txt")).unwrap();
+    run(&f.local, &["branch", "--unset-upstream"]);
+    assert_eq!(git::safe_sync(&f.local).unwrap(),
+        git::OperationOutcome::Skipped(SyncDecision::NoUpstream));
+    run(&f.local, &["branch", "--set-upstream-to=origin/dev"]);
+    fs::write(f.local.join("tracked.txt"), "local ahead\n").unwrap();
+    run(&f.local, &["add", "tracked.txt"]);
+    run(&f.local, &["commit", "-m", "local"]);
+    f.push_more();
+    git::fetch(&f.local).unwrap();
+    assert_eq!(git::safe_sync(&f.local).unwrap(),
+        git::OperationOutcome::Skipped(SyncDecision::Diverged));
+}
+
+#[test]
+fn safe_push_rejects_split_push_url_or_nonmatching_upstream_branch() {
+    let f = Fixture::new();
+    fs::write(f.local.join("tracked.txt"), "ahead\n").unwrap();
+    run(&f.local, &["add", "tracked.txt"]);
+    run(&f.local, &["commit", "-m", "ahead"]);
+    run(&f.local, &["remote", "set-url", "--push", "origin",
+                    f.seed.to_str().expect("path")]);
+    assert!(git::safe_push(&f.local).is_err(), "split push URL must be refused");
+    run(&f.local, &["remote", "set-url", "--delete", "--push", "origin",
+                    f.seed.to_str().expect("path")]);
+    run(&f.local, &["config", "branch.dev.merge", "refs/heads/other"]);
+    assert!(git::safe_push(&f.local).is_err(), "unmatched merge ref must be refused");
+}
+
+#[cfg(unix)]
+#[test]
+fn safe_push_respects_failing_pre_push_hook_without_bypassing_hooks() {
+    use std::os::unix::fs::PermissionsExt;
+    let f = Fixture::new();
+    fs::write(f.local.join("tracked.txt"), "ahead\n").unwrap();
+    run(&f.local, &["add", "tracked.txt"]);
+    run(&f.local, &["commit", "-m", "ahead"]);
+    let hook = f.local.join(".git").join("hooks").join("pre-push");
+    fs::write(&hook, "#!/bin/sh\nexit 1\n").unwrap();
+    fs::set_permissions(&hook, fs::Permissions::from_mode(0o755)).unwrap();
+    let previous = run(&f.base.join("remote.git"), &["rev-parse", "refs/heads/dev"]);
+    assert!(git::safe_push(&f.local).is_err());
+    assert_eq!(run(&f.base.join("remote.git"), &["rev-parse", "refs/heads/dev"]), previous);
+}

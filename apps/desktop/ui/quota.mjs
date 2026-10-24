@@ -2,6 +2,7 @@ import { buildHoverDetails, isHoverKind } from "./quota-details.mjs";
 import { mergeMonitorPresentation } from "./monitor-presentation.mjs";
 import { usageHeight } from "./quota-size.mjs";
 import { createBillingCache } from "./github-billing.mjs";
+import { surfaceLocale, surfaceText, translateHoverDetails } from "./surface-i18n.mjs";
 
 const byId = id => document.getElementById(id);
 const invoke = (name, args = {}) => window.__TAURI__.core.invoke(name, args);
@@ -17,7 +18,19 @@ function line(parent, label, value) {
   add(row, "span", label, "quota-line-label");
   add(row, "span", value, "quota-line-value");
 }
+let currentLanguage = "en";
+let localeRevision = 0;
+let lastRawDetails = null;
+function setLocale(value) {
+  currentLanguage = surfaceLocale(value);
+  document.documentElement.lang = currentLanguage;
+  document.querySelector(".usage-bubble").setAttribute("aria-label",
+    surfaceText(currentLanguage, "GitHub Actions and usage"));
+  if (lastRawDetails) paint(lastRawDetails);
+}
 function paint(details) {
+  lastRawDetails = details;
+  details = translateHoverDetails(details, currentLanguage);
   const root = byId("quota-content");
   root.className = "quota-content kind-" + activeKind;
   const title = byId("quota-title");
@@ -119,11 +132,13 @@ function scheduleBilling(snapshot) {
 }
 async function refresh() {
   const id = ++refreshId;
+  const startLocaleRevision = localeRevision;
   try {
     // The detached popup needs only the GitHub monitor cache and
     // the persisted account selection, not a full local Git scan.
-    const [remote, configuredOrg] = await Promise.all([
-      invoke("github_monitor_snapshot"), invoke("get_monitor_scope")
+    const [remote, configuredOrg, localeConfig] = await Promise.all([
+      invoke("github_monitor_snapshot"), invoke("get_monitor_scope"),
+      invoke("get_settings_config").catch(() => ({ language: "en" }))
     ]);
     if (configuredOrg !== null && typeof configuredOrg !== "string")
       throw Error("Invalid monitored organization.");
@@ -131,6 +146,8 @@ async function refresh() {
     // transition during either lightweight IPC read is not undone.
     const nativeKind = await invoke("get_usage_popup_kind");
     if (id !== refreshId) return;
+    if (startLocaleRevision === localeRevision)
+      setLocale(localeConfig?.language);
     if (isHoverKind(nativeKind)) activeKind = nativeKind;
     currentSnapshot = mergeMonitorPresentation(currentSnapshot || {
       github_monitor_org: null, connected: false,
@@ -177,6 +194,20 @@ async function refreshMonitorOnly() {
   }
 }
 
+// Settings language changes should repaint the existing trusted model only;
+// they never trigger GitHub API reads or repository scans.
+async function refreshLocale() {
+  const revision = ++localeRevision;
+  let language = "en";
+  try {
+    const config = await invoke("get_settings_config");
+    language = config?.language;
+  } catch {
+    // Keep status available with the English fallback.
+  }
+  if (revision === localeRevision) setLocale(language);
+}
+
 function subscribe(eventName, handler = refresh) {
   const listen = window.__TAURI__?.event?.listen;
   if (typeof listen !== "function") {
@@ -216,4 +247,5 @@ subscribe("repoticker-usage-shown", onUsageShown);
 subscribe("repoticker-monitor-updated", refreshMonitorOnly);
 subscribe("repoticker-github-auth", () => { invalidateBilling(); void refresh(); });
 subscribe("repoticker-github-scope-changed", () => { invalidateBilling(); void refresh(); });
+subscribe("repoticker-config-changed", refreshLocale);
 void refresh();

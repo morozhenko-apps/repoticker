@@ -271,7 +271,7 @@ as a working OS alert feature.
   [\`904838d9\`](https://github.com/morozhenko-apps/repoticker/commit/904838d9c704df4f9a2e3b6c6e069f81e35481e0).
   It does not fetch by itself; no background completed-run traffic
   or notification side effects until native opt-in wiring exists.
-- Ten deterministic Node tests:
+- Eleven deterministic Node tests (including later correction):
   [\`908f7f83\`](https://github.com/morozhenko-apps/repoticker/commit/908f7f83ec99d96f458095c2dc3754b6a5f91f37).
   Covers baseline silence, dedup, attempts, account changes,
   failed reads, malformed inputs, per-repository isolation,
@@ -281,3 +281,20 @@ as a working OS alert feature.
 - **A2.3 NOT DONE:** no native notification adapter, opt-in Settings
   preference, OS permissions or autostart. A2.1–A2.2 alone are not a
   usable notification feature. Public main/release remain unchanged.
+
+
+### A2.2 conclusion-correction follow-up
+
+- [\`1277b738\`](https://github.com/morozhenko-apps/repoticker/commit/1277b7381387473caee146b4b5fe958d2bdc8cb9)
+  preserves monotonic failure dedup when GitHub corrects an earlier
+  completed conclusion for the same run attempt. Replayed/stale
+  success data must not rearm an already issued failure candidate.
+  Duplicate same-attempt records in a response are invalid.
+- [\`203a1fbf\`](https://github.com/morozhenko-apps/repoticker/commit/203a1fbff67e92f985224841108f58ed823e1608)
+  adds regression tests for corrected conclusions and duplicate
+  provider records. **Exact latest A2.1/A2.2 executable candidate:
+  \`203a1fbff67e92f985224841108f58ed823e1608\`.**
+  Validation for earlier SHAs is not transferable to this commit.
+- CI and platform acceptance must be verified separately. An inert
+  transition tracker is intentionally not wired into the live monitor
+  until both the opt-in preference and native delivery adapter exist.

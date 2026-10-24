@@ -435,3 +435,47 @@ Independent KDE Wayland and installed Windows visible OS notification
 acceptance is **OPEN**, as is Do Not Disturb/delivery-agent verification.
 No `main`, version bump, APT publication, tag, release, OS autostart
 or Hybrid relay change. Code/CI acceptance is not physical OS acceptance.
+
+## A2 KDE physical acceptance feedback (2026-10-24): UI alignment and delivery diagnosis
+
+Owner-provided KDE Wayland screenshot (locally compiled `dev` at `6dbd2fa`)
+shows the persisted notification checkbox in the GitHub block,
+"System notifications available", and monitor scope `morozhenko-apps`.
+Local `cargo run --locked -p repoticker-desktop` compiled and started
+on native `gtk-layer-shell`. The previously installed `/usr/bin/repoticker-desktop`
+PID 3366630 was still running at the last reported process check.
+No successful display of a RepoTicker-generated CI notification is yet confirmed.
+
+### Observed UI root causes and change plan
+
+- The account selector is a two-column `.github-grid` item with
+  a full-width, 34px-high input. The repo selector is a 165px-wide,
+  30px-high control aligned right in a separate flex row. This causes
+  observable misalignment. Adopt the same two-column 10px-gap grid for
+  the repo selector, with a full-width 34px control in column two.
+  Preserve existing `hidden`, selection, overflow and accessibility.
+- Global `input` styling is inherited by the native WebKitGTK checkbox,
+  whose tick may draw outside its intended 16px bounds. Use a platform-
+  independent 16px square with native checkbox semantics, explicit
+  `appearance: none`, a centered check mark, and focus-visible ring;
+  ensure repo selection checkboxes use the same style.
+- Add structural/stylesheet regression tests for both alignments,
+  box sizing, checked and keyboard-focus styles before final Preflight.
+
+### Missing notifications: do not assign a fabricated root cause
+
+Candidate causes: (1) workflow jobs succeeded, not workflow `failure`;
+(2) first completed-run poll was a silent baseline; (3) old installed
+process remained active beside `target/debug`; (4) Settings OK did not
+persist the checkbox; (5) bounded monitor interval/rate cooldown;
+(6) incomplete or unauthorized REST history; (7) Do Not Disturb or
+desktop notification daemon rejection. The screenshot and compiled
+native code exclude neither the timing case nor missing failures.
+No evidence yet demonstrates a new post-baseline `failure` being
+processed, so no notification engine behavior should be changed
+solely from this observation. Verify one live failure and the process
+identity, persisted config and timestamped polling before a delivery
+bug fix; ordinary completed/successful jobs must remain silent.
+
+Do not modify `main`, create a release, trigger synthetic CI failures,
+or enable OS autostart for this visual correction.

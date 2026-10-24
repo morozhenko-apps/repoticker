@@ -1270,3 +1270,86 @@ mod remote_branch_parser_tests {
         }
     }
 }
+
+#[cfg(all(test, unix))]
+mod owned_git_process_tests {
+    use super::*;
+    use std::time::{Duration, Instant};
+
+    #[test]
+    fn timeout_terminates_only_its_owned_child_group() {
+        let mut unrelated = Command::new("sleep").arg("5").spawn().unwrap();
+        let mut command = Command::new("sh");
+        command.args(["-c", "sleep 300 & wait"]);
+        let start = Instant::now();
+        let error = run_bounded_command(
+            &mut command,
+            Duration::from_millis(150),
+            "test Git subprocess timeout",
+        ).expect_err("owned process must time out");
+        assert!(error.0.contains("test Git subprocess timeout"), "{error}");
+        assert!(start.elapsed() < Duration::from_secs(4), "timeout must be bounded");
+        assert!(unrelated.try_wait().unwrap().is_none(), "unrelated process must survive");
+        unrelated.kill().unwrap();
+        unrelated.wait().unwrap();
+    }
+
+    #[test]
+    fn large_captured_output_does_not_block_waiting_on_child_pipes() {
+        let mut command = Command::new("sh");
+        command.args(["-c", "head -c 200000 /dev/zero; printf marker >&2"]);
+        let output = run_bounded_command(
+            &mut command,
+            Duration::from_secs(5),
+            "large output unexpectedly timed out",
+        ).expect("pipes must be drained concurrently");
+        assert!(output.status.success());
+        assert_eq!(output.stdout.len(), 200000);
+        assert_eq!(output.stderr, b"marker");
+    }
+
+    #[test]
+    fn fetch_deadline_does_not_claim_user_cancellation() {
+        let cancellation = FetchCancellation::default();
+        let mut command = Command::new("sh");
+        command.args(["-c", "sleep 300 & wait"]);
+        let error = run_cancellable_command_with_timeout(
+            &mut command,
+            &cancellation,
+            || {},
+            || {},
+            Duration::from_millis(150),
+        ).expect_err("hung Fetch must return");
+        assert!(error.0.contains("Git fetch timed out"), "{error}");
+        assert!(!cancellation.is_cancelled());
+        assert_ne!(error.0, FETCH_CANCELLED);
+    }
+
+    #[test]
+    fn outbound_timeout_reports_remote_outcome_unknown() {
+        let mut command = Command::new("sh");
+        command.args(["-c", "sleep 300 & wait"]);
+        let error = run_bounded_command(
+            &mut command,
+            Duration::from_millis(150),
+            PUSH_OUTCOME_UNKNOWN,
+        ).expect_err("hung remote write must report uncertainty");
+        assert!(error.0.contains("outcome unknown"));
+        assert!(error.0.contains("before retrying"));
+        assert_ne!(error.0, FETCH_CANCELLED);
+    }
+
+    #[test]
+    fn bounded_execution_returns_valid_exit_status_and_stderr() {
+        let mut command = Command::new("sh");
+        command.args(["-c", "printf output; printf notice >&2; exit 7"]);
+        let output = run_bounded_command(
+            &mut command,
+            Duration::from_secs(3),
+            "unexpected local Git timeout",
+        ).unwrap();
+        assert_eq!(output.status.code(), Some(7));
+        assert_eq!(output.stdout, b"output");
+        assert_eq!(output.stderr, b"notice");
+    }
+}

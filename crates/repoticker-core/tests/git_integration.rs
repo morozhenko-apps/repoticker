@@ -668,3 +668,172 @@ fn safe_push_refuses_remotely_advanced_tip_before_a_network_write() {
     );
     assert_eq!(run(&f.local, &["rev-parse", "HEAD"]), local_head);
 }
+
+
+fn tracked_submodule_fixture() -> (Fixture, PathBuf) {
+    let f = Fixture::new();
+    let module_source = f.base.join("module-source");
+    fs::create_dir_all(&module_source).expect("submodule source");
+    run(&module_source, &["init", "-b", "dev"]);
+    run(&module_source, &["config", "user.name", "RepoTicker tests"]);
+    run(
+        &module_source,
+        &["config", "user.email", "repoticker@example.invalid"],
+    );
+    fs::write(module_source.join("library.txt"), "initial\n").expect("module file");
+    run(&module_source, &["add", "library.txt"]);
+    run(&module_source, &["commit", "-m", "submodule base"]);
+
+    run(
+        &f.local,
+        &[
+            "-c",
+            "protocol.file.allow=always",
+            "submodule",
+            "add",
+            module_source.to_str().expect("UTF-8 fixture"),
+            "vendor/lib",
+        ],
+    );
+    run(&f.local, &["commit", "-m", "track submodule"]);
+    assert_eq!(
+        git::safe_sync(&f.local).expect("publish initial submodule"),
+        git::OperationOutcome::Pushed(1)
+    );
+    // The other fixture checkout must share the same parent before
+    // creating further remote commits during later test transitions.
+    run(&f.seed, &["fetch", "origin"]);
+    run(&f.seed, &["merge", "--ff-only", "origin/dev"]);
+    let tracked = f.local.join("vendor/lib");
+    (f, tracked)
+}
+
+#[test]
+fn configured_ignore_all_cannot_hide_dirty_submodule_from_safe_push() {
+    let (f, module) = tracked_submodule_fixture();
+    fs::write(module.join("nested-untracked.txt"), "must remain").unwrap();
+    run(&f.local, &["config", "diff.ignoreSubmodules", "all"]);
+    fs::write(f.local.join("tracked.txt"), "ahead\n").unwrap();
+    run(&f.local, &["add", "tracked.txt"]);
+    run(&f.local, &["commit", "-m", "ahead while submodule is dirty"]);
+    let before_head = run(&f.local, &["rev-parse", "HEAD"]);
+    let remote = f.base.join("remote.git");
+    let before_remote = run(&remote, &["rev-parse", "refs/heads/dev"]);
+    assert_eq!(
+        run(&f.local, &["status", "--porcelain=v1", "--untracked-files=normal"]),
+        "",
+        "fixture must reproduce the user-configured hidden nested changes"
+    );
+    let status = git::inspect(&f.local).expect("strict submodule-aware status");
+    assert!(status.dirty);
+    assert_eq!(status.decision, SyncDecision::LocalChanges);
+    assert_eq!(
+        git::safe_sync(&f.local).unwrap(),
+        git::OperationOutcome::Skipped(SyncDecision::LocalChanges)
+    );
+    assert_eq!(run(&f.local, &["rev-parse", "HEAD"]), before_head);
+    assert_eq!(run(&remote, &["rev-parse", "refs/heads/dev"]), before_remote);
+    assert_eq!(
+        fs::read_to_string(module.join("nested-untracked.txt")).unwrap(),
+        "must remain"
+    );
+}
+
+#[test]
+fn configured_ignore_all_cannot_hide_dirty_submodule_from_safe_pull() {
+    let (f, module) = tracked_submodule_fixture();
+    f.push_more();
+    git::fetch(&f.local).expect("fetched remote");
+    run(&f.local, &["config", "diff.ignoreSubmodules", "all"]);
+    fs::write(module.join("nested-untracked.txt"), "preserve").unwrap();
+    let before_head = run(&f.local, &["rev-parse", "HEAD"]);
+    assert_eq!(
+        run(&f.local, &["status", "--porcelain=v1", "--untracked-files=normal"]),
+        ""
+    );
+    let status = git::inspect(&f.local).unwrap();
+    assert!(status.dirty);
+    assert_eq!(status.behind, 1);
+    assert_eq!(status.decision, SyncDecision::LocalChanges);
+    assert_eq!(
+        git::safe_sync(&f.local).unwrap(),
+        git::OperationOutcome::Skipped(SyncDecision::LocalChanges)
+    );
+    assert_eq!(run(&f.local, &["rev-parse", "HEAD"]), before_head);
+    assert_eq!(
+        fs::read_to_string(module.join("nested-untracked.txt")).unwrap(),
+        "preserve"
+    );
+}
+
+#[test]
+fn safe_sync_uses_configured_origin_when_second_remote_is_present() {
+    let f = Fixture::new();
+    let origin = f.base.join("remote.git");
+    let mirror = f.base.join("other-remote.git");
+    run(
+        &f.base,
+        &[
+            "clone",
+            "--bare",
+            origin.to_str().expect("origin"),
+            mirror.to_str().expect("mirror"),
+        ],
+    );
+    run(
+        &f.local,
+        &[
+            "remote",
+            "add",
+            "mirror",
+            mirror.to_str().expect("mirror"),
+        ],
+    );
+    let mirror_tip = run(&mirror, &["rev-parse", "refs/heads/dev"]);
+    fs::write(f.local.join("tracked.txt"), "outbound\n").unwrap();
+    run(&f.local, &["add", "tracked.txt"]);
+    run(&f.local, &["commit", "-m", "outbound via origin"]);
+    let local_head = run(&f.local, &["rev-parse", "HEAD"]);
+    assert_eq!(git::safe_sync(&f.local).unwrap(), git::OperationOutcome::Pushed(1));
+    assert_eq!(run(&origin, &["rev-parse", "refs/heads/dev"]), local_head);
+    assert_eq!(
+        run(&mirror, &["rev-parse", "refs/heads/dev"]),
+        mirror_tip,
+        "a second configured remote must not be an implicit push destination"
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn custom_hookspath_pre_push_failure_blocks_safe_sync_without_mutation() {
+    use std::os::unix::fs::PermissionsExt;
+    let f = Fixture::new();
+    let hooks_dir = f.base.join("custom-hooks");
+    fs::create_dir(&hooks_dir).expect("hooks folder");
+    let evidence = f.base.join("hook-executed");
+    let hook = hooks_dir.join("pre-push");
+    fs::write(
+        &hook,
+        format!("#!/bin/sh\nprintf invoked > '{}'\nexit 1\n", evidence.display()),
+    ).unwrap();
+    fs::set_permissions(&hook, fs::Permissions::from_mode(0o755)).unwrap();
+    run(
+        &f.local,
+        &[
+            "config",
+            "core.hooksPath",
+            hooks_dir.to_str().expect("hooks path"),
+        ],
+    );
+    fs::write(f.local.join("tracked.txt"), "local ahead\n").unwrap();
+    run(&f.local, &["add", "tracked.txt"]);
+    run(&f.local, &["commit", "-m", "ahead with custom hooks dir"]);
+    let remote = f.base.join("remote.git");
+    let before = run(&remote, &["rev-parse", "refs/heads/dev"]);
+    let local = run(&f.local, &["rev-parse", "HEAD"]);
+    assert!(git::safe_sync(&f.local).is_err());
+    assert!(evidence.is_file(), "custom hook must actually run");
+    assert_eq!(fs::read_to_string(evidence).unwrap(), "invoked");
+    assert_eq!(run(&remote, &["rev-parse", "refs/heads/dev"]), before);
+    assert_eq!(run(&f.local, &["rev-parse", "HEAD"]), local);
+}

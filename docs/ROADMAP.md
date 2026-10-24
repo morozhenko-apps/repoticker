@@ -1,5 +1,13 @@
 # Roadmap and delivery evidence
 
+> **Latest development (2026-10-24):** RepoTicker `dev` now has opt-in native
+> CI failure notifications via direct GitHub REST (OFF by default,
+> deduplicated, silent startup baseline). Exact executable SHA `5a027460`
+> passed [Preflight #40129124638](https://github.com/morozhenko-apps/repoticker/actions/runs/40129124638)
+> 4/4, including Linux desktop compile. Physical notification delivery on
+> KDE and Windows remains unverified. No version bump, autostart, release
+> or `main` update. [v0.5 implementation](DEVELOPMENT_0_5_0.md).
+>
 > **Latest status — 2026-10-22:** v0.2.0 is **published**:
 > [GitHub Release](https://github.com/morozhenko-apps/repoticker/releases/tag/v0.2.0),
 > protected release workflow successful, signed APT candidate 0.2.0

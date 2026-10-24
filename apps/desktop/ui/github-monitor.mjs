@@ -105,6 +105,10 @@ export async function collectForAccount({
 // becomes unknown; never retain stale counts as though freshly checked.
 export function mergeMetricGroup(previous, next, kind) {
   if (kind === "all" || !previous) return next;
+  // Never carry counts, runner identities or timestamps across monitor accounts.
+  if (previous.scope?.organization !== next.scope?.organization ||
+      JSON.stringify(previous.scope?.repositories) !==
+        JSON.stringify(next.scope?.repositories)) return next;
   const runners = kind === "runners";
   const priorClock = field => Object.hasOwn(previous, field)
     ? previous[field] : previous.checkedAt ?? null;

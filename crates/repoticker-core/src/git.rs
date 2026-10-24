@@ -1080,7 +1080,7 @@ pub fn safe_pull(repo: &Path) -> Result<OperationOutcome, GitError> {
 
 #[cfg(test)]
 mod concurrent_git_tests {
-    use super::{safe_pull_with_checkpoints, safe_push_with_checkpoint, OperationOutcome};
+    use super::{safe_pull_with_checkpoints, safe_push_with_checkpoint};
     use std::{
         fs,
         path::{Path, PathBuf},

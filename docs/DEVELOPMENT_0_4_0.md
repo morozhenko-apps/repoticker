@@ -977,3 +977,25 @@ Linux desktop compile success is asserted before this run completes.
 
 Physical KDE and Windows acceptance remains deferred to
 [issue #15](https://github.com/morozhenko-apps/repoticker/issues/15).
+
+### P1-IGNORE1 final-source test recovery checkpoint
+
+- Candidate `e4cf877` passed Rustfmt, core tests and Clippy:
+  **32 core unit + 16 Git integration + 3 GitHub remote =
+  51 Rust tests passed, zero failures**.
+- The same candidate's Node source-contract job had one failure:
+  `tests/ignored-children.test.mjs` expected a Git function call
+  on the same line as its assignment. Rustfmt introduced a harmless
+  newline between `=` and `git::discover_all_with_ignored(...)`.
+  The exact expression, filter and enrollment logic were unchanged.
+- Test-only correction [`6a11885`](https://github.com/morozhenko-apps/repoticker/commit/6a11885adf82626bca9fa0e348cf30e4fc8d3168)
+  now allows whitespace between assignment and call while still
+  requiring the same specific native filtered-discovery function.
+- **Final exact source/test candidate:**
+  `6a11885adf82626bca9fa0e348cf30e4fc8d3168`;
+  [Preflight #40096820859](https://github.com/morozhenko-apps/repoticker/actions/runs/40096820859).
+  The JavaScript/release job was **SUCCESS** at this checkpoint;
+  Rust and Linux desktop jobs were still running. Do not
+  assert aggregate 4/4 or native physical acceptance yet.
+- The published v0.2.0 remains immutable. Real KDE/Windows form
+  and filter behavior remain tracked in issue #15.

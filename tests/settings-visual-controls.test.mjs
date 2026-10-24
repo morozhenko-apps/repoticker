@@ -39,3 +39,21 @@ test("KDE alignment fix does not alter settings confirmation or popup geometry",
   assert.match(css, /\.settings-shell \{[^}]*height: 100%/);
   assert.match(settings, /ciFailureNotifications: draft\.ciFailureNotifications/);
 });
+
+test("KDE GitHub selects have zero block padding and CSS-owned centered closed controls", () => {
+  const control = css.match(/\.github-grid select,\s*\.github-repo-heading select \{([^}]+)\}/)?.[1];
+  assert.ok(control, "All three visible GitHub selectors share one text-painting contract");
+  for (const rule of [
+    /-webkit-appearance: none/, /appearance: none/,
+    /box-sizing: border-box/, /height: 34px/, /line-height: 32px/,
+    /padding: 0 32px 0 12px/,
+    /background-position: right 11px center/
+  ]) assert.match(control, rule);
+  assert.match(css, /\.github-grid select:focus-visible,\s*\.github-repo-heading select:focus-visible/);
+  assert.match(css, /@media \(forced-colors: active\)[\s\S]*\.github-grid select/);
+  // Real HTML selects and their native options remain, not a scripted proxy.
+  for (const id of ["github-monitor-scope", "github-connection-mode", "github-repo-mode"]) {
+    assert.match(html, new RegExp('<select id="' + id + '"'));
+  }
+  assert.doesNotMatch(html, /role="combobox"/);
+});

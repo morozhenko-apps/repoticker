@@ -47,6 +47,25 @@ test("Given completed non-failures When polled Then none are notified", () => {
   ])] }), []);
 });
 
+test("Given corrected conclusion When it turns failure Then notify only once", () => {
+  const tracker = createCiFailureTracker();
+  tracker.observe({ ...scope, results: [
+    snapshot("team/alpha", [run(10, "success")])
+  ] });
+  assert.deepEqual(tracker.observe({ ...scope, results: [
+    snapshot("team/alpha", [run(10, "failure")])
+  ] }).map(x => x.id), [10]);
+  assert.deepEqual(tracker.observe({ ...scope, results: [
+    snapshot("team/alpha", [run(10, "success")])
+  ] }), []);
+  assert.deepEqual(tracker.observe({ ...scope, results: [
+    snapshot("team/alpha", [run(10, "failure")])
+  ] }), []);
+  assert.throws(() => tracker.observe({ ...scope, results: [
+    snapshot("team/alpha", [run(11, "failure"), run(11, "success")])
+  ] }), /Invalid notification run facts/);
+});
+
 test("Given changed account or repository selection When refreshed Then baseline resets", () => {
   const tracker = createCiFailureTracker();
   tracker.observe({ ...scope, results: [snapshot("team/alpha", [])] });

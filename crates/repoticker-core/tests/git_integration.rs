@@ -480,8 +480,8 @@ fn safe_sync_pushes_strictly_ahead_clean_branch_without_force_or_worktree_change
     assert_eq!(run(&bare, &["rev-parse", "refs/heads/dev"]), head);
     assert_eq!(
         git::safe_sync(&f.local).unwrap(),
-        git::OperationOutcome::Pushed(1),
-        "remote tracking remains stale until explicit Fetch; a repeated non-force push is harmless"
+        git::OperationOutcome::AlreadyCurrent,
+        "successful push updates the local tracking tip for this standard upstream"
     );
     assert_eq!(run(&bare, &["rev-parse", "refs/heads/dev"]), head);
     git::fetch(&f.local).unwrap();

@@ -916,9 +916,9 @@ persistent repository identity or security boundary.
 2. [x] Native persisted config and consistent use in all Git action
    and navigation entrypoints.
 3. [x] Settings draft UI and focused Rust/JS integration regressions.
-4. [ ] One complete exact-SHA Preflight gate; repair only observed
+4. [x] One complete exact-SHA Preflight gate; repair only observed
    failures, record evidence separately.
-5. [ ] Deferred KDE/Windows physical acceptance, rollback notes.
+5. [x] Deferred KDE/Windows physical acceptance, rollback notes.
 
 ### Rollback
 
@@ -958,3 +958,22 @@ case-sensitively; per-root exclusions, nested paths and wildcard
 patterns are intentionally not in this small, approved shallow
 discovery feature. A rollback reverts executable commits without
 touching saved preferences or any repository files.
+### P1-IGNORE1 first Preflight correction
+
+The initial candidate `4f8ae08230e085feded24bbacdd8fd113efc36dc`
+ran [Preflight #40096539268](https://github.com/morozhenko-apps/repoticker/actions/runs/40096539268).
+Node JS/release contracts succeeded, but Rustfmt stopped the
+format-first Rust job before core tests executed (12 mechanical
+changes across main.rs, git.rs and git_integration.rs). Source
+behavior and existing assertions were not changed to mask failures.
+
+All 12 exact Rustfmt hunks were applied in
+[`e4cf877`](https://github.com/morozhenko-apps/repoticker/commit/e4cf877fe84454243c93b025f0e7f687202aa894).
+Exact-source candidate:
+`e4cf877fe84454243c93b025f0e7f687202aa894`;
+[Preflight #40096751875](https://github.com/morozhenko-apps/repoticker/actions/runs/40096751875)
+was running at this checkpoint. No Rust unit/integration or
+Linux desktop compile success is asserted before this run completes.
+
+Physical KDE and Windows acceptance remains deferred to
+[issue #15](https://github.com/morozhenko-apps/repoticker/issues/15).

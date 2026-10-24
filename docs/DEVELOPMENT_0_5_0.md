@@ -964,3 +964,16 @@ format unchanged; published v0.2.0 remains untouched.
   compiled in the Linux preflight.
 - Autostart, main, release tags, OS credential permissions,
   HTTP transports and configuration schema are untouched.
+
+### A1d Rustfmt normalization follow-up
+
+The exact `24f6c7bb` Preflight showed one remaining whitespace-only
+Rustfmt difference before `build_desktop_tray_menu`. No Node
+regression was reported. `bdcd442b8c3d99b442a9471eb737dae18e4ccd74`
+removes that last blank line. **The final executable/test source
+candidate is now `bdcd442b8c3d99b442a9471eb737dae18e4ccd74`.**
+Check the first exact-SHA Preflight for that commit before claiming
+Rustfmt, desktop compile, or aggregate success; previous source
+runs do not validate the changed SHA.
+
+KDE and Windows tray language physical smoke remain OPEN.

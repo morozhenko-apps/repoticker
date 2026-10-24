@@ -65,10 +65,12 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
             case "get_settings_config": return {
               roots: ["/repos"], language: "en", github_monitor_org: monitorOrg,
               github_monitor_repositories: monitorRepositories,
-              ignored_child_names: persistedIgnored
+              ignored_child_names: persistedIgnored,
+              ci_failure_notifications: options.ciFailureNotifications === true
             };
             case "get_monitor_scope": return monitorOrg;
             case "github_auth_status": return { connected, phase };
+            case "ci_notification_permission": return "granted";
             case "github_api_get":
               if (args.path.includes("/repositories?"))
                 return { repositories: [
@@ -373,7 +375,8 @@ test("OK commits normalized ignored names alongside roots and language", async (
     assert.deepEqual(saved[1], {
       roots: ["/repos"],
       language: "en",
-      ignoredChildNames: ["Archive", "Old"]
+      ignoredChildNames: ["Archive", "Old"],
+      ciFailureNotifications: false
     });
     assert.equal(ui.closed, true);
   } finally { ui.restore(); }
@@ -390,5 +393,33 @@ test("removing an ignored name re-enables OK without changing enrolled roots", a
     const saved = ui.calls.find(([name]) => name === "save_settings");
     assert.deepEqual(saved[1].ignoredChildNames, []);
     assert.deepEqual(saved[1].roots, ["/repos"]);
+  } finally { ui.restore(); }
+});
+
+test("CI failure notifications stay OFF by default and Cancel does not persist opt-in", async () => {
+  const ui = await fixture("notify-cancel", false);
+  try {
+    assert.equal(ui.node("ci-failure-notifications").checked, false);
+    assert.equal(ui.node("apply-settings").disabled, true);
+    ui.node("ci-failure-notifications").checked = true;
+    await ui.node("ci-failure-notifications").fire("change");
+    assert.equal(ui.node("apply-settings").disabled, false);
+    assert.equal(ui.calls.filter(([name]) => name === "save_settings").length, 0);
+    await ui.node("cancel-settings").fire("click");
+    assert.equal(ui.calls.filter(([name]) => name === "save_settings").length, 0);
+  } finally { ui.restore(); }
+});
+
+test("CI failure notification opt-in persists only on OK with existing GitHub scope", async () => {
+  const ui = await fixture("notify-save", true);
+  try {
+    assert.equal(ui.node("ci-notification-permission").textContent, "System notifications available");
+    assert.equal(ui.node("ci-failure-notifications").checked, false);
+    ui.node("ci-failure-notifications").checked = true;
+    await ui.node("ci-failure-notifications").fire("change");
+    await ui.node("apply-settings").fire("click");
+    assert.equal(ui.calls.find(([command]) => command === "save_settings")?.[1]
+      ?.ciFailureNotifications, true);
+    assert.equal(ui.closed, true);
   } finally { ui.restore(); }
 });

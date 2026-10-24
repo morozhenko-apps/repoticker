@@ -1,5 +1,6 @@
 //! RepoTicker desktop: local-only roots, Git provider and tray card.
 mod app_icon;
+mod ci_notifications;
 mod github_api;
 mod github_etag_cache;
 mod github_native;
@@ -7,7 +8,6 @@ mod github_oauth_wire;
 mod github_rate_gate;
 mod github_session;
 mod monitor_cache;
-mod ci_notifications;
 mod startup_diagnostics;
 
 use repoticker_core::{

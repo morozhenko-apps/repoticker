@@ -22,16 +22,23 @@ fn approved_scope(config: &crate::Config, repository: &str, run_id: u64, attempt
     };
     if !crate::github_api::valid_name(owner)
         || !crate::github_api::valid_name(name)
-        || owner == "." || owner == ".." || name == "." || name == ".."
+        || owner == "."
+        || owner == ".."
+        || name == "."
+        || name == ".."
         || name.contains('/')
-        || !config.github_monitor_org.as_deref()
+        || !config
+            .github_monitor_org
+            .as_deref()
             .is_some_and(|account| owner.eq_ignore_ascii_case(account))
     {
         return false;
     }
     config.github_monitor_repositories.is_empty()
-        || config.github_monitor_repositories
-            .iter().any(|item| item.eq_ignore_ascii_case(repository))
+        || config
+            .github_monitor_repositories
+            .iter()
+            .any(|item| item.eq_ignore_ascii_case(repository))
 }
 
 #[tauri::command]
@@ -69,17 +76,24 @@ pub(crate) fn ci_failure_notify(
     }
     let key = format!(
         "{}/{}/{}",
-        repository.to_ascii_lowercase(), run_id, run_attempt
+        repository.to_ascii_lowercase(),
+        run_id,
+        run_attempt
     );
     let state = app.state::<DeliveredAlerts>();
-    let mut delivered = state.0.lock().map_err(|_| "Notification state unavailable.")?;
+    let mut delivered = state
+        .0
+        .lock()
+        .map_err(|_| "Notification state unavailable.")?;
     if delivered.contains(&key) {
         return Ok(false);
     }
     app.notification()
         .builder()
         .title("RepoTicker: CI failure")
-        .body(format!("{repository}: workflow run {run_id} (attempt {run_attempt}) failed"))
+        .body(format!(
+            "{repository}: workflow run {run_id} (attempt {run_attempt}) failed"
+        ))
         .show()
         .map_err(|_| "System notification delivery failed.".to_owned())?;
     delivered.push_back(key);
@@ -106,7 +120,13 @@ mod tests {
         assert!(!approved_scope(&value, "Team/alpha", 12, 1));
         value.ci_failure_notifications = true;
         assert!(approved_scope(&value, "team/alpha", 12, 1));
-        for name in ["other/alpha", "Team/beta", "Team/../oops", "Team/a/b", "Team/%3C"] {
+        for name in [
+            "other/alpha",
+            "Team/beta",
+            "Team/../oops",
+            "Team/a/b",
+            "Team/%3C",
+        ] {
             assert!(!approved_scope(&value, name, 12, 1), "{name}");
         }
         for id in [0, 9_007_199_254_740_992] {

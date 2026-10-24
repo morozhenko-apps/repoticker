@@ -1241,7 +1241,7 @@ the unnecessary Git scan; we do not infer a measured speedup.
    preventing reintroduction of `get_snapshot` in the
    detached popup. Run exact-SHA Rustfmt/core/Clippy,
    JS/Python release and Linux desktop compile.
-5. [ ] Record CI results and KDE cold/warm measurement
+5. [x] Record CI results and KDE cold/warm measurement
    instructions/remaining physical blockers in #12/#15;
    do not assert timing improvements without logs.
 
@@ -1290,3 +1290,26 @@ authorization and REST stages may still dominate.
   displays `Checking connection...` until authoritative
   credential state. No cosmetic unverified connection
   flag was introduced by this slice.
+
+### A10 final exact-source CI result
+
+- [Preflight #40116265535](https://github.com/morozhenko-apps/repoticker/actions/runs/40116265535)
+  **COMPLETED 4/4 SUCCESS** for executable/test source
+  `c7a2c97a4307c7dbc67e1d56e00cf46a100319a1`:
+  Rustfmt, 45 unit + 30 Git integration + 3 GitHub
+  origin integration = **78 Rust PASS**, Clippy PASS;
+  **173 Node PASS**, **12 Python release contract PASS**;
+  Linux desktop compilation and aggregate Preflight PASS.
+  Total **263 tests, zero failures**.
+- This establishes source/test and Linux compile correctness
+  for the monitor-only popup refactor, **not** target-host
+  cold/warm latency improvements, GTK hover reliability,
+  actual KWallet/REST network throughput or Windows
+  physical runtime behavior.
+- A10 is code complete; parent startup issue #12 remains
+  **OPEN** for reproducible current-dev KDE cold/warm logs
+  and real auth/offline/live tooltip validation. See the
+  physical collection instructions earlier in this document
+  and the issue comment documenting the exact gate.
+- `main` and published v0.2.0 remain unchanged; there
+  is no authorized release or version increment.

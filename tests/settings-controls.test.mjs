@@ -139,8 +139,8 @@ test("Device Flow buttons register and invoke native commands after JS startup",
 
 test("shipped Simple polling has no configurable Worker URL or active Hybrid mode", () => {
   assert.match(html, /id="github-connection-mode" disabled/);
-  assert.match(html, /value="polling">Simple polling/);
-  assert.match(html, /value="hybrid">Hybrid webhook relay \(not available yet\)/);
+  assert.match(html, /value="polling" data-i18n="Simple polling">Simple polling/);
+  assert.match(html, /value="hybrid" data-i18n="Hybrid webhook relay \(not available yet\)">Hybrid webhook relay \(not available yet\)/);
   assert.match(html, /id="github-worker-row"[^>]*hidden/);
   assert.match(html, /id="github-worker-url" disabled/);
   assert.doesNotMatch(js, /save_settings[\s\S]*worker_url|save_settings[\s\S]*workerUrl/);

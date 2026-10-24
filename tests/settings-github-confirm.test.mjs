@@ -35,6 +35,12 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
   const html = readFileSync(new URL("../apps/desktop/ui/settings.html", import.meta.url), "utf8");
   const ids = [...new Set([...html.matchAll(/\bid="([^"]+)"/g)].map(match => match[1]))];
   const elements = new Map(ids.map(id => [id, mockNode(id)]));
+  const languageOptions = ["en", "ru"].map(value => {
+    const item = mockNode("locale-" + value);
+    item.dataset.value = value;
+    return item;
+  });
+  elements.get("language-options").querySelectorAll = () => languageOptions;
   const listeners = new Map();
   const calls = [];
   let connected = initiallyConnected;
@@ -64,7 +70,7 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
           calls.push([command, args]);
           switch (command) {
             case "get_settings_config": return {
-              roots: ["/repos"], language: "en", github_monitor_org: monitorOrg,
+              roots: ["/repos"], language: options.language ?? "en", github_monitor_org: monitorOrg,
               github_monitor_repositories: monitorRepositories,
               ignored_child_names: persistedIgnored,
               ci_failure_notifications: options.ciFailureNotifications === true
@@ -127,6 +133,8 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
   return {
     ids: elements, calls, listeners,
     node: id => elements.get(id),
+    languageOption: value => languageOptions.find(item => item.dataset.value === value),
+    get language() { return document.documentElement.lang; },
     authConnected() { connected = true; phase = "connected"; },
     get closed() { return closed; },
     get tokenRemoved() { return tokenRemoved; },
@@ -419,6 +427,34 @@ test("CI failure notification opt-in persists only on OK with existing GitHub sc
     await ui.node("apply-settings").fire("click");
     assert.equal(ui.calls.find(([command]) => command === "save_settings")?.[1]
       ?.ciFailureNotifications, true);
+    assert.equal(ui.closed, true);
+  } finally { ui.restore(); }
+});
+
+test("Saved Russian Settings renders native status in Russian and draft EN preview does not persist on Cancel", async () => {
+  const ui = await fixture("locale-ru-cancel", true, [], { language: "ru" });
+  try {
+    assert.equal(ui.language, "ru");
+    assert.equal(ui.node("github-account-status").value, "Авторизовано");
+    assert.equal(ui.node("language-trigger").firstChild.textContent, "Русский ");
+    await ui.languageOption("en").fire("click");
+    assert.equal(ui.language, "en");
+    assert.equal(ui.node("github-account-status").value, "Authorized");
+    assert.equal(ui.node("apply-settings").disabled, false);
+    await ui.node("cancel-settings").fire("click");
+    assert.equal(ui.calls.some(([name]) => name === "save_settings"), false);
+  } finally { ui.restore(); }
+});
+
+test("English saved Settings previews RU before OK and persists only chosen locale", async () => {
+  const ui = await fixture("locale-en-save", true);
+  try {
+    assert.equal(ui.language, "en");
+    await ui.languageOption("ru").fire("click");
+    assert.equal(ui.language, "ru");
+    assert.equal(ui.node("github-account-status").value, "Авторизовано");
+    await ui.node("apply-settings").fire("click");
+    assert.equal(ui.calls.find(([name]) => name === "save_settings")?.[1]?.language, "ru");
     assert.equal(ui.closed, true);
   } finally { ui.restore(); }
 });

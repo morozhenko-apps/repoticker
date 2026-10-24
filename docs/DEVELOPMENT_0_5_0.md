@@ -226,12 +226,12 @@ or create OS startup entries as part of A2.
 
 ### Milestones and boundaries
 
-1. [ ] **A2.1: Read-only completed-run facts.** Extend only the existing native
+1. [x] **A2.1: Read-only completed-run facts.** Extend only the existing native
    GitHub REST allowlist to accept paginated \`status=completed\` Actions runs;
    project a minimal, validated \`id\`, \`run_attempt\`, \`conclusion\`,
    \`updated_at\` tuple, without names, secrets, raw payloads or token transfer.
    Add allow/deny and projection tests for malicious paths and input.
-2. [ ] **A2.2: Deterministic failure transitions.** Add a pure JS state
+2. [x] **A2.2: Deterministic failure transitions.** Add a pure JS state
    machine and tests keyed by monitored account, repository, run ID and
    attempt. First complete read after process start/scope change is a
    silent baseline. Only a newly observed \`failure\` conclusion may emit
@@ -258,3 +258,26 @@ same rate-limit/cooldown protections as the existing native transport.
 Revert each milestone's isolated code/test changes to roll it back.
 A2.1/A2.2 alone are an inert data foundation and must not be presented
 as a working OS alert feature.
+
+
+### A2.1–A2.2 implementation evidence
+
+- Native REST security projection and Rust tests:
+  [\`e5df4006\`](https://github.com/morozhenko-apps/repoticker/commit/e5df4006b1bf9bceff220189fa639d7dbae4be5e).
+  Existing queued/in-progress collection remains ID-only; the explicit
+  completed status is now permitted with narrowly validated fields.
+- Pure completed-window collector and process-local per-account/repository/
+  run-attempt history:
+  [\`904838d9\`](https://github.com/morozhenko-apps/repoticker/commit/904838d9c704df4f9a2e3b6c6e069f81e35481e0).
+  It does not fetch by itself; no background completed-run traffic
+  or notification side effects until native opt-in wiring exists.
+- Ten deterministic Node tests:
+  [\`908f7f83\`](https://github.com/morozhenko-apps/repoticker/commit/908f7f83ec99d96f458095c2dc3754b6a5f91f37).
+  Covers baseline silence, dedup, attempts, account changes,
+  failed reads, malformed inputs, per-repository isolation,
+  request/concurrency caps and reset.
+- [Preflight #40127311636](https://github.com/morozhenko-apps/repoticker/actions/runs/40127311636)
+  was **in progress** when last inspected. No green or 4/4 claim yet.
+- **A2.3 NOT DONE:** no native notification adapter, opt-in Settings
+  preference, OS permissions or autostart. A2.1–A2.2 alone are not a
+  usable notification feature. Public main/release remain unchanged.

@@ -563,3 +563,38 @@ substitute for physical KDE notification visibility.
 
 **Rollback:** independent CSS/UI + Rust/JS/test commits can be
 reverted without migrating config or changing the OS package.
+
+### Second KDE acceptance implementation (2026-10-24)
+
+- `ba6c92c3c49fdf705c999816dc0476b7515931d8` changes only
+  Settings CSS plus structural regression tests: shared
+  `appearance: none`, deterministic `line-height: 32px`,
+  `padding: 0 32px 0 12px`, and one background chevron for
+  three GitHub select controls. All three remain real native selects
+  with keyboard access and a forced-colors fallback.
+- `91c7a1aa41624ce31aa8252f3b3a862e261626ab` adds an
+  explicit `ci_notification_test` Tauri command backed by the
+  same `tauri_plugin_notification` as real alerts. The native
+  command rechecks the persisted notification opt-in and desktop
+  permission, accepts **no parameters**, and sends a distinct,
+  fixed `RepoTicker: test notification` title/body. It does not
+  read GitHub, fabricate run IDs, affect deduplication or write
+  settings. Settings exposes a small `Test` button next to
+  native permission status, gated on persisted opt-in and
+  permission. Native permission errors are displayed, and the
+  success message means only that the OS dispatcher returned OK;
+  an actual visible KDE banner remains a physical acceptance item.
+  Dedicated native + JS integration/source contract tests added.
+- Exact source/test validation target:
+  [Preflight #40134203945](https://github.com/morozhenko-apps/repoticker/actions/runs/40134203945).
+  Mark this gate complete only after all four jobs succeed.
+- Manual KDE acceptance: stop both prior installed/debug processes,
+  sync `dev` with fast-forward, run
+  `cargo run --locked -p repoticker-desktop`. With the already-saved
+  `ci_failure_notifications=true` check Settings -> GitHub -> Test.
+  Verify the `RepoTicker: test notification` OS alert. This
+  verifies Tauri/OS delivery only, **not** GitHub CI event monitoring.
+  Native test does not establish CI workflow acceptance. Check
+  the three centered dropdown labels and functioning option menus.
+- No intentional failing GitHub Actions job was created; `main`,
+  APT/release, autostart and package version remain untouched.

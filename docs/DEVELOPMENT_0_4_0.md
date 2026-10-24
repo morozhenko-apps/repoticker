@@ -1554,3 +1554,84 @@ settings or Git refs. Published v0.2.0 is unchanged.
 - Native KDE/Windows physical check of submodule
   status and custom hooks still outstanding in issue #15;
   `main` and published v0.2.0 unchanged.
+
+## P1-GIT-RACE2 — final active-branch gate and explicit push routing (2026-10-24)
+
+**Mode A — Feature / Refactor.** Scope `dev` only. No tagged
+release, version bump, `main` promotion, persisted data or UI
+geometry change. Baseline P1-GIT-EDGE1 source `8869aaf` has
+[Preflight #40109392382](https://github.com/morozhenko-apps/repoticker/actions/runs/40109392382)
+**4/4 success**; physical KDE/Windows gates remain in issue #15.
+
+### Reproduced concurrency defect
+
+`git::safe_pull_with_checkpoints` validates current branch,
+fetched upstream, worktree cleanliness and commit tips twice,
+but then invokes its final `before_merge` hook without another
+validation before `git merge --ff-only --quiet <pinned OID>`.
+A disposable real Git reproduction showed that switching from
+`dev` to `other` after the prior inspection allows merge to
+advance **other**, leaving `dev` unchanged. Pinning the target
+commit is not sufficient to pin the *checkout branch*.
+
+Candidate causes considered: external branch switch, external
+commit/reset of HEAD, upstream remapping, fetched tip change,
+dirty tracked/untracked files, Git operation marker, and
+hooks/config altering remote routing. The explicit branch
+switch reproduction confirms the missing final check; prior
+tests already cover changes before the second inspection.
+
+### Decision / invariants
+
+1. [ ] Extract `pull_source_unchanged` helper to check the
+   original branch/upstream, strict ff-only decision, clean
+   worktree, expected HEAD and fetched upstream commit OIDs.
+   Invoke after the first inter-process checkpoint AND again
+   after the final pre-merge checkpoint, directly before
+   invoking the existing pinned `git merge --ff-only`.
+   This changes an earlier edge behavior: upstream mutation
+   **after** the second inspection now refuses rather than
+   proceeding with an immutable but no longer selected
+   target. This conservative fail-closed behavior is intended.
+2. [ ] Prove with deterministic real-Git callbacks that
+   switching checkout to an unrelated same-base branch at
+   the final checkpoint fails before mutation, preserving
+   both refs; prove changed upstream OID and upstream
+   remote/branch remapping at that same checkpoint also
+   fail closed. An unrelated external commit is retained,
+   never stashed/reset/overwritten.
+3. [ ] Verify explicit `Safe push` routing under nonstandard
+   user config (`remote.pushDefault`, `branch.dev.pushRemote`,
+   `push.default=matching`, `push.followTags=true`, custom
+   `remote.origin.push`): only the selected same-named
+   pinned upstream ref goes to origin; no other remote,
+   extra branch or tag is sent. `remote.origin.mirror=true`
+   must not silently turn Safe push into a mirror operation.
+   These are regression tests of existing strict pinning/
+   explicit-refspec behavior, not changes to user Git config.
+4. [ ] Source contracts and real Git integration regressions.
+   Run one final exact-source stable Preflight: Rustfmt, Rust
+   unit/integration, Clippy, JS/Python release contracts and
+   Linux desktop compilation. Record exact SHA/tests in
+   a later **docs-only** commit. No automated write to
+   production remotes.
+5. [ ] Record manual KDE/Windows acceptance in issue #15;
+   release remains blocked pending separate approval.
+
+### Remaining inherent race
+
+Neither a final preflight nor a pinned merge target offers an
+atomic lock on both Git HEAD/index/worktree and an external
+process. A *second* external checkout switch between this
+last inspection and Git's internal lock acquisition cannot
+be ruled out solely by this change. We do not claim total
+race freedom or rewrite merge using `update-ref` (which
+would desynchronize the working tree). Tests deliberately
+cover a deterministic switch at the last injectable boundary.
+
+### Rollback
+
+Revert the executable commit(s) to restore previous behavior.
+The code does not modify saved config, credentials, Git
+refs outside a user-requested Safe sync, or repository files
+during test setup (fixtures are isolated temporary repos).

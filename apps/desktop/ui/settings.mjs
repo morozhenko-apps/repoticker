@@ -235,7 +235,7 @@ async function refreshMonitorScopes() {
     updateApply();
   } catch {
     if (revision !== monitorScopesRevision || !githubConnected) return;
-    githubMessage(t("GitHub authorized; cannot list available installations."), true);
+    githubMessage("GitHub authorized; cannot list available installations.", true);
   }
 }
 
@@ -248,7 +248,7 @@ byId("github-monitor-scope").addEventListener("change", event => {
   selectedRepoNames.clear();
   byId("github-repo-filter").value = "";
   updateRepoDirty();
-  githubMessage(t("Press OK to confirm the monitoring account."));
+  githubMessage("Press OK to confirm the monitoring account.");
   void refreshRepoInventory();
   updateApply();
 });
@@ -380,7 +380,7 @@ byId("github-connect").addEventListener("click", async () => {
     // Only a public one-time USER code may enter the WebView.
     byId("github-user-code").textContent = challenge.userCode;
     githubPending = true;
-    githubMessage(t("Waiting for approval in GitHub."));
+    githubMessage("Waiting for approval in GitHub.");
     githubButtons();
     startGithubStatusUpdates();
   } catch (error) {
@@ -400,10 +400,10 @@ byId("github-copy-code").addEventListener("click", async () => {
   try {
     await invoke("github_copy_user_code", { code });
     byId("github-copy-code").textContent = t("Copied");
-    githubMessage(t("Verification code copied."));
+    githubMessage("Verification code copied.");
   } catch {
     byId("github-copy-code").textContent = t("Copy code");
-    githubMessage(t("Cannot access system clipboard. Select the code and copy with Ctrl+C."), true);
+    githubMessage("Cannot access system clipboard. Select the code and copy with Ctrl+C.", true);
   }
 });
 
@@ -421,7 +421,7 @@ byId("github-cancel-device").addEventListener("click", async () => {
   githubPending = false;
   byId("github-user-code").textContent = "";
   githubButtons();
-  githubMessage(t("Authorization cancelled."));
+  githubMessage("Authorization cancelled.");
 });
 byId("github-disconnect").addEventListener("click", async () => {
   try {
@@ -432,7 +432,7 @@ byId("github-disconnect").addEventListener("click", async () => {
     githubPending = false;
     byId("github-user-code").textContent = "";
     githubButtons();
-    githubMessage(t("GitHub disconnected."));
+    githubMessage("GitHub disconnected.");
   } catch (error) {
     githubMessage(String(error), true);
   }
@@ -524,12 +524,12 @@ byId("ignore-child-form").addEventListener("submit", event => {
   const name = field.value.trim();
   if (!name || name === "." || name === ".." ||
       name.length > 255 || /[\\/\x00-\x1f\x7f]/.test(name)) {
-    message(t("Enter a single folder name without separators or control characters."), true);
+    message("Enter a single folder name without separators or control characters.", true);
     return;
   }
   if (draft.ignoredChildNames.length >= 100 &&
       !draft.ignoredChildNames.includes(name)) {
-    message(t("You can exclude at most 100 child folder names."), true);
+    message("You can exclude at most 100 child folder names.", true);
     return;
   }
   if (!draft.ignoredChildNames.includes(name)) {
@@ -545,7 +545,7 @@ async function refresh() {
   githubChecking = true;
   githubCheckFailed = false;
   githubButtons();
-  githubMessage(t("Checking GitHub connection..."));
+  githubMessage("Checking GitHub connection...");
   // Persistent form settings and native KWallet interrogation run independently.
   // Neither path triggers local Git discovery/inspection.
   const [snapshot, authAtOpen] = await Promise.all([
@@ -708,7 +708,7 @@ window.__TAURI__?.event?.listen?.("repoticker-settings-opened", () => {
   githubChecking = false;
   githubCheckFailed = true;
   githubButtons();
-  githubMessage(t("Cannot initialize settings."), true);
+  githubMessage("Cannot initialize settings.", true);
   message(error, true);
 });
 });

@@ -46,7 +46,8 @@ test("native safe sync action is sequential, non-force and rechecked", () => {
   assert.doesNotMatch(pushCall[0], /--force|--mirror|--all/);
   assert.match(html, /<span class="action-label">Safe sync<\/span>/);
   assert.match(app, /runGitAction\("safe_sync"\)/);
-  assert.match(app, /\["Safe sync", "safe_sync"\]/);
+  assert.match(app, /\["safeSync", "safe_sync"\]/);
+  assert.match(app, /cardText\(cardLanguage, key\)/);
   assert.match(app, /"safe_sync"\]\.includes\(payload\.operation\)/);
 });
 

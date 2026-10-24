@@ -40,11 +40,13 @@ test("folder uses argv-only OS file manager and clipboard writes only canonical 
 test("five popup options leave the four compact buttons unchanged", () => {
   assert.match(ui, /open_folder: "open_repository_folder"/);
   assert.match(ui, /copy_path: "copy_repository_path"/);
-  const start = ui.indexOf("for (const [label, operation] of [");
+  const start = ui.indexOf("for (const [key, operation] of [");
   const end = ui.indexOf("]) {", start);
   assert.ok(start >= 0 && end > start);
   const items = ui.slice(start, end);
   assert.equal([...items.matchAll(/\["[^"]+", "[^"]+"\]/g)].length, 5);
+  assert.match(ui, /cardText\(cardLanguage, key\)/);
+  assert.match(ui, /item\.dataset\.localeKey = key/);
   const actions = html.match(/<nav class="actions"[\s\S]*?<\/nav>/)?.[0] ?? "";
   assert.equal([...actions.matchAll(/<button /g)].length, 4);
 });

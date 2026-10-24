@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { placeRepoMenu } from "../apps/desktop/ui/repo-menu.mjs";
+import { cardText } from "../apps/desktop/ui/card-i18n.mjs";
 
 const ui = readFileSync(new URL("../apps/desktop/ui/app.mjs", import.meta.url), "utf8");
 const css = readFileSync(new URL("../apps/desktop/ui/style.css", import.meta.url), "utf8");
@@ -30,11 +31,17 @@ test("menu stays within drawer and flips above lower scroll rows", () => {
 });
 
 test("menu contains Fetch, Safe pull and native enrolled GitHub open with dismissal", () => {
-  assert.match(ui, /\["Fetch", "fetch"\]/);
-  assert.match(ui, /\["Safe sync", "safe_sync"\]/);
-  assert.match(ui, /\["Open on GitHub", "open_github"\]/);
-  assert.match(ui, /\["Open folder", "open_folder"\]/);
-  assert.match(ui, /\["Copy path", "copy_path"\]/);
+  for (const [key, operation] of [
+    ["fetch", "fetch"], ["safeSync", "safe_sync"],
+    ["openGithub", "open_github"], ["openFolder", "open_folder"],
+    ["copyPath", "copy_path"]
+  ]) {
+    assert.ok(ui.includes('["' + key + '", "' + operation + '"]'));
+    assert.ok(cardText("en", key).length > 0);
+    assert.ok(cardText("ru", key).length > 0);
+  }
+  assert.match(ui, /cardText\(cardLanguage, key\)/);
+  assert.match(ui, /item\.dataset\.localeKey = key/);
   assert.match(ui, /open_github: "open_repository_on_github"/);
   assert.match(ui, /aria-controls", "repo-menu"/);
   assert.match(ui, /byId\("repo-list"\)\.addEventListener\("scroll", \(\) => hideRepoMenus\(\)/);

@@ -1,5 +1,32 @@
 # Architecture and trust boundaries
 
+## Current `dev` CI notification trust boundary (2026-10-24)
+
+This section supersedes the original **v0.1.0** status table below for
+the current development branch. Public `v0.2.0` remains unchanged.
+
+- `github_api_get` makes outbound authenticated, bounded GitHub REST
+  requests for `status=completed`; only validated
+  `id`, `run_attempt`, `conclusion` and `updated_at`
+  reach the JavaScript transition engine. No local HTTP listener
+  or webhook relay is involved.
+- `ci_failure_notifications` defaults OFF for new/legacy config.
+  Settings has transactional OK/Cancel; a config-only monitor read
+  transports the flag without scanning local Git repos.
+- Completed-run collection and a scoped, bounded per-run-attempt
+  history identify new failures; first reads/reconnection are silent.
+  Errors, incomplete current-job coverage and missing jobs do not
+  imply failure. At most five new alerts are sent per monitor cycle.
+- `ci_notifications.rs` checks persisted opt-in, monitor scope,
+  sanitized repository, run ID, attempt and native OS permission.
+  It uses the official Tauri notification plugin, with no generic
+  JavaScript notify capability, token handling or arbitrary text/URL.
+- The exact executable SHA `5a027460` passed
+  [Preflight #40129124638](https://github.com/morozhenko-apps/repoticker/actions/runs/40129124638),
+  4/4 including `cargo check --locked` on Linux.
+  Actual KDE and installed Windows OS alert delivery remains pending.
+  Autostart and Hybrid relay are separate decisions.
+
 ## Runtime components and status
 
 | Component | v0.1.0 status | Role |

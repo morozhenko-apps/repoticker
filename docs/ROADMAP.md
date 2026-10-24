@@ -1150,11 +1150,11 @@ Plan and progress:
    repetition/stale feature claims, retaining its complete old body in this
    history with only relative-link/heading/Markdown whitespace normalization.
    Add a compact complete document catalog; keep all existing paths/anchors.
-3. [ ] Add missing local editor/assistant ignores. Preserve neutral instructions,
+3. [x] Add missing local editor/assistant ignores. Preserve neutral instructions,
    source/tests/configuration, Cargo.lock, licensing, security, signing/APT and
    all runtime/private state. No application behavior, API, architecture,
    release/version, secrets, provider or other-repository change.
-4. [ ] At the final gate run required stable checks once: Rustfmt, locked Rust
+4. [x] At the final gate run required stable checks once: Rustfmt, locked Rust
    core tests/Clippy, Node tests, release Python tests and locked Linux desktop
    compile. Validate links/anchors, original bodies, scoped hashes, catalog,
    isolated ignore behavior and whitespace. Known-flaky groups remain visible;
@@ -1167,6 +1167,54 @@ physical acceptance, overwriting concurrent work or omitting historical limits.
 No new product, financial/security decision or release authorization is made.
 Rollback: reverse only housekeeping docs/config commits; preserve source and
 prior commits. No credential, package, user repository or data restoration.
+
+
+### Housekeeping validation and recovery receipt
+
+Local acceptance completed 2026-10-24. The complete former root README remains
+in the appendix; all original bodies of eleven prefaced owners and all prior
+heading anchors are retained. The release-notes title is reconciled, with its
+original draft title retained as provenance and a compatibility anchor.
+The catalog indexes all 28 original Markdown files once. No file deleted;
+164 original paths plus the catalog remain. All 151 protected files retain
+physical SHA-256, including Cargo.lock, source/tests/CI/config, Mode B plan,
+inventory and branch map, localization matrix, security/license/notices.
+
+All required local STABLE commands ran once and exited 0:
+
+- `cargo fmt --all --check`.
+- `cargo test --locked -p repoticker-core`: 78 passed, 0 failed, 0 ignored.
+- `cargo clippy --locked -p repoticker-core --all-targets -- -D warnings`.
+- `node --test tests/*.test.mjs`: 219 passed, 0 failed/skipped.
+- `python3 -m unittest discover -s tests -p 'test_release_*.py' -v`: 14 passed,
+  no skips; includes disposable GPG/subkey/APT integration fixtures.
+- `cargo check --locked -p repoticker-desktop`: Linux compile PASS, no compiler
+  warning lines. Rust 1.99.0, Node 24.22.1; platform dependencies available.
+
+Compilation used a separate task-owned CARGO_TARGET_DIR, removed after all
+commands exited. No user build/runtime directory was cleaned or archived.
+External cleanup validator: exit 0, 448 static/preservation/catalog/ignore
+checks, 163 local Markdown links, zero broken. `git diff --check e8d4dc4`:
+exit 0. No source/test/assertion change or failing suite was hidden. No separate
+known-flaky suite is configured; the manual ten-pass strict workflow was not
+invoked and no new full Mode B completeness claim is made.
+
+Read-only GitHub observations confirm published v0.2.0 and successful corrected
+locale-source Preflight 40137480766 at `55e1d504`. That prior run is distinct
+from final cleanup CI; its result does not imply visible KDE/Windows acceptance.
+No package was launched/installed, no user checkout enrolled/synchronized, no
+wallet/production key/runtime/ignored private state opened or changed, and no
+provider, version/tag/release/main or other repository changed.
+
+Continue product work from this handoff and the versioned source/acceptance
+owners. Normal dev publication must preserve concurrent changes; verify local
+HEAD against `git ls-remote origin refs/heads/dev`. The audit workspace exports
+final push/CI evidence, full command output, catalog, preservation map and exact
+rollback patch in `outputs/REPOTICKER_CLEANUP*`,
+`outputs/REPOTICKER_DOCUMENT_CATALOG.json` and
+`outputs/REPOTICKER_PRESERVATION_MAP.json`. Reverse only scoped housekeeping
+commits for rollback; no data, credential, package or source restoration.
+All owned local commands completed; no app, watcher or server was launched.
 
 ---
 

@@ -1266,3 +1266,80 @@ would disappear. The published v0.2.0 and `main` remain intact.
   was pending when documented. No 4/4 claim until confirmed.
 - The remaining physical KDE/Windows remote-race limitation
   and SSH/HTTPS behavior are tracked in #15.
+
+## P1-PROC1 — bounded owned Git/SSH execution (2026-10-24)
+
+Mode A / Feature and Refactor, dev only. Prior P1-REMOTE1 source
+`8d77344` passed [Preflight #40100868497](https://github.com/morozhenko-apps/repoticker/actions/runs/40100868497)
+4/4; the installed 0.2.0 and main are unchanged.
+
+### Diagnosis and root cause
+
+The core `invoke` currently uses blocking `Command::output()` for
+every local Git call, including the network-dependent `ls-remote`
+and `push`. `fetch_with_cancel` has per-Fetch owned group termination
+but waits with no deadline. `GIT_TERMINAL_PROMPT=0` does not prevent
+every SSH helper, GUI askpass, credential manager or hook from hanging.
+Possible causes: unbounded network connection/SSH handshake,
+stalled credential helper/askpass, stuck remote-side hook,
+pipe backpressure from child stdout/stderr, unbounded local
+status/inspection, cancellation registration race, and unrelated
+external Git processes. Source confirms unbounded synchronous
+waits and already provides process-group ownership for Fetch.
+
+### Design and operational safety
+
+- Introduce a small shared **owned child executor** in core,
+  with argv-only commands, private Unix process groups (Windows
+  exact-PID process tree via existing taskkill strategy), null
+  stdin and continuously drained captured stdout/stderr.
+  The calling thread must have a finite wait for bounded calls.
+- Read-only/local inspection cap: 20 seconds per Git invocation;
+  `ls-remote`: 45 seconds; Fetch: 120 seconds; outbound push:
+  120 seconds. These are conservative independent per-command
+  ceilings, not claims about total batch time. All operations
+  still respect native GitHub and other workflow rate limits.
+- On timeout terminate only the **owned child process group/tree**;
+  never use process-name-wide killall/pkill and never touch
+  unrelated Git clients. Attempt bounded reap; if termination
+  fails, report the failure and unknown process state.
+  A Git timeout is not the same as explicit Fetch cancellation.
+- Keep the current explicit Fetch token, safe registration/cancel
+  ordering, and existing race tests; Fetch may have partially
+  changed remote-tracking refs before a timeout. Never delete
+  Git index.lock, reset refs, retry automatically or claim a
+  cancelled remote operation made no changes.
+- A push timeout produces a distinct **outcome unknown** error.
+  The server may already have accepted the commit. No automatic
+  retry, second push or fabricated failure/success: the user
+  must refresh the remote state before choosing a next action.
+- A mutating local `merge --ff-only` is **not forcibly killed**:
+  interrupting a worktree/index mutation risks partial state.
+  Existing ff-only and pinned commit checks remain unchanged.
+  Future fully cooperative merge deadline would require a
+  separate transactional design; this stage is explicit about
+  that boundary.
+- Keep existing GitHub auth/cache/config, UI card size and
+  source APIs. No new crates or platform services.
+
+### Verification gates
+
+1. [ ] Implement shared bounded owned child wait/timeout used by
+   read-only Git calls and outbound push; keep unbounded worktree
+   merge isolated. Replace direct `Command::output` on those paths.
+2. [ ] Integrate Fetch's token with the same finite deadline
+   while preserving cancellation races and owned descendants.
+3. [ ] Add unit/integration regressions: finite completion,
+   blocked child + inherited pipe descendant killed on timeout,
+   unrelated process preserved, captured output without
+   deadlock, delayed SSH/remote probe, Fetch timeout distinct
+   from cancel, and push outcome-unknown wording.
+4. [ ] Execute exact-SHA Rustfmt/core/Clippy, JS/release and
+   Linux desktop compile once; repair evidenced failures.
+5. [ ] Record CI evidence separately; KDE/Windows physical
+   remote helper/tree-termination acceptance stays in issue #15.
+
+Rollback: revert P1-PROC1 code/test commits. No configuration,
+credentials, user repositories, remote refs, main or release
+are intentionally modified during development; Git tests use
+disposable local shell/bare-repository fixtures only.

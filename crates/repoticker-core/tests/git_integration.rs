@@ -646,7 +646,10 @@ fn safe_push_refuses_remotely_advanced_tip_before_a_network_write() {
     run(&f.local, &["add", "tracked.txt"]);
     run(&f.local, &["commit", "-m", "ahead from fetched upstream"]);
     let local_head = run(&f.local, &["rev-parse", "HEAD"]);
-    f.push_more();
+    fs::write(f.seed.join("tracked.txt"), "remote moved again\n").unwrap();
+    run(&f.seed, &["add", "tracked.txt"]);
+    run(&f.seed, &["commit", "-m", "remote moved after fetch"]);
+    run(&f.seed, &["push", "origin", "dev"]);
     let remote_head = run(&f.seed, &["rev-parse", "HEAD"]);
     let error = git::safe_push(&f.local).unwrap_err();
     assert!(error.to_string().contains("Remote upstream moved since Fetch"));

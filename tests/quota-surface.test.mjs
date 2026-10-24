@@ -92,6 +92,11 @@ test("the separate usage WebView can listen without inheriting main permissions"
   const quotaJs = read("../apps/desktop/ui/quota.mjs");
   assert.match(quotaJs, /subscribe\("repoticker-usage-shown", onUsageShown\)/);
   assert.match(quotaJs, /subscribe\("repoticker-monitor-updated", refreshMonitorOnly\)/);
+  assert.doesNotMatch(quotaJs, /invoke\("get_snapshot"\)/,
+    "usage popup must not trigger local repo discovery on any event");
+  assert.match(quotaJs, /invoke\("github_monitor_snapshot"\)/);
+  assert.match(quotaJs, /invoke\("get_monitor_scope"\)/);
+  assert.match(quotaJs, /invoke\("get_usage_popup_kind"\)/);
   assert.match(quotaJs, /Status unavailable/);
   assert.doesNotMatch(quotaJs, /catch\s*\{\s*paint\(buildQuotaDetails\(null\)\)/);
 });

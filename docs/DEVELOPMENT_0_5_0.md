@@ -977,3 +977,48 @@ Rustfmt, desktop compile, or aggregate success; previous source
 runs do not validate the changed SHA.
 
 KDE and Windows tray language physical smoke remain OPEN.
+
+## A3 — Settings keyboard language listbox and focus accessibility (2026-10-24)
+
+**Root-cause evidence from current `dev`:** Settings uses a custom
+WebKitGTK-friendly button/listbox to avoid native Wayland dropdown
+displacement. Its controller currently toggles open/close only on
+`click`, selects only via option `click`, and handles global
+`Escape` by setting `hidden`. There is no keyboard ArrowUp/
+ArrowDown/Home/End option focus path, opening does not move focus,
+Escape does not return focus to the trigger, and keyboard Tab leaves
+the popup potentially open. These are deterministic source gaps,
+not inferred regressions from physical testing.
+
+**Architectural decision already satisfied:** Retain the existing
+custom option buttons, accessible listbox roles, and popover CSS,
+because converting back to a native select would reintroduce the
+previously accepted KDE geometry defect. This is a limited a11y
+behavior fix, not a new UI architecture.
+
+Implementation/acceptance:
+
+1. One controller handles opening, option focus and closure. Clicking
+   or pressing Enter/Space on the native button trigger opens it;
+   ArrowDown/ArrowUp on the trigger opens and focuses the selected or
+   nearest option. While open, ArrowUp/Down wraps between options,
+   Home/End focus first/last, Escape closes and restores trigger
+   focus; Tab closes and allows normal browser tab-order. Clicking
+   outside closes without stealing focus.
+2. Options keep actual button semantics, accurate `aria-selected`,
+   `role=option`, `tabindex=-1` and stable IDs. Selection still
+   previews RU/EN immediately in Settings, preserving saved data
+   until OK. Prevent controls from updating while save is in flight.
+   Focus only moves on explicit user input, never during startup.
+3. Preserve KDE popup geometry, 660x720 shell, existing labels
+   and config-only read. No new config fields, native APIs,
+   package dependencies, Git operations, autostart or relay.
+4. Add runtime-like input tests covering mouse opening, Arrow,
+   Home/End, Escape, Tab, outside click, no writes before OK,
+   and focus restoration, plus static accessibility invariants.
+   Run exact executable SHA stable Preflight and document results.
+5. Treat KDE/Windows physical keyboard accessibility as an open
+   acceptance item until someone exercises the control on a desktop.
+
+Rollback is an isolated Settings controller/HTML/CSS/tests code
+commit, without touching `main` or the published v0.2.0 package.

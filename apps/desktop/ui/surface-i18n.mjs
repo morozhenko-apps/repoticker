@@ -76,8 +76,13 @@ function translatedMessage(language, message) {
 
 /** Immutable, strictly presentation-only projection of an existing
  * validated usage model; do not translate arbitrary row values. */
-export function translateHoverDetails(details, language) {
+export function translateHoverDetails(details, language, runnerNameRows = 0) {
   if (surfaceLocale(language) !== "ru" || !details) return details;
+  // GitHub runner names are user-controlled. Preserve the first N
+  // actual runner rows even when a name equals a built-in label.
+  const protectedRows = /^Tasks · Running /.test(details.status) &&
+    Number.isInteger(runnerNameRows) && runnerNameRows >= 0 && runnerNameRows <= 4
+    ? runnerNameRows : 0;
   return {
     ...details,
     status: translatedStatus(language, details.status),
@@ -86,8 +91,8 @@ export function translateHoverDetails(details, language) {
       ...section,
       title: surfaceText(language, section.title),
       message: translatedMessage(language, section.message),
-      rows: (section.rows || []).map(([label, value]) => [
-        surfaceText(language, label), value
+      rows: (section.rows || []).map(([label, value], index) => [
+        index < protectedRows ? label : surfaceText(language, label), value
       ]),
     })),
   };

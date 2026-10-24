@@ -48,6 +48,16 @@ test("Runner/task numeric and provider data are retained in immutable translated
   assert.equal(translateHoverDetails(model, "en"), model);
   assert.equal(translateHoverDetails(model, "it"), model);
   assert.notEqual(ru.sections, model.sections);
+  const reservedName = {
+    connected: true, status: "Tasks · Running 1 / Queued 0", message: "",
+    sections: [{ title: "", rows: [
+      ["Online", "1"], ["Busy", "0"], ["GitHub-hosted", "0"]
+    ], message: null }]
+  };
+  const safe = translateHoverDetails(reservedName, "ru", 2);
+  assert.deepEqual(safe.sections[0].rows, [
+    ["Online", "1"], ["Busy", "0"], ["Раннеры GitHub", "0"]
+  ], "Even built-in-looking runner names must remain untouched");
 });
 
 test("Billing plan names, period, numeric values and untrusted errors remain unchanged", () => {
@@ -96,7 +106,7 @@ test("Unknown/disconnected state remains unknown, with no fabricated zeros", () 
 test("Usage balloon reads only the local saved locale, not local Git repos", () => {
   assert.match(quota, /data-i18n-aria="GitHub Actions and usage"/);
   assert.match(quotaController, /get_settings_config/);
-  assert.match(quotaController, /translateHoverDetails\(details, currentLanguage\)/);
+  assert.match(quotaController, /translateHoverDetails\(details, currentLanguage, runnerNameRows\)/);
   assert.match(quotaController, /subscribe\("repoticker-config-changed", refreshLocale\)/);
   assert.doesNotMatch(quotaController, /invoke\("get_snapshot"\)/);
   assert.doesNotMatch(quotaController, /git::inspect|git::discover/);

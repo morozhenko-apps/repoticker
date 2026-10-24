@@ -21,16 +21,18 @@ function line(parent, label, value) {
 let currentLanguage = "en";
 let localeRevision = 0;
 let lastRawDetails = null;
+let lastRunnerNameRows = 0;
 function setLocale(value) {
   currentLanguage = surfaceLocale(value);
   document.documentElement.lang = currentLanguage;
   document.querySelector(".usage-bubble").setAttribute("aria-label",
     surfaceText(currentLanguage, "GitHub Actions and usage"));
-  if (lastRawDetails) paint(lastRawDetails);
+  if (lastRawDetails) paint(lastRawDetails, lastRunnerNameRows);
 }
-function paint(details) {
+function paint(details, runnerNameRows = 0) {
   lastRawDetails = details;
-  details = translateHoverDetails(details, currentLanguage);
+  lastRunnerNameRows = runnerNameRows;
+  details = translateHoverDetails(details, currentLanguage, runnerNameRows);
   const root = byId("quota-content");
   root.className = "quota-content kind-" + activeKind;
   const title = byId("quota-title");
@@ -107,8 +109,11 @@ export function selectedOrganization(snapshot) {
     snapshot?.runner_state?.scope?.organization || "";
 }
 function paintSnapshot(snapshot) {
-  paint(buildHoverDetails(snapshot.runner_state, activeKind, snapshot.connected,
-    snapshot.monitor_message, billingState));
+  const source = snapshot.runner_state;
+  const runnerNameRows = source?.coverage?.runners === true &&
+    Array.isArray(source.runners) ? Math.min(source.runners.length, 4) : 0;
+  paint(buildHoverDetails(source, activeKind, snapshot.connected,
+    snapshot.monitor_message, billingState), runnerNameRows);
 }
 function scheduleBilling(snapshot) {
   if (activeKind !== "billing" || snapshot.connected !== true) return;

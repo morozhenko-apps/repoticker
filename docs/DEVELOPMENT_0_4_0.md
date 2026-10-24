@@ -1817,3 +1817,45 @@ release artifacts. More Safe Sync local read-only inspections
 and skipped result rows per batch are intentional; network
 writes remain strictly contingent on the core's existing
 Safe Push safeguards.
+
+### P1-SYNC3 implementation evidence and validation checkpoint
+
+- `d07a7e4af1875ea23e0c82c23199694fb7f5e37c`:
+  updates native `execute` to use a small lazy admission predicate.
+  **All** discovered repos are attempted by explicit Safe Sync;
+  Fetch admission remains unfiltered and legacy Safe Pull retains
+  its previous fast-forward-only prefilter. Safe Sync directly
+  calls the existing Git core, which returns `AlreadyCurrent`,
+  `Skipped(decision)`, updated, pushed or inspection/error results.
+  The native result mapper and progress events are unchanged.
+- Three pure Rust unit cases check every relevant
+  `SyncDecision`, failure/unknown inspection, zero
+  pre-admission Git inspection for Fetch/Safe Sync, and
+  legacy Safe Pull decision boundaries. JS source contracts
+  verify that all discovered targets reach the existing
+  `git::safe_sync` and typed result/error mapping.
+  The existing real disposable Git safety fixtures for
+  no-upstream, dirty/diverged, remote non-force constraints
+  and revalidation remain authoritative and unchanged.
+- Exact first-source
+  [Preflight #40142594062](https://github.com/morozhenko-apps/repoticker/actions/runs/40142594062)
+  completed its JavaScript job **SUCCESS**, but its
+  Rust format job reported three layout-only diffs in
+  `main.rs` before the core tests ran. No behavior failure
+  was established by that incomplete test gate.
+- `e08baea27c9c19041446b3c3dac7872fb1ed9c80`
+  applies the exact formatter changes, without weakening
+  assertions. **Final executable/test candidate** is
+  `e08baea27c9c19041446b3c3dac7872fb1ed9c80`.
+  Its new exact-SHA stable Preflight must pass
+  Rustfmt/core/Clippy, Node/release, Linux desktop compile
+  and aggregate before the change can be marked verified.
+- The current UI keeps deliberate success/no-op silence;
+  native callers now receive accurate per-repo
+  `skipped` and `error` outcomes instead of missing
+  entries. Discoverability of skipped reasons in the UI
+  can be addressed separately if product evidence warrants,
+  without coupling Git safety to transient notifications.
+- Main/release/config/REST/OS permissions are untouched.
+  Physical concurrent-client and Windows acceptance
+  remain outstanding in issue #15.

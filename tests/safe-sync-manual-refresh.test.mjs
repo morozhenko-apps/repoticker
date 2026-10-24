@@ -29,10 +29,11 @@ test("native safe sync action is sequential, non-force and rechecked", () => {
   assert.match(git, /pub fn safe_sync\(/);
   assert.match(git, /pub fn safe_push\(/);
   assert.match(git, /let second = inspect\(repo\)\?/);
-  assert.match(git, /"push", "--porcelain", "--no-follow-tags"/);
-  const pushArgs = (git.match(/required\(repo, &\["push",[^\n]*\)\?;/g) ?? []);
-  assert.equal(pushArgs.length, 1);
-  assert.doesNotMatch(pushArgs[0], /--force|--mirror|--all/);
+  const pushBody = git.match(/pub fn safe_push\([\s\S]*?\n\}/)?.[0] ?? "";
+  assert.match(pushBody, /"push",\s*"--porcelain",\s*"--no-follow-tags"/);
+  const pushCall = pushBody.match(/required\(\s*repo,\s*&\[\s*"push",[\s\S]*?\],\s*\)\?/);
+  assert.ok(pushCall, "Safe push must invoke an explicit argv-only Git push");
+  assert.doesNotMatch(pushCall[0], /--force|--mirror|--all/);
   assert.match(html, /<span class="action-label">Safe sync<\/span>/);
   assert.match(app, /runGitAction\("safe_sync"\)/);
   assert.match(app, /\["Safe sync", "safe_sync"\]/);

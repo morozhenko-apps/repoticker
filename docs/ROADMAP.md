@@ -1261,6 +1261,27 @@ output was removed after completion. Full PR Preflight remains the publication
 gate; its actual exact-head status and merge/remote/branch-cleanup receipts are
 exported externally, not inferred here. Earlier counts retain their baseline.
 
+
+### Upstream keyboard fixture failure and corrected integration gate
+
+PR Preflight 40139966526 reached the concurrent Settings keyboard source from
+dev and failed `Tab leaves popup and mouse outside closes without stealing
+focus` at test line 509: the first click left `hidden=true`, expected false.
+The same focused test failed on an unmodified archive of upstream `a1b69c7`,
+without any cleanup changes. Rust source gate passed; Python steps were skipped
+behind the failed Node gate, not reported as passing in that run.
+
+Cause: the lightweight DOM fixture initialized every node `hidden=false`,
+while production markup initially hides the language list. The production
+click toggled that fake-open list closed. Upstream `0d053fc` mirrors the real
+initial hidden/aria-expanded state and adds an explicit first-click assertion;
+the Tab/no-focus-theft assertions remain unchanged. This upstream test fix was
+integrated normally with all keyboard/tray commits, without editing production
+or weakening a test in this cleanup. A separate full affected Node gate now
+passes (exact output/count in audit evidence). Unchanged Rust/core/Clippy/Python
+inputs retain prior evidence; new exact-head PR Preflight must pass before merge.
+No failed job, skipped step or upstream reproduction is hidden.
+
 ---
 
 ## Imported root README (before October 24 housekeeping)

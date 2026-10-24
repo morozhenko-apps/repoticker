@@ -1069,3 +1069,36 @@ Rollback reverts code/tests changes without modifying stored schema or GitHub au
 - [Preflight #40098694533](https://github.com/morozhenko-apps/repoticker/actions/runs/40098694533)
   was pending when this checkpoint was recorded. Physical
   KDE/Windows push and metric UX acceptance remains in issue #15.
+
+### P1-SYNC2 CI test recovery checkpoint
+
+- Initial attempts at `cdea1e2` and `7f98cbc` were superseded
+  before full CI acceptance. CI revealed a numeric/boolean bug
+  in the new Safe sync eligible counter and a source-contract
+  assertion scanning an unrelated `get-url --all`; these were
+  corrected in `48dae02`, and 14 Rustfmt hunks in `2283c25`.
+- A disposable Git test initially assumed a successful push
+  leaves the local remote-tracking tip unchanged. Actual Git
+  updates it; the assertion was corrected in `6030cf6`.
+- CI then identified an invalid test cleanup using
+  `git remote set-url --delete --push`; test-only correction
+  `c4ccd35` uses `git config --unset-all` and `91fd957`
+  constructs a valid alternate upstream to exercise mismatched
+  branch refusal rather than missing-upstream skips.
+- The native hover detail controller previously triggered
+  local scans on monitoring updates. `e9d1e3f` changed it to
+  native monitor-only state. `980c77f` also reconciles the
+  native-selected tooltip kind on the same event. Both old
+  UI mocks/contracts were updated (`5e2462e`).
+- `4a4df07` preserves explicitly unknown per-metric timestamps;
+  `f54f917` and `1d50a55` forbid cross-account counter carryover
+  during partial refresh and test that guarantee.
+- Final formatting correction `693a3b1ee3f4dc786a24f4b186397d1218c9efbb`
+  follows exact Rustfmt output for the alternate-upstream test.
+- **Exact current source candidate:**
+  `693a3b1ee3f4dc786a24f4b186397d1218c9efbb`;
+  [Preflight #40099289302](https://github.com/morozhenko-apps/repoticker/actions/runs/40099289302)
+  was pending at this checkpoint. Do not claim 4/4 until
+  Rust format/core/Clippy, JS/release and desktop compilation
+  complete successfully for this exact source SHA.
+- Physical KDE/Windows acceptance remains in issue #15.

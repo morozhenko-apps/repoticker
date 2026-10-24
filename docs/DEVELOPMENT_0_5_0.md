@@ -615,3 +615,42 @@ code/test CI candidate is [Preflight #40134283516](https://github.com/morozhenko
 Check the final four-job result before claiming this feature
 passes. The user is still running the prior binary, which
 cannot expose the new native test command without a restart.
+
+## KDE final Settings acceptance feedback (2026-10-24)
+
+The owner physically checked the centered GitHub selectors, checkbox
+and the opt-in native test-notification path on KDE Wayland and reported
+that they appeared to work. The owner now requests a production-only
+Settings UI: **remove the temporary Test notification button and its
+permission/explanation text**, and eliminate the Settings page/GitHub
+block scrollbars by enlarging the Settings window. This is visual
+acceptance of a test OS notification, **not** confirmation that a
+new GitHub workflow failure triggers the production pipeline.
+
+Implementation contract:
+
+- Raise only the Settings window's fixed/default/min/max height from
+  552px to **720px**, preserving width 660px and the unaffected
+  compact tray card, About and usage windows.
+- Remove the page scroll override and GitHub block scroll container;
+  let the full standard Settings form render without nested clipping.
+  Keep a bounded scroll **only for a potentially large explicitly
+  selected repository inventory** and for genuinely long local root
+  lists; those are content lists, not page scrollbars.
+- Remove the temporary native `ci_notification_test` command,
+  related opt-in diagnostic Rust helper, JavaScript handler/state and
+  button, along with the unneeded JS-facing notification permission
+  probe/status. Retain **production** `ci_failure_notify`, native
+  OS permission verification there, notification opt-in persistence
+  and all actual CI transition/deduplication logic.
+- Remove the redundant explanatory line in all-repositories mode,
+  but retain selected-repository error/count feedback for accessibility.
+- Update stable Settings CSS/DOM/native IPC tests and remove
+  now-obsolete diagnostic tests. The fixed-height Settings geometry
+  and absence of full-form scrollbars are regression contracts.
+- Run exact-SHA stable Preflight. Don't deploy, change `main`,
+  release a package, add autostart or fabricate GitHub failures.
+  A physical 720px-height visual check is still separate from CI.
+
+Rollback: independent code/test commit; the persisted config schema
+and installed v0.2.0 package are untouched.

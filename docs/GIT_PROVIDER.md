@@ -100,6 +100,35 @@ These features remain **unreleased dev-only** until native KDE/
 Windows acceptance in [issue #15](https://github.com/morozhenko-apps/repoticker/issues/15)
 and separate release approval. See [P1-SYNC2](DEVELOPMENT_0_4_0.md).
 
+## Unreleased P1-GIT-RACE2: final checkout revalidation
+
+Safe pull has a third conservative validation of the active
+checkout, HEAD, current branch, selected upstream, full status
+and immutable commit IDs **after** its final external-client
+checkpoint and immediately before the `git merge --ff-only`
+call. A pinned target commit alone cannot prevent a different
+branch from being advanced if another Git client switches
+the active checkout in the last interval. If any checked
+identity changes, Safe sync refuses with a visible error
+instead of merging the formerly selected target.
+
+Safe push also has deterministic tests of concurrent active
+branch/upstream/remote URL changes during live remote probing;
+the existing post-probe source+route guard must refuse any
+changed destination. Explicit pinned push refspec and
+`--no-follow-tags` override implicit Git defaults for
+`push.default`, `remote.pushDefault`, `branch.pushRemote`,
+`push.followTags` and remote-configured push refspecs.
+Mirror mode cannot cause a multi-ref write through Safe sync.
+
+This is **not** an atomic cross-process lock between
+RepoTicker and all external Git clients: another process
+could still change HEAD after the final check but before
+Git's internal merge lock. No reset, stash or aggressive
+process termination is introduced. See [P1-GIT-RACE2]
+(DEVELOPMENT_0_4_0.md) and issue #15. This is not part
+of published v0.2.0.
+
 ## Unreleased P1-GIT-EDGE1: tracked submodule safety
 
 The dev safety classifier queries Git status with

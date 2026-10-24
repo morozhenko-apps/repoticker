@@ -79,15 +79,15 @@ Never infer a disconnected account or zero metrics while loading.
 
 ### Work plan
 
-1. [ ] Add pure `card-i18n.mjs` with tested EN/RU/fallback
+1. [x] Add pure `card-i18n.mjs` with tested EN/RU/fallback
    translations and accessible status descriptions preserving
    unknown `—` vs numeric `0`.
-2. [ ] Apply locale from config-only initial read and
+2. [x] Apply locale from config-only initial read and
    authoritative later snapshot, with a revision guard
    against stale responses. Translate compact card labels,
    control hints and accessible metrics without DOM
    reconstruction or affecting status refresh and Git ops.
-3. [ ] Add real lightweight DOM/controller or focused
+3. [x] Add real lightweight DOM/controller or focused
    source contract tests: EN default, RU snapshot,
    unsupported fallback, stale config read, no false
    zero and four fixed action buttons. No model mocking.
@@ -99,3 +99,34 @@ Never infer a disconnected account or zero metrics while loading.
 
 Rollback: revert A1 code/test commit. No schema migration,
 new dependency, installer, security scope or release work.
+
+## A1 executable checkpoint
+
+- `f492fd89` adds pure `card-i18n.mjs`, covering only
+  compact-card labels/hints and numeric/unknown accessibility
+  projections for existing `en|ru` config values. Current
+  status `—` is explicitly announced as unknown, not zero.
+- `2e98fe35` binds the card's existing `Snapshot.language`
+  to control labels/action progress and updates button
+  `aria-label` from the current live Runners/Tasks counts.
+  It also requests config-only `get_settings_config` in
+  parallel with the first Git scan so RU labels can appear
+  before local scan completion. An already-rendered full
+  snapshot takes precedence over a late config-only read.
+  Monitor IPC events continue to update metrics only.
+- `16c823ae` adds deterministic Node unit/source contracts
+  for the two locales, fallback, numeric unknown versus 0,
+  local-only config read, stale order and card control count.
+  No new native dependency, permission or persistent
+  config field. No user Git mutation.
+- Exact source/test commit: `16c823ae52bacdcc58ec9828263a23538a4c2028`;
+  [Preflight #40124589351](https://github.com/morozhenko-apps/repoticker/actions/runs/40124589351)
+  was **pending** when checkpoint recorded; verify 4/4
+  before source-complete claim.
+- Later EN/RU coverage is **not** finished: Settings,
+  About, popup, native tray and backend-provided Git
+  text are intentionally untranslated in this slice.
+  Full L10N-20 and independent context audits remain #16.
+- CI-failure OS notifications and OS autostart are
+  **BLOCKED on an architectural choice**, not silently
+  'implemented'. See the two approaches in this document.

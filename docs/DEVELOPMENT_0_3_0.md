@@ -1483,3 +1483,24 @@ approval is implied by Preflight success.
   must be checked before claiming 4/4. Real KDE
   top-padding acceptance and repeatable ~8-second
   startup measurement remain open in #12.
+
+### A11 post-repair source validation
+
+- Final independent source/test SHA:
+  `af48ae58f67bdfda468909ed0386c0de18e0e4fd`.
+  [Preflight #40122702868](https://github.com/morozhenko-apps/repoticker/actions/runs/40122702868)
+  confirms **SUCCESS** for Rustfmt, **45 unit + 30 Git
+  integration + 3 GitHub origin = 78 Rust tests**
+  with `--locked`, and Clippy `--locked -D warnings`.
+  The UI/release contract job is also **SUCCESS**:
+  175 Node tests and 14 Python contract tests passed.
+  Total **267 tests** passed without failures.
+- The Linux desktop compile and final Preflight aggregate
+  were still in progress at this checkpoint. Do not claim
+  full 4/4 source completion until those jobs also pass.
+- Live KDE metric-button geometry is not physically accepted;
+  the CSS source contract verifies no busy-state inline
+  content and fixed heights. User-controlled local
+  uncommitted lockfile diffs cannot be inspected through
+  GitHub; after user reviews the diff, refreshing from dev
+  should bring the minimal committed lockfile correction.

@@ -1,0 +1,23 @@
+name: One-time A2 Cargo lockfile resolution
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - '.github/workflows/a2-lockfile-resolve.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  lockfile:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Resolve only required Cargo.lock changes
+        run: |
+          cargo metadata --format-version 1 > /dev/null
+          echo "BEGIN_A2_CARGO_PATCH"
+          git diff --no-ext-diff --no-color -- Cargo.lock
+          echo "END_A2_CARGO_PATCH"

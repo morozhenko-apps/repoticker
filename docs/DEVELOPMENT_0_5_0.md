@@ -479,3 +479,34 @@ bug fix; ordinary completed/successful jobs must remain silent.
 
 Do not modify `main`, create a release, trigger synthetic CI failures,
 or enable OS autostart for this visual correction.
+
+### KDE feedback implementation evidence (2026-10-24)
+
+- [`f05c8dbe`](https://github.com/morozhenko-apps/repoticker/commit/f05c8dbe3e496e315f26f21e5c7952f617f45eb5)
+  unifies the monitor account/repository selector grid columns,
+  10px gap, full-width 34px control height. It also removes
+  WebKitGTK's native checkbox painting for both notification and
+  selected-repository checkboxes, retaining native `input` state,
+  keyboard focus and a high-contrast fallback.
+- `tests/settings-visual-controls.test.mjs` asserts both selector
+  alignment, checked/focus/box-size styles and Settings transaction
+  boundaries. The exact CSS/test SHA passed
+  [Preflight #40133196869](https://github.com/morozhenko-apps/repoticker/actions/runs/40133196869),
+  4/4 SUCCESS.
+- [`6b96996f`](https://github.com/morozhenko-apps/repoticker/commit/6b96996f139016a8d04b06e8db04f6b27bc290da)
+  corrects a distinct authorization gate: runner-only
+  `permission_denied` no longer blocks completed-run reads when
+  job coverage is authoritative, while mixed job access errors and
+  API rate limiting still block alerts. Integration tests cover
+  successes remaining silent, runner-only 403, and job access errors.
+  Final full-source [Preflight #40133349742](https://github.com/morozhenko-apps/repoticker/actions/runs/40133349742)
+  is the exact evidence target.
+- The user's installed `0.2.0` executable was still running at
+  last inspected PID 3366630 when the source build was launched;
+  a clean one-process runtime acceptance must stop both
+  `repoticker-desktop` instances before starting latest `dev`.
+- A real **new** workflow `conclusion=failure` observed after the
+  silent initial baseline is still required to physically accept
+  RepoTicker OS notifications. A successful/queued/completed runner
+  job is not a sufficient condition. OS state reporting "available"
+  confirms permission only, not GitHub API coverage or visible toast.

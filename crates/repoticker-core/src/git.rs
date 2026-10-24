@@ -5,8 +5,8 @@ use crate::{classify_sync, RepositoryState, SyncDecision};
 use std::{
     collections::BTreeSet,
     env, fmt, fs,
-    path::{Path, PathBuf},
     io::{self, Read},
+    path::{Path, PathBuf},
     process::{Child, Command, Output, Stdio},
     sync::{mpsc, Mutex},
     thread,
@@ -140,7 +140,9 @@ fn terminate_fetch_group(pid: u32) -> Result<(), GitError> {
         if start.elapsed() >= PROCESS_REAP_GRACE {
             let _ = child.kill();
             let _ = child.wait();
-            return Err(GitError("Owned Git process-tree termination exceeded deadline".into()));
+            return Err(GitError(
+                "Owned Git process-tree termination exceeded deadline".into(),
+            ));
         }
         thread::sleep(POLL_INTERVAL);
     }
@@ -160,7 +162,11 @@ fn run_cancellable_command(
     after_register: impl FnOnce(),
 ) -> Result<Output, GitError> {
     run_cancellable_command_with_timeout(
-        command, cancel, after_spawn, after_register, FETCH_GIT_TIMEOUT
+        command,
+        cancel,
+        after_spawn,
+        after_register,
+        FETCH_GIT_TIMEOUT,
     )
 }
 
@@ -174,7 +180,10 @@ fn run_cancellable_command_with_timeout(
     if cancel.is_cancelled() {
         return Err(GitError(FETCH_CANCELLED.into()));
     }
-    command.stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::piped());
+    command
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
     #[cfg(unix)]
     {
         use std::os::unix::process::CommandExt;
@@ -189,21 +198,30 @@ fn run_cancellable_command_with_timeout(
         Ok(true) => {}
         Ok(false) => {
             let terminated = terminate_fetch_group(pid);
-            let _ = wait_owned_child(child, PROCESS_REAP_GRACE,
-                "Cancelled Fetch child could not be reaped");
+            let _ = wait_owned_child(
+                child,
+                PROCESS_REAP_GRACE,
+                "Cancelled Fetch child could not be reaped",
+            );
             terminated?;
             return Err(GitError(FETCH_CANCELLED.into()));
         }
         Err(error) => {
             let _ = terminate_fetch_group(pid);
-            let _ = wait_owned_child(child, PROCESS_REAP_GRACE,
-                "Failed Fetch registration cleanup timed out");
+            let _ = wait_owned_child(
+                child,
+                PROCESS_REAP_GRACE,
+                "Failed Fetch registration cleanup timed out",
+            );
             return Err(error);
         }
     }
     after_register();
-    let result = wait_owned_child(child, timeout,
-        "Git fetch timed out; remote-tracking refs may be partially updated");
+    let result = wait_owned_child(
+        child,
+        timeout,
+        "Git fetch timed out; remote-tracking refs may be partially updated",
+    );
     cancel.unregister(pid);
     if cancel.is_cancelled() {
         return Err(GitError(FETCH_CANCELLED.into()));
@@ -232,9 +250,7 @@ pub enum OperationOutcome {
     Skipped(SyncDecision),
 }
 
-fn drain_git_pipe<R: Read + Send + 'static>(
-    mut reader: R,
-) -> mpsc::Receiver<io::Result<Vec<u8>>> {
+fn drain_git_pipe<R: Read + Send + 'static>(mut reader: R) -> mpsc::Receiver<io::Result<Vec<u8>>> {
     let (sender, receiver) = mpsc::sync_channel(1);
     thread::spawn(move || {
         let mut bytes = Vec::new();
@@ -252,9 +268,13 @@ fn wait_owned_child(
     timeout_message: &str,
 ) -> Result<Output, GitError> {
     let pid = child.id();
-    let stdout = child.stdout.take()
+    let stdout = child
+        .stdout
+        .take()
         .ok_or_else(|| GitError("Git stdout pipe unavailable".into()))?;
-    let stderr = child.stderr.take()
+    let stderr = child
+        .stderr
+        .take()
         .ok_or_else(|| GitError("Git stderr pipe unavailable".into()))?;
     let stdout_rx = drain_git_pipe(stdout);
     let stderr_rx = drain_git_pipe(stderr);
@@ -304,13 +324,25 @@ fn wait_owned_child(
     // after Git exits; never block the GUI indefinitely.
     let stdout = stdout_rx
         .recv_timeout(PROCESS_REAP_GRACE)
-        .map_err(|_| GitError(format!("{timeout_message}; Git stdout held open by a descendant; outcome unknown")))?
+        .map_err(|_| {
+            GitError(format!(
+                "{timeout_message}; Git stdout held open by a descendant; outcome unknown"
+            ))
+        })?
         .map_err(|err| GitError(format!("Cannot read Git stdout: {err}")))?;
     let stderr = stderr_rx
         .recv_timeout(PROCESS_REAP_GRACE)
-        .map_err(|_| GitError(format!("{timeout_message}; Git stderr held open by a descendant; outcome unknown")))?
+        .map_err(|_| {
+            GitError(format!(
+                "{timeout_message}; Git stderr held open by a descendant; outcome unknown"
+            ))
+        })?
         .map_err(|err| GitError(format!("Cannot read Git stderr: {err}")))?;
-    Ok(Output { status, stdout, stderr })
+    Ok(Output {
+        status,
+        stdout,
+        stderr,
+    })
 }
 
 fn run_bounded_command(
@@ -318,13 +350,17 @@ fn run_bounded_command(
     timeout: Duration,
     timeout_message: &str,
 ) -> Result<Output, GitError> {
-    command.stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::piped());
+    command
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
     #[cfg(unix)]
     {
         use std::os::unix::process::CommandExt;
         command.process_group(0);
     }
-    let child = command.spawn()
+    let child = command
+        .spawn()
         .map_err(|err| GitError(format!("Failed to launch git: {err}")))?;
     wait_owned_child(child, timeout, timeout_message)
 }
@@ -338,18 +374,26 @@ fn invoke(repo: &Path, args: &[&str]) -> Result<Output, GitError> {
         .env("GIT_TERMINAL_PROMPT", "0");
     match args.first().copied() {
         // Local worktree/index mutations are never force-killed.
-        Some("merge") => command.stdin(Stdio::null()).output()
+        Some("merge") => command
+            .stdin(Stdio::null())
+            .output()
             .map_err(|err| GitError(format!("Failed to launch git: {err}"))),
-        Some("push") => run_bounded_command(
-            &mut command, PUSH_GIT_TIMEOUT, PUSH_OUTCOME_UNKNOWN),
+        Some("push") => run_bounded_command(&mut command, PUSH_GIT_TIMEOUT, PUSH_OUTCOME_UNKNOWN),
         Some("ls-remote") => run_bounded_command(
-            &mut command, REMOTE_PROBE_TIMEOUT,
-            "Git remote probe timed out; no push attempted"),
+            &mut command,
+            REMOTE_PROBE_TIMEOUT,
+            "Git remote probe timed out; no push attempted",
+        ),
         Some("fetch") => run_bounded_command(
-            &mut command, FETCH_GIT_TIMEOUT,
-            "Git fetch timed out; remote-tracking refs may be partially updated"),
+            &mut command,
+            FETCH_GIT_TIMEOUT,
+            "Git fetch timed out; remote-tracking refs may be partially updated",
+        ),
         _ => run_bounded_command(
-            &mut command, LOCAL_GIT_TIMEOUT, "Local Git command timed out"),
+            &mut command,
+            LOCAL_GIT_TIMEOUT,
+            "Local Git command timed out",
+        ),
     }
 }
 fn stderr(output: &Output) -> String {
@@ -1304,10 +1348,17 @@ mod owned_git_process_tests {
             &mut command,
             Duration::from_millis(150),
             "test Git subprocess timeout",
-        ).expect_err("owned process must time out");
+        )
+        .expect_err("owned process must time out");
         assert!(error.0.contains("test Git subprocess timeout"), "{error}");
-        assert!(start.elapsed() < Duration::from_secs(4), "timeout must be bounded");
-        assert!(unrelated.try_wait().unwrap().is_none(), "unrelated process must survive");
+        assert!(
+            start.elapsed() < Duration::from_secs(4),
+            "timeout must be bounded"
+        );
+        assert!(
+            unrelated.try_wait().unwrap().is_none(),
+            "unrelated process must survive"
+        );
         unrelated.kill().unwrap();
         unrelated.wait().unwrap();
     }
@@ -1320,7 +1371,8 @@ mod owned_git_process_tests {
             &mut command,
             Duration::from_secs(5),
             "large output unexpectedly timed out",
-        ).expect("pipes must be drained concurrently");
+        )
+        .expect("pipes must be drained concurrently");
         assert!(output.status.success());
         assert_eq!(output.stdout.len(), 200000);
         assert_eq!(output.stderr, b"marker");
@@ -1337,7 +1389,8 @@ mod owned_git_process_tests {
             || {},
             || {},
             Duration::from_millis(150),
-        ).expect_err("hung Fetch must return");
+        )
+        .expect_err("hung Fetch must return");
         assert!(error.0.contains("Git fetch timed out"), "{error}");
         assert!(!cancellation.is_cancelled());
         assert_ne!(error.0, FETCH_CANCELLED);
@@ -1351,7 +1404,8 @@ mod owned_git_process_tests {
             &mut command,
             Duration::from_millis(150),
             PUSH_OUTCOME_UNKNOWN,
-        ).expect_err("hung remote write must report uncertainty");
+        )
+        .expect_err("hung remote write must report uncertainty");
         assert!(error.0.contains("outcome unknown"));
         assert!(error.0.contains("before retrying"));
         assert_ne!(error.0, FETCH_CANCELLED);
@@ -1365,7 +1419,8 @@ mod owned_git_process_tests {
             &mut command,
             Duration::from_secs(3),
             "unexpected local Git timeout",
-        ).unwrap();
+        )
+        .unwrap();
         assert_eq!(output.status.code(), Some(7));
         assert_eq!(output.stdout, b"output");
         assert_eq!(output.stderr, b"notice");

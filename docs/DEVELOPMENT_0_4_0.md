@@ -1666,3 +1666,27 @@ during test setup (fixtures are isolated temporary repos).
   checkpoint. No claim of CI or physical OS acceptance.
   Remaining non-atomic Git HEAD/worktree race is documented
   above and tracked for physical validation in issue #15.
+
+### P1-GIT-RACE2 CI correction checkpoint
+
+- First exact source/test candidate `6652618` triggered
+  [Preflight #40111499576](https://github.com/morozhenko-apps/repoticker/actions/runs/40111499576).
+  The JS stage failed because a legacy assertion expected
+  the two remote-source checks inside `pub fn safe_push`,
+  while the source correctly moved them into the private
+  `safe_push_with_checkpoint` called by that public wrapper.
+  The Rust stage stopped before unit/integration tests
+  on nine Rustfmt-only differences in newly added fixtures.
+- [`f9bd77a`](https://github.com/morozhenko-apps/repoticker/commit/f9bd77aec03a167714ec61ed49f2f5f41d91705f)
+  applies all nine exact Rustfmt changes and updates the
+  JS test to assert the new two-check implementation and
+  the explicit wrapper. This does not bypass, omit or weaken
+  a safety gate. Ordinary Git behavior was unchanged.
+- **Current exact executable candidate:**
+  `f9bd77aec03a167714ec61ed49f2f5f41d91705f`.
+  [Preflight #40111746248](https://github.com/morozhenko-apps/repoticker/actions/runs/40111746248)
+  was pending when this checkpoint was recorded. Rust
+  integration and Linux desktop compile have not yet been
+  accepted on this SHA; do not report 4/4 until verified.
+- Physical Windows/KDE runtime acceptance remains #15;
+  no version bump, signed release or main promotion.

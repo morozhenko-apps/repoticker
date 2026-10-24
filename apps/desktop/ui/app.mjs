@@ -535,9 +535,9 @@ window.__TAURI__?.event?.listen?.("repoticker-git-action-finished", async event 
   await refresh();
 });
 refresh();
-startGithubMonitoring({
+triggerMonitorRefresh = startGithubMonitoring({
   invoke, event: window.__TAURI__?.event, onError: showError,
-  onStage: traceStartup
+  onStage: traceStartup, onRefreshState: monitorRefreshState
 });
 
 /* GTK Layer Shell receives physical Wayland relative-pointer events directly.

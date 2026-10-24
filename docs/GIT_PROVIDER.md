@@ -100,6 +100,35 @@ These features remain **unreleased dev-only** until native KDE/
 Windows acceptance in [issue #15](https://github.com/morozhenko-apps/repoticker/issues/15)
 and separate release approval. See [P1-SYNC2](DEVELOPMENT_0_4_0.md).
 
+## Unreleased P1-PROC1: bounded owned Git/SSH subprocesses
+
+The dev Git executor now applies hard per-process deadlines while
+keeping existing argv-only execution, no-terminal prompts and
+independent explicit Fetch cancellation:
+
+| Operation | Deadline | Failure semantics |
+|---|---:|---|
+| Read-only/local Git inspection | 20 s | local Git command timed out |
+| Read-only remote `ls-remote` | 45 s | no Safe push attempted |
+| Fetch | 120 s | partial remote-tracking ref updates may have occurred |
+| Safe push | 120 s | **remote outcome unknown**; inspect remote before retrying |
+
+Git children are started in private Unix process groups; on Windows
+the exact owned PID and its descendants are targeted via bounded
+`taskkill /T`. Stdout and stderr are drained concurrently to avoid
+blocking on full pipes; timeouts bound process exit and output
+collection. Unrelated Git processes are not targeted by name.
+User-triggered Fetch cancellation retains its own token and is
+**not** the same as a timeout. A local `git merge --ff-only` is
+intentionally **not force-killed** during worktree/index mutation.
+An inherited pipe still held by a detached helper after Git exits
+can produce a bounded outcome-unknown error; absolute orphan-free
+termination of detached helper processes is not asserted.
+
+See [P1-PROC1](DEVELOPMENT_0_4_0.md) and
+[physical acceptance issue #15](https://github.com/morozhenko-apps/repoticker/issues/15).
+Published v0.2.0 is unchanged.
+
 ## Manual Fetch
 
 - Command semantics: `git fetch --all --prune --quiet` for an eligible enrolled checkout, through an argv-based process invocation rather than a shell.

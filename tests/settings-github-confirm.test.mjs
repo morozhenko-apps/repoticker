@@ -41,6 +41,7 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
   let phase = connected ? "connected" : "idle";
   let monitorOrg = connected ? "one" : null;
   let monitorRepositories = [...initialRepositories];
+  const persistedIgnored = [...(options.ignoredChildNames || [])];
   let closed = false;
   let tokenRemoved = false;
   let releaseInstallations = null;
@@ -63,7 +64,8 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
           switch (command) {
             case "get_settings_config": return {
               roots: ["/repos"], language: "en", github_monitor_org: monitorOrg,
-              github_monitor_repositories: monitorRepositories
+              github_monitor_repositories: monitorRepositories,
+              ignored_child_names: persistedIgnored
             };
             case "get_monitor_scope": return monitorOrg;
             case "github_auth_status": return { connected, phase };
@@ -335,5 +337,58 @@ test("late installation API response cannot resurrect Settings account controls 
     assert.equal(ui.node("github-repo-controls").hidden, true);
     assert.equal(ui.node("github-connection-indicator").textContent, "Not connected");
     assert.equal(ui.monitorOrg, "one", "native disconnection is not account selection");
+  } finally { ui.restore(); }
+});
+
+
+test("ignored child folder edits are draft-only and Cancel never persists them", async () => {
+  const ui = await fixture("ignored-cancel", false, [], {
+    ignoredChildNames: ["Old"]
+  });
+  try {
+    assert.equal(ui.node("apply-settings").disabled, true);
+    assert.equal(ui.node("ignored-child-list").children[0].children[0].textContent, "Old");
+    ui.node("ignored-child-name").value = "Archive";
+    await ui.node("ignore-child-form").fire("submit");
+    assert.equal(ui.node("apply-settings").disabled, false);
+    assert.equal(ui.calls.filter(([name]) => name === "save_settings").length, 0);
+    assert.deepEqual(ui.node("ignored-child-list").children.map(row => row.children[0].textContent),
+      ["Archive", "Old"]);
+    await ui.node("cancel-settings").fire("click");
+    assert.equal(ui.calls.filter(([name]) => name === "save_settings").length, 0);
+  } finally { ui.restore(); }
+});
+
+test("OK commits normalized ignored names alongside roots and language", async () => {
+  const ui = await fixture("ignored-save", false, [], {
+    ignoredChildNames: ["Old"]
+  });
+  try {
+    ui.node("ignored-child-name").value = " Archive ";
+    await ui.node("ignore-child-form").fire("submit");
+    assert.equal(ui.node("apply-settings").disabled, false);
+    await ui.node("apply-settings").fire("click");
+    const saved = ui.calls.find(([name]) => name === "save_settings");
+    assert.ok(saved);
+    assert.deepEqual(saved[1], {
+      roots: ["/repos"],
+      language: "en",
+      ignoredChildNames: ["Archive", "Old"]
+    });
+    assert.equal(ui.closed, true);
+  } finally { ui.restore(); }
+});
+
+test("removing an ignored name re-enables OK without changing enrolled roots", async () => {
+  const ui = await fixture("ignored-remove", false, [], {
+    ignoredChildNames: ["Old"]
+  });
+  try {
+    await ui.node("ignored-child-list").children[0].children[1].fire("click");
+    assert.equal(ui.node("apply-settings").disabled, false);
+    await ui.node("apply-settings").fire("click");
+    const saved = ui.calls.find(([name]) => name === "save_settings");
+    assert.deepEqual(saved[1].ignoredChildNames, []);
+    assert.deepEqual(saved[1].roots, ["/repos"]);
   } finally { ui.restore(); }
 });

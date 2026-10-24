@@ -318,8 +318,8 @@ pub fn discover_with_ignored(
             .map_err(|err| GitError(err.to_string()))?
             .is_dir()
             || ignored_child(&path)
-            || path.file_name().is_some_and(|name| {
-                ignored_child_names.iter().any(|ignored| name == ignored.as_str())
+            || path.file_name().and_then(|name| name.to_str()).is_some_and(|name| {
+                ignored_child_names.iter().any(|ignored| name == ignored)
             })
             || !looks_like_checkout(&path, false)
         {

@@ -948,6 +948,7 @@ mod monitor_selection_tests {
         });
         let config: Config = serde_json::from_value(old).unwrap();
         assert!(config.github_monitor_repositories.is_empty());
+        assert!(config.ignored_child_names.is_empty());
     }
 
     #[test]

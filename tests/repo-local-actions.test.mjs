@@ -10,10 +10,11 @@ const html = readFileSync(new URL("../apps/desktop/ui/index.html", import.meta.u
 test("all navigation and clipboard commands share the canonical enrollment verifier", () => {
   assert.match(core, /pub fn resolve_enrolled_checkout\(/);
   assert.match(core, /let selected = normalize_root\(requested\)\?/);
-  assert.match(core, /discover_all\(roots\)/);
+  assert.match(core, /discover_all_with_ignored\(roots, ignored_child_names\)/);
   assert.match(core, /repositories\.binary_search\(&selected\)\.is_ok\(\)/);
   const resolver = native.match(/fn enrolled_repository\([\s\S]*?\n\}/)?.[0] ?? "";
-  assert.match(resolver, /git::resolve_enrolled_checkout\(&roots_as_paths\(&config\), repo_path\)/);
+  assert.match(resolver, /git::resolve_enrolled_checkout_with_ignored\(/);
+  assert.match(resolver, /&config\.ignored_child_names/);
   for (const name of ["open_repository_on_github", "open_repository_folder", "copy_repository_path"]) {
     const begin = native.indexOf("fn " + name + "(");
     assert.ok(begin >= 0, name);

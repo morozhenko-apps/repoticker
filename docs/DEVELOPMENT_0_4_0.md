@@ -1176,11 +1176,11 @@ require an explicit separate architectural decision.
 
 ### Implementation and acceptance
 
-1. [ ] Extract the existing local pre-push identity checks into
+1. [x] Extract the existing local pre-push identity checks into
    a small private reusable helper, retaining their semantics.
-2. [ ] Add exact remote probe parser and invoke it between the
+2. [x] Add exact remote probe parser and invoke it between the
    first and final local revalidation; reject absent/moved refs.
-3. [ ] Test with disposable local bare remotes: deleted remote
+3. [x] Test with disposable local bare remotes: deleted remote
    branch is not recreated, remotely advanced tip rejected
    before push, ordinary ahead push succeeds, existing hook/
    split push URL rejection remains effective, malformed
@@ -1194,3 +1194,27 @@ require an explicit separate architectural decision.
 Rollback: revert this source/test commit. It has no settings
 or storage migration; only the pre-push remote read and check
 would disappear. The published v0.2.0 and `main` remain intact.
+
+### P1-REMOTE1 source and test checkpoint
+
+- Source + focused real-bare-Git regressions: 
+  [`50b1ac5`](https://github.com/morozhenko-apps/repoticker/commit/50b1ac5a0ab9f9ae5a0c01cc1e29a0255ec96a3c).
+  The single-purpose parser allows exactly one SHA-1/SHA-256
+  OID plus the exact requested refs/heads path. Upstream
+  existence and fresh tip equality are required before
+  non-force push. Local source/remote routing checks are
+  performed both before and after this read-only network probe.
+- [`3d6906e`](https://github.com/morozhenko-apps/repoticker/commit/3d6906e161fa1f300a156c92c469e217cf90b8f6)
+  corrected test fixture sequencing so the independently
+  advanced server branch has a distinct second commit.
+- Disposable bare remote tests cover deleted-upstream refusal
+  without recreation and advanced remote-tip refusal; previous
+  ahead, behind, diverged, pushurl, hook and checkout tests
+  remain intact. Unit tests cover absent, malformed, ambiguous
+  and wrong-branch remote-ref responses.
+- **Exact source/test SHA:**
+  `3d6906e161fa1f300a156c92c469e217cf90b8f6`.
+  CI has not yet been verified for this SHA; do not claim
+  Rust format, tests or desktop compile success before the
+  complete final Preflight run. Physical KDE/Windows
+  acceptance remains pending issue #15.

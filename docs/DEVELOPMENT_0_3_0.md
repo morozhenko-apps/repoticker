@@ -1363,15 +1363,15 @@ cold/warm measurements.
 
 ### Stages and acceptance
 
-1. [ ] Replace busy caption text insertion with an
+1. [x] Replace busy caption text insertion with an
    absolutely positioned progress indicator inside the
    existing fixed-size metric button. Respect prefers-
    reduced-motion. Keep both independent refresh clicks,
    aria-busy, current numbers and tooltip behavior.
-2. [ ] Add CSS/HTML source contract ensuring busy state
+2. [x] Add CSS/HTML source contract ensuring busy state
    never adds inline layout content and the 25px strip,
    23px buttons and four primary buttons remain stable.
-3. [ ] Apply `--locked` to core and desktop Cargo CI
+3. [x] Apply `--locked` to core and desktop Cargo CI
    commands without changing manifests, dependencies or
    the tracked lockfile. Add a release/source contract
    proving lockfile version-control and CI fail-closed
@@ -1392,3 +1392,38 @@ No new persisted setting, UI dimension, credential permission,
 Git command, release tag or main-branch merge. Revert CSS
 and test/CI commit if regressions occur. No release
 approval is implied by Preflight success.
+
+### A11 implementation and CI checkpoint
+
+- CSS + regression tests [`b8dc34d`](https://github.com/morozhenko-apps/repoticker/commit/b8dc34d4902899c2e9a2ae0b5b9978033b174cf5):
+  replaced the busy-only inline `↻` caption glyph with a
+  **non-flowing, absolutely positioned** underline inside
+  each existing 23px Runners/Tasks button. No card height,
+  status-strip height, UI event, API action or count model
+  was changed. The positioned pseudo indicator reserves no
+  flex width; reduced-motion users see it without animation.
+  A source contract checks the fixed 25px strip, absence of
+  inline busy caption insertion and unchanged four action
+  columns.
+- Preflight pinned with `--locked`: [`bb3d954`](https://github.com/morozhenko-apps/repoticker/commit/bb3d954eff2dcfa47f8be84ee65be9428de871f6).
+  Manual Strict Rust test loop pinned: [`debc4b9`](https://github.com/morozhenko-apps/repoticker/commit/debc4b9c2222d95a87c529032348ad7f88264feb).
+  Release already calls `cargo metadata --locked`.
+  Lockfile/source regression: [`08ed79e`](https://github.com/morozhenko-apps/repoticker/commit/08ed79e89a290a98fdee2c9db8852fec5041dfd9).
+- Exact executable/test candidate:
+  `08ed79e89a290a98fdee2c9db8852fec5041dfd9`.
+  [Preflight #40122126070](https://github.com/morozhenko-apps/repoticker/actions/runs/40122126070)
+  was pending at this checkpoint. Treat source/test acceptance
+  as **PENDING**, not success, until all four jobs pass.
+- Root Cargo.lock itself and all manifests remain untouched.
+  The user workstation's dirty Cargo file is not visible
+  through connected GitHub and its diff is not verified;
+  do not automatically commit or restore it without
+  inspecting whether it reflects intentional manifest
+  changes. Inspect with `git status --short` and
+  `git diff -- Cargo.lock`; use `git restore -- Cargo.lock`
+  only when a reviewed change is incidental.
+- The user's approximately 8-second initial display is
+  recorded in issue #12 as a single uninstrumented
+  observation, not a cold/warm benchmark or confirmed SLA.
+  Native KDE geometry verification and comparative
+  startup logs remain open; no `main` change or release.

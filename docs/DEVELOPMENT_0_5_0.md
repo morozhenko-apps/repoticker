@@ -598,3 +598,20 @@ reverted without migrating config or changing the OS package.
   the three centered dropdown labels and functioning option menus.
 - No intentional failing GitHub Actions job was created; `main`,
   APT/release, autostart and package version remain untouched.
+
+### Test notification CI correction (2026-10-24)
+
+[Preflight #40134203945](https://github.com/morozhenko-apps/repoticker/actions/runs/40134203945)
+reported a deterministic `cargo fmt --all --check` violation:
+one superfluous blank line immediately before
+`notification_test_enabled` in `ci_notifications.rs`.
+Node UI/integration tests passed on that source SHA.
+This is a formatting defect, not evidence of an OS dispatch
+or GitHub REST failure.
+
+[`a31e4640`](https://github.com/morozhenko-apps/repoticker/commit/a31e4640dd9ed3e2816c8bfd199e9b658461526d)
+applies the precise rustfmt correction. The new exact
+code/test CI candidate is [Preflight #40134283516](https://github.com/morozhenko-apps/repoticker/actions/runs/40134283516).
+Check the final four-job result before claiming this feature
+passes. The user is still running the prior binary, which
+cannot expose the new native test command without a restart.

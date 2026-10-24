@@ -1111,7 +1111,6 @@ fn tray_image() -> Image<'static> {
     Image::new_owned(rgba, width, height)
 }
 
-
 #[cfg(not(target_os = "linux"))]
 fn build_desktop_tray_menu(app: &AppHandle, language: &str) -> tauri::Result<Menu<tauri::Wry>> {
     let open = MenuItem::with_id(

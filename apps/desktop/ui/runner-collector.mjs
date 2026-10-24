@@ -158,6 +158,8 @@ export async function collectRunnerState({
       ...(previousState.queuedJobs || []), ...(previousState.waitingJobs || [])]
     : [];
   const checkedAt = now();
+  const priorClock = field => previousState && Object.hasOwn(previousState, field)
+    ? previousState[field] : previousState?.checkedAt ?? null;
   const summary = summarizeRunnerState({
     runners: runnerPage.items,
     jobs: needTasks ? results.flatMap(item => item.jobs) : previousJobs,
@@ -172,9 +174,9 @@ export async function collectRunnerState({
     errors,
     checkedAtRunners: needRunners
       ? (summary.coverage.runners ? checkedAt : null)
-      : (previousState?.checkedAtRunners ?? previousState?.checkedAt ?? null),
+      : priorClock("checkedAtRunners"),
     checkedAtTasks: needTasks
       ? (summary.coverage.jobs ? checkedAt : null)
-      : (previousState?.checkedAtTasks ?? previousState?.checkedAt ?? null),
+      : priorClock("checkedAtTasks"),
   };
 }

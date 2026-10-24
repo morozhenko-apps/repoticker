@@ -778,3 +778,22 @@ test("manual refresh under active cooldown does not bypass GitHub rate gate", as
   await refresh(true, "tasks");
   assert.equal(attempt, 2);
 });
+
+
+test("targeted updates preserve explicitly unknown clock without legacy fallback", () => {
+  const prev = {
+    checkedAt: "2026-10-20T12:00:00Z",
+    checkedAtRunners: null,
+    checkedAtTasks: "2026-10-20T12:15:00Z",
+    runners: [], runningJobs: [], queuedJobs: [],
+    counts: { busy: null, running: 1, queued: 0 },
+    coverage: { runners: false, jobs: true },
+  };
+  const next = {
+    ...prev, checkedAt: "2026-10-20T12:45:00Z",
+    checkedAtTasks: "2026-10-20T12:45:00Z",
+  };
+  assert.equal(mergeMetricGroup(prev, next, "tasks").checkedAtRunners, null);
+  assert.equal(invalidateMetricGroup(next, "runners").checkedAtRunners, null);
+});
+

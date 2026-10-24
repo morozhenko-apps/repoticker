@@ -56,3 +56,12 @@ test("Runners and Tasks are two independent accessible manual refresh targets", 
   assert.doesNotMatch(app.match(/const manualIndicator[\s\S]*?function renderMonitorMetrics/)?.[0] ?? "",
     /get_snapshot/);
 });
+
+test("open status balloon reuses native monitor cache without scanning local Git", () => {
+  const quota = source("../apps/desktop/ui/quota.mjs");
+  const monitor = quota.match(/async function refreshMonitorOnly\([\s\S]*?\n\}/)?.[0] ?? "";
+  assert.match(monitor, /invoke\("github_monitor_snapshot"\)/);
+  assert.match(monitor, /mergeMonitorPresentation\(/);
+  assert.doesNotMatch(monitor, /get_snapshot|git::inspect|perform_git_action/);
+  assert.match(quota, /subscribe\("repoticker-monitor-updated", refreshMonitorOnly\)/);
+});

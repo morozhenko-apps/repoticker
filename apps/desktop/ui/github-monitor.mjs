@@ -106,6 +106,8 @@ export async function collectForAccount({
 export function mergeMetricGroup(previous, next, kind) {
   if (kind === "all" || !previous) return next;
   const runners = kind === "runners";
+  const priorClock = field => Object.hasOwn(previous, field)
+    ? previous[field] : previous.checkedAt ?? null;
   const keepCount = runners
     ? ["running", "queued", "waiting", "runningSelfHosted", "runningGitHubHosted",
       "runningUnclassified", "queuedSelfHosted", "queuedGitHubHosted",
@@ -124,8 +126,8 @@ export function mergeMetricGroup(previous, next, kind) {
     queuedByLane: runners ? previous.queuedByLane : next.queuedByLane,
     counts: { ...next.counts },
     coverage: { ...next.coverage },
-    checkedAtRunners: runners ? next.checkedAtRunners : previous.checkedAtRunners ?? previous.checkedAt,
-    checkedAtTasks: runners ? previous.checkedAtTasks ?? previous.checkedAt : next.checkedAtTasks,
+    checkedAtRunners: runners ? next.checkedAtRunners : priorClock("checkedAtRunners"),
+    checkedAtTasks: runners ? priorClock("checkedAtTasks") : next.checkedAtTasks,
   };
   for (const key of keepCount) merged.counts[key] = previous.counts?.[key] ?? null;
   for (const key of keepCoverage) merged.coverage[key] = previous.coverage?.[key] ?? false;

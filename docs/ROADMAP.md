@@ -1274,7 +1274,7 @@ behind the failed Node gate, not reported as passing in that run.
 Cause: the lightweight DOM fixture initialized every node `hidden=false`,
 while production markup initially hides the language list. The production
 click toggled that fake-open list closed. Upstream `0d053fc` mirrors the real
-initial hidden/aria-expanded state and adds an explicit first-click assertion;
+initial hidden state and adds an explicit first-click assertion;
 the Tab/no-focus-theft assertions remain unchanged. This upstream test fix was
 integrated normally with all keyboard/tray commits, without editing production
 or weakening a test in this cleanup. A separate full affected Node gate now

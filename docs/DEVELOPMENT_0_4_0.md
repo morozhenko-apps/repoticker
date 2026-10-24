@@ -1398,3 +1398,31 @@ disposable local shell/bare-repository fixtures only.
   process fixtures, never user Git remotes; it proves local
   group termination and unrelated child survival, but cannot
   substitute for physical KDE/Windows SSH-helper acceptance.
+
+## P1-CI-RETENTION — one-day release staging and consistent tray Safe sync (2026-10-24)
+
+- Current published v0.2.0 and `main` release workflow have **not**
+  been changed by this dev-only feature. All future tagged
+  releases using this workflow after main promotion must use
+  upload retention `1` day for exactly three staging artifacts:
+  `repoticker-linux`, `repoticker-windows`, `repoticker-apt-keyring`.
+  Commit [`99ffacc`](https://github.com/morozhenko-apps/repoticker/commit/99ffacc0c7484e0a4506a728ea789a8b34708542).
+- [`6a8cb04`](https://github.com/morozhenko-apps/repoticker/commit/6a8cb04ff873e525c0c120f60caf8fcaa542f022)
+  also aligns native Linux ksni tray and Tauri/Windows tray
+  'Safe sync all' with the already available `safe_sync` command.
+  It fixes a previously surviving 'Safe pull all' dispatch
+  discrepancy. Tests pin both dispatches and every upload
+  retention setting.
+- Exact code/test Preflight
+  [#40106322999](https://github.com/morozhenko-apps/repoticker/actions/runs/40106322999)
+  **COMPLETED 4/4 SUCCESS**, with 66 Rust, 168 JS and
+  12 Python release-contract tests passed (246 in total),
+  plus Linux desktop compile, Rustfmt and Clippy.
+- GitHub Actions ephemeral artifacts expire one day **from upload**;
+  signed R2 objects, APT pool/index and GitHub Release assets
+  are separate and unaffected. Environment approval delays
+  over one day can require rebuilding/retrying the tagged run.
+  Previously uploaded artifacts retain their historical
+  retention assignment.
+- Physical KDE/Windows tray action smoke and signed release
+  acceptance remain deferred. No new tag/version/main promotion.

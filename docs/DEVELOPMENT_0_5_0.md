@@ -855,3 +855,27 @@ full L10N-20 claim or unapproved relay.
   Runtime KDE and Windows visible text remain separate physical
   acceptance gates. No `main`, tag, public version, autostart
   or relay changes.
+
+### A1c localization collision guard and final test candidate (2026-10-24)
+
+The first `215778ef` source/test candidate passed all 219 Node
+tests and Rust/Clippy checks in CI, while its Linux desktop compile
+was still running when reviewed. A source-only review identified a
+real presentation collision: a user-owned runner named `Online`,
+`Busy` or another UI status could be translated as a fixed label,
+breaking the invariant that provider-owned names remain unchanged.
+
+`55e1d50475f2e219cb9393e99de3fe5ae344d6d4` corrects the
+projection without modifying `quota-details.mjs`: the caller
+supplies the actual bounded number of named runner rows from
+the validated native runner coverage, and the translator protects
+those rows from key-based label substitution. An adversarial
+`Online`/`Busy` name regression was added while keeping the
+fixed `GitHub-hosted` summary label translated.
+
+**Updated final executable/test source SHA:**
+`55e1d50475f2e219cb9393e99de3fe5ae344d6d4`.
+Check its new exact-SHA Preflight after the commit; earlier
+`215778ef` evidence does not validate this correction. Keep
+KDE/Windows physical locale and all OS release gates open until
+accepted. This scope remains read-only and uses no new permissions.

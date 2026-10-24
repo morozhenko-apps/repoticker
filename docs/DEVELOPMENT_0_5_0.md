@@ -510,3 +510,56 @@ or enable OS autostart for this visual correction.
   RepoTicker OS notifications. A successful/queued/completed runner
   job is not a sufficient condition. OS state reporting "available"
   confirms permission only, not GitHub API coverage or visible toast.
+
+### KDE second acceptance: native test notification and select text centering (2026-10-24)
+
+**Owner observation:** the account, connection-mode and repositories native
+`<select>` controls are horizontally aligned, but their option text is
+still rendered low inside the border on KDE WebKitGTK. The checkbox
+checkmark is now accepted. The user explicitly requests a test of native
+OS notification delivery without creating a failing CI job. RepoTicker
+remains running on Alcotester.
+
+**Root cause candidates for the vertical gap:** shared
+`button, input, select` `padding: 6px 9px`; GTK native select
+`appearance` internal metrics; implicit line-height; OS font metrics
+and fractional scaling; disabled-opacity contrast; divergent
+declarations. CSS inspection and the screenshot prioritize the
+combination of the shared 6px block padding and WebKitGTK's native
+select painting. The first grid-width correction did not address either.
+
+**Plan (implementation separate from documentation):**
+
+1. Normalize the three monitor select controls to a single accessible
+   CSS-painted closed control using `appearance: none`, explicit 34px
+   border-box sizing, zero block padding, deterministic line-height,
+   fixed inline padding and one CSS background chevron.
+   Preserve the browser's actual `<select>` element and native option
+   popup and the disabled state; do not create a scripted combobox.
+2. Add a **Test notification** button beside the OS permission status
+   in Settings. It is enabled only for persisted, currently selected
+   opt-in when the native permission check reports `granted`.
+   A native `ci_notification_test` command must independently
+   recheck persisted opt-in and OS permission, then use the same
+   `tauri_plugin_notification` backend with fixed test-only title
+   and body. No user-controlled text, GitHub run identifiers,
+   GitHub requests, synthetic CI failures, delivery history changes
+   or config writes. Report that the OS accepted the dispatch
+   request, not that a banner was physically observed.
+3. Regression test the shared select CSS and unchanged actual select
+   semantics, the button's saved-preference/permission guards,
+   the native command's denial paths and its no-arbitrary-text
+   contract. Avoid a live failing GitHub Actions job.
+4. Validate the exact code/test SHA with the normal stable Preflight,
+   record PASS/FAIL, then physically verify on KDE after restarting
+   the running source app. Do not change `main`, release, autostart
+   or the outbound REST notification decision engine.
+
+**Expected vs actual:** closed select text should sit centrally
+between top/bottom edges. A fixed test notification should be
+requestable without any failing workflow, separately from the real
+end-to-end CI delivery acceptance. The code+CI gate does not
+substitute for physical KDE notification visibility.
+
+**Rollback:** independent CSS/UI + Rust/JS/test commits can be
+reverted without migrating config or changing the OS package.

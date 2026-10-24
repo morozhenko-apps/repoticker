@@ -83,6 +83,33 @@ LAST. The read-only download Worker is maintained independently by Cloudflare
 Git Integration from main, not by the release workflow. GitHub Release is
 created only if all steps succeed. Never distribute a failed candidate.
 
+## GitHub Actions staging artifact retention (dev policy)
+
+Tagged releases stage three temporary workflow artifacts via
+`actions/upload-artifact@v4`: `repoticker-linux` (DEB/AppImage),
+`repoticker-windows` (NSIS), and `repoticker-apt-keyring`.
+All three explicitly use **`retention-days: 1`** in the
+`dev` release-candidate workflow. Retention begins at artifact
+upload time; it is not measured from the end of R2/APT publication.
+Release jobs download these artifacts within the same workflow.
+An unexpectedly delayed protected-environment approval can
+outlive this one-day window and make publication impossible;
+in that case rerun/rebuild the release through the regular
+protected workflow rather than weakening signing or copying
+unverified packages.
+
+These ephemeral GitHub **Actions artifacts** are distinct from
+the immutable versioned binaries in Cloudflare R2, the public
+signed APT index, and GitHub **Release assets**. Their retention
+is independent. Published downloads and historical GitHub
+Release assets are not deleted by this workflow setting.
+Older workflow runs retain the expiration assigned when they
+uploaded their artifacts; changing YAML is not retroactive.
+The tag-release workflow executes only from the approved
+tag at `main`: this `dev` change takes effect for new
+tagged releases **after the source has been promoted to main**.
+Never tag or publish from `dev` solely to test retention.
+
 ## GitHub protected environment: apt-release
 
 In repository Settings -> Environments create apt-release, enable required

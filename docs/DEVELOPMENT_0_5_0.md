@@ -684,3 +684,51 @@ and installed v0.2.0 package are untouched.
   manual test toast proves only a native OS dispatch path;
   it does not establish live GitHub failure alert acceptance.
   No `main`, tag, installer or release changes.
+
+## A1b — Settings EN/RU localization, incremental v0.5 work (2026-10-24)
+
+The compact card already has an EN/RU dictionary using persisted
+\`Config.language\` (default EN). Physical KDE acceptance of the 720px
+scroll-free Settings and native notification dispatch was reported by
+the owner. The Settings page still contains English labels and statuses
+when \`Русский\` is selected, so the preference remains inconsistent
+between surfaces. This is the next unblocked work bucket; OS autostart
+is independently gated by the already recorded architecture choice.
+
+**Contract and rationale**
+
+- Add a pure, testable Settings EN/RU dictionary with explicit stable
+  keys, English fallback and no persisted migration. Keep GitHub API
+  identifiers, repository names, URLs, dates and paths unchanged.
+- Localize Settings **static** labels, headings, select choices and
+  accessibility attributes, including placeholders and the existing
+  root/ignore/GitHub labels. Include essential **dynamic** status and
+  validation copy rendered by the Settings controller. Do not translate
+  remote/native exception messages verbatim, as those are opaque errors.
+- Settings must initially apply the saved locale on its existing
+  config-only read, and preview the draft locale immediately on selection.
+  Cancel preserves the old locale; OK persists via the already
+  transactional \`save_settings\` command. The current card refresh
+  mechanism remains unchanged.
+- Keep the existing settings dimensions (660×720), dropdown styling,
+  GitHub selection behavior, native notification opt-in, auth flows,
+  no-page-scroll contract, and OS security boundaries unchanged.
+- The test notification command was intentionally removed after KDE
+  smoke and must not be restored. No new GitHub REST requests or
+  release/workflow changes.
+- Implement as an ordinary Mode A slice using a small dedicated module
+  and declarative HTML keys, not a duplicate form controller. Add focused
+  EN/RU/fallback/preview/Cancel/status tests, then execute the standard
+  final stable Preflight **once** on the last source/test SHA.
+- **Out of scope:** native tray, detached runner/billing balloons,
+  About, 20-language L10N-20 audit, OS autostart and release packaging.
+  This cannot be described as full-app localization.
+
+**Rollback:** revert the isolated Settings i18n executable/test commit.
+No config schema, native dependency, IPC or on-disk migration changes.
+
+**Acceptance:** RU Settings visible text is in Russian immediately on
+opening with persisted RU and on draft switch; English is restored on
+switch back or Cancel/reopen. API/data fields remain unmodified and
+GitHub Device Flow, account/repository selection and Settings OK/Cancel
+continue to work. CI success is not physical KDE UI acceptance.

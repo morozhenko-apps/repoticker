@@ -324,3 +324,33 @@ evidence of a GitHub API, permission or notification runtime defect.
   compile for the prior SHA is not exact-source acceptance.
 - Reminder: these commits do **not** implement A2.3 native OS
   delivery or enable any completed-run monitoring in production.
+
+## A2.3 decision and implementation plan (2026-10-24)
+
+- The approved direct REST design uses the official `tauri-plugin-notification`
+  in native Rust. No JS notification/plugin capability is granted: the
+  only WebView entrypoint is a validated, read-only, notification-only
+  application command. Desktop OS permission and opt-in config are distinct.
+- Add an optional `ci_failure_notifications` boolean, default `false`, to
+  persistent `Config`; include it in the single config-only Settings and
+  monitor-selection reads. Existing configs and legacy save callers remain
+  compatible. A checkbox changes only the draft; OK persists atomically,
+  Cancel leaves the preference untouched.
+- Reuse the process-local completed-run tracker. Only opt-in, authenticated
+  selected repositories are polled after an authoritative monitor result;
+  runner-only manual refresh and an offline/stale/rate-limited state never
+  trigger an alert. The initial completed-run pass is a silent baseline.
+- Native delivery revalidates repository enrollment and preference and
+  remembers bounded successful notification IDs. It never accepts alert
+  titles, bodies, URLs, tokens or arbitrary message text from JavaScript.
+  A failing platform backend must report an error, not a claimed alert.
+- Add focused Node and Rust regression tests. Generate and commit the Cargo
+  lockfile from Cargo (never hand-edit checksums). Execute stable Preflight
+  once on the exact source/test commit, then separately document 4/4 evidence
+  and physical Linux/Windows notification acceptance gaps.
+- No APT release, version bump, autostart change or promotion to `main`.
+  Rollback is by isolated application/test commit(s) with no user-data
+  migration, since the new settings field has a safe default.
+
+**A2.1/A2.2 validation:** [Preflight #40127719281](https://github.com/morozhenko-apps/repoticker/actions/runs/40127719281)
+completed successfully for exact executable SHA `fbae51c970632faaea4ab6b1d35f3a2ebdfdb44b`.

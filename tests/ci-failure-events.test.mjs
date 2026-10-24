@@ -130,12 +130,15 @@ test("Given unsafe scope or configuration When collecting Then no request is mad
   const get = async () => { calls++; return { workflow_runs: [] }; };
   for (const repositories of [
     ["team/../oops"], ["other/private"], ["team/alpha?token=secret"],
-    ["team/alpha", "TEAM/ALPHA"], []
+    []
   ]) {
     await assert.rejects(collectRecentCompleted({
       get, account: "team", repositories
     }), /Invalid notification/);
   }
+  await assert.rejects(collectRecentCompleted({
+    get, account: "team", repositories: ["team/alpha", "TEAM/ALPHA"]
+  }), /Duplicate notification repository/);
   await assert.rejects(collectRecentCompleted({
     get, account: "team", repositories: ["team/alpha"], concurrency: 100
   }), /Invalid notification collector/);

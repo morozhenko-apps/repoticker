@@ -879,3 +879,46 @@ Check its new exact-SHA Preflight after the commit; earlier
 `215778ef` evidence does not validate this correction. Keep
 KDE/Windows physical locale and all OS release gates open until
 accepted. This scope remains read-only and uses no new permissions.
+
+## A1d — KDE/Windows native tray menu EN/RU (2026-10-24)
+
+**Confirmed source gap:** The native KDE tray is `ksni::blocking`
+(`linux_tray.rs`) with six static English `StandardItem` labels.
+Non-Linux desktops use a Tauri 2 tray with the same six immutable
+English `MenuItem` labels. Previous A1a/A1b/A1c localized card,
+Settings, About and detached monitor hover only. The exact A1c
+`55e1d504` source passed
+[Preflight #40137480766](https://github.com/morozhenko-apps/repoticker/actions/runs/40137480766),
+4/4 SUCCESS; physical KDE/Windows menu-language acceptance is open.
+
+**Architecture:** one native pure `tray_i18n` mapping indexed by the
+existing stable action IDs: `open`, `settings`, `fetch`,
+`sync`, `about`, `quit`. English is fallback for unexpected
+saved values. Labels have no effect on the action IDs, Git safety,
+card click behavior, native permissions or shortcuts.
+
+- On KDE, initialize `LinuxTray.language` from the saved config
+  with a safe English fallback, and update the managed
+  `ksni::blocking::Handle<LinuxTray>` on a successful language
+  save with `Handle::update`. Keep existing DBus item and callbacks
+  alive, do not tear down/recreate the StatusNotifierItem.
+- On non-Linux (Windows), build the existing six-item Tauri menu
+  from the same labels. After successful config save, use the
+  existing `TrayIcon::set_menu` API to swap menu contents while
+  retaining the same tray icon and ID-driven action callbacks.
+  Menu updates are best-effort after the config transaction,
+  never an extra config write or a reason to misreport saving
+  as failed. No new background polling or platform dependency.
+- Update both existing `save_settings` and `set_language`
+  write paths. No live preview is required before Settings OK;
+  Cancel must never update the tray. All action IDs unchanged.
+- Add Rust pure label, fallback and action-ID coverage tests,
+  Node source-level KDE/Windows lifecycle and Git-safety regression
+  tests. Then run one stable exact-code Preflight including Linux
+  desktop compile. Windows runtime and KDE physical refresh
+  acceptance must remain separate and explicitly open.
+- No autostart, new IPC, Tauri/ksni dependency, `main` promotion,
+  new package/tag/release or expanded GitHub privileges.
+
+**Rollback:** isolated Rust production/test commits. Existing config
+format unchanged; published v0.2.0 remains untouched.

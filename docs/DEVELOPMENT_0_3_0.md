@@ -1186,3 +1186,70 @@ the released v0.2.0 binary and all persisted settings.
 - Final stable workflow: https://github.com/morozhenko-apps/repoticker/actions/runs/40000453665
   (pending at this checkpoint). Native desktop Rust tests and physical
   KDE/Windows authorization/selection acceptance remain deferred to #15.
+
+## A10 — avoid Git scans when opening the usage popup (2026-10-24)
+
+**Mode A — Feature/Refactor.** Limited to existing v0.3 performance
+and auth-state correctness issue #12. No public GitHub scopes,
+persisted settings, native command contracts, release/version
+changes, or main promotion. Baseline source `9960789` passed
+[Preflight #40111915215](https://github.com/morozhenko-apps/repoticker/actions/runs/40111915215)
+4/4 with 263 tests; physical KDE startup timing still pending.
+
+### Evidence and root cause
+
+Current `apps/desktop/ui/quota.mjs::refresh()` runs on its
+initial WebView load and on GitHub auth/scope events. It calls
+native `get_snapshot` to acquire monitor status and the
+configured organization. Native `get_snapshot` invokes `scan()`
+which discovers every enrolled local repository and inspects
+them. Yet the standalone usage popup never renders local Git
+rows. Its monitor-updated handler already uses the lightweight
+`github_monitor_snapshot`, showing that these full scans are
+unnecessary. This hidden duplicated path remains after the
+main-card monitor-only scan fix and can block tooltip startup
+for the duration of an entire Git pass.
+
+Potential alternate delay causes: native wallet lookup, REST
+installation/job pagination, billing API data collection,
+slow viewport measurement, missed GTK shown events, stale
+async responses, and native Git inspect. Code path confirms
+the unnecessary Git scan; we do not infer a measured speedup.
+
+### Design and compatibility
+
+1. [ ] Replace usage popup's full `get_snapshot` with only
+   `github_monitor_snapshot` (native in-memory cache) and
+   `get_monitor_scope` (config-only account selection). Both
+   commands already exist; preserve their schemas and
+   original window permissions. No token, repo path, or
+   GitHub REST data is passed into new UI boundaries.
+2. [ ] Read native `get_usage_popup_kind` AFTER the other
+   asynchronous reads, preserving the last authoritative
+   hover target. Continue to discard stale IPC completions
+   using the existing `refreshId` generation.
+3. [ ] Keep the explicitly configured account (including
+   null as All) and the monitor state's validated
+   auto-selected organization fallback for opt-in Billing;
+   clear old account billing projections when scope changes
+   or native reports disconnected. Preserve unknown/not
+   connected/connecting honesty and avoid extra REST fetches.
+4. [ ] Test the **real** usage controller with native IPC
+   fixture: no full Git scan on startup, auth, scope, or
+   monitor events; selected-org billing and native hover
+   reconciliation still work. Add source-level assertion
+   preventing reintroduction of `get_snapshot` in the
+   detached popup. Run exact-SHA Rustfmt/core/Clippy,
+   JS/Python release and Linux desktop compile.
+5. [ ] Record CI results and KDE cold/warm measurement
+   instructions/remaining physical blockers in #12/#15;
+   do not assert timing improvements without logs.
+
+### Rollback and limits
+
+Revert the A10 executable commit to restore popup full scan.
+Local Git scanning for the main card and after actual Git
+configuration/actions is intentionally unchanged. This
+slice cannot establish startup-wallclock gains without
+fresh KDE traces from the target host; the full
+authorization and REST stages may still dominate.

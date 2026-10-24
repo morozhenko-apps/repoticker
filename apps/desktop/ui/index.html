@@ -18,17 +18,17 @@
     <div id="notice" role="status" aria-live="polite" hidden></div>
 
     <div class="status-strip" aria-label="GitHub Actions and runners">
-      <span id="runner-status" class="status-hover" tabindex="0" aria-label="Self-hosted runners" aria-expanded="false">
+      <button id="runner-status" type="button" class="status-hover metric-button" aria-label="Refresh self-hosted runners" aria-expanded="false" aria-busy="false" title="Click to update Runners">
         <span class="metric-caption">Runners</span>
         <span id="runners-total" class="metric-neutral">—</span><span class="metric-divider">/</span>
         <span id="runners-online" class="metric-online">—</span><span class="metric-divider">/</span>
         <span id="runners-offline" class="metric-offline">—</span>
-      </span>
-      <span id="ci-tasks" class="status-hover" tabindex="0" aria-label="Running and queued Actions tasks" aria-expanded="false">
+      </button>
+      <button id="ci-tasks" type="button" class="status-hover metric-button" aria-label="Refresh running and queued Actions tasks" aria-expanded="false" aria-busy="false" title="Click to update Tasks">
         <span class="metric-caption">Tasks</span>
         <span id="tasks-running" class="metric-online">—</span><span class="metric-divider">/</span>
         <span id="tasks-queued" class="metric-queued">—</span>
-      </span>
+      </button>
       <span class="quota-anchor status-hover" tabindex="0" aria-label="GitHub-hosted free allowances" aria-expanded="false" data-open="false">
         <span aria-hidden="true">ⓘ</span>
       </span>

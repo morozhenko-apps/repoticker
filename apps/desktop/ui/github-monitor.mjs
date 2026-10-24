@@ -46,7 +46,8 @@ export async function listInstalledRepositories(get, owner, installationId,
 }
 
 export async function collectForAccount({
-  get, account, selected, selectedRepositories = [], collect = collectRunnerState
+  get, account, selected, selectedRepositories = [], collect = collectRunnerState,
+  kind = "all", previousState = null
 }) {
   const available = await listAvailableInstallations(get);
   if (!available.complete) return { state: null, reason: "GitHub installation list incomplete." };
@@ -71,17 +72,22 @@ export async function collectForAccount({
   if (!repos.items.length) {
     return { state: null, reason: "No accessible repositories for " + install.name + "." };
   }
+  const previous = previousState?.scope?.organization === install.name &&
+    JSON.stringify(previousState?.scope?.repositories) === JSON.stringify(repos.items)
+    ? previousState : null;
   const state = await collect({
     org: install.name, repositories: repos.items, get,
     maxRunnerPages: 10, maxRunPages: 2, maxJobPages: 2,
     maxActiveRunsPerRepo: 30, concurrency: 4,
+    kind, previousState: previous,
   });
-  if (!repos.complete) {
+  if (!repos.complete && kind !== "runners") {
     state.coverage.jobs = false;
     state.coverage.queue = false;
     state.coverage.running = false;
     state.counts.running = null;
     state.counts.queued = null;
+    state.checkedAtTasks = null;
     state.errors.push({ scope: "repositories", reason: "incomplete" });
   }
   const failure = mostImportantGithubFailure(state.errors);
@@ -93,11 +99,69 @@ export async function collectForAccount({
     : null };
 }
 
+
+// Preserve the unrelated metric group in a targeted refresh, including
+// its original coverage and timestamp. An unsuccessful requested group
+// becomes unknown; never retain stale counts as though freshly checked.
+export function mergeMetricGroup(previous, next, kind) {
+  if (kind === "all" || !previous) return next;
+  const runners = kind === "runners";
+  const keepCount = runners
+    ? ["running", "queued", "waiting", "runningSelfHosted", "runningGitHubHosted",
+      "runningUnclassified", "queuedSelfHosted", "queuedGitHubHosted",
+      "queuedUnclassified", "runningObserved", "queuedObserved"]
+    : ["busy", "idle", "offline"];
+  const keepCoverage = runners
+    ? ["jobs", "queue", "running", "runningLanes", "queuedLanes", "queuedUnclassified"]
+    : ["runners", "unmatchedSelfHosted"];
+  const merged = {
+    ...next,
+    runners: runners ? next.runners : previous.runners,
+    runningJobs: runners ? previous.runningJobs : next.runningJobs,
+    queuedJobs: runners ? previous.queuedJobs : next.queuedJobs,
+    waitingJobs: runners ? previous.waitingJobs : next.waitingJobs,
+    runningByLane: runners ? previous.runningByLane : next.runningByLane,
+    queuedByLane: runners ? previous.queuedByLane : next.queuedByLane,
+    counts: { ...next.counts },
+    coverage: { ...next.coverage },
+    checkedAtRunners: runners ? next.checkedAtRunners : previous.checkedAtRunners ?? previous.checkedAt,
+    checkedAtTasks: runners ? previous.checkedAtTasks ?? previous.checkedAt : next.checkedAtTasks,
+  };
+  for (const key of keepCount) merged.counts[key] = previous.counts?.[key] ?? null;
+  for (const key of keepCoverage) merged.coverage[key] = previous.coverage?.[key] ?? false;
+  return merged;
+}
+
+export function invalidateMetricGroup(previous, kind) {
+  if (!previous || kind === "all") return null;
+  const clone = structuredClone(previous);
+  if (kind === "runners") {
+    clone.runners = [];
+    clone.coverage.runners = false;
+    clone.coverage.unmatchedSelfHosted = null;
+    for (const key of ["busy", "idle", "offline"]) clone.counts[key] = null;
+    clone.checkedAtRunners = null;
+  } else {
+    clone.runningJobs = [];
+    clone.queuedJobs = [];
+    clone.waitingJobs = [];
+    clone.coverage.jobs = false;
+    clone.coverage.queue = false;
+    clone.coverage.running = false;
+    for (const key of ["running", "queued", "waiting", "runningSelfHosted",
+      "runningGitHubHosted", "runningUnclassified", "queuedSelfHosted",
+      "queuedGitHubHosted", "queuedUnclassified"]) clone.counts[key] = null;
+    clone.checkedAtTasks = null;
+  }
+  return clone;
+}
+
 export function startGithubMonitoring({ invoke, event, onError = () => {},
   collect = collectForAccount, schedule = setInterval, onStage = () => {},
-  now = () => Date.now() }) {
+  onRefreshState = () => {}, now = () => Date.now() }) {
   let busy = false;
-  let rerun = false;
+  let rerunKind = null;
+  let lastState = null;
   let lastAttempt = 0;
   let cooldownUntil = 0;
   let minIntervalMs = monitorRefreshDelay(100);
@@ -120,6 +184,7 @@ export function startGithubMonitoring({ invoke, event, onError = () => {},
   function invalidatePresentation(message) {
     selectionRevision++;
     hasPublishedResult = false;
+    lastState = null;
     // Clear the old account's counts now; never wait for an in-flight
     // REST collector or for the next scheduled monitoring tick.
     void publish(false, null, message).catch(onError);
@@ -135,13 +200,15 @@ export function startGithubMonitoring({ invoke, event, onError = () => {},
       onError(error);
     }
   }
-  async function refresh(force = false) {
+  async function refresh(force = false, kind = "all") {
+    if (!["all", "runners", "tasks"].includes(kind)) return;
     if (busy) {
-      if (force) rerun = true;
+      if (force) rerunKind = rerunKind && rerunKind !== kind ? "all" : kind;
       return;
     }
     if (!force && now() - lastAttempt < minIntervalMs) return;
     busy = true;
+    onRefreshState(kind, true);
     lastAttempt = now();
     let authorized = false;
     const first = !hasPublishedResult;
@@ -154,13 +221,16 @@ export function startGithubMonitoring({ invoke, event, onError = () => {},
       if (revision !== selectionRevision) return;
       if (!authorized) {
         hasPublishedResult = false;
+        lastState = null;
         await publish(false, null, null, revision);
         return;
       }
       // Native credential validation precedes this message. Never say
       // "Connect GitHub" while an authorized account is loading.
       if (now() < cooldownUntil) {
-        await publish(true, null, githubFailureMessage("rate_limited"), revision);
+        await publish(true, invalidateMetricGroup(lastState, kind),
+          githubFailureMessage("rate_limited"), revision);
+        lastState = invalidateMetricGroup(lastState, kind);
         hasPublishedResult = true;
         return;
       }
@@ -173,28 +243,41 @@ export function startGithubMonitoring({ invoke, event, onError = () => {},
       if (first) onStage("monitor.scope_ready");
       const result = await collect({
         get, selected: selection.github_monitor_org,
-        selectedRepositories: selection.github_monitor_repositories
+        selectedRepositories: selection.github_monitor_repositories,
+        kind, previousState: lastState,
       });
       if (revision !== selectionRevision) return;
       if (first) onStage("monitor.collect_ready");
       minIntervalMs = monitorRefreshDelay(result.repositoryCount ?? 100);
       await applyCooldown(result.failure);
-      await publish(true, result.state, result.reason, revision);
-      if (revision === selectionRevision) hasPublishedResult = true;
+      const next = result.state
+        ? mergeMetricGroup(lastState, result.state, kind)
+        : invalidateMetricGroup(lastState, kind);
+      await publish(true, next, result.reason, revision);
+      if (revision === selectionRevision) {
+        lastState = next;
+        hasPublishedResult = true;
+      }
     } catch (error) {
       if (revision !== selectionRevision) return;
       if (first) onStage("monitor.failed");
       const reason = githubFailureReason(error);
       await applyCooldown(reason);
       // A failed live refresh must never keep old counts appearing current.
-      await publish(authorized, null,
+      const next = invalidateMetricGroup(lastState, kind);
+      await publish(authorized, next,
         githubFailureMessage(reason), revision).catch(onError);
-      if (revision === selectionRevision) hasPublishedResult = true;
+      if (revision === selectionRevision) {
+        lastState = next;
+        hasPublishedResult = true;
+      }
     } finally {
       busy = false;
-      if (rerun) {
-        rerun = false;
-        void refresh(true);
+      onRefreshState(kind, false);
+      if (rerunKind) {
+        const next = rerunKind;
+        rerunKind = null;
+        void refresh(true, next);
       }
     }
   }

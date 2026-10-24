@@ -65,7 +65,11 @@ export async function collectRunnerState({
   org, repositories, get, now = () => new Date().toISOString(),
   maxRunnerPages = 10, maxRunPages = 2, maxJobPages = 2,
   maxActiveRunsPerRepo = 30, concurrency = 4,
+  kind = "all", previousState = null,
 }) {
+  if (!["all", "runners", "tasks"].includes(kind)) throw Error("Invalid collection kind");
+  const needRunners = kind !== "tasks";
+  const needTasks = kind !== "runners";
   if (!NAME.test(org ?? "") || org === "." || org === "..") throw Error("Invalid organization");
   if (!Array.isArray(repositories) || !repositories.length) {
     throw Error("Select repositories to monitor");
@@ -87,19 +91,27 @@ export async function collectRunnerState({
   // The cap applies across every repo and nested jobs page, not per worker.
   const limitedGet = limitRequests(get, concurrency);
   const errors = [];
-  let runnerPage = { items: [], complete: false };
-  try {
-    runnerPage = await getPages(
-      limitedGet,
-      page => "/orgs/" + encodeURIComponent(org) + "/actions/runners?per_page=100&page=" + page,
-      "runners", maxRunnerPages
-    );
-  } catch (error) {
-    errors.push({ scope: "runners", reason: githubFailureReason(error) });
+  let runnerPage = {
+    items: Array.isArray(previousState?.runners) ? previousState.runners : [],
+    complete: previousState?.coverage?.runners === true
+  };
+  if (needRunners) {
+    runnerPage = { items: [], complete: false };
+    try {
+      runnerPage = await getPages(
+        limitedGet,
+        page => "/orgs/" + encodeURIComponent(org) + "/actions/runners?per_page=100&page=" + page,
+        "runners", maxRunnerPages
+      );
+    } catch (error) {
+      errors.push({ scope: "runners", reason: githubFailureReason(error) });
+    }
+    if (!runnerPage.complete && !errors.some(error => error.scope === "runners")) {
+      errors.push({ scope: "runners", reason: "incomplete" });
+    }
   }
-  if (!runnerPage.complete) errors.push({ scope: "runners", reason: "incomplete" });
 
-  const results = await boundedMap(selectedRepos, concurrency, async repository => {
+  const results = needTasks ? await boundedMap(selectedRepos, concurrency, async repository => {
     const jobs = [];
     let complete = true;
     let reason = null;
@@ -135,22 +147,34 @@ export async function collectRunnerState({
       reason = githubFailureReason(error);
     }
     return { repository, jobs, complete, reason };
-  });
+  }) : [];
   for (const result of results) {
     if (!result.complete) errors.push({
       scope: result.repository, reason: result.reason ?? "incomplete",
     });
   }
+  const previousJobs = previousState
+    ? [...(previousState.runningJobs || []),
+      ...(previousState.queuedJobs || []), ...(previousState.waitingJobs || [])]
+    : [];
+  const checkedAt = now();
   const summary = summarizeRunnerState({
     runners: runnerPage.items,
-    jobs: results.flatMap(item => item.jobs),
+    jobs: needTasks ? results.flatMap(item => item.jobs) : previousJobs,
     runnerCoverage: runnerPage.complete,
-    jobCoverage: results.every(item => item.complete),
-    checkedAt: now(),
+    jobCoverage: needTasks ? results.every(item => item.complete)
+      : previousState?.coverage?.jobs === true,
+    checkedAt,
   });
   return {
     ...summary,
     scope: { organization: org, repositories: selectedRepos },
     errors,
+    checkedAtRunners: needRunners
+      ? (summary.coverage.runners ? checkedAt : null)
+      : (previousState?.checkedAtRunners ?? previousState?.checkedAt ?? null),
+    checkedAtTasks: needTasks
+      ? (summary.coverage.jobs ? checkedAt : null)
+      : (previousState?.checkedAtTasks ?? previousState?.checkedAt ?? null),
   };
 }

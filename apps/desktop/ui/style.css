@@ -76,3 +76,10 @@ button:focus-visible, input:focus-visible, .status-hover:focus-visible { outline
 .action:disabled { background: #f1f2f3; color: #9ba1a9; opacity: 1; box-shadow: none; }
 #notice { background: #fcf7f3; }
 
+
+/* Two independent manual refresh controls retain their old hover targets. */
+.metric-button { height: 23px; padding: 0 2px; background: transparent; border: 0;
+  font: inherit; color: inherit; white-space: nowrap; }
+.metric-button:hover { background: color-mix(in srgb, #7ab2d7 18%, transparent); }
+.metric-button[aria-busy="true"] { opacity: .62; pointer-events: none; }
+.metric-button[aria-busy="true"] .metric-caption::after { content: " ↻"; }

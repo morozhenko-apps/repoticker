@@ -243,6 +243,7 @@ let quotaExpanded = false;
 let hoveredKind = null;
 let visibleKind = null;
 let quotaQueue = Promise.resolve();
+let triggerMonitorRefresh = null;
 
 function setActiveTooltip(kind) {
   for (const [name, node] of Object.entries(hoverTargets)) {
@@ -305,6 +306,25 @@ for (const [kind, anchor] of Object.entries(hoverTargets)) {
   });
 }
 
+
+const manualIndicator = { runners: byId("runner-status"), tasks: byId("ci-tasks") };
+for (const [kind, node] of Object.entries(manualIndicator)) {
+  node.addEventListener("click", () => {
+    if (node.getAttribute("aria-busy") === "true") return;
+    node.setAttribute("aria-busy", "true");
+    clearError();
+    // Independent GitHub metric refresh; no local Git scanning.
+    void triggerMonitorRefresh?.(true, kind);
+  });
+}
+function monitorRefreshState(kind, active) {
+  if (kind === "all") {
+    for (const node of Object.values(manualIndicator))
+      node.setAttribute("aria-busy", String(active));
+  } else {
+    manualIndicator[kind]?.setAttribute("aria-busy", String(active));
+  }
+}
 function renderMonitorMetrics(state) {
   const status = compactStatus(state);
   byId("runners-total").textContent = status.total;

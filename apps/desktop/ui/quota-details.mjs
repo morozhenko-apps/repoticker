@@ -2,9 +2,13 @@ import { shown, compactStatus } from "./status-metrics.mjs";
 
 const safeName = value => typeof value === "string" && value.trim()
   ? value.trim().slice(0, 38) : "Unnamed runner";
-const timestamp = value => typeof value === "string" && Number.isFinite(Date.parse(value))
-  ? new Date(value).toISOString().replace("T", " ").slice(0, 16) + " UTC"
-  : "Unknown";
+export function localCheckedTime(value, timeZone) {
+  if (typeof value !== "string" || !Number.isFinite(Date.parse(value))) return "Unknown";
+  const options = { year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", hourCycle: "h23" };
+  if (timeZone) options.timeZone = timeZone;
+  return new Intl.DateTimeFormat(undefined, options).format(new Date(value));
+}
 const view = (status, sections, message = "") => ({
   connected: true, status, sections, message,
 });
@@ -89,7 +93,12 @@ export function buildHoverDetails(state, kind = "billing", authorized = false, s
   if (!state || !state.counts || !state.coverage)
     return notReady(authorized, kind === "runners" ? "Runners" : "Tasks", statusMessage);
   const result = kind === "runners" ? runnerDetails(state) : tasksDetails(state);
-  result.message = "Checked: " + timestamp(state.checkedAt);
+  const hasSeparateTimes = Object.hasOwn(state, "checkedAtRunners") ||
+    Object.hasOwn(state, "checkedAtTasks");
+  const checkedAt = kind === "runners"
+    ? (hasSeparateTimes ? state.checkedAtRunners : state.checkedAt)
+    : (hasSeparateTimes ? state.checkedAtTasks : state.checkedAt);
+  result.message = "Checked: " + localCheckedTime(checkedAt);
   return result;
 }
 

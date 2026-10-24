@@ -1583,7 +1583,7 @@ tests already cover changes before the second inspection.
 
 ### Decision / invariants
 
-1. [ ] Extract `pull_source_unchanged` helper to check the
+1. [x] Extract `pull_source_unchanged` helper to check the
    original branch/upstream, strict ff-only decision, clean
    worktree, expected HEAD and fetched upstream commit OIDs.
    Invoke after the first inter-process checkpoint AND again
@@ -1593,14 +1593,14 @@ tests already cover changes before the second inspection.
    **after** the second inspection now refuses rather than
    proceeding with an immutable but no longer selected
    target. This conservative fail-closed behavior is intended.
-2. [ ] Prove with deterministic real-Git callbacks that
+2. [x] Prove with deterministic real-Git callbacks that
    switching checkout to an unrelated same-base branch at
    the final checkpoint fails before mutation, preserving
    both refs; prove changed upstream OID and upstream
    remote/branch remapping at that same checkpoint also
    fail closed. An unrelated external commit is retained,
    never stashed/reset/overwritten.
-3. [ ] Verify explicit `Safe push` routing under nonstandard
+3. [x] Verify explicit `Safe push` routing under nonstandard
    user config (`remote.pushDefault`, `branch.dev.pushRemote`,
    `push.default=matching`, `push.followTags=true`, custom
    `remote.origin.push`): only the selected same-named
@@ -1609,7 +1609,7 @@ tests already cover changes before the second inspection.
    must not silently turn Safe push into a mirror operation.
    These are regression tests of existing strict pinning/
    explicit-refspec behavior, not changes to user Git config.
-4. [ ] Source contracts and real Git integration regressions.
+4. [x] Source contracts and real Git integration regressions.
    Run one final exact-source stable Preflight: Rustfmt, Rust
    unit/integration, Clippy, JS/Python release contracts and
    Linux desktop compilation. Record exact SHA/tests in
@@ -1635,3 +1635,34 @@ Revert the executable commit(s) to restore previous behavior.
 The code does not modify saved config, credentials, Git
 refs outside a user-requested Safe sync, or repository files
 during test setup (fixtures are isolated temporary repos).
+
+### P1-GIT-RACE2 source checkpoint
+
+- [`6e1e678`](https://github.com/morozhenko-apps/repoticker/commit/6e1e678eb9c42355e91b45ed62157e79001e3ba7)
+  adds a shared final Safe pull branch/upstream/HEAD/dirty
+  check and deterministic last-checkpoint regressions.
+  The earlier regression expecting a successful merge after
+  upstream changed at the last checkpoint was intentionally
+  updated to assert fail-closed: the previously pinned OID
+  could not prevent a wrong-branch merge after a checkout
+  switch. A local disposable Git reproduction confirmed
+  `git merge --ff-only <oid>` moves the newly selected branch.
+- [`5fc8420`](https://github.com/morozhenko-apps/repoticker/commit/5fc8420d4491420c3d5fcce538899bdc43ac8c20)
+  adds two real bare-remote config tests for explicit push
+  routing versus pushRemote/remote.pushDefault/push.default/
+  push.followTags/configured push refspec, and refusal of
+  remote-origin mirror mode without server ref mutation.
+- [`d91bf6c`](https://github.com/morozhenko-apps/repoticker/commit/d91bf6cc049f56a64d270fe183145bde1cfea625)
+  adds a no-op-in-production test checkpoint after remote
+  probe. Real Git fixtures change active branch, upstream
+  OID or configured remote URL at this boundary and require
+  refusal before the pinned non-force push.
+- [`6652618`](https://github.com/morozhenko-apps/repoticker/commit/6652618bacedfcf0185f2af084a44ab2af5644fe)
+  adds JS source contract checks for the two pull
+  revalidations, post-network push guard and routing tests.
+- **Exact code/test candidate:**
+  `6652618bacedfcf0185f2af084a44ab2af5644fe`.
+  Preflight was not yet verified at this documentation
+  checkpoint. No claim of CI or physical OS acceptance.
+  Remaining non-atomic Git HEAD/worktree race is documented
+  above and tracked for physical validation in issue #15.

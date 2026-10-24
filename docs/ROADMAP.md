@@ -1216,6 +1216,32 @@ rollback patch in `outputs/REPOTICKER_CLEANUP*`,
 commits for rollback; no data, credential, package or source restoration.
 All owned local commands completed; no app, watcher or server was launched.
 
+
+### Concurrent-development integration plan (2026-10-24)
+
+The pre-publish fetch found six upstream commits after `e8d4dc4`, through
+`b617899`, implementing/fixing native tray locale presentation plus one Node
+source contract and appended v0.5 evidence. These are another author's work,
+not cleanup changes. Preserve them without force/reset or replaying their
+commits. The prior local acceptance receipt above belongs to the first base.
+
+1. Save the initial baseline, commands and cleanup commit recovery bundle in
+   the external audit workspace. Rebase only our unpublished docs/ignore
+   commits onto the observed upstream head, retaining every new source byte
+   and appended evidence. No production conflict resolution by guesswork.
+2. Re-run affected Rustfmt, Node tests and Linux desktop compile; reuse prior
+   core/Clippy/release checks only after exact relevant source/config/lock
+   identity verification. The temporary PR also runs the complete Preflight.
+3. Push the finished cleanup to a short-lived remote branch and open one PR
+   targeting dev, keeping other active dev work undisturbed. After exact-head
+   stable CI and mergeability checks pass, merge normally, verify reachability,
+   update local dev by fast-forward and delete the temporary branch.
+4. Validate the final docs/ignore diff against its upstream integration base,
+   keep initial and integrated preservation evidence, and export the final
+   PR/merge/push receipts. No main/tag/release/provider change.
+
+Rollback remains scoped docs/config reverts; never revert upstream tray work.
+
 ---
 
 ## Imported root README (before October 24 housekeeping)

@@ -833,3 +833,98 @@ same enrolled checkout inventory.
   executed for this commit. Continue to record wall-clock
   evidence in issue #12 rather than attributing a precise
   percentage or seconds gained.
+
+## P1-IGNORE1 — configurable shallow repository discovery exclusions (2026-10-24)
+
+Mode: **A — Feature / Refactor**. Branch: `dev`. Roadmap authority:
+[`P1 — Git provider hardening and Linux usability`](ROADMAP.md).
+Existing published `v0.2.0`, `main`, and full v0.9 Mode B remain untouched.
+
+### Verified baseline and architectural decision
+
+[Preflight #40036260294](https://github.com/morozhenko-apps/repoticker/actions/runs/40036260294)
+for source `3600eef` completed **4/4 success**, including bounded
+local Git scan, 48 Rust tests, 146 Node tests and 10 Python release
+contract tests. This is source-level evidence only: real KDE
+before/after performance is still open in issue #12.
+
+Current Git discovery scans an explicitly enrolled root or its
+**direct children**; built-in hidden/snapshot/worktree/build ignores
+are hard-coded in `git.rs::ignored_child`. The approved P1 roadmap
+requests configurable ignores. To remain compatible with shallow
+discovery, introduce exact **child directory names** (not recursive
+paths/globs) applying to every enrolled parent root:
+`ignored_child_names: Vec<String>`. The setting is **optional** and
+defaults to empty on previous `config.json` files.
+
+The setting is intentionally a *discovery* filter, not a prohibition
+on user-enrolling an explicit repository root. For example, ignoring
+`Archive` omits `~/GitHub/Archive` when the parent
+`~/GitHub` is enrolled, but explicitly enrolling
+`~/GitHub/Archive` independently still includes that checkout.
+This preserves the existing explicit-enrollment contract.
+
+Other implementation choices considered: arbitrary recursive globs
+(break shallow discovery and expand input trust), absolute-path-only
+exclusions (fragile when roots change and cumbersome in Settings),
+and exact immediate-child names (chosen: deterministic, portable
+and efficient). The agreed roadmap authorizes this additive
+backward-compatible preference rather than introducing a new
+persistent repository identity or security boundary.
+
+### Invariants and acceptance
+
+1. No recursive scan, symlink traversal, or user-defined Git command.
+   Existing built-in ignores are always applied; users cannot disable
+   them through this feature. Exclusion matching is exact and
+   case-sensitive. Names may include Unicode/spacing and must be one
+   valid path component. Reject empty/`.`/`..`, separators, NUL
+   or control characters, overlong entries; max **100** names.
+   Normalize surrounding whitespace and deduplicate deterministically.
+2. Explicit enrolled Git roots always remain eligible regardless
+   of their basename. Direct-child discovery checks the saved ignore
+   list before `.git` probing or Git subprocess launch.
+3. Filter consistently at every consumer: full local scan, single
+   and bulk Fetch/Safe pull, `Open on GitHub`, `Open folder` and
+   `Copy path`. Never allow an ignored child through a standalone
+   IPC while filtering it out of the visible list. Preserve separate
+   explicitly enrolled root bypass on all action paths.
+4. Settings supports draft-only add/remove of ignored folder
+   names with existing OK/Cancel transaction. Native
+   `save_settings` validates and atomically persists them together
+   with roots/language. A missing optional IPC argument preserves
+   the previously saved ignore set. `get_settings_config`
+   exposes it without Git discovery or network access.
+5. Backward compatibility: missing `ignored_child_names` in old
+   config deserializes to empty; `config.json.bak` and corrupted
+   config recovery continue via existing JsonStore. Root deletion
+   does not erase independent ignore names. Scope and tokens for
+   GitHub monitoring are not affected.
+6. Tests: isolated real Git temporary repositories, explicit-root
+   override, Unicode/exact names, built-in exclusions unchanged,
+   invalid input/limit/serialization and Settings OK/Cancel wiring.
+   Final stable CI: Rustfmt/core/Clippy, JS/release, Linux desktop
+   compile. KDE physical acceptance (Settings layout, choice, and
+   exclusion effects) belongs in issue #15.
+7. No new release/tag or `main` promotion, no version bump, no
+   broad v0.9 Mode B campaign.
+
+### Implementation checkpoints
+
+1. [ ] Core validation, filtered discovery and membership resolver,
+   with backwards-compatible unfiltered public functions.
+2. [ ] Native persisted config and consistent use in all Git action
+   and navigation entrypoints.
+3. [ ] Settings draft UI and focused Rust/JS integration regressions.
+4. [ ] One complete exact-SHA Preflight gate; repair only observed
+   failures, record evidence separately.
+5. [ ] Deferred KDE/Windows physical acceptance, rollback notes.
+
+### Rollback
+
+Revert executable commits: the old binary ignores the additional
+JSON property under current serde behavior and retains the old
+discovery rules. Do not rewrite user config, delete repositories,
+alter Git remotes, or remove any ignored child directory during
+rollback. Failure to save a validated ignore set leaves the existing
+config intact through the atomic settings transaction.

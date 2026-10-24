@@ -1,0 +1,55 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { syncReadyCommitCount, pullReadyCommitCount } from "../apps/desktop/ui/view.mjs";
+const source = path => readFileSync(new URL(path, import.meta.url), "utf8");
+
+test("Safe sync eligibility accepts strictly ahead or behind but rejects unsafe repos", () => {
+  const base = { upstream: "origin/dev", dirty: false, behind: 0, ahead: 0, sync_state: "current" };
+  assert.equal(syncReadyCommitCount([{ ...base, behind: 2, sync_state: "behind 2" }]), 2);
+  assert.equal(syncReadyCommitCount([{ ...base, ahead: 4, sync_state: "ahead" }]), 4);
+  for (const state of [
+    { dirty: true, ahead: 2, sync_state: "local changes" },
+    { upstream: null, ahead: 3, sync_state: "ahead" },
+    { ahead: 2, behind: 1, sync_state: "diverged" },
+    { ahead: 2, sync_state: "operation in progress" },
+    { ahead: 0, behind: 0, sync_state: "current" },
+  ]) assert.equal(syncReadyCommitCount([{ ...base, ...state }]), 0);
+  assert.equal(pullReadyCommitCount([{ ...base, ahead: 4, sync_state: "ahead" }]), 0,
+    "legacy pull-only helper remains narrowly defined");
+});
+
+test("native safe sync action is sequential, non-force and rechecked", () => {
+  const native = source("../apps/desktop/src-tauri/src/main.rs");
+  const git = source("../crates/repoticker-core/src/git.rs");
+  const app = source("../apps/desktop/ui/app.mjs");
+  const html = source("../apps/desktop/ui/index.html");
+  assert.match(native, /operation == "safe_sync" && status\.decision == SyncDecision::LocalAhead/);
+  assert.match(native, /git::safe_sync\(&path\)/);
+  assert.match(git, /pub fn safe_sync\(/);
+  assert.match(git, /pub fn safe_push\(/);
+  assert.match(git, /let second = inspect\(repo\)\?/);
+  assert.match(git, /"push", "--porcelain", "--no-follow-tags"/);
+  assert.doesNotMatch(git.match(/pub fn safe_push\([\s\S]*?\n\}/)?.[0] ?? "", /--force|--mirror|--all/);
+  assert.match(html, /<span class="action-label">Safe sync<\/span>/);
+  assert.match(app, /runGitAction\("safe_sync"\)/);
+  assert.match(app, /\["Safe sync", "safe_sync"\]/);
+  assert.match(app, /"safe_sync"\]\.includes\(payload\.operation\)/);
+});
+
+test("Runners and Tasks are two independent accessible manual refresh targets", () => {
+  const html = source("../apps/desktop/ui/index.html");
+  const app = source("../apps/desktop/ui/app.mjs");
+  const monitor = source("../apps/desktop/ui/github-monitor.mjs");
+  for (const id of ["runner-status", "ci-tasks"]) {
+    assert.match(html, new RegExp('<button id="' + id + '" type="button"'));
+  }
+  assert.match(html, /aria-busy="false"/);
+  assert.match(app, /triggerMonitorRefresh\?\.\(true, kind\)/);
+  assert.match(app, /onRefreshState: monitorRefreshState/);
+  assert.match(monitor, /kind, previousState: lastState/);
+  assert.match(monitor, /export function mergeMetricGroup/);
+  assert.match(monitor, /export function invalidateMetricGroup/);
+  assert.doesNotMatch(app.match(/const manualIndicator[\s\S]*?function renderMonitorMetrics/)?.[0] ?? "",
+    /get_snapshot/);
+});

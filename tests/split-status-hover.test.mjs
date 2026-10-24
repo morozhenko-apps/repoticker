@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { compactStatus } from "../apps/desktop/ui/status-metrics.mjs";
-import { buildHoverDetails, isHoverKind } from "../apps/desktop/ui/quota-details.mjs";
+import { buildHoverDetails, isHoverKind, localCheckedTime } from "../apps/desktop/ui/quota-details.mjs";
 
 const source = path => readFileSync(new URL(path, import.meta.url), "utf8");
 const runner = (id, name, busy = false) => ({
@@ -50,7 +50,7 @@ test("runner hover lists total online busy idle offline without task or billing 
   const view = buildHoverDetails(complete, "runners", true);
   assert.equal(view.status, "Runners · 3");
   assert.equal(view.sections[0].title, "");
-  assert.equal(view.message, "Checked: 2026-10-21 17:00 UTC");
+  assert.equal(view.message, "Checked: " + localCheckedTime(complete.checkedAt));
   assert.deepEqual(view.sections[0].rows, [
     ["Online", "2"], ["Busy", "1"],
     ["Idle", "1"], ["Offline", "1"]
@@ -72,7 +72,7 @@ test("task hover shows only running jobs by runner, then GitHub-hosted", () => {
     ["Offline", "0"],
     ["GitHub-hosted", "1"]
   ]);
-  assert.equal(result.message, "Checked: 2026-10-21 17:00 UTC");
+  assert.equal(result.message, "Checked: " + localCheckedTime(complete.checkedAt));
   assert.doesNotMatch(JSON.stringify(result), /eligible queue|Other jobs|Unclassified jobs|compatible/);
 
   const partial = buildHoverDetails({ ...complete,
@@ -122,4 +122,22 @@ test("UI uses distinct hover targets, native event validation, no extra queued s
   assert.ok(overlay.includes("runner_state?.scope?.organization"));
   const css = source("../apps/desktop/ui/quota.css");
   assert.ok(css.includes("kind-billing { grid-template-columns:minmax(0,1fr)"));
+});
+
+test("timestamp follows the user's local timezone and individual metric checks", () => {
+  const sample = "2026-10-21T17:00:00Z";
+  const lisbon = localCheckedTime(sample, "Europe/Lisbon");
+  const tokyo = localCheckedTime(sample, "Asia/Tokyo");
+  assert.notEqual(lisbon, tokyo);
+  assert.equal(localCheckedTime("bad timestamp"), "Unknown");
+  const newer = { ...complete, checkedAtRunners: "2026-10-21T18:10:00Z",
+    checkedAtTasks: "2026-10-21T18:45:00Z" };
+  const runners = buildHoverDetails(newer, "runners", true);
+  const tasks = buildHoverDetails(newer, "tasks", true);
+  assert.equal(runners.message, "Checked: " + localCheckedTime(newer.checkedAtRunners));
+  assert.equal(tasks.message, "Checked: " + localCheckedTime(newer.checkedAtTasks));
+  assert.notEqual(runners.message, tasks.message);
+  assert.doesNotMatch(tasks.message, / UTC$/);
+  assert.equal(buildHoverDetails({ ...newer, checkedAtRunners: null },
+    "runners", true).message, "Checked: Unknown");
 });

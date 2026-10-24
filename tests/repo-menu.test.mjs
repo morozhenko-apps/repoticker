@@ -31,7 +31,7 @@ test("menu stays within drawer and flips above lower scroll rows", () => {
 
 test("menu contains Fetch, Safe pull and native enrolled GitHub open with dismissal", () => {
   assert.match(ui, /\["Fetch", "fetch"\]/);
-  assert.match(ui, /\["Safe pull", "safe_pull"\]/);
+  assert.match(ui, /\["Safe sync", "safe_sync"\]/);
   assert.match(ui, /\["Open on GitHub", "open_github"\]/);
   assert.match(ui, /\["Open folder", "open_folder"\]/);
   assert.match(ui, /\["Copy path", "copy_path"\]/);

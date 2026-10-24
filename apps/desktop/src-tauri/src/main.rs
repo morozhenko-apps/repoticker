@@ -53,6 +53,8 @@ impl Drop for ActiveFetchLease<'_> {
 #[derive(Debug, Serialize, Deserialize)]
 struct Config {
     roots: Vec<String>,
+    #[serde(default)]
+    ignored_child_names: Vec<String>,
     #[serde(default = "default_language")]
     language: String,
     #[serde(default)]
@@ -146,6 +148,7 @@ fn config_path(app: &AppHandle) -> Result<PathBuf, String> {
 fn default_config() -> Config {
     Config {
         roots: Vec::new(),
+        ignored_child_names: Vec::new(),
         language: default_language(),
         card_bottom_margin: None,
         card_right_margin: None,
@@ -208,7 +211,7 @@ fn scan(app: &AppHandle) -> Result<Snapshot, String> {
     let config = read_config(app)?;
     let (repositories, mut errors) = {
         let _discover = startup_diagnostics::Span::new("git.discover");
-        git::discover_all(&roots_as_paths(&config))
+        git::discover_all_with_ignored(&roots_as_paths(&config), &config.ignored_child_names)
     };
     let mut summaries = Vec::new();
     {
@@ -302,7 +305,10 @@ fn execute(
         .as_ref()
         .map(|_| ActiveFetchLease(&active_fetch));
     let config = read_config(app)?;
-    let (repositories, failures) = git::discover_all(&roots_as_paths(&config));
+    let (repositories, failures) = git::discover_all_with_ignored(
+        &roots_as_paths(&config),
+        &config.ignored_child_names,
+    );
     if let Some(requested) = only_path {
         if !repositories
             .iter()
@@ -446,6 +452,7 @@ struct SettingsConfig {
     language: String,
     github_monitor_org: Option<String>,
     github_monitor_repositories: Vec<String>,
+    ignored_child_names: Vec<String>,
 }
 
 #[tauri::command]
@@ -457,6 +464,7 @@ fn get_settings_config(app: AppHandle) -> Result<SettingsConfig, String> {
         language: config.language,
         github_monitor_org: config.github_monitor_org,
         github_monitor_repositories: config.github_monitor_repositories,
+        ignored_child_names: config.ignored_child_names,
     })
 }
 
@@ -785,7 +793,11 @@ fn open_actions_job(url: String) -> Result<(), String> {
 /// Central enrollment boundary for user-triggered repository actions.
 fn enrolled_repository(app: &AppHandle, repo_path: &str) -> Result<PathBuf, String> {
     let config = read_config(app)?;
-    git::resolve_enrolled_checkout(&roots_as_paths(&config), repo_path)
+    git::resolve_enrolled_checkout_with_ignored(
+        &roots_as_paths(&config),
+        repo_path,
+        &config.ignored_child_names,
+    )
         .map_err(|error| error.to_string())
 }
 
@@ -873,7 +885,12 @@ fn open_settings(app: AppHandle) {
 }
 
 #[tauri::command]
-fn save_settings(app: AppHandle, roots: Vec<String>, language: String) -> Result<(), String> {
+fn save_settings(
+    app: AppHandle,
+    roots: Vec<String>,
+    language: String,
+    ignored_child_names: Option<Vec<String>>,
+) -> Result<(), String> {
     if language != "en" && language != "ru" {
         return Err("Unsupported language".into());
     }
@@ -890,9 +907,16 @@ fn save_settings(app: AppHandle, roots: Vec<String>, language: String) -> Result
         }
     }
     validated.sort();
+    let ignored = ignored_child_names
+        .map(git::validate_ignored_child_names)
+        .transpose()
+        .map_err(|error| error.to_string())?;
     update_config(&app, |config| {
         config.roots = validated;
         config.language = language;
+        if let Some(ignored) = ignored {
+            config.ignored_child_names = ignored;
+        }
         Ok(((), true))
     })?;
     let _ = app.emit("repoticker-config-changed", ());

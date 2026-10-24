@@ -17,7 +17,7 @@ test("config defaults to legacy discovery and never drops existing settings", ()
 
 test("snapshot actions and navigation all share the same ignore boundary", () => {
   assert.match(native, /git::discover_all_with_ignored\(&roots_as_paths\(&config\), &config\.ignored_child_names\)/);
-  assert.match(native, /let \(repositories, failures\) = git::discover_all_with_ignored\(/);
+  assert.match(native, /let \(repositories, failures\) =\s*git::discover_all_with_ignored\(/);
   assert.match(native, /git::resolve_enrolled_checkout_with_ignored\(/);
   assert.match(native, /&config\.ignored_child_names/);
   assert.match(git, /pub fn discover_with_ignored\(/);

@@ -1334,9 +1334,9 @@ waits and already provides process-group ownership for Fetch.
    unrelated process preserved, captured output without
    deadlock, delayed SSH/remote probe, Fetch timeout distinct
    from cancel, and push outcome-unknown wording.
-4. [ ] Execute exact-SHA Rustfmt/core/Clippy, JS/release and
+4. [x] Execute exact-SHA Rustfmt/core/Clippy, JS/release and
    Linux desktop compile once; repair evidenced failures.
-5. [ ] Record CI evidence separately; KDE/Windows physical
+5. [x] Record CI evidence separately; KDE/Windows physical
    remote helper/tree-termination acceptance stays in issue #15.
 
 Rollback: revert P1-PROC1 code/test commits. No configuration,
@@ -1373,3 +1373,28 @@ disposable local shell/bare-repository fixtures only.
   caller still receives a bounded, outcome-unknown error
   rather than blocking the GUI. Physical Linux/Windows
   credential helpers and SSH descendants remain in #15.
+
+### P1-PROC1 verified source tests
+
+- Initial source candidate `d59c81f` stopped in format-first
+  CI on 19 mechanical Rustfmt hunks. Core tests had not run
+  in that superseded candidate. Corrections were applied
+  exactly in [`f0b212f`](https://github.com/morozhenko-apps/repoticker/commit/f0b212fec4388fd534b5c5f96178ff8c1562c82c).
+- `d441ce4` and `fe1165b` updated source-contract tests
+  to tolerate Rustfmt whitespace rather than asserting the
+  unformatted one-line `merge`/Fetch calls. No Git behavior
+  was weakened to satisfy an assertion.
+- **Final source/test candidate:**
+  `fe1165ba8f0597dc7b207b7ca6a0b0300d88d615`;
+  [Preflight #40103392626](https://github.com/morozhenko-apps/repoticker/actions/runs/40103392626).
+  Rustfmt/core tests/Clippy **SUCCESS**: 39 Rust unit tests,
+  24 Git integration tests and 3 GitHub-origin integration
+  tests = **66 passed, 0 failed**. JS/release **SUCCESS**:
+  167 Node tests and 10 Python contract tests, zero failures.
+- Linux desktop compile and aggregate final gate were still
+  in progress when these counts were documented. Do not
+  claim 4/4 before checking this exact run.
+- Test design on Linux uses temporary child groups and shell
+  process fixtures, never user Git remotes; it proves local
+  group termination and unrelated child survival, but cannot
+  substitute for physical KDE/Windows SSH-helper acceptance.

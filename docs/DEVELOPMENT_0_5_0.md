@@ -774,3 +774,53 @@ continue to work. CI success is not physical KDE UI acceptance.
   truncation within 660×720px. Detached popups, tray, About,
   Windows and 20-locales remain out of scope. Do not infer a
   release-ready v0.5 from this bounded slice.
+
+## A1c — About and detached GitHub tooltip EN/RU (2026-10-24)
+
+**Evidence:** A1b Settings EN/RU source SHA `9a0ebcb0` passed
+[Preflight #40135917461](https://github.com/morozhenko-apps/repoticker/actions/runs/40135917461)
+4/4 SUCCESS. Settings, compact card and persisted `en|ru` config now
+share a selected language, but `about.html`/`about.mjs` and the
+separate `quota.html`/`quota.mjs` remain English. The pure
+`quota-details.mjs` already has extensive exact EN model contract
+tests and is consumed as a trusted read-only presentation. Do not
+rewrite that model's public shape or translate untrusted GitHub values.
+
+**Mode A approved incremental work:**
+
+1. Add one pure EN/RU/fallback **presentation-only** locale module
+   for About static copy and detached GitHub tooltip fixed labels,
+   status prefixes, known local error/help text. The existing
+   `cardLocale` can normalize locale; no second persistent setting.
+   Only known local labels are translated. Never translate numeric
+   quantities, timestamps, run IDs, repository/runner names, plan
+   names, provider error payloads or URLs.
+2. About: read `get_settings_config` through the existing native
+   config-only command (no local Git scan), alongside `get_about_info`.
+   Translate static labels and accessibility metadata without
+   modifying author/version/website fields or link command. Re-read
+   config on window focus so About, which is hidden instead of
+   destroyed, reflects Settings OK on later openings. Fallback to
+   English on config-read errors, never a broken window.
+3. Usage balloon: use the existing independent config-only command
+   while fetching monitor status; localize only a projected copy of
+   `buildHoverDetails` at paint. On `repoticker-config-changed`
+   through the **existing usage listen capability**, refresh locale
+   without local Git scan or extra GitHub REST traffic. Retain
+   hover-kind race protections, billing scope, compact width and
+   pointer-pass-through semantics. A missing locale read falls back to
+   English without blocking status error reporting.
+4. Add focused unit, native-config source and lightweight runtime
+   tests: saved RU and EN fallback, translation-only projection,
+   dynamic counts, unknown `—`, unchanged untrusted values,
+   About focus refresh, tooltip config change, no Git scan and
+   unchanged existing English quota details tests.
+5. Execute one final exact-SHA stable Preflight on completed source and
+   tests (Rust format/core/Clippy, Node/release, Linux desktop compile).
+   Separately record results and leave KDE/Windows visible text
+   acceptance open until a real desktop check.
+
+**Compatibility/rollback:** No new schema, IPC command, Rust dependency,
+permission or bundle version change. Revert this isolated UI/test
+commit if necessary. No autostart, main promotion, published release,
+full L10N-20 claim or unapproved relay.

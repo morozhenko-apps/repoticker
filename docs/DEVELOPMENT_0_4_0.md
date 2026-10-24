@@ -1615,7 +1615,7 @@ tests already cover changes before the second inspection.
    Linux desktop compilation. Record exact SHA/tests in
    a later **docs-only** commit. No automated write to
    production remotes.
-5. [ ] Record manual KDE/Windows acceptance in issue #15;
+5. [x] Record manual KDE/Windows acceptance in issue #15;
    release remains blocked pending separate approval.
 
 ### Remaining inherent race
@@ -1710,3 +1710,22 @@ during test setup (fixtures are isolated temporary repos).
   was pending at this checkpoint. All four jobs still
   require verification on this exact SHA. Physical KDE/
   Windows acceptance remains pending in issue #15.
+
+### P1-GIT-RACE2 exact-source stable test evidence
+
+- **Exact final executable/test candidate**:
+  `99607895f235f3330560c1140816d255e5127528`.
+  [Preflight #40111915215](https://github.com/morozhenko-apps/repoticker/actions/runs/40111915215)
+  has **SUCCESS** for Rustfmt/core/Clippy and JS/release
+  contract jobs. Rust: **45 unit + 30 real Git integration
+  + 3 GitHub-origin integration = 78 passed, zero failures**.
+  JS: **173 passed, zero failures**. Python release
+  contracts: **12 passed**. Total **263 passing tests**.
+- Linux desktop compile and final aggregate Preflight were
+  still running when these numbers were recorded. Do not
+  assert full 4/4 until their exact-SHA result is confirmed.
+- The original Git reproduction and callback regressions
+  cover final-interval HEAD/branch/upstream mutations plus
+  nonstandard push destination and tag settings. A real
+  Windows/KDE end-user smoke remains unperformed in #15.
+- `main`, published v0.2.0 and release artifacts unchanged.

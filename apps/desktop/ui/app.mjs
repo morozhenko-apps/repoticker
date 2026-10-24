@@ -2,6 +2,7 @@ import { nextCardView, syncReadyCommitCount } from "./view.mjs";
 import { createNativeDragGesture } from "./native-drag.mjs";
 import { startGithubMonitoring } from "./github-monitor.mjs";
 import { compactStatus } from "./status-metrics.mjs";
+import { cardLocale, cardText, metricAccessibleLabel } from "./card-i18n.mjs";
 import { mergeMonitorPresentation, reconcileScanPresentation } from "./monitor-presentation.mjs";
 import { placeRepoMenu } from "./repo-menu.mjs";
 
@@ -28,6 +29,8 @@ let firstMonitorReady = false;
 let monitorRevision = 0;
 let monitorRequest = 0;
 let snapshot = emptySnapshot;
+let cardLanguage = "en";
+let lastMetricStatus = compactStatus(null);
 let busy = false;
 let fetchCancelling = false;
 let view = "compact";
@@ -108,14 +111,15 @@ function showRepoMenu(button, repoPath) {
   repoMenu.querySelector("button")?.focus();
 }
 
-for (const [label, operation] of [
-  ["Fetch", "fetch"],
-  ["Safe sync", "safe_sync"],
-  ["Open on GitHub", "open_github"],
-  ["Open folder", "open_folder"],
-  ["Copy path", "copy_path"]
+for (const [key, operation] of [
+  ["fetch", "fetch"],
+  ["safeSync", "safe_sync"],
+  ["openGithub", "open_github"],
+  ["openFolder", "open_folder"],
+  ["copyPath", "copy_path"]
 ]) {
-  const item = addText(repoMenu, "button", label);
+  const item = addText(repoMenu, "button", cardText(cardLanguage, key));
+  item.dataset.localeKey = key;
   item.type = "button";
   item.setAttribute("role", "menuitem");
   item.addEventListener("click", async () => {
@@ -190,8 +194,8 @@ function makeRepoRow(repo) {
 
   const button = addText(row, "button", "⋯", "repo-more");
   button.type = "button";
-  button.title = "Git operations";
-  button.setAttribute("aria-label", "Git operations for " + repo.name);
+  button.title = cardText(cardLanguage, "gitOperations");
+  button.setAttribute("aria-label", cardText(cardLanguage, "gitOperationsFor", repo.name));
   button.setAttribute("aria-expanded", "false");
   button.setAttribute("aria-controls", "repo-menu");
   button.addEventListener("click", () => showRepoMenu(button, repo.path));
@@ -205,9 +209,7 @@ function updateActionState() {
   const fetching = progress?.operation === "fetch" && progress.phase !== "finish";
   byId("fetch-all").disabled = fetchCancelling ||
     (isRunning && !fetching) || (!isRunning && !hasRepos);
-  byId("fetch-all").title = fetching
-    ? "Cancel the current Fetch; some remote references may already be updated"
-    : "Fetch remote references for enrolled repositories";
+  byId("fetch-all").title = cardText(cardLanguage, fetching ? "fetchCancel" : "fetchTitle");
   byId("sync-all").disabled = isRunning || eligible === 0;
   for (const [operation, id] of [["fetch", "fetch-all"], ["safe_sync", "sync-all"]]) {
     const button = byId(id);
@@ -217,18 +219,18 @@ function updateActionState() {
       const pct = progress.total
         ? Math.round(100 * progress.completed / progress.total) : 100;
       button.querySelector(".action-label").textContent =
-        operation === "fetch" ? (fetchCancelling ? "Stopping..." : "Cancel") : pct + "%";
+        operation === "fetch" ? cardText(cardLanguage, fetchCancelling ? "stopping" : "cancel") : pct + "%";
     } else {
       button.querySelector(".action-label").textContent =
-        operation === "fetch" ? "Fetch" : "Safe sync";
+        cardText(cardLanguage, operation === "fetch" ? "fetch" : "safeSync");
     }
   }
   const count = byId("pull-indicator");
   count.textContent = eligible ? "⇅" + eligible : "⇅";
   count.classList.toggle("has-commits", eligible > 0);
   byId("sync-all").title = eligible
-    ? eligible + " commits eligible for safe pull or non-force push"
-    : "No clean ahead/behind branches eligible for Safe sync. Fetch remote refs first.";
+    ? cardText(cardLanguage, "syncReady", eligible)
+    : cardText(cardLanguage, "syncUnavailable");
 }
 
 /* A single noninteractive native balloon follows three independent hover
@@ -324,9 +326,48 @@ function monitorRefreshState(kind, active) {
   } else {
     manualIndicator[kind]?.setAttribute("aria-busy", String(active));
   }
+  updateMetricAccessibleNames();
+}
+function updateMetricAccessibleNames() {
+  for (const [kind, node] of Object.entries(manualIndicator)) {
+    const busy = node.getAttribute("aria-busy") === "true";
+    node.setAttribute("aria-label",
+      metricAccessibleLabel(cardLanguage, kind, lastMetricStatus, busy));
+  }
+}
+function setCardLanguage(language) {
+  const next = cardLocale(language);
+  if (next === cardLanguage) return;
+  cardLanguage = next;
+  document.documentElement.lang = cardLanguage;
+  repoDrawer.setAttribute("aria-label", cardText(cardLanguage, "repositories"));
+  repoMenu.setAttribute("aria-label", cardText(cardLanguage, "repositoryActions"));
+  document.querySelector(".status-strip").setAttribute("aria-label",
+    cardText(cardLanguage, "githubMetrics"));
+  document.querySelector(".quota-anchor").setAttribute("aria-label",
+    cardText(cardLanguage, "billing"));
+  for (const item of repoMenu.querySelectorAll("[data-locale-key]"))
+    item.textContent = cardText(cardLanguage, item.dataset.localeKey);
+  byId("runner-status").title = cardText(cardLanguage, "refreshRunners");
+  byId("ci-tasks").title = cardText(cardLanguage, "refreshTasks");
+  byId("fetch-all").querySelector(".action-label").textContent =
+    cardText(cardLanguage, "fetch");
+  byId("sync-all").querySelector(".action-label").textContent =
+    cardText(cardLanguage, "safeSync");
+  byId("show-repos").querySelector(".action-label").textContent =
+    cardText(cardLanguage, "repos");
+  byId("hide-card").querySelector(".action-label").textContent =
+    cardText(cardLanguage, "hide");
+  byId("show-repos").title = cardText(cardLanguage,
+    view === "repos" ? "hideRepos" : "showRepos");
+  byId("hide-card").title = cardText(cardLanguage, "hideCard");
+  updateActionState();
+  updateMetricAccessibleNames();
 }
 function renderMonitorMetrics(state) {
   const status = compactStatus(state);
+  lastMetricStatus = status;
+  updateMetricAccessibleNames();
   byId("runners-total").textContent = status.total;
   byId("runners-online").textContent = status.online;
   byId("runners-offline").textContent = status.offline;
@@ -342,13 +383,14 @@ function traceMonitorReady() {
 function render(next) {
   hideRepoMenus();
   snapshot = next;
+  setCardLanguage(next.language);
   renderMonitorMetrics(next.runner_state);
   const list = byId("repo-list");
   list.replaceChildren();
   if (!next.repositories.length) {
     addText(list, "p", next.roots?.length
-      ? "No valid repositories found."
-      : "Add a repository folder through the tray Settings.", "empty");
+      ? cardText(cardLanguage, "noValidRepos")
+      : cardText(cardLanguage, "addRoot"), "empty");
   } else {
     for (const repo of next.repositories) list.append(makeRepoRow(repo));
   }
@@ -391,7 +433,7 @@ function consumeResults(results) {
   // or a duplicate "N fetched" line. Real Git state is the success indicator.
   const errors = results.filter(item => item.status === "error");
   if (errors.length) {
-    showError(errors.length + " Git operation error(s): " + errors[0].message);
+    showError(cardText(cardLanguage, "gitErrors", errors.length) + errors[0].message);
   }
 }
 async function cancelActiveFetch() {
@@ -433,7 +475,7 @@ function resetView() {
   byId("card").dataset.view = "compact";
   byId("repo-drawer").hidden = true;
   byId("show-repos").setAttribute("aria-pressed", "false");
-  byId("show-repos").title = "Show repositories";
+  byId("show-repos").title = cardText(cardLanguage, "showRepos");
   hideRepoMenus();
 }
 async function openView(target) {
@@ -447,10 +489,11 @@ async function openView(target) {
     byId("card").dataset.view = view;
     byId("repo-drawer").hidden = view !== "repos";
     byId("show-repos").setAttribute("aria-pressed", String(view === "repos"));
-    byId("show-repos").title = view === "repos" ? "Hide repositories" : "Show repositories";
+    byId("show-repos").title = cardText(cardLanguage,
+      view === "repos" ? "hideRepos" : "showRepos");
     if (view !== "repos") hideRepoMenus();
   } catch (error) {
-    showError("Cannot resize card: " + error);
+    showError(cardText(cardLanguage, "cannotResize") + error);
   }
 }
 byId("show-repos").addEventListener("click", () => openView("repos"));
@@ -534,6 +577,12 @@ window.__TAURI__?.event?.listen?.("repoticker-git-action-finished", async event 
   progress = null;
   await refresh();
 });
+// The persisted locale can be shown before slow local Git discovery.
+ // A later authoritative Git snapshot wins over a stale config-only reply.
+void invoke("get_settings_config").then(config => {
+  if (firstSnapshotReady || typeof config?.language !== "string") return;
+  setCardLanguage(config.language);
+}).catch(() => {});
 refresh();
 triggerMonitorRefresh = startGithubMonitoring({
   invoke, event: window.__TAURI__?.event, onError: showError,

@@ -9,6 +9,7 @@ mod github_rate_gate;
 mod github_session;
 mod monitor_cache;
 mod startup_diagnostics;
+mod tray_i18n;
 
 use repoticker_core::{
     config_store::JsonStore,
@@ -929,6 +930,7 @@ fn save_settings(
         .map(git::validate_ignored_child_names)
         .transpose()
         .map_err(|error| error.to_string())?;
+    let language_for_tray = language.clone();
     update_config(&app, |config| {
         config.roots = validated;
         config.language = language;
@@ -940,6 +942,7 @@ fn save_settings(
         }
         Ok(((), true))
     })?;
+    refresh_tray_language(&app, &language_for_tray);
     let _ = app.emit("repoticker-config-changed", ());
     Ok(())
 }
@@ -1070,10 +1073,12 @@ fn set_language(app: AppHandle, language: String) -> Result<(), String> {
     if language != "en" && language != "ru" {
         return Err("Unsupported language".into());
     }
+    let language_for_tray = language.clone();
     update_config(&app, |config| {
         config.language = language;
         Ok(((), true))
     })?;
+    refresh_tray_language(&app, &language_for_tray);
     let _ = app.emit("repoticker-config-changed", ());
     Ok(())
 }
@@ -1104,6 +1109,39 @@ fn toggle_card(app: &AppHandle) {
 fn tray_image() -> Image<'static> {
     let (rgba, width, height) = app_icon::tray_rgba();
     Image::new_owned(rgba, width, height)
+}
+
+
+#[cfg(not(target_os = "linux"))]
+fn build_desktop_tray_menu(
+    app: &AppHandle,
+    language: &str,
+) -> tauri::Result<Menu<tauri::Wry>> {
+    let open = MenuItem::with_id(app, "open", tray_i18n::label(language, "open"), true, None::<&str>)?;
+    let settings = MenuItem::with_id(
+        app, "settings", tray_i18n::label(language, "settings"), true, None::<&str>,
+    )?;
+    let fetch = MenuItem::with_id(app, "fetch", tray_i18n::label(language, "fetch"), true, None::<&str>)?;
+    let sync = MenuItem::with_id(app, "sync", tray_i18n::label(language, "sync"), true, None::<&str>)?;
+    let about = MenuItem::with_id(app, "about", tray_i18n::label(language, "about"), true, None::<&str>)?;
+    let quit = MenuItem::with_id(app, "quit", tray_i18n::label(language, "quit"), true, None::<&str>)?;
+    Menu::with_items(app, &[&open, &settings, &fetch, &sync, &about, &quit])
+}
+
+/// A settings write must not be reported as failed merely because the
+/// platform tray temporarily cannot repaint (e.g. shell restarting).
+fn refresh_tray_language(app: &AppHandle, language: &str) {
+    #[cfg(target_os = "linux")]
+    linux_tray::set_language(app, language);
+
+    #[cfg(not(target_os = "linux"))]
+    if let Some(tray) = app.tray_by_id("repoticker") {
+        if let Err(error) = build_desktop_tray_menu(app, language)
+            .and_then(|menu| tray.set_menu(Some(menu)))
+        {
+            eprintln!("RepoTicker tray locale refresh unavailable: {error}");
+        }
+    }
 }
 
 fn dispatch_menu_action(app: &AppHandle, operation: &'static str) {
@@ -1171,15 +1209,10 @@ fn main() {
 
             #[cfg(not(target_os = "linux"))]
             {
-                let open = MenuItem::with_id(app, "open", "Open card", true, None::<&str>)?;
-                let settings = MenuItem::with_id(app, "settings", "Settings", true, None::<&str>)?;
-                let fetch = MenuItem::with_id(app, "fetch", "Fetch all", true, None::<&str>)?;
-                let sync = MenuItem::with_id(app, "sync", "Safe sync all", true, None::<&str>)?;
-                let about =
-                    MenuItem::with_id(app, "about", "About RepoTicker", true, None::<&str>)?;
-                let quit = MenuItem::with_id(app, "quit", "Quit RepoTicker", true, None::<&str>)?;
-                let menu =
-                    Menu::with_items(app, &[&open, &settings, &fetch, &sync, &about, &quit])?;
+                let language = read_config(app.handle())
+                    .map(|config| config.language)
+                    .unwrap_or_else(|_| "en".to_owned());
+                let menu = build_desktop_tray_menu(app.handle(), &language)?;
 
                 TrayIconBuilder::with_id("repoticker")
                     .icon(tray_image())

@@ -100,6 +100,26 @@ These features remain **unreleased dev-only** until native KDE/
 Windows acceptance in [issue #15](https://github.com/morozhenko-apps/repoticker/issues/15)
 and separate release approval. See [P1-SYNC2](DEVELOPMENT_0_4_0.md).
 
+## Unreleased P1-GIT-EDGE1: tracked submodule safety
+
+The dev safety classifier queries Git status with
+`--porcelain=v1 --untracked-files=normal --ignore-submodules=none`
+to explicitly detect dirty initialized tracked submodules,
+even when user Git config contains `diff.ignoreSubmodules=all`
+or `submodule.<name>.ignore=all`. These values may hide
+nested untracked changes from an ordinary user Git status
+command but cannot suppress RepoTicker's Safe sync guard.
+
+Safe pull and Safe push continue to refuse dirty parent
+checkouts, without altering the user's global or repository
+Git configuration, staging nested changes, initializing
+submodules, or modifying their commits. Additional real
+Git tests cover selected origin amid a second remote and
+a configured external `core.hooksPath` failure preventing
+outbound non-force push. Physical acceptance: issue #15;
+engineering evidence: [P1-GIT-EDGE1](DEVELOPMENT_0_4_0.md).
+Not present in published v0.2.0.
+
 ## Unreleased P1-PROC1: bounded owned Git/SSH subprocesses
 
 The dev Git executor now applies hard per-process deadlines while

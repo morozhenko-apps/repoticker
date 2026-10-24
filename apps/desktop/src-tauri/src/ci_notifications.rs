@@ -54,7 +54,6 @@ pub(crate) fn ci_notification_permission(app: AppHandle) -> String {
     }
 }
 
-
 /// Explicit diagnostic. This never fabricates CI run data or changes
 /// the real failure notification deduplication state.
 fn notification_test_enabled(config: &crate::Config) -> bool {

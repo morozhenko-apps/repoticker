@@ -1052,3 +1052,37 @@ commit, without touching `main` or the published v0.2.0 package.
   **4/4 SUCCESS**. KDE/Windows physical menu refresh and
   current keyboard/a11y acceptance are still open. Neither
   app version, release nor OS autostart has changed.
+
+### A3 Preflight failure and fixture root-cause correction (2026-10-24)
+
+- [Preflight #40139791710](https://github.com/morozhenko-apps/repoticker/actions/runs/40139791710)
+  for exact source `dd91fa6d0a3a88ed51e1a435f5d03d689d2bae22`
+  finished **FAIL**. Rust format/core/Clippy and Linux desktop compile
+  passed, while Node reported **223 pass / 1 fail / 224 total**.
+- Failure: `tests/settings-github-confirm.test.mjs`, "Tab leaves
+  popup and mouse outside closes without stealing focus", at
+  line 509 after the first trigger click. The assertion expected
+  `language-options.hidden === false` but found `true`.
+- **Confirmed root cause:** the actual `settings.html` declares the
+  `language-options` listbox with `hidden`, while the fixture's
+  generic `mockNode` defaults every node to `hidden: false`.
+  Clicking the trigger therefore **closed** the simulated list
+  rather than **opening** the real initial state. Independent
+  Arrow/Home/End/Escape and save/Cancel tests already passed on
+  that SHA. No production symptom has been established.
+- `0d053fcbfbf008d12e3aaef9936bcbd0c96882f7`
+  fixes the test fixture to mirror the shipped initial
+  `hidden` attribute and adds a targeted first-click
+  open / second-click close regression with focus restoration.
+  The failing Tab/outside-pointer test retains all original
+  assertions; no assertions, functionality, timeouts or CI
+  gates were weakened.
+- Corrected executable/test SHA:
+  `0d053fcbfbf008d12e3aaef9936bcbd0c96882f7`.
+  [Preflight #40140115715](https://github.com/morozhenko-apps/repoticker/actions/runs/40140115715)
+  is the exact final gate; mark A3 CI accepted **only after**
+  all four jobs complete successfully.
+- No change to Settings production controller, 660×720
+  geometry, native notifications, tray actions, config,
+  `main`, or published installer. Physical KDE/Windows
+  keyboard navigation is still unverified and remains open.

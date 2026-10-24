@@ -669,7 +669,6 @@ fn safe_push_refuses_remotely_advanced_tip_before_a_network_write() {
     assert_eq!(run(&f.local, &["rev-parse", "HEAD"]), local_head);
 }
 
-
 fn tracked_submodule_fixture() -> (Fixture, PathBuf) {
     let f = Fixture::new();
     let module_source = f.base.join("module-source");
@@ -715,12 +714,18 @@ fn configured_ignore_all_cannot_hide_dirty_submodule_from_safe_push() {
     run(&f.local, &["config", "diff.ignoreSubmodules", "all"]);
     fs::write(f.local.join("tracked.txt"), "ahead\n").unwrap();
     run(&f.local, &["add", "tracked.txt"]);
-    run(&f.local, &["commit", "-m", "ahead while submodule is dirty"]);
+    run(
+        &f.local,
+        &["commit", "-m", "ahead while submodule is dirty"],
+    );
     let before_head = run(&f.local, &["rev-parse", "HEAD"]);
     let remote = f.base.join("remote.git");
     let before_remote = run(&remote, &["rev-parse", "refs/heads/dev"]);
     assert_eq!(
-        run(&f.local, &["status", "--porcelain=v1", "--untracked-files=normal"]),
+        run(
+            &f.local,
+            &["status", "--porcelain=v1", "--untracked-files=normal"]
+        ),
         "",
         "fixture must reproduce the user-configured hidden nested changes"
     );
@@ -732,7 +737,10 @@ fn configured_ignore_all_cannot_hide_dirty_submodule_from_safe_push() {
         git::OperationOutcome::Skipped(SyncDecision::LocalChanges)
     );
     assert_eq!(run(&f.local, &["rev-parse", "HEAD"]), before_head);
-    assert_eq!(run(&remote, &["rev-parse", "refs/heads/dev"]), before_remote);
+    assert_eq!(
+        run(&remote, &["rev-parse", "refs/heads/dev"]),
+        before_remote
+    );
     assert_eq!(
         fs::read_to_string(module.join("nested-untracked.txt")).unwrap(),
         "must remain"
@@ -748,7 +756,10 @@ fn configured_ignore_all_cannot_hide_dirty_submodule_from_safe_pull() {
     fs::write(module.join("nested-untracked.txt"), "preserve").unwrap();
     let before_head = run(&f.local, &["rev-parse", "HEAD"]);
     assert_eq!(
-        run(&f.local, &["status", "--porcelain=v1", "--untracked-files=normal"]),
+        run(
+            &f.local,
+            &["status", "--porcelain=v1", "--untracked-files=normal"]
+        ),
         ""
     );
     let status = git::inspect(&f.local).unwrap();
@@ -782,19 +793,17 @@ fn safe_sync_uses_configured_origin_when_second_remote_is_present() {
     );
     run(
         &f.local,
-        &[
-            "remote",
-            "add",
-            "mirror",
-            mirror.to_str().expect("mirror"),
-        ],
+        &["remote", "add", "mirror", mirror.to_str().expect("mirror")],
     );
     let mirror_tip = run(&mirror, &["rev-parse", "refs/heads/dev"]);
     fs::write(f.local.join("tracked.txt"), "outbound\n").unwrap();
     run(&f.local, &["add", "tracked.txt"]);
     run(&f.local, &["commit", "-m", "outbound via origin"]);
     let local_head = run(&f.local, &["rev-parse", "HEAD"]);
-    assert_eq!(git::safe_sync(&f.local).unwrap(), git::OperationOutcome::Pushed(1));
+    assert_eq!(
+        git::safe_sync(&f.local).unwrap(),
+        git::OperationOutcome::Pushed(1)
+    );
     assert_eq!(run(&origin, &["rev-parse", "refs/heads/dev"]), local_head);
     assert_eq!(
         run(&mirror, &["rev-parse", "refs/heads/dev"]),
@@ -814,8 +823,12 @@ fn custom_hookspath_pre_push_failure_blocks_safe_sync_without_mutation() {
     let hook = hooks_dir.join("pre-push");
     fs::write(
         &hook,
-        format!("#!/bin/sh\nprintf invoked > '{}'\nexit 1\n", evidence.display()),
-    ).unwrap();
+        format!(
+            "#!/bin/sh\nprintf invoked > '{}'\nexit 1\n",
+            evidence.display()
+        ),
+    )
+    .unwrap();
     fs::set_permissions(&hook, fs::Permissions::from_mode(0o755)).unwrap();
     run(
         &f.local,

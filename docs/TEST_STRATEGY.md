@@ -1,5 +1,19 @@
 # Test strategy and acceptance evidence
 
+## Dated inventory versus current acceptance
+
+This strategy retains historical tests, failures and physical acceptance gaps.
+Current implementation/evidence pointers are in the
+[handoff](ROADMAP.md#current-development-handoff-2026-10-24); the
+[version roadmap](VERSION_ROADMAP_TO_1_0.md) and
+[Mode B plan](testing/MODE_B_PLAN.md) own the final campaign sequence.
+Old "not implemented", pending native drag and v0.1-only descriptions are dated
+checkpoints, not current product absence or reopened issues. All original
+negative/race/privacy/signing/OS cases remain. Ordinary stable Preflight is
+separate from complete v0.9 Mode B, known-flaky disposition, physical KDE/
+Windows and package/upgrade acceptance; do not waive any of those gates.
+
+
 > **v1.0 release gate:** The owner approved mandatory **Mode B — Testing** before stable 1.0. See [Versioned roadmap v0.1.0–v1.0.0](VERSION_ROADMAP_TO_1_0.md) for the binding 12-stage inventory/branch map/Positive+N1–N12/coverage/mutation/final execution program and required audit artifacts. Green Preflight alone does not mark Mode B COMPLETE.
 
 Tests must protect local Git data, fail closed on unsafe operations, and never fabricate CI/runners state. Distinguish **source tests**, **packaging jobs**, **local OS smoke** and **public release acceptance**. No artificial coverage percentage is claimed.

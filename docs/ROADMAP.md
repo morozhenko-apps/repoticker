@@ -1,5 +1,32 @@
 # Roadmap and delivery evidence
 
+## Current development handoff (2026-10-24)
+
+This section owns the current handoff; the dated P0–P4 and implementation
+checkpoints below remain chronology. The [version roadmap](VERSION_ROADMAP_TO_1_0.md)
+owns approved allocations and release gates, not a requirement to publish each
+minor. [v0.2 release evidence](RELEASE_0_2_0.md) records the immutable published
+baseline; `dev` has overlapping v0.3/v0.4/v0.5 work, without a new release.
+
+| Owner | Current reading and remaining boundary |
+| --- | --- |
+| [v0.3 development](DEVELOPMENT_0_3_0.md) | Auth/session, bounded monitoring, ETags, repository selection and startup work; retain exact dated evidence and remaining native timing/wallet cases |
+| [v0.4 development](DEVELOPMENT_0_4_0.md) / [Git contract](GIT_PROVIDER.md) | Source now has explicit Fetch plus manual Safe sync (ff-only behind, conservative non-force push ahead); source guards are not blanket race/OS acceptance |
+| [v0.5 development](DEVELOPMENT_0_5_0.md) | Native opt-in CI failure alerts and initial EN/RU card/Settings/About/tooltip projection exist; test-notification owner evidence does not prove real CI-failure delivery; autostart and Windows acceptance remain separate |
+| [L10N-20](localization/LOCALE_CONTEXT_AUDIT.md) / [Mode B plan](testing/MODE_B_PLAN.md) | Full 20-locale context audit is still mandatory before v0.9 Mode B; initial EN/RU slices do not close it or full Mode B |
+| [Release policy](RELEASE.md) / [test strategy](TEST_STRATEGY.md) | Source/CI, published assets, installed KDE/Windows and APT upgrade/lifecycle evidence remain distinct |
+
+Latest recorded source/test correction `55e1d50475f2e219cb9393e99de3fe5ae344d6d4`
+protects provider-owned runner names during locale projection. Its
+[Preflight 40137480766](https://github.com/morozhenko-apps/repoticker/actions/runs/40137480766)
+is SUCCESS. That verifies its scoped source; it does not accept visible KDE/
+Windows text, scroll-free Settings geometry or a new release. Earlier pending
+receipts remain historical. No old architecture question is reopened by cleanup.
+Use the [catalog](README.md) for every retained record. The
+[former root README](#imported-root-readme-before-october-24-housekeeping)
+remains as historical context; no original issue/status evidence was discarded.
+
+
 > **Latest development (2026-10-24):** RepoTicker `dev` now has opt-in native
 > CI failure notifications via direct GitHub REST (OFF by default,
 > deduplicated, silent startup baseline). Exact executable SHA `5a027460`
@@ -1117,7 +1144,7 @@ Plan and progress:
    Root v0.1-only descriptions and some pending release/architecture summaries
    are stale. Existing owner decisions, unverified native gates and source
    receipts must not be replaced by assumed acceptance.
-2. [ ] Put one current handoff at the top of this owner, retain all dated bodies,
+2. [x] Put one current handoff at the top of this owner, retain all dated bodies,
    and distinguish version allocations, development chronology, release notes,
    release preparation, RC feedback and QA inventory/branch maps. Replace root
    repetition/stale feature claims, retaining its complete old body in this
@@ -1140,3 +1167,65 @@ physical acceptance, overwriting concurrent work or omitting historical limits.
 No new product, financial/security decision or release authorization is made.
 Rollback: reverse only housekeeping docs/config commits; preserve source and
 prior commits. No credential, package, user repository or data restoration.
+
+---
+
+## Imported root README (before October 24 housekeeping)
+
+The complete former root text is retained below. Its v0.1-only implemented and
+future-feature statements are historical, not current dev capability claims.
+Only relative links, heading depth and Markdown whitespace were normalized.
+
+## RepoTicker
+
+**An open-source local Git companion for the system tray, with GitHub CI monitoring on the roadmap.**
+
+RepoTicker is a lightweight Tauri 2 + Rust desktop app for developers managing multiple Git checkouts. It is local-first: no proprietary account or central service is required for the features available today.
+
+### Implemented in v0.1.0 source
+
+- Compact tray card with Fetch, Safe pull, Repos and Hide; independent Settings and About windows. On Linux the tray uses StatusNotifierItem (SNI), and KDE Wayland uses GTK Layer Shell for the anchored popup.
+- Explicit enrollment of local directories, shallow discovery of their direct-child Git repositories, and per-repository inspection of branch, upstream, ahead/behind and dirty state.
+- Manual Fetch of enrolled repositories, with up to four independent fetches in parallel, failure isolation and progress events. Fetch updates remote-tracking refs, not checked-out files.
+- Manual Safe pull, operating **only on previously fetched refs**. Eligible clean upstream-tracking branches are advanced using Git fast-forward only; dirty, detached, ahead/diverged, unfinished or no-upstream branches are skipped. No automatic stash, rebase, reset or force operation.
+- Persistent local settings, including enrolled roots, selected language preference and Linux popup anchor. Choosing a language does not yet translate the full interface.
+- Desktop icon assets, package configurations and signed-APT release automation.
+
+GitHub Actions runs/jobs, self-hosted runner occupancy, quota/billing data, authenticated polling, notifications and webhook relays **are not connected**. Their UI indicators remain unavailable rather than showing invented values. Automatic background fetch/pull is not implemented.
+
+### Platform and release evidence
+
+- **Linux:** local Ubuntu KDE Wayland DEB install/uninstall and AppImage startup were exercised during v0.1.0 acceptance. The popup still jitters when dragged; tracked in [Issue #2](https://github.com/morozhenko-apps/repoticker/issues/2). Other Linux desktop environments are not yet accepted.
+- **Windows:** the Windows x64 NSIS installer was built and published by the tagged release workflow. Physical installation, tray and runtime acceptance on Windows are not yet verified.
+- **macOS:** not currently shipped; notarization and signing prerequisites are outstanding.
+- **Publishing:** the tagged `v0.1.0` pipeline completed successfully, uploaded signed APT metadata and release assets to R2, verified public readback and created a public GitHub Release. Independent end-user APT install/upgrade testing is still pending. See [release instructions](../docs/RELEASE.md).
+
+The first **published** release is [`v0.1.0`](https://github.com/morozhenko-apps/repoticker/releases/tag/v0.1.0), from immutable source commit `21f3b61d9774b931b57a4e3c83f61b2bcf2bb0ee`. [Tagged workflow #39319748009](https://github.com/morozhenko-apps/repoticker/actions/runs/39319748009) completed successfully on attempt 3 (2026-10-19).
+
+### Build and test
+
+Install Rust, Node.js 24, Git and the Tauri 2 native dependencies for your OS. On Ubuntu Linux the Tauri/WebKit development packages and `libgtk-layer-shell-dev` are required.
+
+~~~sh
+cargo fmt --all --check
+cargo test -p repoticker-core
+cargo clippy -p repoticker-core --all-targets -- -D warnings
+node --test tests/*.test.mjs
+python3 -m unittest discover -s tests -p 'test_release_*.py' -v
+cargo check -p repoticker-desktop
+cargo run -p repoticker-desktop
+~~~
+
+The signed-APT integration test requires `apt-utils`, `dpkg-dev`, `gnupg` and `gpgv`. CI installs those tools. `cargo run` does not install an OS package or register autostart.
+
+On KDE, left-click the SNI tray icon to toggle the card; right-click for Open, Settings, Fetch all, Safe pull all, About or Quit. Enroll a directory such as `~/Documents/GitHub` in Settings and run Fetch before Safe pull.
+
+### Documentation
+
+- [Approved v0.1.0–v1.0.0 roadmap](../docs/VERSION_ROADMAP_TO_1_0.md), including mandatory Mode B testing/coverage and the v0.9 release-candidate gate; this is a plan, not a published v1.0 binary.
+
+- [Product contract](../docs/PRODUCT.md) and [architecture](../docs/ARCHITECTURE.md)
+- [Current Git behavior](../docs/GIT_PROVIDER.md), [roadmap](../docs/ROADMAP.md) and [test strategy](../docs/TEST_STRATEGY.md)
+- [CI](../docs/CI.md), [releases/APT signing](../docs/RELEASE.md), [security](../docs/SECURITY.md) and [planned webhook relay](../docs/RELAY.md)
+
+Apache License 2.0; see [LICENSE](../LICENSE), [NOTICE](../NOTICE) and [CONTRIBUTING.md](../CONTRIBUTING.md). Bug reports: [GitHub Issues](https://github.com/morozhenko-apps/repoticker/issues).

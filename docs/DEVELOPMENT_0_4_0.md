@@ -1,5 +1,16 @@
 # RepoTicker P1 hardening — development checkpoint (v0.4 work bucket)
 
+## Record role and continuation
+
+This is the P1/v0.4 work-bucket chronology. Preserve every Git/filesystem race,
+process, hook, submodule, cancellation and remote-safety case and its limits.
+The [current handoff](ROADMAP.md#current-development-handoff-2026-10-24) links
+cross-bucket work; [Git behavior](GIT_PROVIDER.md) owns current manual Fetch/
+Safe sync semantics. Old presently/planned/pending paragraphs describe their
+source checkpoint, not missing code today. Source/CI success is distinct from
+KDE/Windows physical acceptance and does not authorize background sync/release.
+
+
 Status: **Mode A / planned source change**, 2026-10-23.
 Development branch: `dev`. Current public, immutable release:
 [`v0.2.0`](https://github.com/morozhenko-apps/repoticker/releases/tag/v0.2.0).

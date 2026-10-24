@@ -1,5 +1,18 @@
 # CI and release evidence
 
+## Evidence windows and current development
+
+Historical v0.1 pipeline and unfinished-feature descriptions below retain their
+source/window. [v0.2 release evidence](RELEASE_0_2_0.md) and the
+[current handoff](ROADMAP.md#current-development-handoff-2026-10-24) distinguish
+newer source from published/runtime acceptance. GitHub monitoring and native
+opt-in failure-alert code now exist in dev; old "after implementation" assurance
+work remains relevant by boundary, not a claim those components are absent.
+Required stable source/release checks and manual strict policy are unchanged.
+Never substitute an earlier green run for a changed executable source or treat
+a skipped/native-unobserved gate as passing.
+
+
 RepoTicker CI takes the isolation and review principles of the rQuickShare baseline, but uses its own Tauri/Rust/Node tests, packaging artifacts and release credentials.
 
 ## Preflight — `.github/workflows/preflight.yml`

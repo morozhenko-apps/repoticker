@@ -1,5 +1,16 @@
 # RepoTicker — versioned roadmap v0.1.0 to v1.0.0
 
+## Relationship to the current handoff
+
+This approved roadmap owns allocations, continuous-dev policy, final L10N-20
+and v0.9 Mode B/public-v1 gates. Its dated "active v0.3" and planned v0.4
+paragraphs are historical allocation snapshots; the
+[current handoff](ROADMAP.md#current-development-handoff-2026-10-24) links the
+already overlapping v0.3/v0.4/v0.5 source and remaining acceptance. Development
+bucket labels do not authorize a bump/tag/main promotion or imply all work is
+done. The original roadmap, test matrices and owner decisions remain intact.
+
+
 Status: **APPROVED ROADMAP, not a software release** (2026-10-21).
 Working branch: `dev`. Release branch: `main`. No extra permanent branches.
 

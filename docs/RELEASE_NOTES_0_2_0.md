@@ -1,4 +1,20 @@
-# RepoTicker v0.2.0 — release notes draft (NOT PUBLISHED)
+# RepoTicker v0.2.0 — release notes and retained draft
+
+## Publication and retained draft provenance
+
+[v0.2.0 was published on 2026-10-22](https://github.com/morozhenko-apps/repoticker/releases/tag/v0.2.0).
+That public GitHub Release owns the published copy. The complete prepublication
+notes body below is retained, including its draft/availability assertions and
+platform/upgrade limitations as dated history; it is not being represented as
+byte-identical published release copy. Original heading:
+`RepoTicker v0.2.0 — release notes draft (NOT PUBLISHED)`.
+
+See [delivery evidence](RELEASE_0_2_0.md), [release policy](RELEASE.md) and the
+[current development handoff](ROADMAP.md#current-development-handoff-2026-10-24).
+Publication alone does not close Windows, APT upgrade or other native gates.
+
+<a id="repoticker-v020--release-notes-draft-not-published"></a>
+
 
 > Prepared from `dev` on 2026-10-21. **Draft only**. This is not the
 > content of an existing GitHub release or installer, and publication

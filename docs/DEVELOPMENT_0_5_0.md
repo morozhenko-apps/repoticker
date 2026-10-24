@@ -1,5 +1,23 @@
 # RepoTicker v0.5 development — native notifications, startup and accessibility
 
+## Current interpretation of this work-bucket history
+
+The initial native-notification architecture question below was subsequently
+resolved for the implemented direct REST/native opt-in path; its later owner
+choices and implementation receipts control that scope. Autostart remains a
+separate undecided architecture boundary. Initial card, Settings, About and
+GitHub tooltip EN/RU slices exist on dev, not a complete L10N-20 product.
+The corrected runner-name projection at `55e1d504` passed
+[Preflight 40137480766](https://github.com/morozhenko-apps/repoticker/actions/runs/40137480766),
+superseding its earlier pending-CI note below. Keep provider-owned names intact.
+
+Owner acceptance of a diagnostic KDE notification is not acceptance of the
+actual GitHub-failure delivery path. Real KDE/Windows locale/geometry and
+notification cases remain separate; no new public release, autostart or relay
+was approved here. Continue via the [current handoff](ROADMAP.md#current-development-handoff-2026-10-24)
+and preserve all detailed historical decisions/evidence below.
+
+
 Status: **Mode A — Feature / Refactor**, started 2026-10-24.
 Work only on `dev`. v0.3–v0.8 are development work packages, not
 automatic version bumps/releases. No `main`, tags, AppImage/APT

@@ -812,6 +812,25 @@ fn commit_oid(repo: &Path, revision: &str) -> Result<String, GitError> {
     Ok(oid)
 }
 
+/// Revalidate the currently checked-out branch as well as the pinned
+/// source/target commits. An external client may switch branches between
+/// earlier inspections; an immutable target OID alone would not prevent
+/// merge from advancing that other branch.
+fn pull_source_unchanged(
+    repo: &Path,
+    original: &RepoSnapshot,
+    expected_head: &str,
+    expected_upstream_tip: &str,
+) -> Result<bool, GitError> {
+    let current = inspect(repo)?;
+    Ok(current.branch == original.branch
+        && current.upstream == original.upstream
+        && current.decision == original.decision
+        && !current.dirty
+        && commit_oid(repo, "HEAD^{commit}")? == expected_head
+        && commit_oid(repo, "@{upstream}^{commit}")? == expected_upstream_tip)
+}
+
 /// A private seam for deterministic inter-process change tests. Checkpoints
 /// do not modify Git state in production; they are invoked as no-op closures.
 fn safe_pull_with_checkpoints(
@@ -826,21 +845,23 @@ fn safe_pull_with_checkpoints(
             let expected_upstream_tip = commit_oid(repo, "@{upstream}^{commit}")?;
             after_first_check();
 
-            // Detect changes to either side of the proposed fast-forward,
-            // even when ahead/behind counts remain numerically identical.
-            let again = inspect(repo)?;
-            if again.branch != state.branch
-                || again.upstream != state.upstream
-                || again.decision != state.decision
-                || commit_oid(repo, "HEAD^{commit}")? != expected_head
-                || commit_oid(repo, "@{upstream}^{commit}")? != expected_upstream_tip
-            {
+            // Verify the selected checkout and both pinned ref tips even
+            // when ahead/behind counts remain numerically identical.
+            if !pull_source_unchanged(repo, &state, &expected_head, &expected_upstream_tip)? {
                 return Err(GitError(
                     "Repository changed during sync; retry manually".into(),
                 ));
             }
 
             before_merge();
+            // Close the final controllable gap before Git's ff-only merge:
+            // it would otherwise advance a different checked-out branch.
+            if !pull_source_unchanged(repo, &state, &expected_head, &expected_upstream_tip)? {
+                return Err(GitError(
+                    "Repository changed during sync; retry manually".into(),
+                ));
+            }
+
             // Git resolves only this already-validated commit, not whatever
             // @{upstream} may point to after our final inspection.
             required(
@@ -1193,32 +1214,85 @@ mod concurrent_git_tests {
     }
 
     #[test]
-    fn moving_upstream_after_final_check_cannot_redirect_pinned_merge() {
+    fn moving_upstream_after_second_check_aborts_before_merge() {
         let checkout = Checkout::new();
-        assert_eq!(
-            safe_pull_with_checkpoints(
-                &checkout.root,
-                || {},
-                || {
-                    git(
-                        &checkout.root,
-                        &[
-                            "update-ref",
-                            "refs/remotes/origin/dev",
-                            &checkout.alternate_tip,
-                        ],
-                    );
-                }
-            )
-            .expect("pinned fast-forward"),
-            OperationOutcome::Updated(1)
+        let result = safe_pull_with_checkpoints(
+            &checkout.root,
+            || {},
+            || {
+                git(
+                    &checkout.root,
+                    &[
+                        "update-ref",
+                        "refs/remotes/origin/dev",
+                        &checkout.alternate_tip,
+                    ],
+                );
+            },
         );
-        assert_eq!(
-            git(&checkout.root, &["rev-parse", "HEAD"]),
-            checkout.first_tip
+        assert!(result
+            .expect_err("upstream moved during final checkpoint")
+            .0
+            .contains("changed during sync"));
+        checkout.unchanged();
+    }
+
+    #[test]
+    fn switching_active_branch_after_second_check_cannot_advance_wrong_branch() {
+        let checkout = Checkout::new();
+        git(&checkout.root, &["branch", "other-branch"]);
+        let result = safe_pull_with_checkpoints(
+            &checkout.root,
+            || {},
+            || {
+                git(&checkout.root, &["switch", "other-branch"]);
+            },
         );
-        assert!(checkout.root.join("first.txt").is_file());
+        assert!(result
+            .expect_err("external checkout switch must abort Safe pull")
+            .0
+            .contains("changed during sync"));
+        assert_eq!(git(&checkout.root, &["branch", "--show-current"]), "other-branch");
+        assert_eq!(git(&checkout.root, &["rev-parse", "dev"]), checkout.base);
+        assert_eq!(git(&checkout.root, &["rev-parse", "other-branch"]), checkout.base);
+        checkout.unchanged();
+    }
+
+    #[test]
+    fn external_commit_after_second_check_is_not_overwritten_or_merged() {
+        let checkout = Checkout::new();
+        let result = safe_pull_with_checkpoints(
+            &checkout.root,
+            || {},
+            || {
+                git(&checkout.root, &["commit", "--allow-empty", "-m", "external commit"]);
+            },
+        );
+        assert!(result
+            .expect_err("HEAD changed at last checkpoint")
+            .0
+            .contains("changed during sync"));
+        assert_ne!(git(&checkout.root, &["rev-parse", "HEAD"]), checkout.base);
+        assert!(!checkout.root.join("first.txt").exists());
         assert!(!checkout.root.join("alternate.txt").exists());
+        assert!(git(&checkout.root, &["status", "--porcelain"]).is_empty());
+    }
+
+    #[test]
+    fn remapping_selected_upstream_after_second_check_aborts() {
+        let checkout = Checkout::new();
+        let result = safe_pull_with_checkpoints(
+            &checkout.root,
+            || {},
+            || {
+                git(&checkout.root, &["branch", "--set-upstream-to", "other/dev", "dev"]);
+            },
+        );
+        assert!(result
+            .expect_err("upstream configuration changed at last checkpoint")
+            .0
+            .contains("changed during sync"));
+        checkout.unchanged();
     }
 }
 

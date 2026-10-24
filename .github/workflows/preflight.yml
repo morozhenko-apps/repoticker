@@ -42,6 +42,24 @@ jobs:
           components: rustfmt, clippy
       - name: Check formatting
         run: cargo fmt --all --check
+      # Temporary lockfile resolution diagnostic, removed after repair.
+      - name: Diagnose committed Cargo.lock drift
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo metadata --format-version 1 >/dev/null
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64
+          import hashlib
+          content = Path('Cargo.lock').read_bytes()
+          print('CARGO_LOCK_SHA256:' + hashlib.sha256(content).hexdigest())
+          encoded = base64.b64encode(content).decode('ascii')
+          print('CARGO_LOCK_BEGIN:' + str(len(encoded)))
+          for index, offset in enumerate(range(0, len(encoded), 3500)):
+              print('CARGO_LOCK_CHUNK:{:04d}:{}'.format(index, encoded[offset:offset+3500]))
+          print('CARGO_LOCK_END')
+          PY
       - name: Core tests
         run: cargo test --locked -p repoticker-core
       - name: Core Clippy

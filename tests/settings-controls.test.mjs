@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
 import { listAvailableInstallations } from "../apps/desktop/ui/github-installations.mjs";
+import { settingsLocale, settingsText } from "../apps/desktop/ui/settings-i18n.mjs";
 
 const html = readFileSync(
   new URL("../apps/desktop/ui/settings.html", import.meta.url), "utf8"
@@ -57,6 +58,7 @@ test("Device Flow buttons register and invoke native commands after JS startup",
     }
   };
   const document = {
+    documentElement: { lang: "en" },
     getElementById: id => elements.get(id) ?? null,
     createElement: () => createElement("dynamic"),
     addEventListener() {},
@@ -72,11 +74,12 @@ test("Device Flow buttons register and invoke native commands after JS startup",
   // while its ESM dependency is supplied as the real imported function.
   // Fail closed if the controller's single known import changes.
   const importLine =
-    'import { listAvailableInstallations } from "./github-installations.mjs";\n';
+    'import { listAvailableInstallations } from "./github-installations.mjs";\n' +
+    'import { settingsLocale, settingsText } from "./settings-i18n.mjs";\n';
   assert.equal(js.startsWith(importLine), true,
     "Settings harness must recognize its real ESM dependency");
   runInNewContext(js.slice(importLine.length), {
-    document, window, listAvailableInstallations,
+    document, window, listAvailableInstallations, settingsLocale, settingsText,
     setInterval: () => 1,
     clearInterval() {},
   }, { filename: "settings.mjs" });

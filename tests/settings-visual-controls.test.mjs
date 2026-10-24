@@ -7,7 +7,7 @@ const css = readFileSync(new URL("../apps/desktop/ui/settings.css", import.meta.
 const settings = readFileSync(new URL("../apps/desktop/ui/settings.mjs", import.meta.url), "utf8");
 
 test("KDE monitor selectors share two-column alignment and control height", () => {
-  assert.match(html, /<label id="github-monitor-scope-row" hidden>Monitor account\s*<select id="github-monitor-scope">/);
+  assert.match(html, /<label id="github-monitor-scope-row" hidden><span data-i18n="Monitor account">Monitor account<\/span>\s*<select id="github-monitor-scope">/);
   assert.match(html, /<div class="github-repo-heading">[\s\S]*?<label for="github-repo-mode">Monitor repositories<\/label>\s*<select id="github-repo-mode">/);
   assert.match(css, /\.github-grid \{[^}]*grid-template-columns: 1fr 1fr;[^}]*gap: 7px 10px/);
   assert.match(css, /\.github-grid input, \.github-grid select \{[^}]*height: 34px/);

@@ -9,89 +9,89 @@
 <body>
 <main class="settings-shell">
   <section class="block general">
-    <h2>General</h2>
+    <h2 data-i18n="General">General</h2>
     <div class="general-line">
-      <label for="language-trigger">Language</label>
+      <label for="language-trigger" data-i18n="Language">Language</label>
       <div class="language-picker">
         <button id="language-trigger" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="language-options">English <span aria-hidden="true">▾</span></button>
-        <div id="language-options" role="listbox" tabindex="-1" aria-label="Language" hidden>
+        <div id="language-options" role="listbox" tabindex="-1" aria-label="Language" data-i18n-aria="Language" hidden>
           <button type="button" role="option" data-value="en" aria-selected="true">English</button>
           <button type="button" role="option" data-value="ru" aria-selected="false">Русский</button>
         </div>
       </div>
-      <span class="hint">Translations are planned</span>
+      
     </div>
   </section>
   <section class="block repositories">
-    <div class="section-heading"><h2>Local repositories</h2><span class="hint">Direct children only</span></div>
+    <div class="section-heading"><h2 data-i18n="Local repositories">Local repositories</h2><span class="hint" data-i18n="Direct children only">Direct children only</span></div>
     <form id="add-root-form" class="inline">
-      <label for="root-path" class="sr-only">Repository folder</label>
+      <label for="root-path" class="sr-only" data-i18n="Repository folder">Repository folder</label>
       <input id="root-path" required placeholder="~/Documents/GitHub" autocomplete="off">
-      <button type="submit">Add folder</button>
+      <button type="submit" data-i18n="Add folder">Add folder</button>
     </form>
     <div id="roots-list" class="roots-list"></div>
     <details class="ignore-settings">
-      <summary>Ignored child folders <span class="hint">(all enrolled roots)</span></summary>
+      <summary><span data-i18n="Ignored child folders">Ignored child folders</span> <span class="hint" data-i18n="(all enrolled roots)">(all enrolled roots)</span></summary>
       <form id="ignore-child-form" class="inline">
-        <label for="ignored-child-name" class="sr-only">Child folder name</label>
-        <input id="ignored-child-name" placeholder="e.g. Archive" autocomplete="off" maxlength="255">
+        <label for="ignored-child-name" class="sr-only" data-i18n="Child folder name">Child folder name</label>
+        <input id="ignored-child-name" data-i18n-placeholder="e.g. Archive" placeholder="e.g. Archive" autocomplete="off" maxlength="255">
         <button type="submit">Add</button>
       </form>
       <div id="ignored-child-list" class="roots-list" aria-label="Ignored child folders"></div>
-      <p class="hint">Exact folder names only, no paths or wildcards. Explicitly enrolled repositories are never hidden.</p>
+      <p class="hint" data-i18n="Exact folder names only, no paths or wildcards. Explicitly enrolled repositories are never hidden.">Exact folder names only, no paths or wildcards. Explicitly enrolled repositories are never hidden.</p>
     </details>
   </section>
   <section class="block github">
-    <div class="section-heading"><h2>GitHub &amp; Relay</h2><span id="github-connection-indicator" class="hint">Checking connection...</span></div>
+    <div class="section-heading"><h2 data-i18n="GitHub &amp; Relay">GitHub &amp; Relay</h2><span id="github-connection-indicator" class="hint">Checking connection...</span></div>
     <div class="github-auth-controls">
-      <button id="github-connect" type="button" hidden>Connect GitHub</button>
-      <button id="github-disconnect" type="button" hidden>Disconnect</button>
+      <button id="github-connect" type="button" data-i18n="Connect GitHub" hidden>Connect GitHub</button>
+      <button id="github-disconnect" type="button" data-i18n="Disconnect" hidden>Disconnect</button>
       <span id="github-auth-message" class="hint" role="status" aria-live="polite">Checking GitHub connection...</span>
     </div>
     <div id="github-device-flow" class="github-device-flow" hidden>
-      <span>Enter this code on GitHub:</span>
+      <span data-i18n="Enter this code on GitHub:">Enter this code on GitHub:</span>
       <strong id="github-user-code" class="github-user-code"></strong>
-      <button id="github-copy-code" type="button">Copy code</button>
-      <button id="github-open-device" type="button">Open GitHub</button>
-      <button id="github-cancel-device" type="button">Cancel</button>
+      <button id="github-copy-code" type="button" data-i18n="Copy code">Copy code</button>
+      <button id="github-open-device" type="button" data-i18n="Open GitHub">Open GitHub</button>
+      <button id="github-cancel-device" type="button" data-i18n="Cancel">Cancel</button>
     </div>
 
     <div class="github-grid">
-      <label>GitHub authorization<input id="github-account-status" disabled value="Checking connection..."></label>
-      <label id="github-monitor-scope-row" hidden>Monitor account
-        <select id="github-monitor-scope"><option value="">Choose account</option></select>
+      <label><span data-i18n="GitHub authorization">GitHub authorization</span><input id="github-account-status" disabled value="Checking connection..."></label>
+      <label id="github-monitor-scope-row" hidden><span data-i18n="Monitor account">Monitor account</span>
+        <select id="github-monitor-scope"><option value="" data-i18n="Choose account">Choose account</option></select>
       </label>
-      <label>Connection mode<select id="github-connection-mode" disabled>
-        <option value="polling">Simple polling</option>
-        <option value="hybrid">Hybrid webhook relay (not available yet)</option>
+      <label><span data-i18n="Connection mode">Connection mode</span><select id="github-connection-mode" disabled>
+        <option value="polling" data-i18n="Simple polling">Simple polling</option>
+        <option value="hybrid" data-i18n="Hybrid webhook relay (not available yet)">Hybrid webhook relay (not available yet)</option>
       </select></label>
-      <label id="github-worker-row" class="worker-label" hidden>Worker URL
+      <label id="github-worker-row" class="worker-label" hidden><span data-i18n="Worker URL">Worker URL</span>
         <input id="github-worker-url" disabled placeholder="https://your-worker.example">
       </label>
     </div>
     <div class="ci-alert-controls">
       <label for="ci-failure-notifications">
         <input id="ci-failure-notifications" type="checkbox">
-        Notify on new CI failures
+        <span data-i18n="Notify on new CI failures">Notify on new CI failures</span>
       </label>
     </div>
     <div id="github-repo-controls" class="github-repo-controls" hidden>
       <div class="github-repo-heading">
-        <label for="github-repo-mode">Monitor repositories</label>
+        <label for="github-repo-mode" data-i18n="Monitor repositories">Monitor repositories</label>
         <select id="github-repo-mode">
-          <option value="all">All accessible</option>
-          <option value="selected">Selected</option>
+          <option value="all" data-i18n="All accessible">All accessible</option>
+          <option value="selected" data-i18n="Selected">Selected</option>
         </select>
       </div>
-      <input id="github-repo-filter" type="search" placeholder="Filter repositories" aria-label="Filter repositories" hidden>
-      <div id="github-repo-list" class="github-repo-list" role="group" aria-label="Repositories to monitor" hidden></div>
+      <input id="github-repo-filter" type="search" placeholder="Filter repositories" aria-label="Filter repositories" data-i18n-placeholder="Filter repositories" data-i18n-aria="Filter repositories" hidden>
+      <div id="github-repo-list" class="github-repo-list" role="group" aria-label="Repositories to monitor" data-i18n-aria="Repositories to monitor" hidden></div>
       <span id="github-repo-status" class="hint" role="status" hidden></span>
     </div>
   </section>
   <div class="settings-footer">
     <span id="message" role="status" aria-live="polite"></span>
     <div class="footer-buttons">
-      <button id="cancel-settings" type="button">Cancel</button>
+      <button id="cancel-settings" type="button" data-i18n="Cancel">Cancel</button>
       <button id="apply-settings" type="button" class="primary" disabled>OK</button>
     </div>
   </div>

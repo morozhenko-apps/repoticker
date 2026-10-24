@@ -48,6 +48,7 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
   const delayedInstallations = options.deferInstallations
     ? new Promise(resolve => { releaseInstallations = resolve; }) : null;
   const document = {
+    documentElement: { lang: "en" },
     getElementById(id) {
       if (!elements.has(id)) throw Error("Unknown Settings element " + id);
       return elements.get(id);

@@ -1,6 +1,24 @@
 import { listAvailableInstallations } from "./github-installations.mjs";
+import { settingsLocale, settingsText } from "./settings-i18n.mjs";
 // Settings are transactional: editing never writes on disk until Apply.
 const byId = id => document.getElementById(id);
+let uiLocale = "en";
+const t = english => settingsText(uiLocale, english);
+let lastGithubText = "";
+let lastFormText = "";
+function applySettingsLanguage(value) {
+  uiLocale = settingsLocale(value);
+  document.documentElement.lang = uiLocale;
+  for (const item of document.querySelectorAll?.("[data-i18n]") ?? [])
+    item.textContent = t(item.getAttribute("data-i18n"));
+  for (const item of document.querySelectorAll?.("[data-i18n-placeholder]") ?? [])
+    item.placeholder = t(item.getAttribute("data-i18n-placeholder"));
+  for (const item of document.querySelectorAll?.("[data-i18n-aria]") ?? [])
+    item.setAttribute("aria-label", t(item.getAttribute("data-i18n-aria")));
+  byId("github-auth-message").textContent = t(lastGithubText);
+  byId("message").textContent = t(lastFormText);
+}
+
 
 /** Hybrid relay has no native transport or persistence in v0.2.
  * Its URL input is irrelevant to simple polling and cannot be enabled
@@ -100,13 +118,13 @@ function renderRepoChoices() {
   const unavailable = [...selectedRepoNames].filter(name =>
     !repoInventory.includes(name)).length;
   byId("github-repo-status").textContent = !repoInventoryReady
-    ? "Repository list unavailable. Existing selection is preserved."
-    : selectedRepoNames.size === 0 ? "Choose at least one repository."
-    : selectedRepoNames.size > 100 ? "Select at most 100 repositories."
-    : unavailable ? unavailable + " selected repositories are no longer accessible."
-    : selectedRepoNames.size + " selected of " + repoInventory.length +
-      " accessible" + (repoInventoryComplete ? "" : " (inventory truncated)") +
-      (visible.length > 100 ? "; filter to find more" : "");
+    ? t("Repository list unavailable. Existing selection is preserved.")
+    : selectedRepoNames.size === 0 ? t("Choose at least one repository.")
+    : selectedRepoNames.size > 100 ? t("Select at most 100 repositories.")
+    : unavailable ? unavailable + " " + t("selected repositories are no longer accessible.")
+    : selectedRepoNames.size + " " + t("selected of") + " " + repoInventory.length +
+      " " + t("accessible") + (repoInventoryComplete ? "" : " " + t("(inventory truncated)")) +
+      (visible.length > 100 ? t("; filter to find more") : "");
 }
 
 async function refreshRepoInventory() {
@@ -193,7 +211,7 @@ async function refreshMonitorScopes() {
     select.replaceChildren();
     const placeholder = document.createElement("option");
     placeholder.value = "";
-    placeholder.textContent = "Choose account";
+    placeholder.textContent = t("Choose account");
     select.append(placeholder);
     availableAccounts = new Map(inventory.items.map(item => [item.name, item.id]));
     const accounts = [...availableAccounts.keys()].sort();
@@ -211,13 +229,13 @@ async function refreshMonitorScopes() {
     if (!githubScopeTouched) selectedScope = suggestion;
     select.value = accounts.includes(selectedScope) ? selectedScope : "";
     if (!inventory.complete) githubMessage(
-      "GitHub installation list incomplete. Some accounts may be unavailable.", true);
+      t("GitHub installation list incomplete. Some accounts may be unavailable."), true);
     await refreshRepoInventory();
     if (revision !== monitorScopesRevision || !githubConnected) return;
     updateApply();
   } catch {
     if (revision !== monitorScopesRevision || !githubConnected) return;
-    githubMessage("GitHub authorized; cannot list available installations.", true);
+    githubMessage(t("GitHub authorized; cannot list available installations."), true);
   }
 }
 
@@ -230,7 +248,7 @@ byId("github-monitor-scope").addEventListener("change", event => {
   selectedRepoNames.clear();
   byId("github-repo-filter").value = "";
   updateRepoDirty();
-  githubMessage("Press OK to confirm the monitoring account.");
+  githubMessage(t("Press OK to confirm the monitoring account."));
   void refreshRepoInventory();
   updateApply();
 });
@@ -269,8 +287,9 @@ function startGithubStatusUpdates() {
 }
 
 function githubMessage(text, error = false) {
+  lastGithubText = String(text);
   const element = byId("github-auth-message");
-  element.textContent = text;
+  element.textContent = t(String(text));
   element.classList.toggle("error", error);
 }
 
@@ -279,11 +298,11 @@ function githubButtons() {
   byId("github-connect").hidden = unknown || githubConnected || githubPending;
   byId("github-disconnect").hidden = unknown || !githubConnected;
   byId("github-device-flow").hidden = !githubPending;
-  if (!githubPending) byId("github-copy-code").textContent = "Copy code";
-  const status = githubChecking ? "Checking connection..."
-    : githubCheckFailed ? "Connection unavailable"
-    : githubPending ? "Authorization pending"
-    : githubConnected ? "Authorized" : "Not connected";
+  if (!githubPending) byId("github-copy-code").textContent = t("Copy code");
+  const status = githubChecking ? t("Checking connection...")
+    : githubCheckFailed ? t("Connection unavailable")
+    : githubPending ? t("Authorization pending")
+    : githubConnected ? t("Authorized") : t("Not connected");
   byId("github-connection-indicator").textContent = status;
   byId("github-account-status").value = status;
   updateApply();
@@ -361,7 +380,7 @@ byId("github-connect").addEventListener("click", async () => {
     // Only a public one-time USER code may enter the WebView.
     byId("github-user-code").textContent = challenge.userCode;
     githubPending = true;
-    githubMessage("Waiting for approval in GitHub.");
+    githubMessage(t("Waiting for approval in GitHub."));
     githubButtons();
     startGithubStatusUpdates();
   } catch (error) {
@@ -380,11 +399,11 @@ byId("github-copy-code").addEventListener("click", async () => {
   if (!githubPending || !code) return;
   try {
     await invoke("github_copy_user_code", { code });
-    byId("github-copy-code").textContent = "Copied";
-    githubMessage("Verification code copied.");
+    byId("github-copy-code").textContent = t("Copied");
+    githubMessage(t("Verification code copied."));
   } catch {
-    byId("github-copy-code").textContent = "Copy code";
-    githubMessage("Cannot access system clipboard. Select the code and copy with Ctrl+C.", true);
+    byId("github-copy-code").textContent = t("Copy code");
+    githubMessage(t("Cannot access system clipboard. Select the code and copy with Ctrl+C."), true);
   }
 });
 
@@ -402,7 +421,7 @@ byId("github-cancel-device").addEventListener("click", async () => {
   githubPending = false;
   byId("github-user-code").textContent = "";
   githubButtons();
-  githubMessage("Authorization cancelled.");
+  githubMessage(t("Authorization cancelled."));
 });
 byId("github-disconnect").addEventListener("click", async () => {
   try {
@@ -413,7 +432,7 @@ byId("github-disconnect").addEventListener("click", async () => {
     githubPending = false;
     byId("github-user-code").textContent = "";
     githubButtons();
-    githubMessage("GitHub disconnected.");
+    githubMessage(t("GitHub disconnected."));
   } catch (error) {
     githubMessage(String(error), true);
   }
@@ -426,7 +445,8 @@ window.__TAURI__?.event?.listen?.("repoticker-github-auth", () => {
 });
 
 function message(text, error = false) {
-  byId("message").textContent = String(text);
+  lastFormText = String(text);
+  byId("message").textContent = t(String(text));
   byId("message").classList.toggle("error", error);
 }
 function isDirty() {
@@ -448,7 +468,7 @@ function renderRoots() {
   list.replaceChildren();
   if (!draft.roots.length) {
     const label = document.createElement("p");
-    label.textContent = "No enrolled folders.";
+    label.textContent = t("No enrolled folders.");
     label.className = "hint";
     list.append(label);
   }
@@ -460,7 +480,7 @@ function renderRoots() {
     label.title = root;
     const remove = document.createElement("button");
     remove.type = "button";
-    remove.textContent = "Remove";
+    remove.textContent = t("Remove");
     remove.addEventListener("click", () => {
       draft.roots = draft.roots.filter(item => item !== root);
       renderRoots();
@@ -476,7 +496,7 @@ function renderIgnoredChildren() {
   if (!draft.ignoredChildNames.length) {
     const label = document.createElement("p");
     label.className = "hint";
-    label.textContent = "No additional folders excluded.";
+    label.textContent = t("No additional folders excluded.");
     list.append(label);
   }
   for (const name of draft.ignoredChildNames) {
@@ -487,7 +507,7 @@ function renderIgnoredChildren() {
     label.title = name;
     const remove = document.createElement("button");
     remove.type = "button";
-    remove.textContent = "Remove";
+    remove.textContent = t("Remove");
     remove.addEventListener("click", () => {
       draft.ignoredChildNames = draft.ignoredChildNames.filter(item => item !== name);
       renderIgnoredChildren();
@@ -504,12 +524,12 @@ byId("ignore-child-form").addEventListener("submit", event => {
   const name = field.value.trim();
   if (!name || name === "." || name === ".." ||
       name.length > 255 || /[\\/\x00-\x1f\x7f]/.test(name)) {
-    message("Enter a single folder name without separators or control characters.", true);
+    message(t("Enter a single folder name without separators or control characters."), true);
     return;
   }
   if (draft.ignoredChildNames.length >= 100 &&
       !draft.ignoredChildNames.includes(name)) {
-    message("You can exclude at most 100 child folder names.", true);
+    message(t("You can exclude at most 100 child folder names."), true);
     return;
   }
   if (!draft.ignoredChildNames.includes(name)) {
@@ -525,7 +545,7 @@ async function refresh() {
   githubChecking = true;
   githubCheckFailed = false;
   githubButtons();
-  githubMessage("Checking GitHub connection...");
+  githubMessage(t("Checking GitHub connection..."));
   // Persistent form settings and native KWallet interrogation run independently.
   // Neither path triggers local Git discovery/inspection.
   const [snapshot, authAtOpen] = await Promise.all([
@@ -555,6 +575,7 @@ async function refresh() {
     ciFailureNotifications: original.ciFailureNotifications
   };
   byId("ci-failure-notifications").checked = draft.ciFailureNotifications;
+  applySettingsLanguage(draft.language);
   byId("root-path").value = "";
   updateLanguagePicker();
   renderRoots();
@@ -599,7 +620,12 @@ for (const option of byId("language-options").querySelectorAll("[role=option]"))
   option.addEventListener("click", () => {
     if (!draft || saving) return;
     draft.language = option.dataset.value;
+    applySettingsLanguage(draft.language);
     updateLanguagePicker();
+    renderRoots();
+    renderIgnoredChildren();
+    renderRepoChoices();
+    githubButtons();
     updateApply();
     closeLanguagePicker();
     byId("language-trigger").focus();
@@ -682,7 +708,7 @@ window.__TAURI__?.event?.listen?.("repoticker-settings-opened", () => {
   githubChecking = false;
   githubCheckFailed = true;
   githubButtons();
-  githubMessage("Cannot initialize settings.", true);
+  githubMessage(t("Cannot initialize settings."), true);
   message(error, true);
 });
 });

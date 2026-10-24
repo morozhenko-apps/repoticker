@@ -128,7 +128,9 @@ fn valid_path(requested: &str) -> bool {
                     && value
                         .parse::<u32>()
                         .is_ok_and(|n| (1..=PAGE_CAP).contains(&n)) => {}
-            "status" if route == 3 && (value == "queued" || value == "in_progress") => {}
+            "status"
+                if route == 3
+                    && (value == "queued" || value == "in_progress" || value == "completed") => {}
             "filter" if route == 4 && value == "latest" => {}
             "year"
                 if route == 5
@@ -227,6 +229,63 @@ fn project(path: &str, value: Value) -> Result<Value, String> {
         .ok_or_else(|| "Unexpected GitHub API response.".to_owned())?;
     if arr.len() > 100 {
         return Err("GitHub returned more than the requested page size.".into());
+    }
+    // Completed runs are a narrowly projected notification input.
+    // Do not return actor or repository payloads to the WebView.
+    if key == "workflow_runs" && path.contains("status=completed") {
+        let completed: Vec<Value> = arr
+            .iter()
+            .map(|item| {
+                let id = item
+                    .get("id")
+                    .and_then(Value::as_u64)
+                    .filter(|id| *id > 0 && *id <= 9_007_199_254_740_991)
+                    .ok_or_else(|| "Invalid completed GitHub run ID.".to_owned())?;
+                let attempt = item
+                    .get("run_attempt")
+                    .and_then(Value::as_u64)
+                    .filter(|attempt| (1..=1_000_000).contains(attempt))
+                    .ok_or_else(|| "Invalid completed GitHub run attempt.".to_owned())?;
+                let conclusion = item
+                    .get("conclusion")
+                    .and_then(Value::as_str)
+                    .filter(|value| {
+                        matches!(
+                            *value,
+                            "success" | "failure" | "cancelled" | "skipped"
+                                | "timed_out" | "action_required" | "neutral"
+                                | "stale" | "startup_failure"
+                        )
+                    })
+                    .ok_or_else(|| "Invalid completed GitHub run conclusion.".to_owned())?;
+                let updated_at = item
+                    .get("updated_at")
+                    .and_then(Value::as_str)
+                    .filter(|timestamp| {
+                        timestamp.len() == 20
+                            && timestamp.as_bytes().get(4) == Some(&b'-')
+                            && timestamp.as_bytes().get(7) == Some(&b'-')
+                            && timestamp.as_bytes().get(10) == Some(&b'T')
+                            && timestamp.as_bytes().get(13) == Some(&b':')
+                            && timestamp.as_bytes().get(16) == Some(&b':')
+                            && timestamp.ends_with('Z')
+                            && timestamp
+                                .bytes()
+                                .enumerate()
+                                .all(|(i, b)| matches!(i, 4 | 7 | 10 | 13 | 16 | 19)
+                                    || b.is_ascii_digit())
+                    })
+                    .ok_or_else(|| "Invalid completed GitHub run timestamp.".to_owned())?;
+                Ok(json!({
+                    "id": id, "run_attempt": attempt,
+                    "conclusion": conclusion, "updated_at": updated_at,
+                }))
+            })
+            .collect::<Result<_, String>>()?;
+        return Ok(json!({
+            "workflow_runs": completed,
+            "total_count": value.get("total_count").cloned().unwrap_or(Value::Null),
+        }));
     }
     let items: Vec<Value> = arr
         .iter()
@@ -397,6 +456,7 @@ mod tests {
             "/user/installations/123/repositories?per_page=100&page=2",
             "/orgs/team-apps/actions/runners?per_page=100&page=1",
             "/repos/team-apps/tool/actions/runs?status=queued&per_page=100&page=1",
+            "/repos/team-apps/tool/actions/runs?status=completed&per_page=100&page=1",
             "/repos/team-apps/tool/actions/runs/123/jobs?filter=latest&per_page=100&page=1",
         ] {
             assert!(valid_path(path), "{path}");
@@ -416,7 +476,7 @@ mod tests {
             "/user/installations?per_page=100&page=1&token=secret",
             "/user/installations?per_page=100&page=1&page=2",
             "/repos/team/repo/actions/workflows?per_page=100&page=1",
-            "/repos/team/repo/actions/runs?status=completed&per_page=100&page=1",
+            "/repos/team/repo/actions/runs?status=failed&per_page=100&page=1",
             "/repos/team/../actions/runs?per_page=100&page=1",
             "/orgs/%2e%2e/actions/runners?per_page=100&page=1",
             "/orgs/team/actions/runners?per_page=100&page=1#frag",
@@ -424,6 +484,50 @@ mod tests {
         ] {
             assert!(!valid_path(path), "{path}");
         }
+    }
+
+    #[test]
+    fn completed_run_projection_is_minimal_and_rejects_invalid_facts() {
+        let path = "/repos/team/repo/actions/runs?status=completed&per_page=100&page=1";
+        let fixture = json!({"total_count": 1, "workflow_runs": [{
+            "id": 123, "run_attempt": 2, "conclusion": "failure",
+            "updated_at": "2026-10-24T18:30:00Z",
+            "actor": {"token": "private-token"}, "display_title": "private-title",
+            "head_repository": {"name": "private-repo"}
+        }]});
+        let projected = project(path, fixture.clone()).unwrap();
+        assert_eq!(projected["workflow_runs"][0]["id"], 123);
+        assert_eq!(projected["workflow_runs"][0]["run_attempt"], 2);
+        assert_eq!(projected["workflow_runs"][0]["conclusion"], "failure");
+        assert_eq!(
+            projected["workflow_runs"][0]["updated_at"],
+            "2026-10-24T18:30:00Z"
+        );
+        assert!(!projected.to_string().contains("private-token"));
+        assert!(!projected.to_string().contains("private-title"));
+        assert!(!projected.to_string().contains("private-repo"));
+        for invalid in [
+            json!({"id": 0}),
+            json!({"id": 9007199254740992u64}),
+            json!({"run_attempt": 0}),
+            json!({"run_attempt": 1000001}),
+            json!({"conclusion": "unknown"}),
+            json!({"conclusion": null}),
+            json!({"updated_at": "bad"}),
+            json!({"updated_at": "2026-10-24T18:30:00Z\n"}),
+        ] {
+            let mut damaged = fixture.clone();
+            for (key, value) in invalid.as_object().unwrap() {
+                damaged["workflow_runs"][0][key] = value.clone();
+            }
+            assert!(project(path, damaged).is_err(), "{invalid}");
+        }
+        let active = project(
+            "/repos/team/repo/actions/runs?status=queued&per_page=100&page=1",
+            fixture,
+        )
+        .unwrap();
+        assert_eq!(active["workflow_runs"][0], json!({"id": 123}));
     }
 
     #[test]

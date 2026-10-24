@@ -78,8 +78,17 @@ button:focus-visible, input:focus-visible, .status-hover:focus-visible { outline
 
 
 /* Two independent manual refresh controls retain their old hover targets. */
-.metric-button { height: 23px; padding: 0 2px; background: transparent; border: 0;
+.metric-button { position: relative; height: 23px; padding: 0 2px; background: transparent; border: 0;
   font: inherit; color: inherit; white-space: nowrap; }
 .metric-button:hover { background: color-mix(in srgb, #7ab2d7 18%, transparent); }
 .metric-button[aria-busy="true"] { opacity: .62; pointer-events: none; }
-.metric-button[aria-busy="true"] .metric-caption::after { content: " ↻"; }
+/* A positioned progress underline does not change label width, row
+   height or the spacing between the compact metrics on refresh. */
+.metric-button::after { content: ""; position: absolute; left: 6px; right: 6px; bottom: 1px;
+  height: 2px; border-radius: 2px; background: #4789b9; pointer-events: none;
+  opacity: 0; transform: scaleX(.2); }
+.metric-button[aria-busy="true"]::after { opacity: .85; animation: metric-sweep .9s ease-in-out infinite alternate; }
+@keyframes metric-sweep { from { transform: scaleX(.2); } to { transform: scaleX(1); } }
+@media (prefers-reduced-motion: reduce) {
+  .metric-button[aria-busy="true"]::after { animation: none; transform: scaleX(1); }
+}

@@ -54,6 +54,37 @@ pub(crate) fn ci_notification_permission(app: AppHandle) -> String {
     }
 }
 
+
+/// Explicit diagnostic. This never fabricates CI run data or changes
+/// the real failure notification deduplication state.
+fn notification_test_enabled(config: &crate::Config) -> bool {
+    config.ci_failure_notifications
+}
+
+#[tauri::command]
+pub(crate) fn ci_notification_test(app: AppHandle) -> Result<(), String> {
+    if !cfg!(any(target_os = "linux", target_os = "windows")) {
+        return Err("System notifications unsupported on this platform.".into());
+    }
+    let config = crate::read_config(&app)?;
+    if !notification_test_enabled(&config) {
+        return Err("Enable and save CI notifications before testing.".into());
+    }
+    if !matches!(
+        app.notification().permission_state(),
+        Ok(PermissionState::Granted)
+    ) {
+        return Err("System notification permission unavailable.".into());
+    }
+    app.notification()
+        .builder()
+        .title("RepoTicker: test notification")
+        .body("Native notification test. No CI workflow failed.")
+        .show()
+        .map_err(|_| "System notification test delivery failed.".to_owned())?;
+    Ok(())
+}
+
 #[tauri::command]
 pub(crate) fn ci_failure_notify(
     app: AppHandle,
@@ -112,6 +143,14 @@ mod tests {
         value.github_monitor_org = Some("Team".into());
         value.github_monitor_repositories = vec!["Team/alpha".into()];
         value
+    }
+
+    #[test]
+    fn native_test_diagnostic_requires_explicit_persisted_opt_in() {
+        let mut value = config();
+        assert!(!notification_test_enabled(&value));
+        value.ci_failure_notifications = true;
+        assert!(notification_test_enabled(&value));
     }
 
     #[test]

@@ -74,7 +74,10 @@
         <input id="ci-failure-notifications" type="checkbox">
         Notify on new CI failures
       </label>
-      <span id="ci-notification-permission" class="hint" role="status">Checking system notifications...</span>
+      <div class="ci-alert-status">
+        <span id="ci-notification-permission" class="hint" role="status">Checking system notifications...</span>
+        <button id="ci-test-notification" type="button" aria-label="Test native system notification" title="Test system notification, not a CI failure" disabled>Test</button>
+      </div>
     </div>
     <div id="github-repo-controls" class="github-repo-controls" hidden>
       <div class="github-repo-heading">

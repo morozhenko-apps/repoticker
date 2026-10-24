@@ -1454,3 +1454,32 @@ approval is implied by Preflight success.
   workspace lockfile. No manifest/API/persisted setting
   change is necessary; lockfile resolution changes are
   reviewed explicitly before commit.
+
+### A11 verified minimal Cargo.lock repair
+
+- Debug Preflight [#40122451687](https://github.com/morozhenko-apps/repoticker/actions/runs/40122451687)
+  used a short-lived diagnostic step in the isolated runner
+  to resolve the entire dependency graph and expose only
+  the public generated `Cargo.lock` bytes. Its Rust tests/
+  Clippy and UI/release jobs passed after the diagnostic
+  generated the correct lockfile; the separate desktop
+  job correctly failed because it did not have that fix.
+- Exact comparison of the committed lockfile with the
+  fresh resolver output showed **only one 44-byte addition**
+  to `[[package]] repoticker-core`:
+  `dependencies = ["serde", "serde_json"]`. All
+  **522 package names, versions and checksums were unchanged**.
+  This is the confirmed root cause of repeated local
+  Cargo.lock modifications after build.
+- [`4657a9f`](https://github.com/morozhenko-apps/repoticker/commit/4657a9fdd7a35fbaf82882cf9dc5d0f8a0766860)
+  commits exactly the CI-generated lockfile bytes; an
+  explicit full-content equality check passed before
+  writing the tracked file. No dependency upgrades,
+  manifest changes, or user local changes were made.
+- [`af48ae5`](https://github.com/morozhenko-apps/repoticker/commit/af48ae58f67bdfda468909ed0386c0de18e0e4fd)
+  removes the temporary lockfile diagnostic code,
+  preserving permanent `--locked` enforcement.
+- Final code/test Preflight for `af48ae58f67bdfda468909ed0386c0de18e0e4fd`
+  must be checked before claiming 4/4. Real KDE
+  top-padding acceptance and repeatable ~8-second
+  startup measurement remain open in #12.

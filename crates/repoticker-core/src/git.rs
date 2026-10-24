@@ -639,7 +639,12 @@ pub fn inspect(repo: &Path) -> Result<RepoSnapshot, GitError> {
     let branch = optional(repo, &["symbolic-ref", "-q", "--short", "HEAD"])?;
     let dirty = !required(
         repo,
-        &["status", "--porcelain=v1", "--untracked-files=normal"],
+        &[
+            "status",
+            "--porcelain=v1",
+            "--untracked-files=normal",
+            "--ignore-submodules=none",
+        ],
     )?
     .is_empty();
     let upstream = if branch.is_some() {

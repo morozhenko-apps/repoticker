@@ -30,6 +30,16 @@
       <button type="submit">Add folder</button>
     </form>
     <div id="roots-list" class="roots-list"></div>
+    <details class="ignore-settings">
+      <summary>Ignored child folders <span class="hint">(all enrolled roots)</span></summary>
+      <form id="ignore-child-form" class="inline">
+        <label for="ignored-child-name" class="sr-only">Child folder name</label>
+        <input id="ignored-child-name" placeholder="e.g. Archive" autocomplete="off" maxlength="255">
+        <button type="submit">Add</button>
+      </form>
+      <div id="ignored-child-list" class="roots-list" aria-label="Ignored child folders"></div>
+      <p class="hint">Exact folder names only, no paths or wildcards. Explicitly enrolled repositories are never hidden.</p>
+    </details>
   </section>
   <section class="block github">
     <div class="section-heading"><h2>GitHub &amp; Relay</h2><span id="github-connection-indicator" class="hint">Checking connection...</span></div>

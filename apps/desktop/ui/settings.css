@@ -63,3 +63,11 @@ label { font-size: 12px; }
 .github-repo-choice { display: flex; align-items: center; gap: 6px; min-height: 27px; padding: 3px 7px; }
 .github-repo-choice input { width: 15px; height: 15px; flex: none; }
 .github-repo-choice span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Shallow discovery exclusions are optional and collapsed by default. */
+.settings-shell { overflow-y: auto; }
+.ignore-settings { margin-top: 7px; }
+.ignore-settings summary { cursor: pointer; font-size: 12px; padding: 4px 0; }
+.ignore-settings .inline { margin-top: 6px; }
+.ignore-settings .roots-list { max-height: 82px; }
+.ignore-settings .hint { margin: 4px 0 0; }

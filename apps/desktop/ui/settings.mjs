@@ -432,7 +432,8 @@ function message(text, error = false) {
 function isDirty() {
   if (!original || !draft) return false;
   return original.language !== draft.language ||
-    JSON.stringify(original.roots) !== JSON.stringify(draft.roots);
+    JSON.stringify(original.roots) !== JSON.stringify(draft.roots) ||
+    JSON.stringify(original.ignoredChildNames) !== JSON.stringify(draft.ignoredChildNames);
 }
 function updateApply() {
   const authNeedsConfirmation = githubConnected && githubStartedHere;
@@ -468,6 +469,57 @@ function renderRoots() {
     list.append(row);
   }
 }
+function renderIgnoredChildren() {
+  const list = byId("ignored-child-list");
+  list.replaceChildren();
+  if (!draft.ignoredChildNames.length) {
+    const label = document.createElement("p");
+    label.className = "hint";
+    label.textContent = "No additional folders excluded.";
+    list.append(label);
+  }
+  for (const name of draft.ignoredChildNames) {
+    const row = document.createElement("div");
+    row.className = "root";
+    const label = document.createElement("span");
+    label.textContent = name;
+    label.title = name;
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.textContent = "Remove";
+    remove.addEventListener("click", () => {
+      draft.ignoredChildNames = draft.ignoredChildNames.filter(item => item !== name);
+      renderIgnoredChildren();
+      updateApply();
+    });
+    row.append(label, remove);
+    list.append(row);
+  }
+}
+byId("ignore-child-form").addEventListener("submit", event => {
+  event.preventDefault();
+  if (!draft || saving) return;
+  const field = byId("ignored-child-name");
+  const name = field.value.trim();
+  if (!name || name === "." || name === ".." ||
+      name.length > 255 || /[\\/\x00-\x1f\x7f]/.test(name)) {
+    message("Enter a single folder name without separators or control characters.", true);
+    return;
+  }
+  if (draft.ignoredChildNames.length >= 100 &&
+      !draft.ignoredChildNames.includes(name)) {
+    message("You can exclude at most 100 child folder names.", true);
+    return;
+  }
+  if (!draft.ignoredChildNames.includes(name)) {
+    draft.ignoredChildNames.push(name);
+    draft.ignoredChildNames.sort();
+  }
+  field.value = "";
+  renderIgnoredChildren();
+  message("");
+  updateApply();
+});
 async function refresh() {
   githubChecking = true;
   githubCheckFailed = false;
@@ -491,12 +543,19 @@ async function refresh() {
   selectedScope = null;
   original = {
     roots: [...(snapshot.roots || [])],
-    language: snapshot.language || "en"
+    language: snapshot.language || "en",
+    ignoredChildNames: [...(snapshot.ignored_child_names || [])].sort()
   };
-  draft = { roots: [...original.roots], language: original.language };
+  draft = {
+    roots: [...original.roots],
+    language: original.language,
+    ignoredChildNames: [...original.ignoredChildNames]
+  };
   byId("root-path").value = "";
   updateLanguagePicker();
   renderRoots();
+  renderIgnoredChildren();
+  byId("ignored-child-name").value = "";
   message("");
   updateApply();
   await refreshGithub(authAtOpen);
@@ -581,7 +640,8 @@ byId("apply-settings").addEventListener("click", async () => {
     if (isDirty()) {
       await invoke("save_settings", {
         roots: [...draft.roots],
-        language: draft.language
+        language: draft.language,
+        ignoredChildNames: [...draft.ignoredChildNames]
       });
     }
     if (githubConnected) {

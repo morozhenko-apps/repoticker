@@ -1427,3 +1427,30 @@ approval is implied by Preflight success.
   observation, not a cold/warm benchmark or confirmed SLA.
   Native KDE geometry verification and comparative
   startup logs remain open; no `main` change or release.
+
+### A11 resolved lockfile drift diagnosis (pending repair)
+
+- Preflight [#40122126070](https://github.com/morozhenko-apps/repoticker/actions/runs/40122126070)
+  for source/test SHA `08ed79e` **failed intentionally**
+  after locked mode was enabled: both `cargo test --locked`
+  and `cargo check --locked` reported
+  `cannot update the lock file ... Cargo.lock because
+  --locked was passed`. The JS and 14 Python release
+  contract tests passed. This is direct evidence that
+  the committed Cargo.lock is incompatible with current
+  resolver state in a fresh Linux CI environment, explaining
+  recurring local uncommitted changes; the exact diff
+  remains to be inspected.
+- **Repair plan:** temporarily run an unlocked full
+  `cargo metadata` command in an isolated GitHub Actions
+  checkout, print sanitized Cargo.lock content in bounded
+  CI log chunks (public dependency metadata only), reconstruct
+  the exact candidate and compare package resolution changes
+  before committing. Do not relax production `--locked`,
+  overwrite the user's local Cargo.lock or force a new
+  unrelated package update. Remove the diagnostic step
+  after recovery and repeat exact-SHA stable Preflight.
+- This is a reproducibility fix to the already tracked
+  workspace lockfile. No manifest/API/persisted setting
+  change is necessary; lockfile resolution changes are
+  reviewed explicitly before commit.

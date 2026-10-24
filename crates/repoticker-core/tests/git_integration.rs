@@ -851,7 +851,6 @@ fn custom_hookspath_pre_push_failure_blocks_safe_sync_without_mutation() {
     assert_eq!(run(&f.local, &["rev-parse", "HEAD"]), local);
 }
 
-
 #[test]
 fn safe_push_uses_explicit_upstream_despite_custom_default_push_settings() {
     let f = Fixture::new();
@@ -876,7 +875,11 @@ fn safe_push_uses_explicit_upstream_despite_custom_default_push_settings() {
     run(&f.local, &["config", "push.followTags", "true"]);
     run(
         &f.local,
-        &["config", "remote.origin.push", "refs/heads/dev:refs/heads/unwanted"],
+        &[
+            "config",
+            "remote.origin.push",
+            "refs/heads/dev:refs/heads/unwanted",
+        ],
     );
 
     let original = run(&origin, &["rev-parse", "refs/heads/dev"]);
@@ -884,7 +887,10 @@ fn safe_push_uses_explicit_upstream_despite_custom_default_push_settings() {
     fs::write(f.local.join("tracked.txt"), "ahead for explicit push\n").unwrap();
     run(&f.local, &["add", "tracked.txt"]);
     run(&f.local, &["commit", "-m", "only configured upstream"]);
-    run(&f.local, &["tag", "-a", "unwanted-tag", "-m", "should not follow"]);
+    run(
+        &f.local,
+        &["tag", "-a", "unwanted-tag", "-m", "should not follow"],
+    );
     let committed = run(&f.local, &["rev-parse", "HEAD"]);
     assert_ne!(committed, original);
 
@@ -920,7 +926,10 @@ fn mirror_mode_cannot_turn_safe_sync_into_an_all_refs_push() {
     let before = run(&remote, &["rev-parse", "refs/heads/dev"]);
     run(&f.local, &["config", "remote.origin.mirror", "true"]);
     let outcome = git::safe_sync(&f.local);
-    assert!(outcome.is_err(), "mirror cannot silently change exact-ref push");
+    assert!(
+        outcome.is_err(),
+        "mirror cannot silently change exact-ref push"
+    );
     assert_eq!(
         run(&remote, &["rev-parse", "refs/heads/dev"]),
         before,

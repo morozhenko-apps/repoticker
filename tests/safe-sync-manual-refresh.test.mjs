@@ -28,7 +28,8 @@ test("native safe sync action is sequential, non-force and rechecked", () => {
   assert.match(native, /git::safe_sync\(&path\)/);
   assert.match(git, /pub fn safe_sync\(/);
   assert.match(git, /pub fn safe_push\(/);
-  const pushBody = git.match(/pub fn safe_push\([\s\S]*?\n\}/)?.[0] ?? "";
+  assert.match(git, /safe_push_with_checkpoint\(repo, \|\| \{\}\)/);
+  const pushBody = git.match(/fn safe_push_with_checkpoint\([\s\S]*?\n\}/)?.[0] ?? "";
   const checks = [...pushBody.matchAll(/safe_push_source_unchanged\(repo, &first, &pin\)/g)]
     .map(match => match.index);
   const probe = pushBody.indexOf('"ls-remote"');

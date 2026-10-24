@@ -1080,9 +1080,7 @@ pub fn safe_pull(repo: &Path) -> Result<OperationOutcome, GitError> {
 
 #[cfg(test)]
 mod concurrent_git_tests {
-    use super::{
-        safe_pull_with_checkpoints, safe_push_with_checkpoint, OperationOutcome,
-    };
+    use super::{safe_pull_with_checkpoints, safe_push_with_checkpoint, OperationOutcome};
     use std::{
         fs,
         path::{Path, PathBuf},
@@ -1267,9 +1265,15 @@ mod concurrent_git_tests {
             .expect_err("external checkout switch must abort Safe pull")
             .0
             .contains("changed during sync"));
-        assert_eq!(git(&checkout.root, &["branch", "--show-current"]), "other-branch");
+        assert_eq!(
+            git(&checkout.root, &["branch", "--show-current"]),
+            "other-branch"
+        );
         assert_eq!(git(&checkout.root, &["rev-parse", "dev"]), checkout.base);
-        assert_eq!(git(&checkout.root, &["rev-parse", "other-branch"]), checkout.base);
+        assert_eq!(
+            git(&checkout.root, &["rev-parse", "other-branch"]),
+            checkout.base
+        );
         checkout.unchanged();
     }
 
@@ -1280,7 +1284,10 @@ mod concurrent_git_tests {
             &checkout.root,
             || {},
             || {
-                git(&checkout.root, &["commit", "--allow-empty", "-m", "external commit"]);
+                git(
+                    &checkout.root,
+                    &["commit", "--allow-empty", "-m", "external commit"],
+                );
             },
         );
         assert!(result
@@ -1300,7 +1307,10 @@ mod concurrent_git_tests {
             &checkout.root,
             || {},
             || {
-                git(&checkout.root, &["branch", "--set-upstream-to", "other/dev", "dev"]);
+                git(
+                    &checkout.root,
+                    &["branch", "--set-upstream-to", "other/dev", "dev"],
+                );
             },
         );
         assert!(result
@@ -1319,7 +1329,10 @@ mod concurrent_git_tests {
         git(&checkout.root, &["init", "--bare", &remote_path]);
         let refspec = format!("{}:refs/heads/dev", checkout.first_tip);
         git(&checkout.root, &["push", &remote_path, &refspec]);
-        git(&checkout.root, &["remote", "set-url", "origin", &remote_path]);
+        git(
+            &checkout.root,
+            &["remote", "set-url", "origin", &remote_path],
+        );
         git(&checkout.root, &["merge", "--ff-only", &checkout.first_tip]);
         git(
             &checkout.root,

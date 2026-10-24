@@ -44,6 +44,7 @@ function fixture(enabled) {
     async ready() { await tick(); },
     setRuns(values) { runs = values; },
     setSetting(value) { setting = value; },
+    setAuthorized(value) { authorized = value; },
     disconnect() {
       authorized = false;
       listeners.get("repoticker-github-auth")?.({ payload: { status: "disconnected" } });
@@ -131,4 +132,20 @@ test("Given WebView alert data When native delivery runs Then permissions and co
   assert.match(settings, /draft\.ciFailureNotifications/);
   assert.match(settings, /ciFailureNotifications: draft\.ciFailureNotifications/);
   assert.match(settings, /ci_notification_permission/);
+});
+
+test("Given credential silently expires When authorization returns Then first recovered read is a silent baseline", async () => {
+  const app = fixture(true);
+  await app.ready();
+  app.setAuthorized(false);
+  await app.refresh(true);
+  app.setRuns([run(22), run(10)]);
+  app.setAuthorized(true);
+  await app.refresh(true);
+  assert.equal(app.calls.filter(x => x.command === "ci_failure_notify").length, 0,
+    "An expired native session must not retain previous notification history");
+  app.setRuns([run(23), run(22), run(10)]);
+  await app.refresh(true);
+  assert.deepEqual(app.calls.filter(x => x.command === "ci_failure_notify")
+    .map(x => x.args.runId), [23]);
 });

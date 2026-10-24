@@ -229,6 +229,7 @@ export function startGithubMonitoring({ invoke, event, onError = () => {},
       if (first) onStage("monitor.auth_ready");
       if (revision !== selectionRevision) return;
       if (!authorized) {
+        ciTracker.reset();
         hasPublishedResult = false;
         lastState = null;
         await publish(false, null, null, revision);

@@ -1102,3 +1102,20 @@ Rollback reverts code/tests changes without modifying stored schema or GitHub au
   Rust format/core/Clippy, JS/release and desktop compilation
   complete successfully for this exact source SHA.
 - Physical KDE/Windows acceptance remains in issue #15.
+
+### P1-SYNC2 verified source test counts
+
+- Exact executable candidate:
+  `693a3b1ee3f4dc786a24f4b186397d1218c9efbb`.
+  [Preflight #40099289302](https://github.com/morozhenko-apps/repoticker/actions/runs/40099289302)
+  reported **SUCCESS** in Rust format/core/integration/Clippy:
+  32 core unit + 22 real Git integration + 3 GitHub origin
+  integration tests = **57 Rust tests passed, 0 failed**.
+- JS/release job also **SUCCESS**: 164 Node tests and
+  10 Python release-contract tests passed, zero failures.
+- Linux desktop compile and aggregate Preflight remained in
+  progress at this timestamp. Only after those exact-SHA
+  jobs pass may 4/4 source validation be reported.
+- Runtime acceptance on KDE and Windows (especially outbound
+  remote mutation, refresh clicks and local timestamps) remains
+  deferred in issue #15. No release or main promotion.

@@ -1690,3 +1690,23 @@ during test setup (fixtures are isolated temporary repos).
   accepted on this SHA; do not report 4/4 until verified.
 - Physical Windows/KDE runtime acceptance remains #15;
   no version bump, signed release or main promotion.
+
+### P1-GIT-RACE2 Clippy correction checkpoint
+
+- Candidate `f9bd77a` passed Rustfmt and real tests:
+  **45 Rust unit + 30 Git integration + 3 GitHub origin =
+  78 Rust passed**, with no failed tests. Its JS/release
+  job also passed **173 Node tests + 12 Python contracts**.
+- The Rust job nevertheless ended **FAILURE** at
+  `cargo clippy --all-targets -- -D warnings`: a new
+  test-only module imported an unused `OperationOutcome`.
+  This was not a runtime or integration-test failure.
+- [`9960789`](https://github.com/morozhenko-apps/repoticker/commit/99607895f235f3330560c1140816d255e5127528)
+  removes only that unused import; no production behavior
+  or safety assertion changes.
+- **Exact current code/test candidate:**
+  `99607895f235f3330560c1140816d255e5127528`.
+  [Preflight #40111915215](https://github.com/morozhenko-apps/repoticker/actions/runs/40111915215)
+  was pending at this checkpoint. All four jobs still
+  require verification on this exact SHA. Physical KDE/
+  Windows acceptance remains pending in issue #15.

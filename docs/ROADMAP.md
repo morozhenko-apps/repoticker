@@ -1,5 +1,32 @@
 # Roadmap and delivery evidence
 
+## Current development handoff (2026-10-24)
+
+This section owns the current handoff; the dated P0–P4 and implementation
+checkpoints below remain chronology. The [version roadmap](VERSION_ROADMAP_TO_1_0.md)
+owns approved allocations and release gates, not a requirement to publish each
+minor. [v0.2 release evidence](RELEASE_0_2_0.md) records the immutable published
+baseline; `dev` has overlapping v0.3/v0.4/v0.5 work, without a new release.
+
+| Owner | Current reading and remaining boundary |
+| --- | --- |
+| [v0.3 development](DEVELOPMENT_0_3_0.md) | Auth/session, bounded monitoring, ETags, repository selection and startup work; retain exact dated evidence and remaining native timing/wallet cases |
+| [v0.4 development](DEVELOPMENT_0_4_0.md) / [Git contract](GIT_PROVIDER.md) | Source now has explicit Fetch plus manual Safe sync (ff-only behind, conservative non-force push ahead); source guards are not blanket race/OS acceptance |
+| [v0.5 development](DEVELOPMENT_0_5_0.md) | Native opt-in CI failure alerts and initial EN/RU card/Settings/About/tooltip projection exist; test-notification owner evidence does not prove real CI-failure delivery; autostart and Windows acceptance remain separate |
+| [L10N-20](localization/LOCALE_CONTEXT_AUDIT.md) / [Mode B plan](testing/MODE_B_PLAN.md) | Full 20-locale context audit is still mandatory before v0.9 Mode B; initial EN/RU slices do not close it or full Mode B |
+| [Release policy](RELEASE.md) / [test strategy](TEST_STRATEGY.md) | Source/CI, published assets, installed KDE/Windows and APT upgrade/lifecycle evidence remain distinct |
+
+Latest recorded source/test correction `55e1d50475f2e219cb9393e99de3fe5ae344d6d4`
+protects provider-owned runner names during locale projection. Its
+[Preflight 40137480766](https://github.com/morozhenko-apps/repoticker/actions/runs/40137480766)
+is SUCCESS. That verifies its scoped source; it does not accept visible KDE/
+Windows text, scroll-free Settings geometry or a new release. Earlier pending
+receipts remain historical. No old architecture question is reopened by cleanup.
+Use the [catalog](README.md) for every retained record. The
+[former root README](#imported-root-readme-before-october-24-housekeeping)
+remains as historical context; no original issue/status evidence was discarded.
+
+
 > **Latest development (2026-10-24):** RepoTicker `dev` now has opt-in native
 > CI failure notifications via direct GitHub REST (OFF by default,
 > deduplicated, silent startup baseline). Exact executable SHA `5a027460`
@@ -1096,3 +1123,223 @@ verification** against Alcotester/KWallet. Issue #4 stays open for a
 fresh user test of automatic authorization, account scope selection,
 running/queued jobs, organization self-hosted runner access and
 partial/denied statuses.
+
+## Repository housekeeping (2026-10-24)
+
+Mode A, documentation and local ignore rules only. The owner requested the next
+repository cleanup and normal working-branch push. Selected baseline `e8d4dc4`
+on clean synchronized `dev`: 164 tracked files, 28 Markdown documents. The local
+branch was clean and 12 upstream commits behind; `git merge --ff-only origin/dev`
+preserved those changes and did not alter Cargo.lock. The earlier audit's dirty
+lockfile is not a current uncommitted change. No stash, reset or pull was used.
+No repository agent file exists; CONTRIBUTING, CI/test guides and owner SSOT
+provide the workflow. No open PR, tracked editor/model preset, disposable raw
+report or empty workflow was found.
+
+Plan and progress:
+
+1. [x] Read current source/roadmap/development/release/test contracts. Different
+   v0.3/v0.4/v0.5 work buckets overlap; v0.2.0 remains the recorded public release,
+   dev already implements monitoring, Safe sync and bounded EN/RU surfaces.
+   Root v0.1-only descriptions and some pending release/architecture summaries
+   are stale. Existing owner decisions, unverified native gates and source
+   receipts must not be replaced by assumed acceptance.
+2. [x] Put one current handoff at the top of this owner, retain all dated bodies,
+   and distinguish version allocations, development chronology, release notes,
+   release preparation, RC feedback and QA inventory/branch maps. Replace root
+   repetition/stale feature claims, retaining its complete old body in this
+   history with only relative-link/heading/Markdown whitespace normalization.
+   Add a compact complete document catalog; keep all existing paths/anchors.
+3. [x] Add missing local editor/assistant ignores. Preserve neutral instructions,
+   source/tests/configuration, Cargo.lock, licensing, security, signing/APT and
+   all runtime/private state. No application behavior, API, architecture,
+   release/version, secrets, provider or other-repository change.
+4. [x] At the final gate run required stable checks once: Rustfmt, locked Rust
+   core tests/Clippy, Node tests, release Python tests and locked Linux desktop
+   compile. Validate links/anchors, original bodies, scoped hashes, catalog,
+   isolated ignore behavior and whitespace. Known-flaky groups remain visible;
+   do not invoke strict whole-suite repeats or physical/runtime acceptance.
+   Commit docs/config separately, normal dev push with remote-SHA confirmation,
+   export preservation map, validation and deterministic rollback patch.
+
+Risks: treating a development bucket as a release, synthetic/native tests as
+physical acceptance, overwriting concurrent work or omitting historical limits.
+No new product, financial/security decision or release authorization is made.
+Rollback: reverse only housekeeping docs/config commits; preserve source and
+prior commits. No credential, package, user repository or data restoration.
+
+
+### Housekeeping validation and recovery receipt
+
+Local acceptance completed 2026-10-24. The complete former root README remains
+in the appendix; all original bodies of eleven prefaced owners and all prior
+heading anchors are retained. The release-notes title is reconciled, with its
+original draft title retained as provenance and a compatibility anchor.
+The catalog indexes all 28 original Markdown files once. No file deleted;
+164 original paths plus the catalog remain. All 151 protected files retain
+physical SHA-256, including Cargo.lock, source/tests/CI/config, Mode B plan,
+inventory and branch map, localization matrix, security/license/notices.
+
+All required local STABLE commands ran once and exited 0:
+
+- `cargo fmt --all --check`.
+- `cargo test --locked -p repoticker-core`: 78 passed, 0 failed, 0 ignored.
+- `cargo clippy --locked -p repoticker-core --all-targets -- -D warnings`.
+- `node --test tests/*.test.mjs`: 219 passed, 0 failed/skipped.
+- `python3 -m unittest discover -s tests -p 'test_release_*.py' -v`: 14 passed,
+  no skips; includes disposable GPG/subkey/APT integration fixtures.
+- `cargo check --locked -p repoticker-desktop`: Linux compile PASS, no compiler
+  warning lines. Rust 1.99.0, Node 24.22.1; platform dependencies available.
+
+Compilation used a separate task-owned CARGO_TARGET_DIR, removed after all
+commands exited. No user build/runtime directory was cleaned or archived.
+External cleanup validator: exit 0, 448 static/preservation/catalog/ignore
+checks, 163 local Markdown links, zero broken. `git diff --check e8d4dc4`:
+exit 0. No source/test/assertion change or failing suite was hidden. No separate
+known-flaky suite is configured; the manual ten-pass strict workflow was not
+invoked and no new full Mode B completeness claim is made.
+
+Read-only GitHub observations confirm published v0.2.0 and successful corrected
+locale-source Preflight 40137480766 at `55e1d504`. That prior run is distinct
+from final cleanup CI; its result does not imply visible KDE/Windows acceptance.
+No package was launched/installed, no user checkout enrolled/synchronized, no
+wallet/production key/runtime/ignored private state opened or changed, and no
+provider, version/tag/release/main or other repository changed.
+
+Continue product work from this handoff and the versioned source/acceptance
+owners. Normal dev publication must preserve concurrent changes; verify local
+HEAD against `git ls-remote origin refs/heads/dev`. The audit workspace exports
+final push/CI evidence, full command output, catalog, preservation map and exact
+rollback patch in `outputs/REPOTICKER_CLEANUP*`,
+`outputs/REPOTICKER_DOCUMENT_CATALOG.json` and
+`outputs/REPOTICKER_PRESERVATION_MAP.json`. Reverse only scoped housekeeping
+commits for rollback; no data, credential, package or source restoration.
+All owned local commands completed; no app, watcher or server was launched.
+
+
+### Concurrent-development integration plan (2026-10-24)
+
+The pre-publish fetch found six upstream commits after `e8d4dc4`, through
+`b617899`, implementing/fixing native tray locale presentation plus one Node
+source contract and appended v0.5 evidence. These are another author's work,
+not cleanup changes. Preserve them without force/reset or replaying their
+commits. The prior local acceptance receipt above belongs to the first base.
+
+1. Save the initial baseline, commands and cleanup commit recovery bundle in
+   the external audit workspace. Rebase only our unpublished docs/ignore
+   commits onto the observed upstream head, retaining every new source byte
+   and appended evidence. No production conflict resolution by guesswork.
+2. Re-run affected Rustfmt, Node tests and Linux desktop compile; reuse prior
+   core/Clippy/release checks only after exact relevant source/config/lock
+   identity verification. The temporary PR also runs the complete Preflight.
+3. Push the finished cleanup to a short-lived remote branch and open one PR
+   targeting dev, keeping other active dev work undisturbed. After exact-head
+   stable CI and mergeability checks pass, merge normally, verify reachability,
+   update local dev by fast-forward and delete the temporary branch.
+4. Validate the final docs/ignore diff against its upstream integration base,
+   keep initial and integrated preservation evidence, and export the final
+   PR/merge/push receipts. No main/tag/release/provider change.
+
+Rollback remains scoped docs/config reverts; never revert upstream tray work.
+
+
+### Integrated-source local acceptance (2026-10-24)
+
+The five owned cleanup commits were replayed cleanly onto upstream `b617899`;
+all new native tray code and 98 appended v0.5 evidence lines are retained.
+Initial and integrated baselines, command output and a pre-integration recovery
+bundle are preserved in the audit workspace. Integrated baseline: 165 tracked
+files, 28 Markdown; cleanup adds only the catalog. All 152 non-cleanup files,
+including native tray work and Cargo.lock, match upstream bytes.
+
+Affected final gates passed: Rustfmt exit 0, Node 221/221 with zero failed or
+skipped cases, and locked Linux desktop cargo check exit 0. Core 78/78, Clippy
+with warnings denied and Python release 14/14 remain valid from the first run:
+all their source/config/lock/test inputs were verified unchanged. No suite was
+weakened or repeated without an executable-source reason. Task-owned compiler
+output was removed after completion. Full PR Preflight remains the publication
+gate; its actual exact-head status and merge/remote/branch-cleanup receipts are
+exported externally, not inferred here. Earlier counts retain their baseline.
+
+
+### Upstream keyboard fixture failure and corrected integration gate
+
+PR Preflight 40139966526 reached the concurrent Settings keyboard source from
+dev and failed `Tab leaves popup and mouse outside closes without stealing
+focus` at test line 509: the first click left `hidden=true`, expected false.
+The same focused test failed on an unmodified archive of upstream `a1b69c7`,
+without any cleanup changes. Rust source gate passed; Python steps were skipped
+behind the failed Node gate, not reported as passing in that run.
+
+Cause: the lightweight DOM fixture initialized every node `hidden=false`,
+while production markup initially hides the language list. The production
+click toggled that fake-open list closed. Upstream `0d053fc` mirrors the real
+initial hidden state and adds an explicit first-click assertion;
+the Tab/no-focus-theft assertions remain unchanged. This upstream test fix was
+integrated normally with all keyboard/tray commits, without editing production
+or weakening a test in this cleanup. A separate full affected Node gate now
+passes (exact output/count in audit evidence). Unchanged Rust/core/Clippy/Python
+inputs retain prior evidence; new exact-head PR Preflight must pass before merge.
+No failed job, skipped step or upstream reproduction is hidden.
+
+---
+
+## Imported root README (before October 24 housekeeping)
+
+The complete former root text is retained below. Its v0.1-only implemented and
+future-feature statements are historical, not current dev capability claims.
+Only relative links, heading depth and Markdown whitespace were normalized.
+
+## RepoTicker
+
+**An open-source local Git companion for the system tray, with GitHub CI monitoring on the roadmap.**
+
+RepoTicker is a lightweight Tauri 2 + Rust desktop app for developers managing multiple Git checkouts. It is local-first: no proprietary account or central service is required for the features available today.
+
+### Implemented in v0.1.0 source
+
+- Compact tray card with Fetch, Safe pull, Repos and Hide; independent Settings and About windows. On Linux the tray uses StatusNotifierItem (SNI), and KDE Wayland uses GTK Layer Shell for the anchored popup.
+- Explicit enrollment of local directories, shallow discovery of their direct-child Git repositories, and per-repository inspection of branch, upstream, ahead/behind and dirty state.
+- Manual Fetch of enrolled repositories, with up to four independent fetches in parallel, failure isolation and progress events. Fetch updates remote-tracking refs, not checked-out files.
+- Manual Safe pull, operating **only on previously fetched refs**. Eligible clean upstream-tracking branches are advanced using Git fast-forward only; dirty, detached, ahead/diverged, unfinished or no-upstream branches are skipped. No automatic stash, rebase, reset or force operation.
+- Persistent local settings, including enrolled roots, selected language preference and Linux popup anchor. Choosing a language does not yet translate the full interface.
+- Desktop icon assets, package configurations and signed-APT release automation.
+
+GitHub Actions runs/jobs, self-hosted runner occupancy, quota/billing data, authenticated polling, notifications and webhook relays **are not connected**. Their UI indicators remain unavailable rather than showing invented values. Automatic background fetch/pull is not implemented.
+
+### Platform and release evidence
+
+- **Linux:** local Ubuntu KDE Wayland DEB install/uninstall and AppImage startup were exercised during v0.1.0 acceptance. The popup still jitters when dragged; tracked in [Issue #2](https://github.com/morozhenko-apps/repoticker/issues/2). Other Linux desktop environments are not yet accepted.
+- **Windows:** the Windows x64 NSIS installer was built and published by the tagged release workflow. Physical installation, tray and runtime acceptance on Windows are not yet verified.
+- **macOS:** not currently shipped; notarization and signing prerequisites are outstanding.
+- **Publishing:** the tagged `v0.1.0` pipeline completed successfully, uploaded signed APT metadata and release assets to R2, verified public readback and created a public GitHub Release. Independent end-user APT install/upgrade testing is still pending. See [release instructions](../docs/RELEASE.md).
+
+The first **published** release is [`v0.1.0`](https://github.com/morozhenko-apps/repoticker/releases/tag/v0.1.0), from immutable source commit `21f3b61d9774b931b57a4e3c83f61b2bcf2bb0ee`. [Tagged workflow #39319748009](https://github.com/morozhenko-apps/repoticker/actions/runs/39319748009) completed successfully on attempt 3 (2026-10-19).
+
+### Build and test
+
+Install Rust, Node.js 24, Git and the Tauri 2 native dependencies for your OS. On Ubuntu Linux the Tauri/WebKit development packages and `libgtk-layer-shell-dev` are required.
+
+~~~sh
+cargo fmt --all --check
+cargo test -p repoticker-core
+cargo clippy -p repoticker-core --all-targets -- -D warnings
+node --test tests/*.test.mjs
+python3 -m unittest discover -s tests -p 'test_release_*.py' -v
+cargo check -p repoticker-desktop
+cargo run -p repoticker-desktop
+~~~
+
+The signed-APT integration test requires `apt-utils`, `dpkg-dev`, `gnupg` and `gpgv`. CI installs those tools. `cargo run` does not install an OS package or register autostart.
+
+On KDE, left-click the SNI tray icon to toggle the card; right-click for Open, Settings, Fetch all, Safe pull all, About or Quit. Enroll a directory such as `~/Documents/GitHub` in Settings and run Fetch before Safe pull.
+
+### Documentation
+
+- [Approved v0.1.0–v1.0.0 roadmap](../docs/VERSION_ROADMAP_TO_1_0.md), including mandatory Mode B testing/coverage and the v0.9 release-candidate gate; this is a plan, not a published v1.0 binary.
+
+- [Product contract](../docs/PRODUCT.md) and [architecture](../docs/ARCHITECTURE.md)
+- [Current Git behavior](../docs/GIT_PROVIDER.md), [roadmap](../docs/ROADMAP.md) and [test strategy](../docs/TEST_STRATEGY.md)
+- [CI](../docs/CI.md), [releases/APT signing](../docs/RELEASE.md), [security](../docs/SECURITY.md) and [planned webhook relay](../docs/RELAY.md)
+
+Apache License 2.0; see [LICENSE](../LICENSE), [NOTICE](../NOTICE) and [CONTRIBUTING.md](../CONTRIBUTING.md). Bug reports: [GitHub Issues](https://github.com/morozhenko-apps/repoticker/issues).

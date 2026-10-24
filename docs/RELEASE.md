@@ -1,5 +1,17 @@
 # RepoTicker release, license and signing
 
+## Published baseline and release-policy role
+
+[v0.2.0 is published](https://github.com/morozhenko-apps/repoticker/releases/tag/v0.2.0);
+its [readiness/delivery record](RELEASE_0_2_0.md) owns exact source and release
+receipts. The older "next candidate" notice below is a prepublication checkpoint,
+not an active instruction to republish v0.2 or rewrite immutable assets.
+Current development and remaining native acceptance live in the
+[handoff](ROADMAP.md#current-development-handoff-2026-10-24). Signing/APT,
+protected approval, license, exact-main/tag and rollback requirements below
+remain unchanged; no credentials, package, tag or provider change occurs here.
+
+
 > Version goals and the **mandatory Mode B gate before 1.0** are recorded in [the approved version roadmap](VERSION_ROADMAP_TO_1_0.md). This is planning documentation; no new tag or signed package was created by publishing the roadmap.
 
 > **Next candidate:** v0.2.0 is being prepared on `dev` after KDE

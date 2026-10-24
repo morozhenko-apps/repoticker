@@ -34,3 +34,28 @@ Thumbs.db
 # Python release test artifacts
 __pycache__/
 *.py[cod]
+
+# Local editor and assistant state; neutral repository guides stay versioned
+.vs/
+*.code-workspace
+.cursor/
+.claude/
+.codex/
+.gemini/
+.aider*
+.continue/
+.windsurf/
+.github/agents/
+.github/instructions/
+.github/copilot-instructions.md
+.cursorrules
+.cursorignore
+.windsurfrules
+CLAUDE.md
+GEMINI.md
+
+# Local relay development credentials/provider state
+.wrangler/
+.dev.vars
+.dev.vars.*
+!.dev.vars.example

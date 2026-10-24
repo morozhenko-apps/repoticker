@@ -1,5 +1,16 @@
 # RepoTicker v0.3.0 — P2 monitoring reliability and startup
 
+## Record role and continuation
+
+This is the v0.3 work-bucket chronology, not the sole current development queue.
+Keep each slice's source, failed/passing evidence, residual risk and rollback.
+The [current handoff](ROADMAP.md#current-development-handoff-2026-10-24) also
+links v0.4/v0.5 work on dev. Older "planned"/"pending"/"not implemented"
+statements apply to their checkpoint; read superseding source receipts before
+resuming. Startup, native credential and physical-platform gaps require their
+own evidence. No minor release, closure or new policy is implied by cleanup.
+
+
 Status: **Mode A implementation started**, 2026-10-22.
 Development branch: `dev`. Published stable-from-this-series baseline:
 [v0.2.0](https://github.com/morozhenko-apps/repoticker/releases/tag/v0.2.0)

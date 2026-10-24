@@ -645,6 +645,10 @@ fn safe_push_refuses_remotely_advanced_tip_before_a_network_write() {
     let f = Fixture::new();
     f.push_more();
     git::fetch(&f.local).expect("prepare current upstream");
+    assert_eq!(
+        git::safe_pull(&f.local).expect("start from fetched upstream"),
+        git::OperationOutcome::Updated(1)
+    );
     fs::write(f.local.join("tracked.txt"), "local ahead\n").unwrap();
     run(&f.local, &["add", "tracked.txt"]);
     run(&f.local, &["commit", "-m", "ahead from fetched upstream"]);

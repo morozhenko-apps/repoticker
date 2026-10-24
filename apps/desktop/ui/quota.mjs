@@ -1,4 +1,5 @@
 import { buildHoverDetails, isHoverKind } from "./quota-details.mjs";
+import { mergeMonitorPresentation } from "./monitor-presentation.mjs";
 import { usageHeight } from "./quota-size.mjs";
 import { createBillingCache } from "./github-billing.mjs";
 
@@ -140,6 +141,30 @@ async function refresh() {
   }
 }
 
+// A manual Runners/Tasks refresh changes only the native monitor cache.
+// The popup must not trigger full local Git inspection to display it.
+async function refreshMonitorOnly() {
+  const id = ++refreshId;
+  try {
+    const remote = await invoke("github_monitor_snapshot");
+    if (id !== refreshId) return;
+    currentSnapshot = mergeMonitorPresentation(currentSnapshot || {
+      github_monitor_org: null, connected: false,
+      runner_state: null, monitor_message: null,
+    }, remote);
+    const scope = currentSnapshot.connected === true
+      ? selectedOrganization(currentSnapshot) : null;
+    if (billingScope !== scope || !currentSnapshot.connected) {
+      invalidateBilling();
+      billingScope = scope;
+    }
+    paintSnapshot(currentSnapshot);
+    scheduleBilling(currentSnapshot);
+  } catch {
+    if (id === refreshId) statusUnavailable("Cannot read refreshed GitHub status.");
+  }
+}
+
 function subscribe(eventName, handler = refresh) {
   const listen = window.__TAURI__?.event?.listen;
   if (typeof listen !== "function") {
@@ -176,7 +201,7 @@ async function onUsageShown() {
   catch { /* Failed reconciliation is not fabricated as billing data. */ }
 }
 subscribe("repoticker-usage-shown", onUsageShown);
-subscribe("repoticker-monitor-updated");
+subscribe("repoticker-monitor-updated", refreshMonitorOnly);
 subscribe("repoticker-github-auth", () => { invalidateBilling(); void refresh(); });
 subscribe("repoticker-github-scope-changed", () => { invalidateBilling(); void refresh(); });
 void refresh();

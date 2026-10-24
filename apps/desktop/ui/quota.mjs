@@ -120,21 +120,31 @@ function scheduleBilling(snapshot) {
 async function refresh() {
   const id = ++refreshId;
   try {
-    // A detached GTK Wayland WebView can miss a one-shot shown event.
-    // Read the native selected view after the scan, not before, so a fast
-    // hover transition during a slow Git scan cannot restore stale content.
-    const snapshot = await invoke("get_snapshot");
+    // The detached popup needs only the GitHub monitor cache and
+    // the persisted account selection, not a full local Git scan.
+    const [remote, configuredOrg] = await Promise.all([
+      invoke("github_monitor_snapshot"), invoke("get_monitor_scope")
+    ]);
+    if (configuredOrg !== null && typeof configuredOrg !== "string")
+      throw Error("Invalid monitored organization.");
+    // The native hover choice is authoritative; read it last so a
+    // transition during either lightweight IPC read is not undone.
     const nativeKind = await invoke("get_usage_popup_kind");
     if (id !== refreshId) return;
     if (isHoverKind(nativeKind)) activeKind = nativeKind;
-    currentSnapshot = snapshot;
-    const scope = snapshot.connected === true ? selectedOrganization(snapshot) : null;
-    if (billingScope !== scope || !snapshot.connected) {
+    currentSnapshot = mergeMonitorPresentation(currentSnapshot || {
+      github_monitor_org: null, connected: false,
+      runner_state: null, monitor_message: null,
+    }, remote);
+    currentSnapshot.github_monitor_org = configuredOrg;
+    const scope = currentSnapshot.connected === true
+      ? selectedOrganization(currentSnapshot) : null;
+    if (billingScope !== scope || !currentSnapshot.connected) {
       invalidateBilling();
       billingScope = scope;
     }
-    paintSnapshot(snapshot);
-    scheduleBilling(snapshot);
+    paintSnapshot(currentSnapshot);
+    scheduleBilling(currentSnapshot);
   } catch {
     if (id === refreshId)
       statusUnavailable("Cannot read GitHub status. Reopen the balloon to retry.");

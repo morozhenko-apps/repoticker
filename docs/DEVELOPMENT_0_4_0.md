@@ -1028,10 +1028,44 @@ Keep Fetch a separate, explicitly cancellable operation. Replace the visible Saf
 
 ### Test and acceptance
 
-1. [ ] Real disposable bare Git tests for clean ahead push, behind ff-only pull, diverged, dirty, detached, no upstream, ambiguous remotes, rejected push, custom pushurl and pre-push hook. No production remote tests.
-2. [ ] Native + JS source contracts for Safe sync action eligibility/progress and unchanged Fetch cancellation.
-3. [ ] Deterministic targeted collector/monitor tests for isolated REST requests, preservation of other metric, cooldown, overlap and disconnect; local timestamp tests under non-UTC zone.
+1. [x] Real disposable bare Git tests for clean ahead push, behind ff-only pull, diverged, dirty, detached, no upstream, ambiguous remotes, rejected push, custom pushurl and pre-push hook. No production remote tests.
+2. [x] Native + JS source contracts for Safe sync action eligibility/progress and unchanged Fetch cancellation.
+3. [x] Deterministic targeted collector/monitor tests for isolated REST requests, preservation of other metric, cooldown, overlap and disconnect; local timestamp tests under non-UTC zone.
 4. [ ] One exact-SHA stable Preflight: Rustfmt, Rust core/integration/Clippy, JS/release and Linux desktop compile; separate documentation-only evidence.
 5. [ ] KDE/Windows physical acceptance of push safety, time and manual refresh in issue #15.
 
 Rollback reverts code/tests changes without modifying stored schema or GitHub auth. Safe sync sends a Git network write only after explicit user click; never test against a production remote.
+
+### P1-SYNC2 implementation checkpoint
+
+- `9f74c3e` added explicit conservative `safe_push` and
+  `safe_sync` to the Git core, with an immutable commit OID,
+  same-named configured upstream, matching one fetch/push URL,
+  repeat eligibility/ref checks, and ordinary non-force push.
+- `79d105a` reuses the existing Safe pull button/row menu for
+  Safe sync; `safe_pull` remains a compatibility entrypoint.
+  Fetch remains separate, cancellable and unchanged.
+- `c88ddd7` added targeted runner/jobs collection, separate
+  `checkedAtRunners`/`checkedAtTasks` clocks and local-time
+  hover formatting. `fa498c4` wired independent clicks.
+- `edabc1b`, `cdea1e2`, `7f98cbc` added disposable bare-Git
+  push tests, status/UI contracts, scoped GitHub REST tests,
+  partial-failure and cooldown tests.
+- `48dae02` corrected a numeric-return defect in the new
+  Safe sync counter and refined the push-command source
+  assertion; `2283c25` applied exact Rustfmt hunks.
+- `6030cf6` repaired an incorrect test assumption: a normal
+  successful Git push updates its local remote-tracking ref.
+  `f3f3dc8` corrected source tests for Rustfmt multiline
+  push arguments; `c4ccd35` repaired Git test cleanup of
+  temporary pushurl via `git config --unset-all`.
+- `e9d1e3f` changed live status tooltip updates to use
+  `github_monitor_snapshot` (no local Git rescan);
+  `4a4df079dba9e33c5050fb7b24663d523509e6d6` protects
+  explicit null metric check times across partial refreshes.
+- Real tests must pass from this exact code/test SHA. Earlier
+  candidates were superseded/cancelled after focused test fixes;
+  do not claim full source acceptance from those runs.
+- [Preflight #40098694533](https://github.com/morozhenko-apps/repoticker/actions/runs/40098694533)
+  was pending when this checkpoint was recorded. Physical
+  KDE/Windows push and metric UX acceptance remains in issue #15.

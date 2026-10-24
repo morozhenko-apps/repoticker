@@ -386,3 +386,35 @@ completed successfully for exact executable SHA `fbae51c970632faaea4ab6b1d35f3a2
   reports desktop permission granted at API level; actual OS delivery
   may be suppressed by Do Not Disturb and must not be assumed from CI.
   No autostart, main promotion, release or version change.
+
+### A2.3 native delivery acceptance checklist (not yet physically executed)
+
+On an installed Linux KDE Wayland or Windows build, with a normal
+GitHub Device Flow authorization and a selected monitor account:
+
+1. Confirm the notification checkbox starts OFF for a legacy config,
+   survives OK + full restart when enabled, and remains unchanged on Cancel.
+2. Enable it and open the card: the first completed-run read must
+   establish a silent baseline, including pre-existing failed runs.
+3. Complete a new failed Actions workflow in an authorized monitored
+   repository. After the next bounded scheduled refresh, verify precisely
+   one system notification showing the repository and run ID. Further
+   refreshes and duplicate provider reads must not repeat it.
+4. Verify second failed attempts are distinct, but corrected/stale
+   success data must not rearm a previously notified attempt.
+5. Disable alerts, change selected repositories, disconnect GitHub and
+   simulate API offline / 401 / 403 / 429. No OS notification must be
+   emitted for unauthorized, outside-scope or unavailable data.
+   Re-enabling or reauthorizing must establish a fresh silent baseline.
+6. Check OS Do Not Disturb and a missing notification daemon/permission
+   failure separately: a successful Rust compile or permission-state
+   "granted" response does NOT guarantee visible OS delivery.
+7. Confirm no Git mutation, Worker/relay call, autostart entry,
+   Javascript-exposed token or arbitrary notification text is created
+   by receiving CI events. Record exact installed package, DE/OS,
+   notification daemon and run IDs in the acceptance report.
+
+The plugin supports Linux and Windows desktops, but **physical Windows
+installer/runtime and KDE display delivery are not accepted by source
+checks**. Keep v0.2.0 main/release immutable until an explicit release gate.
+

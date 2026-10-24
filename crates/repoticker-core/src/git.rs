@@ -202,16 +202,126 @@ pub enum OperationOutcome {
     Skipped(SyncDecision),
 }
 
+fn drain_git_pipe<R: Read + Send + 'static>(
+    mut reader: R,
+) -> mpsc::Receiver<io::Result<Vec<u8>>> {
+    let (sender, receiver) = mpsc::sync_channel(1);
+    thread::spawn(move || {
+        let mut bytes = Vec::new();
+        let result = reader.read_to_end(&mut bytes).map(|_| bytes);
+        let _ = sender.send(result);
+    });
+    receiver
+}
+
+// The caller retains ownership of the Child handle. Both pipes are drained
+// concurrently to avoid Git blocking when output exceeds the pipe capacity.
+fn wait_owned_child(
+    mut child: Child,
+    timeout: Duration,
+    timeout_message: &str,
+) -> Result<Output, GitError> {
+    let pid = child.id();
+    let stdout = child.stdout.take()
+        .ok_or_else(|| GitError("Git stdout pipe unavailable".into()))?;
+    let stderr = child.stderr.take()
+        .ok_or_else(|| GitError("Git stderr pipe unavailable".into()))?;
+    let stdout_rx = drain_git_pipe(stdout);
+    let stderr_rx = drain_git_pipe(stderr);
+    let started = Instant::now();
+    let status = loop {
+        match child.try_wait() {
+            Ok(Some(status)) => break status,
+            Ok(None) => {}
+            Err(err) => return Err(GitError(format!("Cannot wait for Git: {err}"))),
+        }
+        if started.elapsed() >= timeout {
+            // Only this child was launched in its private Unix process
+            // group or by its tracked exact Windows child PID.
+            let termination = terminate_fetch_group(pid);
+            let reap_start = Instant::now();
+            let mut reaped = false;
+            while reap_start.elapsed() < PROCESS_REAP_GRACE {
+                match child.try_wait() {
+                    Ok(Some(_)) => {
+                        reaped = true;
+                        break;
+                    }
+                    Ok(None) => thread::sleep(POLL_INTERVAL),
+                    Err(err) => {
+                        return Err(GitError(format!(
+                            "{timeout_message}; cannot reap owned child: {err}"
+                        )));
+                    }
+                }
+            }
+            if let Err(err) = termination {
+                return Err(GitError(format!(
+                    "{timeout_message}; process-tree termination failed: {err}"
+                )));
+            }
+            if !reaped {
+                return Err(GitError(format!(
+                    "{timeout_message}; owned child did not exit after termination"
+                )));
+            }
+            return Err(GitError(timeout_message.into()));
+        }
+        thread::sleep(POLL_INTERVAL);
+    };
+
+    // A helper can outlive Git while retaining a pipe. Bound collection
+    // after Git exits; never block the GUI indefinitely.
+    let stdout = stdout_rx
+        .recv_timeout(PROCESS_REAP_GRACE)
+        .map_err(|_| GitError("Git stdout held open by a descendant; outcome unknown".into()))?
+        .map_err(|err| GitError(format!("Cannot read Git stdout: {err}")))?;
+    let stderr = stderr_rx
+        .recv_timeout(PROCESS_REAP_GRACE)
+        .map_err(|_| GitError("Git stderr held open by a descendant; outcome unknown".into()))?
+        .map_err(|err| GitError(format!("Cannot read Git stderr: {err}")))?;
+    Ok(Output { status, stdout, stderr })
+}
+
+fn run_bounded_command(
+    command: &mut Command,
+    timeout: Duration,
+    timeout_message: &str,
+) -> Result<Output, GitError> {
+    command.stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::piped());
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
+        command.process_group(0);
+    }
+    let child = command.spawn()
+        .map_err(|err| GitError(format!("Failed to launch git: {err}")))?;
+    wait_owned_child(child, timeout, timeout_message)
+}
+
 fn invoke(repo: &Path, args: &[&str]) -> Result<Output, GitError> {
-    Command::new("git")
+    let mut command = Command::new("git");
+    command
         .arg("-C")
         .arg(repo)
         .args(args)
-        .env("GIT_TERMINAL_PROMPT", "0")
-        .output()
-        .map_err(|err| GitError(format!("Failed to launch git: {err}")))
+        .env("GIT_TERMINAL_PROMPT", "0");
+    match args.first().copied() {
+        // Local worktree/index mutations are never force-killed.
+        Some("merge") => command.output()
+            .map_err(|err| GitError(format!("Failed to launch git: {err}"))),
+        Some("push") => run_bounded_command(
+            &mut command, PUSH_GIT_TIMEOUT, PUSH_OUTCOME_UNKNOWN),
+        Some("ls-remote") => run_bounded_command(
+            &mut command, REMOTE_PROBE_TIMEOUT,
+            "Git remote probe timed out; no push attempted"),
+        Some("fetch") => run_bounded_command(
+            &mut command, FETCH_GIT_TIMEOUT,
+            "Git fetch timed out; remote-tracking refs may be partially updated"),
+        _ => run_bounded_command(
+            &mut command, LOCAL_GIT_TIMEOUT, "Local Git command timed out"),
+    }
 }
-
 fn stderr(output: &Output) -> String {
     let text = String::from_utf8_lossy(&output.stderr);
     let text = text.trim();

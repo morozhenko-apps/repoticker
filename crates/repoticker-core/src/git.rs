@@ -653,7 +653,6 @@ fn safe_pull_with_checkpoints(
     }
 }
 
-
 /// Push only a strictly-ahead, clean, fully checked branch to its
 /// same-named configured upstream, without force, tags or default refspecs.
 /// Both tips and remote routing are checked again before the network write.
@@ -665,55 +664,101 @@ pub fn safe_push(repo: &Path) -> Result<OperationOutcome, GitError> {
             other => Ok(OperationOutcome::Skipped(other)),
         };
     }
-    let branch = first.branch.as_deref().ok_or_else(|| GitError("No local branch".into()))?;
+    let branch = first
+        .branch
+        .as_deref()
+        .ok_or_else(|| GitError("No local branch".into()))?;
     // A Git branch is a ref component; allow slash hierarchy but never an
     // argument flag, missing/refspec separator or unsafe ref punctuation.
-    if branch.starts_with('-') || branch.contains(':') || branch.contains('^') ||
-        branch.contains('~') || branch.contains('*') || branch.contains('?') ||
-        branch.contains('[') || branch.contains('\\') || branch.contains(' ') ||
-        branch.contains("..") || branch.contains("@{") || branch.ends_with(".lock")
+    if branch.starts_with('-')
+        || branch.contains(':')
+        || branch.contains('^')
+        || branch.contains('~')
+        || branch.contains('*')
+        || branch.contains('?')
+        || branch.contains('[')
+        || branch.contains('\\')
+        || branch.contains(' ')
+        || branch.contains("..")
+        || branch.contains("@{")
+        || branch.ends_with(".lock")
     {
         return Err(GitError("Unsafe branch name for automatic push".into()));
     }
-    let config_remote = required(repo, &["config", "--get", &format!("branch.{branch}.remote")])?;
-    if config_remote.is_empty() || config_remote == "." ||
-        !config_remote.bytes().all(|c| c.is_ascii_alphanumeric() || b"_.-".contains(&c))
+    let config_remote = required(
+        repo,
+        &["config", "--get", &format!("branch.{branch}.remote")],
+    )?;
+    if config_remote.is_empty()
+        || config_remote == "."
+        || !config_remote
+            .bytes()
+            .all(|c| c.is_ascii_alphanumeric() || b"_.-".contains(&c))
     {
         return Err(GitError("Ambiguous upstream remote for Safe sync".into()));
     }
-    let merge_ref = required(repo, &["config", "--get", &format!("branch.{branch}.merge")])?;
+    let merge_ref = required(
+        repo,
+        &["config", "--get", &format!("branch.{branch}.merge")],
+    )?;
     let branch_ref = format!("refs/heads/{branch}");
-    if merge_ref != branch_ref ||
-        first.upstream.as_deref() != Some(format!("{config_remote}/{branch}").as_str())
+    if merge_ref != branch_ref
+        || first.upstream.as_deref() != Some(format!("{config_remote}/{branch}").as_str())
     {
-        return Err(GitError("Upstream is not the same-named remote branch".into()));
+        return Err(GitError(
+            "Upstream is not the same-named remote branch".into(),
+        ));
     }
     let fetch_urls = required(repo, &["remote", "get-url", "--all", &config_remote])?;
-    let push_urls = required(repo, &["remote", "get-url", "--push", "--all", &config_remote])?;
-    if fetch_urls.is_empty() || fetch_urls.contains('\n') ||
-        fetch_urls != push_urls
-    {
-        return Err(GitError("Safe sync requires one matching fetch/push remote URL".into()));
+    let push_urls = required(
+        repo,
+        &["remote", "get-url", "--push", "--all", &config_remote],
+    )?;
+    if fetch_urls.is_empty() || fetch_urls.contains('\n') || fetch_urls != push_urls {
+        return Err(GitError(
+            "Safe sync requires one matching fetch/push remote URL".into(),
+        ));
     }
     let head = commit_oid(repo, "HEAD^{commit}")?;
     let tip = commit_oid(repo, "@{upstream}^{commit}")?;
 
     let second = inspect(repo)?;
-    if second.decision != SyncDecision::LocalAhead ||
-        second.branch != first.branch || second.upstream != first.upstream ||
-        commit_oid(repo, "HEAD^{commit}")? != head ||
-        commit_oid(repo, "@{upstream}^{commit}")? != tip ||
-        required(repo, &["config", "--get", &format!("branch.{branch}.remote")])? != config_remote ||
-        required(repo, &["config", "--get", &format!("branch.{branch}.merge")])? != branch_ref ||
-        required(repo, &["remote", "get-url", "--all", &config_remote])? != fetch_urls ||
-        required(repo, &["remote", "get-url", "--push", "--all", &config_remote])? != push_urls
+    if second.decision != SyncDecision::LocalAhead
+        || second.branch != first.branch
+        || second.upstream != first.upstream
+        || commit_oid(repo, "HEAD^{commit}")? != head
+        || commit_oid(repo, "@{upstream}^{commit}")? != tip
+        || required(
+            repo,
+            &["config", "--get", &format!("branch.{branch}.remote")],
+        )? != config_remote
+        || required(
+            repo,
+            &["config", "--get", &format!("branch.{branch}.merge")],
+        )? != branch_ref
+        || required(repo, &["remote", "get-url", "--all", &config_remote])? != fetch_urls
+        || required(
+            repo,
+            &["remote", "get-url", "--push", "--all", &config_remote],
+        )? != push_urls
     {
-        return Err(GitError("Repository or upstream changed during Safe sync".into()));
+        return Err(GitError(
+            "Repository or upstream changed during Safe sync".into(),
+        ));
     }
     // Git's ordinary non-force push rejects remote non-fast-forwards.
     // A commit OID avoids pushing a moving local branch expression.
     let refspec = format!("{head}:{branch_ref}");
-    required(repo, &["push", "--porcelain", "--no-follow-tags", &config_remote, &refspec])?;
+    required(
+        repo,
+        &[
+            "push",
+            "--porcelain",
+            "--no-follow-tags",
+            &config_remote,
+            &refspec,
+        ],
+    )?;
     Ok(OperationOutcome::Pushed(first.ahead))
 }
 

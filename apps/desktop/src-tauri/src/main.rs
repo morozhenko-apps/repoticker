@@ -257,6 +257,11 @@ fn git_action_result(
             status: "updated".into(),
             message: format!("Fast-forwarded by {commits} commits"),
         },
+        Ok(OperationOutcome::Pushed(commits)) => ActionResult {
+            path,
+            status: "pushed".into(),
+            message: format!("Pushed {commits} commits"),
+        },
         Ok(OperationOutcome::AlreadyCurrent) => ActionResult {
             path,
             status: "current".into(),
@@ -285,7 +290,7 @@ fn execute(
     operation: &str,
     only_path: Option<&str>,
 ) -> Result<Vec<ActionResult>, String> {
-    if operation != "fetch" && operation != "safe_pull" {
+    if operation != "fetch" && operation != "safe_pull" && operation != "safe_sync" {
         return Err("Unknown Git operation".into());
     }
     let state = app.state::<OperationLock>();
@@ -328,14 +333,15 @@ fn execute(
         .into_iter()
         .filter(|path| only_path.is_none_or(|requested| path.to_string_lossy() == requested))
         .filter(|path| {
-            if operation != "safe_pull" {
+            if operation == "fetch" {
                 return true;
             }
             // Only branches eligible for fast-forward are attempted. Inspect
             // again inside safe_pull to fail closed if another agent changed it.
             matches!(
                 git::inspect(path),
-                Ok(status) if matches!(status.decision, SyncDecision::FastForward { .. })
+                Ok(status) if matches!(status.decision, SyncDecision::FastForward { .. }) ||
+                    (operation == "safe_sync" && status.decision == SyncDecision::LocalAhead)
             )
         })
         .collect();

@@ -911,11 +911,11 @@ persistent repository identity or security boundary.
 
 ### Implementation checkpoints
 
-1. [ ] Core validation, filtered discovery and membership resolver,
+1. [x] Core validation, filtered discovery and membership resolver,
    with backwards-compatible unfiltered public functions.
-2. [ ] Native persisted config and consistent use in all Git action
+2. [x] Native persisted config and consistent use in all Git action
    and navigation entrypoints.
-3. [ ] Settings draft UI and focused Rust/JS integration regressions.
+3. [x] Settings draft UI and focused Rust/JS integration regressions.
 4. [ ] One complete exact-SHA Preflight gate; repair only observed
    failures, record evidence separately.
 5. [ ] Deferred KDE/Windows physical acceptance, rollback notes.
@@ -928,3 +928,33 @@ discovery rules. Do not rewrite user config, delete repositories,
 alter Git remotes, or remove any ignored child directory during
 rollback. Failure to save a validated ignore set leaves the existing
 config intact through the atomic settings transaction.
+
+### Implementation checkpoint — source and tests
+
+- [`e224bc3`](https://github.com/morozhenko-apps/repoticker/commit/e224bc34fd3be67931c948a1f0f3ac39a91256bd):
+  backward-compatible core discovery functions, bounded sorted
+  validation of exact immediate-child names and checked membership
+  resolution with user-configured exclusions.
+- [`ff8f77c`](https://github.com/morozhenko-apps/repoticker/commit/ff8f77ce4f6324f083d42c8f515ba723c56491be):
+  serde-defaulted `ignored_child_names`, config-only Settings
+  read, optional backward-compatible `save_settings` parameter
+  and shared enforcement in local scans, Fetch/Safe pull and
+  three enrolled-repository navigation/clipboard commands.
+- [`ea7942d`](https://github.com/morozhenko-apps/repoticker/commit/ea7942d448670204d4fc5f4c05d423589455b618):
+  collapsible Settings UI using existing OK/Cancel semantics,
+  no permanent layout changes to the compact tray card.
+- [`4f8ae08`](https://github.com/morozhenko-apps/repoticker/commit/4f8ae08230e085feded24bbacdd8fd113efc36dc):
+  real-Git and JS regressions for implicit-vs-explicit
+  enrollment, Unicode input, malformed names, built-in filters,
+  legacy config defaults, native access consistency and
+  transactional Settings form behavior.
+- **Source candidate SHA:** `4f8ae08230e085feded24bbacdd8fd113efc36dc`.
+  Preflight results, Linux desktop compilation, and KDE physical
+  Settings acceptance are pending. Do not claim them before
+  checking the exact CI run.
+
+Known limit: names are global for all parent roots and match
+case-sensitively; per-root exclusions, nested paths and wildcard
+patterns are intentionally not in this small, approved shallow
+discovery feature. A rollback reverts executable commits without
+touching saved preferences or any repository files.

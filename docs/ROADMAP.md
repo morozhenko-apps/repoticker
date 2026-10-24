@@ -1096,3 +1096,47 @@ verification** against Alcotester/KWallet. Issue #4 stays open for a
 fresh user test of automatic authorization, account scope selection,
 running/queued jobs, organization self-hosted runner access and
 partial/denied statuses.
+
+## Repository housekeeping (2026-10-24)
+
+Mode A, documentation and local ignore rules only. The owner requested the next
+repository cleanup and normal working-branch push. Selected baseline `e8d4dc4`
+on clean synchronized `dev`: 164 tracked files, 28 Markdown documents. The local
+branch was clean and 12 upstream commits behind; `git merge --ff-only origin/dev`
+preserved those changes and did not alter Cargo.lock. The earlier audit's dirty
+lockfile is not a current uncommitted change. No stash, reset or pull was used.
+No repository agent file exists; CONTRIBUTING, CI/test guides and owner SSOT
+provide the workflow. No open PR, tracked editor/model preset, disposable raw
+report or empty workflow was found.
+
+Plan and progress:
+
+1. [x] Read current source/roadmap/development/release/test contracts. Different
+   v0.3/v0.4/v0.5 work buckets overlap; v0.2.0 remains the recorded public release,
+   dev already implements monitoring, Safe sync and bounded EN/RU surfaces.
+   Root v0.1-only descriptions and some pending release/architecture summaries
+   are stale. Existing owner decisions, unverified native gates and source
+   receipts must not be replaced by assumed acceptance.
+2. [ ] Put one current handoff at the top of this owner, retain all dated bodies,
+   and distinguish version allocations, development chronology, release notes,
+   release preparation, RC feedback and QA inventory/branch maps. Replace root
+   repetition/stale feature claims, retaining its complete old body in this
+   history with only relative-link/heading/Markdown whitespace normalization.
+   Add a compact complete document catalog; keep all existing paths/anchors.
+3. [ ] Add missing local editor/assistant ignores. Preserve neutral instructions,
+   source/tests/configuration, Cargo.lock, licensing, security, signing/APT and
+   all runtime/private state. No application behavior, API, architecture,
+   release/version, secrets, provider or other-repository change.
+4. [ ] At the final gate run required stable checks once: Rustfmt, locked Rust
+   core tests/Clippy, Node tests, release Python tests and locked Linux desktop
+   compile. Validate links/anchors, original bodies, scoped hashes, catalog,
+   isolated ignore behavior and whitespace. Known-flaky groups remain visible;
+   do not invoke strict whole-suite repeats or physical/runtime acceptance.
+   Commit docs/config separately, normal dev push with remote-SHA confirmation,
+   export preservation map, validation and deterministic rollback patch.
+
+Risks: treating a development bucket as a release, synthetic/native tests as
+physical acceptance, overwriting concurrent work or omitting historical limits.
+No new product, financial/security decision or release authorization is made.
+Rollback: reverse only housekeeping docs/config commits; preserve source and
+prior commits. No credential, package, user repository or data restoration.

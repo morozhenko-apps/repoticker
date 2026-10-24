@@ -1313,3 +1313,82 @@ authorization and REST stages may still dominate.
   and the issue comment documenting the exact gate.
 - `main` and published v0.2.0 remain unchanged; there
   is no authorized release or version increment.
+
+## A11 — stable metric refresh geometry, Cargo lockfile hygiene and KDE timing (2026-10-24)
+
+**Mode A — Feature/Refactor.** Current dev base `d58f4e1` has
+all A10 Preflight jobs green. The user reports the latest
+desktop run now shows indicators and other content after
+**approximately 8 seconds**. This is one user-observed
+end-to-end interval without a new `REPOTICKER_STARTUP_DEBUG=1`
+trace, cold/warm classification or separate GitHub REST
+milestones. Do not equate it with the previous trace's
+~8.21s first local card versus ~18.23s first remote display,
+or claim an exact speedup. Keep #12 open for repeatable
+cold/warm measurements.
+
+### Root-cause evidence and decision
+
+- The compact card's status strip has fixed `height: 25px`
+  and narrow flex alignment. Both manual metric buttons set
+  `aria-busy=true` while refresh is in flight. Existing CSS
+  adds `.metric-caption::after { content: ' ↻'; }` only
+  in the busy state. This inserts an extra inline glyph
+  into a flex item, changes its intrinsic width and can
+  reallocate space around the adjacent status controls.
+  That is the confirmed layout-changing style path; the
+  exact visual offset on KDE still needs physical validation.
+- Alternatives considered: native focus outline (adds no
+  box space), fixed status-strip padding (unchanged on click),
+  conditional pseudo-element (changes text width), delayed
+  network results (change numbers but not padding), and
+  expanded drawer state (not triggered by metric click).
+  Remove the conditional inline content, not the refresh
+  semantics, and render a **positioned, in-place progress
+  underline** on the same 23px button. Its pseudo element
+  must be absolutely positioned, off by default, and must
+  not affect parent flex width or row height.
+- The workspace has a **tracked root Cargo.lock** and
+  `.gitignore` explicitly states it is committed for
+  reproducible app releases. Never ignore or blindly
+  auto-commit it. A local modified Cargo.lock is not
+  viewable via GitHub repo APIs; the exact local diff
+  remains unknown. Compare `git diff -- Cargo.lock` to
+  Cargo.toml changes. Commit an intentional dependency
+  resolution update alongside its manifest change; if
+  changes are incidental, restore the lockfile after review.
+  Pin `--locked` in CI cargo build/test/check commands
+  so dependency-graph drift fails rather than silently
+  producing an unrelated lockfile modification.
+
+### Stages and acceptance
+
+1. [ ] Replace busy caption text insertion with an
+   absolutely positioned progress indicator inside the
+   existing fixed-size metric button. Respect prefers-
+   reduced-motion. Keep both independent refresh clicks,
+   aria-busy, current numbers and tooltip behavior.
+2. [ ] Add CSS/HTML source contract ensuring busy state
+   never adds inline layout content and the 25px strip,
+   23px buttons and four primary buttons remain stable.
+3. [ ] Apply `--locked` to core and desktop Cargo CI
+   commands without changing manifests, dependencies or
+   the tracked lockfile. Add a release/source contract
+   proving lockfile version-control and CI fail-closed
+   behavior. Do not modify or auto-stage user local
+   Cargo.lock; release workflow already checks Cargo
+   metadata with --locked.
+4. [ ] One final exact-SHA stable Preflight: Rustfmt,
+   Rust tests/Clippy, Node/JS tests, Python release
+   contracts, Linux desktop check and aggregate. Record
+   evidence in a separate docs-only commit.
+5. [ ] Document ~8s user observation in issue #12
+   as an uninstrumented data point, and leave native KDE
+   geometry/cold-warm verification pending in #12/#15.
+
+### Rollback and scope
+
+No new persisted setting, UI dimension, credential permission,
+Git command, release tag or main-branch merge. Revert CSS
+and test/CI commit if regressions occur. No release
+approval is implied by Preflight success.

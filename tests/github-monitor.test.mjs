@@ -797,3 +797,21 @@ test("targeted updates preserve explicitly unknown clock without legacy fallback
   assert.equal(invalidateMetricGroup(next, "runners").checkedAtRunners, null);
 });
 
+test("manual metric refresh never merges identities from a different account", () => {
+  const older = {
+    scope: { organization: "one", repositories: ["one/private"] },
+    runners: [{ id: 10, name: "Sensitive" }],
+    counts: { busy: 1, queued: 3, running: 2 },
+    coverage: { runners: true, jobs: true },
+    checkedAtRunners: "2026-10-20T10:00:00Z",
+    checkedAtTasks: "2026-10-20T10:00:00Z",
+  };
+  const updated = {
+    scope: { organization: "two", repositories: ["two/repo"] },
+    runners: [], counts: { busy: null, queued: null, running: null },
+    coverage: { runners: false, jobs: false },
+    checkedAtRunners: null, checkedAtTasks: null,
+  };
+  assert.deepEqual(mergeMetricGroup(older, updated, "tasks"), updated);
+  assert.deepEqual(mergeMetricGroup(older, updated, "runners"), updated);
+});

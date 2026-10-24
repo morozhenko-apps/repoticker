@@ -1243,3 +1243,26 @@ would disappear. The published v0.2.0 and `main` remain intact.
   and Preflight result all pass on this exact SHA.
 - Physical outgoing SSH/HTTPS and KDE/Windows acceptance remains
   deferred to issue #15; public v0.2.0 and `main` unchanged.
+
+### P1-REMOTE1 real Git fixture repair
+
+- Candidate `87c134f` passed Rustfmt and all **34 Rust unit**
+  tests, and its JS/release contract job passed. The new
+  advanced-remote integration test failed because it fetched
+  an upstream commit but did not fast-forward the local
+  checkout before making a local commit. Therefore it
+  correctly encountered `Skipped(Diverged)` before reaching
+  the read-only remote probe. No production defect was proven.
+- Test-only correction
+  [`8d77344`](https://github.com/morozhenko-apps/repoticker/commit/8d7734426a9a7113c481402f6c547247a49dd0b3)
+  first applies the existing safe ff-only pull after Fetch,
+  then makes a clean strictly-ahead commit and separately
+  advances the actual server branch. Assertions still require
+  an error naming the changed server tip, unchanged local
+  HEAD and unchanged server ref.
+- **Final exact source/test candidate:**
+  `8d7734426a9a7113c481402f6c547247a49dd0b3`;
+  [Preflight #40100868497](https://github.com/morozhenko-apps/repoticker/actions/runs/40100868497)
+  was pending when documented. No 4/4 claim until confirmed.
+- The remaining physical KDE/Windows remote-race limitation
+  and SSH/HTTPS behavior are tracked in #15.

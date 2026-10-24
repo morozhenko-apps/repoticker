@@ -732,3 +732,45 @@ opening with persisted RU and on draft switch; English is restored on
 switch back or Cancel/reopen. API/data fields remain unmodified and
 GitHub Device Flow, account/repository selection and Settings OK/Cancel
 continue to work. CI success is not physical KDE UI acceptance.
+
+### A1b Settings localization checkpoint (2026-10-24)
+
+- `61dae998f9d4bcf7cfcbbc9831bad940d0a441dc` adds a pure
+  `settings-i18n.mjs` EN/RU/fallback dictionary and applies
+  declarative `data-i18n` keys in Settings, including accessibility
+  labels, placeholders, headings, controls, the CI checkbox and
+  essential GitHub/validation status strings. User-owned paths,
+  repository identifiers, URLs and opaque provider errors are never
+  translated. There are no new native permissions or persistent
+  config fields.
+- `de1dbcce25d514898212c7ecf7c619bf46e37859` keeps English
+  status keys until display time, so live EN/RU preview cannot
+  accidentally retain already-translated stale text.
+- `9a0ebcb0cebf50b0206a73eb8352216ead7a56a9` updates
+  pre-existing static HTML structure contracts and adds Settings
+  tests for saved RU, draft EN, Cancel (no write), and EN-to-RU
+  OK (persist). It completes the previously untranslated ignored-
+  folder Add button and assistive list label.
+- The initial localization candidate's JS job reported failures
+  in **two source-shape assertions**, which expected a literal
+  `<option>` or `<label>` immediately after a known attribute.
+  The runtime behavior tests for Settings and the pure EN/RU
+  dictionary passed on that initial SHA. The affected assertions
+  now retain the element/value contract and include the
+  intentional `data-i18n` attribute.
+- Final executable/test source candidate:
+  `9a0ebcb0cebf50b0206a73eb8352216ead7a56a9`;
+  [Preflight #40135917461](https://github.com/morozhenko-apps/repoticker/actions/runs/40135917461).
+  At first inspection the run was pending; **do not claim PASS
+  before exact-SHA stable Rust, Node, release contracts, desktop
+  compile and aggregate complete**.
+- The prior scroll-free Settings candidate `6f1eb3b9` passed
+  [Preflight #40135144357](https://github.com/morozhenko-apps/repoticker/actions/runs/40135144357),
+  4/4 SUCCESS. The owner has separately confirmed the scroll-free
+  KDE Settings layout and native test-notification dispatch; the
+  temporary diagnostic UI was already removed.
+- **Next independent acceptance:** KDE RU/EN toggle, connected
+  and disconnected GitHub status, keyboard language picker and
+  truncation within 660×720px. Detached popups, tray, About,
+  Windows and 20-locales remain out of scope. Do not infer a
+  release-ready v0.5 from this bounded slice.

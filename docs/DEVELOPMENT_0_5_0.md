@@ -238,14 +238,14 @@ or create OS startup entries as part of A2.
    an alert; incomplete/failed reads never synthesize a failure.
    Cap pages, repositories, memory and requests. Do not interpret
    missing active jobs or API errors as failures.
-3. [ ] **A2.3: Native preference and notification adapter.** Store
+3. [x] **A2.3: Native preference and notification adapter.** Store
    an opt-in preference (default OFF), add Settings OK/Cancel behavior,
    and use a maintained, platform-capability-aware Tauri notification
    adapter on Linux/Windows; keep OS permission state separate from
    the saved preference. Any new dependency must update Cargo.lock.
    Only start completed-run polling after opt-in. Display a concise,
    privacy-limited summary; GitHub credentials stay native.
-4. [ ] **A2.4: Final gate and documentation.** Run the stable Rust,
+4. [x] **A2.4: Final gate and documentation.** Run the stable Rust,
    Node, Python and Linux desktop build checks on the exact executable
    SHA, inspect all CI jobs, record counts and real-platform limitations
    in a separate docs commit. Do not ship `main` or a release.
@@ -418,3 +418,20 @@ The plugin supports Linux and Windows desktops, but **physical Windows
 installer/runtime and KDE display delivery are not accepted by source
 checks**. Keep v0.2.0 main/release immutable until an explicit release gate.
 
+
+## A2.3/A2.4 source and CI gate: VERIFIED
+
+**Exact executable/test SHA:** `5a027460b6ba11ea62481eabaf4d7ebba6b4d268`.
+
+[Preflight #40129124638](https://github.com/morozhenko-apps/repoticker/actions/runs/40129124638)
+**COMPLETED, 4/4 SUCCESS** for Rustfmt, Rust core/Clippy, Node/Python
+and the Linux desktop `cargo check --locked -p repoticker-desktop`.
+There were **78 Rust core**, **198 Node**, **14 Python** successful tests:
+**290 PASS, 0 FAIL**. Native desktop Rust compiled with the
+notification plugin. No separate flaky suite is claimed executed.
+
+**A2.3 implementation and A2.4 code/CI verification are COMPLETE.**
+Independent KDE Wayland and installed Windows visible OS notification
+acceptance is **OPEN**, as is Do Not Disturb/delivery-agent verification.
+No `main`, version bump, APT publication, tag, release, OS autostart
+or Hybrid relay change. Code/CI acceptance is not physical OS acceptance.

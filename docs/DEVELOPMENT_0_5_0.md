@@ -277,7 +277,9 @@ as a working OS alert feature.
   failed reads, malformed inputs, per-repository isolation,
   request/concurrency caps and reset.
 - [Preflight #40127311636](https://github.com/morozhenko-apps/repoticker/actions/runs/40127311636)
-  was **in progress** when last inspected. No green or 4/4 claim yet.
+  **FAILED**: 189/190 Node tests passed (duplicate-repository
+  error expectation mismatch), Linux desktop compile passed,
+  and Rustfmt failed mechanically before core tests.
 - **A2.3 NOT DONE:** no native notification adapter, opt-in Settings
   preference, OS permissions or autostart. A2.1–A2.2 alone are not a
   usable notification feature. Public main/release remain unchanged.
@@ -298,3 +300,27 @@ as a working OS alert feature.
 - CI and platform acceptance must be verified separately. An inert
   transition tracker is intentionally not wired into the live monitor
   until both the opt-in preference and native delivery adapter exist.
+
+
+### A2.2 preflight corrections (2026-10-24)
+
+The first complete A2.2 candidate [#40127311636](https://github.com/morozhenko-apps/repoticker/actions/runs/40127311636)
+was red for two independent, log-confirmed reasons:
+the negative test expected an "Invalid notification" message
+when the intended specific failure was "Duplicate notification
+repository"; \`cargo fmt --all --check\` requested mechanical
+formatting in the new Rust projection. Neither failure was
+evidence of a GitHub API, permission or notification runtime defect.
+
+- [\`1c645627\`](https://github.com/morozhenko-apps/repoticker/commit/1c6456271ca7ff076dac9b76492d41b3908fc768)
+  applies the exact rustfmt hunk from the failed job.
+- [\`fbae51c9\`](https://github.com/morozhenko-apps/repoticker/commit/fbae51c970632faaea4ab6b1d35f3a2ebdfdb44b)
+  keeps the negative-path assertion strict and independently
+  checks the duplicate-repository rejection.
+- **Corrected exact source/test SHA:** \`fbae51c970632faaea4ab6b1d35f3a2ebdfdb44b\`.
+  [Preflight #40127719281](https://github.com/morozhenko-apps/repoticker/actions/runs/40127719281)
+  was pending at first inspection; its result must be checked
+  before claiming the final stable gate. Earlier green desktop
+  compile for the prior SHA is not exact-source acceptance.
+- Reminder: these commits do **not** implement A2.3 native OS
+  delivery or enable any completed-run monitoring in production.

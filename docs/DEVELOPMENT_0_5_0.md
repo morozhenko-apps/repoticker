@@ -824,3 +824,34 @@ rewrite that model's public shape or translate untrusted GitHub values.
 permission or bundle version change. Revert this isolated UI/test
 commit if necessary. No autostart, main promotion, published release,
 full L10N-20 claim or unapproved relay.
+
+### A1c About and tooltip implementation checkpoint (2026-10-24)
+
+- `36d9665cb55c17b84f7334f454b43b5544be40ed`
+  adds pure `surface-i18n.mjs`, About static and accessible
+  EN/RU labels, and presentation-only translation of the
+  validated `quota-details` model. Data values (runner names,
+  paths, tariff names, counts, month and timestamps) remain
+  byte-for-byte unchanged. The original `quota-details.mjs`
+  pure model and its English contracts are untouched.
+- About reads only existing `get_settings_config` and
+  `get_about_info`, revalidates locale on focus with a
+  revision guard, and leaves the project website action
+  unchanged. No native permission or event capability added.
+- Detached tooltip reads `get_settings_config` in parallel
+  with its existing lightweight monitor data and reconciles
+  saved locale on `repoticker-config-changed` through its
+  existing listen permission. Cached, projected status may
+  be repainted without new GitHub API reads or local Git scans.
+- `215778ef148ef8bc11c13a1e7abcca3fab7c00af`
+  adds deterministic EN/RU/fallback projection tests, About
+  focus/reopen and immutable version/author/link test,
+  config-change hover test with unchanged GitHub request count,
+  and desktop capability/contract regression checks.
+- **Executable/test candidate:** `215778ef148ef8bc11c13a1e7abcca3fab7c00af`.
+  [Preflight #40137183637](https://github.com/morozhenko-apps/repoticker/actions/runs/40137183637)
+  was pending at first inspection. Only claim completed
+  A1c CI if all four jobs pass on that exact source SHA.
+  Runtime KDE and Windows visible text remain separate physical
+  acceptance gates. No `main`, tag, public version, autostart
+  or relay changes.

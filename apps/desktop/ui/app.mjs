@@ -348,6 +348,10 @@ function setCardLanguage(language) {
     cardText(cardLanguage, "billing"));
   for (const item of repoMenu.querySelectorAll("[data-locale-key]"))
     item.textContent = cardText(cardLanguage, item.dataset.localeKey);
+  byId("runner-status").querySelector(".metric-caption").textContent =
+    cardText(cardLanguage, "runners");
+  byId("ci-tasks").querySelector(".metric-caption").textContent =
+    cardText(cardLanguage, "tasks");
   byId("runner-status").title = cardText(cardLanguage, "refreshRunners");
   byId("ci-tasks").title = cardText(cardLanguage, "refreshTasks");
   byId("fetch-all").querySelector(".action-label").textContent =

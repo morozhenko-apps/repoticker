@@ -130,3 +130,30 @@ new dependency, installer, security scope or release work.
 - CI-failure OS notifications and OS autostart are
   **BLOCKED on an architectural choice**, not silently
   'implemented'. See the two approaches in this document.
+
+## A1 CI contract correction
+
+- First source/test candidate `16c823ae` triggered
+  [Preflight #40124589351](https://github.com/morozhenko-apps/repoticker/actions/runs/40124589351).
+  Rust core tests/Clippy passed, while JS reported four
+  failing **old source-regex tests**. Those tests asserted
+  literal English-only UI strings such as `Fetch`,
+  `Safe sync`, `Cancel` and `Stopping...` rather than
+  the stable Git operation enum and new translation
+  lookup path. The source intentionally changed to
+  `cardText(cardLanguage, key)` without changing
+  `safe_sync`, `fetch`, `cancel_git_fetch` or API calls.
+- `e3b414b5` updates all four affected contracts:
+  Fetch cancellation asserts the correct stopping/cancel
+  translation-key branch; repo local actions and menu
+  assert **exactly five** stable operation pairs and
+  availability of EN/RU text; Safe sync asserts the
+  `safe_sync` operation key and translation binding.
+  No source runtime guard or test count was deleted.
+- **Exact corrected executable/test SHA**:
+  `e3b414b52c1d6bffedd66b7f5720fc416f405e8d`.
+  [Preflight #40124889705](https://github.com/morozhenko-apps/repoticker/actions/runs/40124889705)
+  is the validation candidate; check all 4 jobs before
+  recording full source completion. Source tests do
+  not substitute for physical KDE/Windows label-fit
+  and keyboard navigation checks.

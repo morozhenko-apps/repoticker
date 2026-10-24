@@ -96,6 +96,8 @@ test("the separate usage WebView can listen without inheriting main permissions"
     "usage popup must not trigger local repo discovery on any event");
   assert.match(quotaJs, /invoke\("github_monitor_snapshot"\)/);
   assert.match(quotaJs, /invoke\("get_monitor_scope"\)/);
+  assert.match(quotaJs, /invoke\("get_settings_config"\)/);
+  assert.match(quotaJs, /subscribe\("repoticker-config-changed", refreshLocale\)/);
   assert.match(quotaJs, /invoke\("get_usage_popup_kind"\)/);
   assert.match(quotaJs, /Status unavailable/);
   assert.doesNotMatch(quotaJs, /catch\s*\{\s*paint\(buildQuotaDetails\(null\)\)/);

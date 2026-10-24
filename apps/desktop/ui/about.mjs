@@ -7,6 +7,7 @@ let localeRevision = 0;
 function paintLocale(value) {
   const language = surfaceLocale(value);
   document.documentElement.lang = language;
+  document.title = surfaceText(language, "About RepoTicker");
   for (const item of document.querySelectorAll("[data-i18n]"))
     item.textContent = surfaceText(language, item.getAttribute("data-i18n"));
   for (const item of document.querySelectorAll("[data-i18n-alt]"))

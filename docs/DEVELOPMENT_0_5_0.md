@@ -214,3 +214,47 @@ the present A1 code does not invoke OS notification APIs.
   its older source `e3b414b`, not this new candidate.
   No physical KDE/Windows layout or accessibility
   acceptance is claimed by source-contract tests.
+
+
+## A2 — approved direct GitHub REST + native OS notifications (2026-10-24)
+
+**Owner decision:** Option A of the notification architecture above is approved.
+This is **outbound desktop-to-GitHub REST**, not a localhost HTTP listener
+and not the optional Cloudflare/Docker webhook relay. The documented
+autostart decision remains a separate stop factor; do not enable autostart
+or create OS startup entries as part of A2.
+
+### Milestones and boundaries
+
+1. [ ] **A2.1: Read-only completed-run facts.** Extend only the existing native
+   GitHub REST allowlist to accept paginated \`status=completed\` Actions runs;
+   project a minimal, validated \`id\`, \`run_attempt\`, \`conclusion\`,
+   \`updated_at\` tuple, without names, secrets, raw payloads or token transfer.
+   Add allow/deny and projection tests for malicious paths and input.
+2. [ ] **A2.2: Deterministic failure transitions.** Add a pure JS state
+   machine and tests keyed by monitored account, repository, run ID and
+   attempt. First complete read after process start/scope change is a
+   silent baseline. Only a newly observed \`failure\` conclusion may emit
+   an alert; incomplete/failed reads never synthesize a failure.
+   Cap pages, repositories, memory and requests. Do not interpret
+   missing active jobs or API errors as failures.
+3. [ ] **A2.3: Native preference and notification adapter.** Store
+   an opt-in preference (default OFF), add Settings OK/Cancel behavior,
+   and use a maintained, platform-capability-aware Tauri notification
+   adapter on Linux/Windows; keep OS permission state separate from
+   the saved preference. Any new dependency must update Cargo.lock.
+   Only start completed-run polling after opt-in. Display a concise,
+   privacy-limited summary; GitHub credentials stay native.
+4. [ ] **A2.4: Final gate and documentation.** Run the stable Rust,
+   Node, Python and Linux desktop build checks on the exact executable
+   SHA, inspect all CI jobs, record counts and real-platform limitations
+   in a separate docs commit. Do not ship \`main\` or a release.
+
+**Safety and rollback:** no notification without affirmative opt-in;
+no historical failure burst on enabling; no notification on incomplete
+coverage, timeout, 401/403/429, auth removal, or account switch.
+No write/remote-Git operation is authorized by alert data. Retain the
+same rate-limit/cooldown protections as the existing native transport.
+Revert each milestone's isolated code/test changes to roll it back.
+A2.1/A2.2 alone are an inert data foundation and must not be presented
+as a working OS alert feature.

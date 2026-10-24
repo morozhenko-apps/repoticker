@@ -1159,7 +1159,7 @@ fn main() {
                 let open = MenuItem::with_id(app, "open", "Open card", true, None::<&str>)?;
                 let settings = MenuItem::with_id(app, "settings", "Settings", true, None::<&str>)?;
                 let fetch = MenuItem::with_id(app, "fetch", "Fetch all", true, None::<&str>)?;
-                let sync = MenuItem::with_id(app, "sync", "Safe pull all", true, None::<&str>)?;
+                let sync = MenuItem::with_id(app, "sync", "Safe sync all", true, None::<&str>)?;
                 let about =
                     MenuItem::with_id(app, "about", "About RepoTicker", true, None::<&str>)?;
                 let quit = MenuItem::with_id(app, "quit", "Quit RepoTicker", true, None::<&str>)?;
@@ -1175,7 +1175,7 @@ fn main() {
                         "settings" => show_settings(app),
                         "about" => show_about(app),
                         "fetch" => dispatch_menu_action(app, "fetch"),
-                        "sync" => dispatch_menu_action(app, "safe_pull"),
+                        "sync" => dispatch_menu_action(app, "safe_sync"),
                         "quit" => app.exit(0),
                         _ => {}
                     })

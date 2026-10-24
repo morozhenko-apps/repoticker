@@ -20,7 +20,7 @@ impl LinuxTray {
             "settings" => show_settings(&app),
             "about" => show_about(&app),
             "fetch" => dispatch_menu_action(&app, "fetch"),
-            "sync" => dispatch_menu_action(&app, "safe_pull"),
+            "sync" => dispatch_menu_action(&app, "safe_sync"),
             "quit" => app.exit(0),
             _ => {}
         });
@@ -70,7 +70,7 @@ impl Tray for LinuxTray {
             }
             .into(),
             StandardItem {
-                label: "Safe pull all".into(),
+                label: "Safe sync all".into(),
                 activate: Box::new(|tray: &mut Self| tray.on_ui("sync")),
                 ..Default::default()
             }

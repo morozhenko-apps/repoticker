@@ -144,6 +144,18 @@ fn run_cancellable_command(
     after_spawn: impl FnOnce(),
     after_register: impl FnOnce(),
 ) -> Result<Output, GitError> {
+    run_cancellable_command_with_timeout(
+        command, cancel, after_spawn, after_register, FETCH_GIT_TIMEOUT
+    )
+}
+
+fn run_cancellable_command_with_timeout(
+    command: &mut Command,
+    cancel: &FetchCancellation,
+    after_spawn: impl FnOnce(),
+    after_register: impl FnOnce(),
+    timeout: Duration,
+) -> Result<Output, GitError> {
     if cancel.is_cancelled() {
         return Err(GitError(FETCH_CANCELLED.into()));
     }
@@ -172,7 +184,7 @@ fn run_cancellable_command(
         }
     }
     after_register();
-    let result = wait_owned_child(child, FETCH_GIT_TIMEOUT,
+    let result = wait_owned_child(child, timeout,
         "Git fetch timed out; remote-tracking refs may be partially updated");
     cancel.unregister(pid);
     if cancel.is_cancelled() {
@@ -274,11 +286,11 @@ fn wait_owned_child(
     // after Git exits; never block the GUI indefinitely.
     let stdout = stdout_rx
         .recv_timeout(PROCESS_REAP_GRACE)
-        .map_err(|_| GitError("Git stdout held open by a descendant; outcome unknown".into()))?
+        .map_err(|_| GitError(format!("{timeout_message}; Git stdout held open by a descendant; outcome unknown")))?
         .map_err(|err| GitError(format!("Cannot read Git stdout: {err}")))?;
     let stderr = stderr_rx
         .recv_timeout(PROCESS_REAP_GRACE)
-        .map_err(|_| GitError("Git stderr held open by a descendant; outcome unknown".into()))?
+        .map_err(|_| GitError(format!("{timeout_message}; Git stderr held open by a descendant; outcome unknown")))?
         .map_err(|err| GitError(format!("Cannot read Git stderr: {err}")))?;
     Ok(Output { status, stdout, stderr })
 }
@@ -308,7 +320,7 @@ fn invoke(repo: &Path, args: &[&str]) -> Result<Output, GitError> {
         .env("GIT_TERMINAL_PROMPT", "0");
     match args.first().copied() {
         // Local worktree/index mutations are never force-killed.
-        Some("merge") => command.output()
+        Some("merge") => command.stdin(Stdio::null()).output()
             .map_err(|err| GitError(format!("Failed to launch git: {err}"))),
         Some("push") => run_bounded_command(
             &mut command, PUSH_GIT_TIMEOUT, PUSH_OUTCOME_UNKNOWN),

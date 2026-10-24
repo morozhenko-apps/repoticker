@@ -1218,23 +1218,23 @@ the unnecessary Git scan; we do not infer a measured speedup.
 
 ### Design and compatibility
 
-1. [ ] Replace usage popup's full `get_snapshot` with only
+1. [x] Replace usage popup's full `get_snapshot` with only
    `github_monitor_snapshot` (native in-memory cache) and
    `get_monitor_scope` (config-only account selection). Both
    commands already exist; preserve their schemas and
    original window permissions. No token, repo path, or
    GitHub REST data is passed into new UI boundaries.
-2. [ ] Read native `get_usage_popup_kind` AFTER the other
+2. [x] Read native `get_usage_popup_kind` AFTER the other
    asynchronous reads, preserving the last authoritative
    hover target. Continue to discard stale IPC completions
    using the existing `refreshId` generation.
-3. [ ] Keep the explicitly configured account (including
+3. [x] Keep the explicitly configured account (including
    null as All) and the monitor state's validated
    auto-selected organization fallback for opt-in Billing;
    clear old account billing projections when scope changes
    or native reports disconnected. Preserve unknown/not
    connected/connecting honesty and avoid extra REST fetches.
-4. [ ] Test the **real** usage controller with native IPC
+4. [x] Test the **real** usage controller with native IPC
    fixture: no full Git scan on startup, auth, scope, or
    monitor events; selected-org billing and native hover
    reconciliation still work. Add source-level assertion
@@ -1253,3 +1253,40 @@ configuration/actions is intentionally unchanged. This
 slice cannot establish startup-wallclock gains without
 fresh KDE traces from the target host; the full
 authorization and REST stages may still dominate.
+
+### A10 implementation and validation checkpoint
+
+- Docs-first plan: [`b3041ee`](https://github.com/morozhenko-apps/repoticker/commit/b3041ee46f89de9a2452767a8432b0132f2fd946).
+- `quota.mjs` source [`0d9433a`](https://github.com/morozhenko-apps/repoticker/commit/0d9433ac68922c2ec073139e8871333c2dbd3e20)
+  uses existing native `github_monitor_snapshot` and
+  config-only `get_monitor_scope` concurrently for popup
+  initialization, authorization and account-scope events.
+  The active native hover kind is fetched last and
+  async responses are still ignored after revision change.
+  No new IPC command, permission, authentication scope
+  or persisted model was introduced.
+- [`4f8d0ca`](https://github.com/morozhenko-apps/repoticker/commit/4f8d0cad2e4363f3519c12a3675d41054a095adb)
+  extends the real detached WebView controller test to
+  verify startup and subsequent auth/scope refreshes
+  trigger no full local Git snapshot, preserving billing
+  account fallback and hover-type reconciliation.
+  [`c7a2c97`](https://github.com/morozhenko-apps/repoticker/commit/c7a2c97a4307c7dbc67e1d56e00cf46a100319a1)
+  adds the source guard preventing `get_snapshot` from
+  returning to the detached popup.
+- Exact executable/test SHA:
+  `c7a2c97a4307c7dbc67e1d56e00cf46a100319a1`.
+  [Preflight #40116265535](https://github.com/morozhenko-apps/repoticker/actions/runs/40116265535)
+  reported **SUCCESS** for 78 Rust tests (45 unit, 30
+  integration, 3 GitHub origin), Rustfmt and Clippy,
+  plus **173 JS and 12 Python contract tests**, zero
+  failures. Linux desktop compile and final aggregate
+  were pending at this checkpoint; do not assert 4/4
+  before their exact-SHA results are confirmed.
+- This is source/API evidence, **not** a measured cold/warm
+  KDE speedup. Issue #12 remains open pending two new
+  cold/warm trace logs on the actual target host.
+- The native MonitorCache already initializes with
+  `Checking GitHub connection...` and Settings already
+  displays `Checking connection...` until authoritative
+  credential state. No cosmetic unverified connection
+  flag was introduced by this slice.

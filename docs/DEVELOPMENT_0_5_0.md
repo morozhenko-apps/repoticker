@@ -176,3 +176,19 @@ Settings translations are not covered by this source result.
 Notification and autostart architecture remains paused
 until owner chooses the native/REST option or alternative;
 the present A1 code does not invoke OS notification APIs.
+
+## A1 final verified Preflight
+
+- Exact executable code/test commit:
+  `e3b414b52c1d6bffedd66b7f5720fc416f405e8d`.
+- [Preflight #40124889705](https://github.com/morozhenko-apps/repoticker/actions/runs/40124889705)
+  **COMPLETED 4/4 SUCCESS** on that SHA:
+  Rustfmt, Rust tests/Clippy, JS/release contracts,
+  Linux desktop compile, and final aggregate passed.
+  There were 78 Rust, 180 Node and 14 Python tests,
+  **272 passed, zero failures**.
+- This completes v0.5 A1 **code/CI**, not OS-native
+  notifications, autostart, full EN/RU coverage,
+  the L10N-20 contextual audits, or physical KDE/
+  Windows real-screen-reader/layout acceptance.
+- `main` and published v0.2.0 unchanged.

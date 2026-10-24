@@ -1536,3 +1536,21 @@ settings or Git refs. Published v0.2.0 is unchanged.
   [Preflight #40109392382](https://github.com/morozhenko-apps/repoticker/actions/runs/40109392382)
   was pending when recorded. No 4/4 assertion yet; physical
   KDE/Windows acceptance remains on issue #15.
+
+### P1-GIT-EDGE1 validated source-test totals
+
+- **Exact executable source:**
+  `8869aaf5e46fc66b1b5e9220d04d3e5376780158`.
+  [Preflight #40109392382](https://github.com/morozhenko-apps/repoticker/actions/runs/40109392382)
+  completed Rustfmt, Rust core/integration and Clippy with
+  **SUCCESS**: 39 unit + 28 real Git integration + 3
+  GitHub-origin integration = **70 Rust passed, 0 failed**.
+- JavaScript/release stage also **SUCCESS**: 170 Node
+  tests and 12 Python release contract tests passed.
+  **Total 252 tests, zero failures** on this exact SHA.
+- Linux desktop compile and aggregate final Preflight
+  were still running at this evidence checkpoint.
+  Do not claim overall 4/4 before they complete.
+- Native KDE/Windows physical check of submodule
+  status and custom hooks still outstanding in issue #15;
+  `main` and published v0.2.0 unchanged.

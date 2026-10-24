@@ -364,7 +364,6 @@ fn all_git_operation_markers_resolve_under_absolute_git_dir_in_linked_worktree()
     }
 }
 
-
 #[test]
 fn custom_ignored_child_folders_affect_only_implicit_shallow_discovery() {
     let f = Fixture::new();
@@ -378,23 +377,19 @@ fn custom_ignored_child_folders_affect_only_implicit_shallow_discovery() {
         git::discover_with_ignored(&f.local, &ignored).expect("explicit root"),
         vec![f.local.clone()]
     );
-    let (discovered, failures) = git::discover_all_with_ignored(
-        &[f.base.clone(), f.local.clone()],
-        &ignored,
-    );
+    let (discovered, failures) =
+        git::discover_all_with_ignored(&[f.base.clone(), f.local.clone()], &ignored);
     assert!(failures.is_empty());
     assert_eq!(discovered, vec![f.local.clone(), f.seed.clone()]);
     let path = f.local.to_str().expect("UTF-8 test checkout");
     assert!(
-        git::resolve_enrolled_checkout_with_ignored(
-            std::slice::from_ref(&f.base), path, &ignored
-        ).is_err(),
+        git::resolve_enrolled_checkout_with_ignored(std::slice::from_ref(&f.base), path, &ignored)
+            .is_err(),
         "ignored implicit checkout cannot bypass filtering through navigation IPC"
     );
     assert_eq!(
-        git::resolve_enrolled_checkout_with_ignored(
-            std::slice::from_ref(&f.local), path, &ignored
-        ).expect("explicit root still valid"),
+        git::resolve_enrolled_checkout_with_ignored(std::slice::from_ref(&f.local), path, &ignored)
+            .expect("explicit root still valid"),
         f.local
     );
     // Old APIs and older persisted config without ignores remain unchanged.
@@ -408,18 +403,32 @@ fn custom_ignored_child_folders_affect_only_implicit_shallow_discovery() {
 fn ignore_names_are_exact_validated_bounded_and_unicode_capable() {
     assert_eq!(
         git::validate_ignored_child_names(vec![
-            " Réservé ".into(), "Archive".into(), "Archive".into()
-        ]).unwrap(),
+            " Réservé ".into(),
+            "Archive".into(),
+            "Archive".into()
+        ])
+        .unwrap(),
         vec!["Archive".to_owned(), "Réservé".to_owned()]
     );
-    for invalid in ["", " ", ".", "..", "a/b", "a\\b", "line\nbreak", "nul\0here"] {
+    for invalid in [
+        "",
+        " ",
+        ".",
+        "..",
+        "a/b",
+        "a\\b",
+        "line\nbreak",
+        "nul\0here",
+    ] {
         assert!(
             git::validate_ignored_child_names(vec![invalid.into()]).is_err(),
             "invalid child name: {invalid:?}"
         );
     }
     assert!(git::validate_ignored_child_names(vec!["é".repeat(128)]).is_err());
-    assert!(git::validate_ignored_child_names((0..101).map(|i| format!("repo{i}")).collect()).is_err());
+    assert!(
+        git::validate_ignored_child_names((0..101).map(|i| format!("repo{i}")).collect()).is_err()
+    );
     assert_eq!(
         git::validate_ignored_child_names(vec![]).unwrap(),
         Vec::<String>::new()
@@ -430,13 +439,18 @@ fn ignore_names_are_exact_validated_bounded_and_unicode_capable() {
 fn built_in_exclusions_remain_enforced_without_custom_configuration() {
     let f = Fixture::new();
     let generated = f.base.join("target");
-    run(&f.base, &[
-        "clone",
-        f.local.to_str().expect("fixture source"),
-        generated.to_str().expect("fixture destination"),
-    ]);
+    run(
+        &f.base,
+        &[
+            "clone",
+            f.local.to_str().expect("fixture source"),
+            generated.to_str().expect("fixture destination"),
+        ],
+    );
     assert!(!git::discover(&f.base).unwrap().contains(&generated));
-    assert!(!git::discover_with_ignored(&f.base, &[]).unwrap().contains(&generated));
+    assert!(!git::discover_with_ignored(&f.base, &[])
+        .unwrap()
+        .contains(&generated));
     // Built-in ignored children remain separate from explicit root choices.
     assert_eq!(git::discover(&generated).unwrap(), vec![generated]);
 }

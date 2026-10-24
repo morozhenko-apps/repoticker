@@ -305,10 +305,8 @@ fn execute(
         .as_ref()
         .map(|_| ActiveFetchLease(&active_fetch));
     let config = read_config(app)?;
-    let (repositories, failures) = git::discover_all_with_ignored(
-        &roots_as_paths(&config),
-        &config.ignored_child_names,
-    );
+    let (repositories, failures) =
+        git::discover_all_with_ignored(&roots_as_paths(&config), &config.ignored_child_names);
     if let Some(requested) = only_path {
         if !repositories
             .iter()
@@ -798,7 +796,7 @@ fn enrolled_repository(app: &AppHandle, repo_path: &str) -> Result<PathBuf, Stri
         repo_path,
         &config.ignored_child_names,
     )
-        .map_err(|error| error.to_string())
+    .map_err(|error| error.to_string())
 }
 
 /// Open only the canonical GitHub origin of a currently enrolled checkout.

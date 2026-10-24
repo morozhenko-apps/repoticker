@@ -272,7 +272,9 @@ pub fn validate_ignored_child_names(names: Vec<String>) -> Result<Vec<String>, G
         if name.is_empty()
             || matches!(name, "." | "..")
             || name.len() > 255
-            || name.chars().any(|c| c == '/' || c == '\\' || c.is_control())
+            || name
+                .chars()
+                .any(|c| c == '/' || c == '\\' || c.is_control())
         {
             return Err(GitError(
                 "Ignored folder names must be single directory names (max 255 bytes)".into(),
@@ -289,7 +291,6 @@ pub fn discover_with_ignored(
     root: &Path,
     ignored_child_names: &[String],
 ) -> Result<Vec<PathBuf>, GitError> {
-
     let root = fs::canonicalize(root)
         .map_err(|err| GitError(format!("Invalid root {}: {err}", root.display())))?;
     if !root.is_dir() {
@@ -318,9 +319,10 @@ pub fn discover_with_ignored(
             .map_err(|err| GitError(err.to_string()))?
             .is_dir()
             || ignored_child(&path)
-            || path.file_name().and_then(|name| name.to_str()).is_some_and(|name| {
-                ignored_child_names.iter().any(|ignored| name == ignored)
-            })
+            || path
+                .file_name()
+                .and_then(|name| name.to_str())
+                .is_some_and(|name| ignored_child_names.iter().any(|ignored| name == ignored))
             || !looks_like_checkout(&path, false)
         {
             continue;

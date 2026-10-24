@@ -6,8 +6,11 @@ use std::{
     collections::BTreeSet,
     env, fmt, fs,
     path::{Path, PathBuf},
-    process::{Command, Output, Stdio},
-    sync::Mutex,
+    io::{self, Read},
+    process::{Child, Command, Output, Stdio},
+    sync::{mpsc, Mutex},
+    thread,
+    time::{Duration, Instant},
 };
 
 #[derive(Debug, Clone)]
@@ -22,6 +25,14 @@ impl fmt::Display for GitError {
 impl std::error::Error for GitError {}
 
 pub const FETCH_CANCELLED: &str = "Git fetch cancelled";
+pub const PUSH_OUTCOME_UNKNOWN: &str =
+    "Git push timed out: remote outcome unknown; inspect the remote before retrying";
+const LOCAL_GIT_TIMEOUT: Duration = Duration::from_secs(20);
+const REMOTE_PROBE_TIMEOUT: Duration = Duration::from_secs(45);
+const FETCH_GIT_TIMEOUT: Duration = Duration::from_secs(120);
+const PUSH_GIT_TIMEOUT: Duration = Duration::from_secs(120);
+const PROCESS_REAP_GRACE: Duration = Duration::from_secs(3);
+const POLL_INTERVAL: Duration = Duration::from_millis(15);
 
 #[derive(Default)]
 struct FetchChildren {
@@ -136,7 +147,7 @@ fn run_cancellable_command(
     if cancel.is_cancelled() {
         return Err(GitError(FETCH_CANCELLED.into()));
     }
-    command.stdout(Stdio::piped()).stderr(Stdio::piped());
+    command.stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::piped());
     #[cfg(unix)]
     {
         use std::os::unix::process::CommandExt;
@@ -161,12 +172,13 @@ fn run_cancellable_command(
         }
     }
     after_register();
-    let result = child.wait_with_output();
+    let result = wait_owned_child(child, FETCH_GIT_TIMEOUT,
+        "Git fetch timed out; remote-tracking refs may be partially updated");
     cancel.unregister(pid);
     if cancel.is_cancelled() {
         return Err(GitError(FETCH_CANCELLED.into()));
     }
-    result.map_err(|err| GitError(format!("Failed to wait for git: {err}")))
+    result
 }
 
 #[derive(Debug, Clone)]

@@ -1,4 +1,4 @@
-import { nextCardView, pullReadyCommitCount } from "./view.mjs";
+import { nextCardView, syncReadyCommitCount } from "./view.mjs";
 import { createNativeDragGesture } from "./native-drag.mjs";
 import { startGithubMonitoring } from "./github-monitor.mjs";
 import { compactStatus } from "./status-metrics.mjs";
@@ -110,7 +110,7 @@ function showRepoMenu(button, repoPath) {
 
 for (const [label, operation] of [
   ["Fetch", "fetch"],
-  ["Safe pull", "safe_pull"],
+  ["Safe sync", "safe_sync"],
   ["Open on GitHub", "open_github"],
   ["Open folder", "open_folder"],
   ["Copy path", "copy_path"]
@@ -200,7 +200,7 @@ function makeRepoRow(repo) {
 
 function updateActionState() {
   const hasRepos = snapshot.repositories.length > 0;
-  const eligible = pullReadyCommitCount(snapshot.repositories);
+  const eligible = syncReadyCommitCount(snapshot.repositories);
   const isRunning = busy || (progress && progress.phase !== "finish");
   const fetching = progress?.operation === "fetch" && progress.phase !== "finish";
   byId("fetch-all").disabled = fetchCancelling ||
@@ -209,7 +209,7 @@ function updateActionState() {
     ? "Cancel the current Fetch; some remote references may already be updated"
     : "Fetch remote references for enrolled repositories";
   byId("sync-all").disabled = isRunning || eligible === 0;
-  for (const [operation, id] of [["fetch", "fetch-all"], ["safe_pull", "sync-all"]]) {
+  for (const [operation, id] of [["fetch", "fetch-all"], ["safe_sync", "sync-all"]]) {
     const button = byId(id);
     const active = progress?.operation === operation;
     button.classList.toggle("is-working", active);
@@ -220,15 +220,15 @@ function updateActionState() {
         operation === "fetch" ? (fetchCancelling ? "Stopping..." : "Cancel") : pct + "%";
     } else {
       button.querySelector(".action-label").textContent =
-        operation === "fetch" ? "Fetch" : "Safe pull";
+        operation === "fetch" ? "Fetch" : "Safe sync";
     }
   }
   const count = byId("pull-indicator");
-  count.textContent = eligible ? "↓" + eligible : "↓";
+  count.textContent = eligible ? "⇅" + eligible : "⇅";
   count.classList.toggle("has-commits", eligible > 0);
   byId("sync-all").title = eligible
-    ? eligible + " commits eligible for fast-forward (clean upstream branches)"
-    : "No branches eligible for safe pull. Run Fetch to refresh remote refs.";
+    ? eligible + " commits eligible for safe pull or non-force push"
+    : "No clean ahead/behind branches eligible for Safe sync. Fetch remote refs first.";
 }
 
 /* A single noninteractive native balloon follows three independent hover
@@ -445,7 +445,7 @@ byId("fetch-all").addEventListener("click", () => {
     void runGitAction("fetch");
   }
 });
-byId("sync-all").addEventListener("click", () => runGitAction("safe_pull"));
+byId("sync-all").addEventListener("click", () => runGitAction("safe_sync"));
 document.addEventListener("keydown", event => {
   if (event.key === "Escape" && !repoMenu.hidden) {
     event.preventDefault();
@@ -460,7 +460,7 @@ document.addEventListener("keydown", event => {
 });
 window.__TAURI__?.event?.listen?.("repoticker-git-progress", event => {
   const payload = event.payload;
-  if (!payload || !["fetch", "safe_pull"].includes(payload.operation)) return;
+  if (!payload || !["fetch", "safe_pull", "safe_sync"].includes(payload.operation)) return;
   if (!progress || progress.operation !== payload.operation) {
     progress = { operation: payload.operation, active: new Set(), done: new Set(), errors: new Set() };
   }

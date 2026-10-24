@@ -24,3 +24,19 @@ export function pullReadyCommitCount(repositories = []) {
       : count
   ), 0);
 }
+
+
+// The Safe sync button covers exactly one safe direction per clean branch.
+// Diverged, detached, dirty, missing-upstream and unfinished Git states never
+// increase the eligible count. Behind and ahead commits are counted equally.
+export function syncReadyCommitCount(repositories = []) {
+  return repositories.reduce((count, repo) => (
+    repo.upstream && !repo.dirty &&
+      ((repo.ahead === 0 && /^behind [1-9]\d*$/.test(repo.sync_state || "") &&
+        Number.isSafeInteger(repo.behind) && repo.behind > 0)
+       ? count + repo.behind
+       : (repo.behind === 0 && repo.sync_state === "ahead" &&
+          Number.isSafeInteger(repo.ahead) && repo.ahead > 0
+          ? count + repo.ahead : count))
+  ), 0);
+}

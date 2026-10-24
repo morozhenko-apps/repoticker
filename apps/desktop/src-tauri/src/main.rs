@@ -394,11 +394,16 @@ fn execute(
                 .map(|(path, outcome)| git_action_result(&path, outcome)),
         );
     } else {
-        // Safe pull mutates checkouts and remains strictly sequential.
+        // Safe sync and legacy Safe pull mutate checkouts sequentially.
         for (index, path) in targets.into_iter().enumerate() {
             let display_path = path.to_string_lossy().into_owned();
             notify_progress(app, operation, &display_path, index, total, "start", None);
-            let result = git_action_result(&path, git::safe_pull(&path));
+            let outcome = if operation == "safe_sync" {
+                git::safe_sync(&path)
+            } else {
+                git::safe_pull(&path)
+            };
+            let result = git_action_result(&path, outcome);
             notify_progress(
                 app,
                 operation,

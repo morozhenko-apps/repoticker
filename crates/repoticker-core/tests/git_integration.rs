@@ -576,10 +576,15 @@ fn safe_push_rejects_split_push_url_or_nonmatching_upstream_branch() {
         &f.local,
         &["config", "--unset-all", "remote.origin.pushurl"],
     );
+    // Keep the alternate upstream valid and strictly behind local HEAD.
+    // This must exercise a mismatched push branch, not NoUpstream.
+    let tip = run(&f.local, &["rev-parse", "refs/remotes/origin/dev"]);
+    run(&f.local, &["update-ref", "refs/remotes/origin/other", &tip]);
     run(
         &f.local,
         &["config", "branch.dev.merge", "refs/heads/other"],
     );
+    assert_eq!(git::inspect(&f.local).unwrap().decision, SyncDecision::LocalAhead);
     assert!(
         git::safe_push(&f.local).is_err(),
         "unmatched merge ref must be refused"

@@ -24,7 +24,11 @@ test("native safe sync action is sequential, non-force and rechecked", () => {
   const git = source("../crates/repoticker-core/src/git.rs");
   const app = source("../apps/desktop/ui/app.mjs");
   const html = source("../apps/desktop/ui/index.html");
-  assert.match(native, /operation == "safe_sync" && status\.decision == SyncDecision::LocalAhead/);
+  assert.match(native, /"fetch" \| "safe_sync" => true/);
+  assert.match(native, /"safe_pull" => matches!\(/);
+  assert.match(native, /should_schedule_git_target\(operation, \|\|/);
+  assert.match(native, /git::inspect\(path\)\.ok\(\)\.map\(\|status\| status\.decision\)/);
+  assert.match(native, /fn safe_sync_accounts_for_every_discovered_repo_state\(/);
   assert.match(native, /git::safe_sync\(&path\)/);
   assert.match(git, /pub fn safe_sync\(/);
   assert.match(git, /pub fn safe_push\(/);
@@ -75,4 +79,24 @@ test("open status balloon reuses native monitor cache without scanning local Git
   assert.match(monitor, /mergeMonitorPresentation\(/);
   assert.doesNotMatch(monitor, /get_snapshot|git::inspect|perform_git_action/);
   assert.match(quota, /subscribe\("repoticker-monitor-updated", refreshMonitorOnly\)/);
+});
+
+
+test("native Safe Sync reports each discovered repo and preserves Git-owned rejection", () => {
+  const native = source("../apps/desktop/src-tauri/src/main.rs");
+  const git = source("../crates/repoticker-core/src/git.rs");
+  const select = native.match(/fn should_schedule_git_target\([\s\S]*?\n\}/)?.[0] ?? "";
+  assert.match(select, /"fetch" \| "safe_sync" => true/);
+  assert.match(select, /"safe_pull" => matches!\(/);
+  const execute = native.match(/fn execute\([\s\S]*?\n\}\n\n#\[tauri::command\]/)?.[0] ?? "";
+  assert.ok(execute, "Native batch entrypoint must remain present");
+  assert.match(execute, /let total = targets\.len\(\)/);
+  assert.match(execute, /git::safe_sync\(&path\)/);
+  assert.match(execute, /git_action_result\(&path, outcome\)/);
+  assert.match(execute, /notify_progress\([\s\S]*"complete"/);
+  assert.match(git, /pub fn safe_sync\(repo: &Path\)/);
+  assert.match(git, /SyncDecision::LocalAhead => safe_push\(repo\)/);
+  assert.match(git, /other => Ok\(OperationOutcome::Skipped\(other\)\)/);
+  assert.match(native, /Ok\(OperationOutcome::Skipped\(decision\)\) => ActionResult/);
+  assert.match(native, /Err\(GitError\(error\)\) => ActionResult/);
 });

@@ -290,6 +290,23 @@ fn git_action_result(
     }
 }
 
+/// Admission is independent from Safe Sync eligibility: the Git core must
+/// account for every discovered checkout, including no-ops and failures.
+/// Only the legacy pull-only command preserves its historical prefilter.
+fn should_schedule_git_target(
+    operation: &str,
+    inspect_decision: impl FnOnce() -> Option<SyncDecision>,
+) -> bool {
+    match operation {
+        "fetch" | "safe_sync" => true,
+        "safe_pull" => matches!(
+            inspect_decision(),
+            Some(SyncDecision::FastForward { .. })
+        ),
+        _ => false,
+    }
+}
+
 fn execute(
     app: &AppHandle,
     operation: &str,
@@ -338,16 +355,9 @@ fn execute(
         .into_iter()
         .filter(|path| only_path.is_none_or(|requested| path.to_string_lossy() == requested))
         .filter(|path| {
-            if operation == "fetch" {
-                return true;
-            }
-            // Only branches eligible for fast-forward are attempted. Inspect
-            // again inside safe_pull to fail closed if another agent changed it.
-            matches!(
-                git::inspect(path),
-                Ok(status) if matches!(status.decision, SyncDecision::FastForward { .. }) ||
-                    (operation == "safe_sync" && status.decision == SyncDecision::LocalAhead)
-            )
+            should_schedule_git_target(operation, || {
+                git::inspect(path).ok().map(|status| status.decision)
+            })
         })
         .collect();
     let total = targets.len();
@@ -958,6 +968,64 @@ fn close_settings(app: AppHandle) -> Result<(), String> {
 
 /// A missing `repositories` argument preserves the selection for legacy
 /// same-account callers; an explicit empty list means "monitor all".
+
+#[cfg(test)]
+mod git_target_admission_tests {
+    use super::{should_schedule_git_target, SyncDecision};
+    use std::cell::Cell;
+
+    #[test]
+    fn safe_sync_accounts_for_every_discovered_repo_state() {
+        for decision in [
+            Some(SyncDecision::FastForward { commits: 2 }),
+            Some(SyncDecision::LocalAhead),
+            Some(SyncDecision::UpToDate),
+            Some(SyncDecision::NoUpstream),
+            Some(SyncDecision::LocalChanges),
+            Some(SyncDecision::Diverged),
+            Some(SyncDecision::GitOperationInProgress),
+            None, // An inspection error is returned by the actual core action.
+        ] {
+            let inspected = Cell::new(false);
+            assert!(should_schedule_git_target("safe_sync", || {
+                inspected.set(true);
+                decision
+            }));
+            assert!(!inspected.get(), "The core owns the final Safe Sync inspection");
+        }
+    }
+
+    #[test]
+    fn fetch_remains_unfiltered_and_legacy_pull_retains_narrow_eligibility() {
+        let inspected = Cell::new(false);
+        assert!(should_schedule_git_target("fetch", || {
+            inspected.set(true);
+            None
+        }));
+        assert!(!inspected.get(), "Fetch admission must never inspect Git status");
+        for decision in [
+            Some(SyncDecision::UpToDate),
+            Some(SyncDecision::NoUpstream),
+            Some(SyncDecision::LocalAhead),
+            Some(SyncDecision::LocalChanges),
+            Some(SyncDecision::Diverged),
+            Some(SyncDecision::GitOperationInProgress),
+            None,
+        ] {
+            assert!(!should_schedule_git_target("safe_pull", || decision));
+        }
+        assert!(should_schedule_git_target("safe_pull", || {
+            Some(SyncDecision::FastForward { commits: 1 })
+        }));
+    }
+
+    #[test]
+    fn unsupported_operations_never_schedule_a_checkout() {
+        assert!(!should_schedule_git_target("push_force", || {
+            panic!("No Git inspection should occur for unknown operations")
+        }));
+    }
+}
 
 #[cfg(test)]
 mod monitor_selection_tests {

@@ -1218,3 +1218,28 @@ would disappear. The published v0.2.0 and `main` remain intact.
   Rust format, tests or desktop compile success before the
   complete final Preflight run. Physical KDE/Windows
   acceptance remains pending issue #15.
+
+### P1-REMOTE1 final-source validation checkpoint
+
+- The initial source candidate `3d6906e` triggered
+  [Preflight #40100383288](https://github.com/morozhenko-apps/repoticker/actions/runs/40100383288).
+  JavaScript source-contract checks still expected the previous
+  inline `let second = inspect(repo)` despite the new helper,
+  and Rustfmt requested four layout changes. These are
+  representation/test-contract differences, not grounds to
+  disable a safety assertion.
+- [`3856194`](https://github.com/morozhenko-apps/repoticker/commit/3856194c86beb31ea1f93517a27ade52470ad325)
+  updated the JS invariant: two full local safety checks must
+  enclose the exact live remote probe, and the helper must
+  inspect, require LocalAhead and compare pinned remote identity.
+  [`5be9ecf`](https://github.com/morozhenko-apps/repoticker/commit/5be9ecf171895ae2a47864919f41e41509899154)
+  and [`87c134f`](https://github.com/morozhenko-apps/repoticker/commit/87c134f27a32f166212e985cb73d7da93308fbe4)
+  applied the exact four Rustfmt hunks in code/tests.
+- **Latest complete source/test candidate:**
+  `87c134f27a32f166212e985cb73d7da93308fbe4`.
+  [Preflight #40100698289](https://github.com/morozhenko-apps/repoticker/actions/runs/40100698289)
+  was pending when recorded. Do not claim a green aggregate
+  before Rustfmt, real Git tests, JS contracts, desktop compile
+  and Preflight result all pass on this exact SHA.
+- Physical outgoing SSH/HTTPS and KDE/Windows acceptance remains
+  deferred to issue #15; public v0.2.0 and `main` unchanged.

@@ -35,6 +35,11 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
   const html = readFileSync(new URL("../apps/desktop/ui/settings.html", import.meta.url), "utf8");
   const ids = [...new Set([...html.matchAll(/\bid="([^"]+)"/g)].map(match => match[1]))];
   const elements = new Map(ids.map(id => [id, mockNode(id)]));
+  // Match initial HTML: the custom language listbox starts hidden.
+  // The default mockNode.hidden=false previously made the first
+  // trigger click close the list instead of opening it.
+  assert.match(html, /id="language-options"[^>]* hidden>/);
+  elements.get("language-options").hidden = true;
   const languageOptions = ["en", "ru"].map(value => {
     const item = mockNode("locale-" + value);
     item.dataset.value = value;
@@ -469,6 +474,21 @@ test("English saved Settings previews RU before OK and persists only chosen loca
     await ui.node("apply-settings").fire("click");
     assert.equal(ui.calls.find(([name]) => name === "save_settings")?.[1]?.language, "ru");
     assert.equal(ui.closed, true);
+  } finally { ui.restore(); }
+});
+
+test("Language popup fixture starts in the hidden state declared by shipped HTML", async () => {
+  const ui = await fixture("language-start-hidden", true);
+  try {
+    const trigger = ui.node("language-trigger");
+    const list = ui.node("language-options");
+    assert.equal(list.hidden, true);
+    await trigger.fire("click");
+    assert.equal(list.hidden, false);
+    assert.equal(ui.activeElement, ui.languageOption("en"));
+    await trigger.fire("click");
+    assert.equal(list.hidden, true);
+    assert.equal(ui.activeElement, trigger);
   } finally { ui.restore(); }
 });
 

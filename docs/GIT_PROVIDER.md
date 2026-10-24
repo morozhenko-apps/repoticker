@@ -8,6 +8,22 @@ A root may be a valid Git checkout itself or a parent whose **immediate child di
 
 Removing a registered root removes only its config entry, not its checkout. Identically named repositories are distinguished by canonical path.
 
+**Unreleased P1-IGNORE1 (dev):** Settings now supports a bounded list
+of up to 100 additional exact immediate-child folder names to ignore.
+These are global across all enrolled parent roots, case-sensitive,
+not recursive, not globs and cannot disable built-in hidden/build/
+snapshot exclusions. Existing configurations default to an empty list.
+An explicitly enrolled Git repository remains visible and actionable
+even if its name appears in the ignore list; only automatic child
+discovery is filtered. Local snapshots, Fetch/Safe pull and
+Open on GitHub/Open folder/Copy path all use the same filtered
+discovery and enrollment boundary. The setting is committed only
+with Settings OK and is preserved on Cancel. No remote data, Git
+mutations or repository files are changed by editing exclusions.
+See [P1-IGNORE1 plan](DEVELOPMENT_0_4_0.md) and
+[native acceptance #15](https://github.com/morozhenko-apps/repoticker/issues/15).
+
+
 ## Snapshot and UI
 
 Installed Git supplies current branch/detached status, upstream, ahead/behind, dirty tracked/untracked working tree and unfinished Git operation status. Ahead/behind is measured against **last fetched remote-tracking refs**, which can be stale until Fetch. Empty, disconnected or unavailable GitHub CI/runners/quota measurements are shown as unknown, not zero.

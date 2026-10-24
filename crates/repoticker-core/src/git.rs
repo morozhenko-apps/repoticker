@@ -933,6 +933,15 @@ fn parse_single_remote_branch(raw: &str, branch_ref: &str) -> Result<String, Git
 /// same-named configured upstream, without force, tags or default refspecs.
 /// Both tips and remote routing are checked again before the network write.
 pub fn safe_push(repo: &Path) -> Result<OperationOutcome, GitError> {
+    safe_push_with_checkpoint(repo, || {})
+}
+
+/// Test seam for an external Git client changing state during ls-remote.
+/// Production does not inject any action at this checkpoint.
+fn safe_push_with_checkpoint(
+    repo: &Path,
+    after_remote_probe: impl FnOnce(),
+) -> Result<OperationOutcome, GitError> {
     let first = inspect(repo)?;
     if first.decision != SyncDecision::LocalAhead {
         return match first.decision {
@@ -1027,6 +1036,10 @@ pub fn safe_push(repo: &Path) -> Result<OperationOutcome, GitError> {
         ));
     }
 
+    // Another Git process may alter the active branch, upstream or push
+    // routing during the network read. The injected callback is a no-op
+    // in production and is used only for deterministic race tests.
+    after_remote_probe();
     // Recheck local Git refs and remote routing after the network request.
     if !safe_push_source_unchanged(repo, &first, &pin)? {
         return Err(GitError("Repository changed during Safe sync".into()));
@@ -1067,7 +1080,9 @@ pub fn safe_pull(repo: &Path) -> Result<OperationOutcome, GitError> {
 
 #[cfg(test)]
 mod concurrent_git_tests {
-    use super::{safe_pull_with_checkpoints, OperationOutcome};
+    use super::{
+        safe_pull_with_checkpoints, safe_push_with_checkpoint, OperationOutcome,
+    };
     use std::{
         fs,
         path::{Path, PathBuf},
@@ -1293,6 +1308,97 @@ mod concurrent_git_tests {
             .0
             .contains("changed during sync"));
         checkout.unchanged();
+    }
+
+    fn ahead_with_bare_remote() -> (Checkout, PathBuf, String) {
+        let checkout = Checkout::new();
+        // Keep the disposable bare repository within .git so it is
+        // cleaned with the fixture and does not dirty the worktree.
+        let remote = checkout.root.join(".git").join("remote.git");
+        let remote_path = remote.to_str().expect("UTF-8 fixture").to_owned();
+        git(&checkout.root, &["init", "--bare", &remote_path]);
+        let refspec = format!("{}:refs/heads/dev", checkout.first_tip);
+        git(&checkout.root, &["push", &remote_path, &refspec]);
+        git(&checkout.root, &["remote", "set-url", "origin", &remote_path]);
+        git(&checkout.root, &["merge", "--ff-only", &checkout.first_tip]);
+        git(
+            &checkout.root,
+            &["commit", "--allow-empty", "-m", "local strictly ahead"],
+        );
+        let head = git(&checkout.root, &["rev-parse", "HEAD"]);
+        (checkout, remote, head)
+    }
+
+    #[test]
+    fn switching_branch_while_remote_tip_is_checked_blocks_safe_push() {
+        let (checkout, remote, ahead_head) = ahead_with_bare_remote();
+        let result = safe_push_with_checkpoint(&checkout.root, || {
+            git(&checkout.root, &["switch", "-c", "external-branch"]);
+        });
+        assert!(result
+            .expect_err("remote-probe race must fail closed")
+            .0
+            .contains("Repository changed during Safe sync"));
+        assert_eq!(
+            git(&checkout.root, &["branch", "--show-current"]),
+            "external-branch"
+        );
+        assert_eq!(git(&checkout.root, &["rev-parse", "dev"]), ahead_head);
+        assert_eq!(
+            git(&remote, &["rev-parse", "refs/heads/dev"]),
+            checkout.first_tip
+        );
+    }
+
+    #[test]
+    fn repointing_upstream_while_remote_tip_is_checked_blocks_safe_push() {
+        let (checkout, remote, ahead_head) = ahead_with_bare_remote();
+        let result = safe_push_with_checkpoint(&checkout.root, || {
+            git(
+                &checkout.root,
+                &[
+                    "update-ref",
+                    "refs/remotes/origin/dev",
+                    &checkout.alternate_tip,
+                ],
+            );
+        });
+        assert!(result
+            .expect_err("upstream OID race must be rejected")
+            .0
+            .contains("Repository changed during Safe sync"));
+        assert_eq!(git(&checkout.root, &["rev-parse", "HEAD"]), ahead_head);
+        assert_eq!(
+            git(&remote, &["rev-parse", "refs/heads/dev"]),
+            checkout.first_tip
+        );
+    }
+
+    #[test]
+    fn changing_push_remote_during_remote_probe_blocks_safe_push() {
+        let (checkout, remote, ahead_head) = ahead_with_bare_remote();
+        let other = checkout.root.join(".git").join("other-remote.git");
+        let other_path = other.to_str().expect("UTF-8 fixture");
+        git(&checkout.root, &["init", "--bare", other_path]);
+        let result = safe_push_with_checkpoint(&checkout.root, || {
+            git(&checkout.root, &["remote", "set-url", "origin", other_path]);
+        });
+        assert!(result
+            .expect_err("changed remote URL must refuse push")
+            .0
+            .contains("Repository changed during Safe sync"));
+        assert_eq!(git(&checkout.root, &["rev-parse", "HEAD"]), ahead_head);
+        assert_eq!(
+            git(&remote, &["rev-parse", "refs/heads/dev"]),
+            checkout.first_tip
+        );
+        let output = Command::new("git")
+            .arg("-C")
+            .arg(&other)
+            .args(["show-ref", "--verify", "--quiet", "refs/heads/dev"])
+            .status()
+            .expect("git installed");
+        assert!(!output.success(), "alternate remote must remain untouched");
     }
 }
 

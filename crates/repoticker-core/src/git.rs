@@ -119,16 +119,31 @@ fn terminate_fetch_group(pid: u32) -> Result<(), GitError> {
 
 #[cfg(windows)]
 fn terminate_fetch_group(pid: u32) -> Result<(), GitError> {
-    // Windows taskkill /T targets descendants of the exact child PID.
-    // No shell, user-controlled command or process-name-wide termination.
-    let result = Command::new("taskkill.exe")
+    // taskkill /T terminates descendants of the exact owned PID. The
+    // supervisor itself also has a deadline: never hang indefinitely
+    // while trying to stop a hung SSH process.
+    let mut child = Command::new("taskkill.exe")
         .args(["/PID", &pid.to_string(), "/T", "/F"])
-        .output()
-        .map_err(|err| GitError(format!("Cannot start Git fetch cancellation: {err}")))?;
-    if !result.status.success() {
-        return Err(GitError("Cannot stop Git fetch process tree".into()));
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
+        .map_err(|err| GitError(format!("Cannot start Git process-tree termination: {err}")))?;
+    let start = Instant::now();
+    loop {
+        match child.try_wait() {
+            Ok(Some(status)) if status.success() => return Ok(()),
+            Ok(Some(_)) => return Err(GitError("Cannot stop owned Git process tree".into())),
+            Ok(None) => {}
+            Err(err) => return Err(GitError(format!("Cannot await taskkill: {err}"))),
+        }
+        if start.elapsed() >= PROCESS_REAP_GRACE {
+            let _ = child.kill();
+            let _ = child.wait();
+            return Err(GitError("Owned Git process-tree termination exceeded deadline".into()));
+        }
+        thread::sleep(POLL_INTERVAL);
     }
-    Ok(())
 }
 
 #[cfg(not(any(unix, windows)))]

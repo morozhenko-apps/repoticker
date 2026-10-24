@@ -147,7 +147,9 @@ async function refreshMonitorOnly() {
   const id = ++refreshId;
   try {
     const remote = await invoke("github_monitor_snapshot");
+    const nativeKind = await invoke("get_usage_popup_kind");
     if (id !== refreshId) return;
+    if (isHoverKind(nativeKind)) activeKind = nativeKind;
     currentSnapshot = mergeMonitorPresentation(currentSnapshot || {
       github_monitor_org: null, connected: false,
       runner_state: null, monitor_message: null,

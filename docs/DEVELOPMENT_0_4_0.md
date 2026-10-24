@@ -1119,3 +1119,78 @@ Rollback reverts code/tests changes without modifying stored schema or GitHub au
 - Runtime acceptance on KDE and Windows (especially outbound
   remote mutation, refresh clicks and local timestamps) remains
   deferred in issue #15. No release or main promotion.
+
+## P1-REMOTE1 — refuse missing or stale upstream before Safe push (2026-10-24)
+
+Mode: **A — Feature / Refactor**. Approved v0.4 P1 Git safety scope.
+Baseline: Safe sync `693a3b1` passed [Preflight #40099289302](https://github.com/morozhenko-apps/repoticker/actions/runs/40099289302)
+**4/4 success**, including Linux desktop compile. Working branch `dev`.
+No release, `main` promotion, version bump or new persistent setting.
+
+### Root cause and scope
+
+A concrete disposable-bare-remote reproduction establishes that
+`git push --porcelain --no-follow-tags origin <oid>:refs/heads/dev`
+**recreates** a deleted server branch when the local
+`refs/remotes/origin/dev` is stale. This contradicts P1-SYNC2's
+existing invariant 'never create an upstream'. Git's default
+non-force protection prevents non-fast-forward updates but does
+not prevent a missing remote ref from being recreated. Another
+remote may advance without the local cache knowing; the current
+local double-check cannot observe that before a network write.
+
+Candidate root-cause hypotheses: (1) stale local upstream
+ref after server deletion, (2) remote unexpectedly advanced,
+(3) push destination remapping, (4) multiple push URLs,
+(5) unexpected remote mirror/default refspec config,
+(6) different branch selected between local checks.
+Source and bare-remote evidence confirm **(1)** as an actual
+defect; the existing code already checks (3)/(4)/(6), and
+default non-force Git handles stale non-fast-forward changes.
+This slice specifically addresses the server-side ref existence
+and fetched-tip equality check, not broad transport timeouts.
+
+### Chosen correction
+
+Before a Safe push, execute a **read-only, exact-ref probe**
+`git ls-remote --exit-code --heads <configured-remote> refs/heads/<branch>`
+through the existing argv-only/no-terminal Git adapter.
+Parse **one** `<oid>\t<exact-ref>` line and require:
+non-empty 40/64-hex commit OID, exact ref path and equality
+to the pinned local `@{upstream}^{commit}` tip. If missing,
+moved or malformed, fail closed **before** executing push.
+After the remote probe, repeat the current branch/upstream/HEAD/
+local-ref/config/remote-URL eligibility checks, since external
+Git clients may have changed the local repository during the
+network request. Then use the existing immutable commit OID
+and normal, explicit **non-force** push. No fetch, force,
+branch creation, stash, rebase, reset, mirroring or tags.
+
+This check is a best-effort preflight, **not** an atomic
+compare-and-swap transaction across client and Git server.
+A remote deletion racing *after* the probe cannot be prevented
+by non-force push alone. Do not claim absolute server-side
+branch-existence enforcement. A stronger atomic lease would
+change the existing strict no-force safety contract and would
+require an explicit separate architectural decision.
+
+### Implementation and acceptance
+
+1. [ ] Extract the existing local pre-push identity checks into
+   a small private reusable helper, retaining their semantics.
+2. [ ] Add exact remote probe parser and invoke it between the
+   first and final local revalidation; reject absent/moved refs.
+3. [ ] Test with disposable local bare remotes: deleted remote
+   branch is not recreated, remotely advanced tip rejected
+   before push, ordinary ahead push succeeds, existing hook/
+   split push URL rejection remains effective, malformed
+   output rejected without weak assertions.
+4. [ ] One final stable source-level Preflight for Rustfmt,
+   Rust core/integration/Clippy, JS/release and Linux build.
+5. [ ] Record exact CI evidence and add KDE/Windows acceptance
+   to issue #15. Actual remote operations only in user-triggered
+   runtime, never on production remote during automated tests.
+
+Rollback: revert this source/test commit. It has no settings
+or storage migration; only the pre-push remote read and check
+would disappear. The published v0.2.0 and `main` remain intact.

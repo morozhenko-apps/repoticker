@@ -68,6 +68,8 @@ test("initial locale lookup is config-only, guarded against late full-scan outco
 
 test("compact-card accessibility updates current counts and localized controls", () => {
   assert.match(card, /metricAccessibleLabel\(cardLanguage, kind, lastMetricStatus, busy\)/);
+  assert.match(card, /byId\("runner-status"\)\.querySelector\("\.metric-caption"\)\.textContent/);
+  assert.match(card, /byId\("ci-tasks"\)\.querySelector\("\.metric-caption"\)\.textContent/);
   assert.match(card, /node\.setAttribute\("aria-label"/);
   assert.match(card, /document\.documentElement\.lang = cardLanguage/);
   assert.match(card, /item\.dataset\.localeKey/);

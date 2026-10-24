@@ -82,6 +82,20 @@ render in the WebView's **local machine timezone**, not forced UTC.
 An open status balloon refreshes from the native monitor cache
 rather than launching a local Git status scan.
 
+
+**Unreleased P1-REMOTE1 hardening:** Safe push now performs an exact
+read-only remote-branch probe before sending the pinned commit.
+It requires the upstream `refs/heads/<branch>` to exist on the
+server and match the already-fetched upstream OID. A removed or
+advanced remote branch fails before push; it is never knowingly
+recreated from a stale tracking ref. The client verifies local
+HEAD/upstream/clean status and remote routing again after the
+probe. No automatic Fetch is introduced. This is a best-effort
+non-force safety preflight, **not an atomic server-side lease**:
+a deletion racing after the probe remains a documented limit
+of Git's ordinary non-force push semantics. See
+[P1-REMOTE1](DEVELOPMENT_0_4_0.md) and issue #15.
+
 These features remain **unreleased dev-only** until native KDE/
 Windows acceptance in [issue #15](https://github.com/morozhenko-apps/repoticker/issues/15)
 and separate release approval. See [P1-SYNC2](DEVELOPMENT_0_4_0.md).

@@ -1324,12 +1324,12 @@ waits and already provides process-group ownership for Fetch.
 
 ### Verification gates
 
-1. [ ] Implement shared bounded owned child wait/timeout used by
+1. [x] Implement shared bounded owned child wait/timeout used by
    read-only Git calls and outbound push; keep unbounded worktree
    merge isolated. Replace direct `Command::output` on those paths.
-2. [ ] Integrate Fetch's token with the same finite deadline
+2. [x] Integrate Fetch's token with the same finite deadline
    while preserving cancellation races and owned descendants.
-3. [ ] Add unit/integration regressions: finite completion,
+3. [x] Add unit/integration regressions: finite completion,
    blocked child + inherited pipe descendant killed on timeout,
    unrelated process preserved, captured output without
    deadlock, delayed SSH/remote probe, Fetch timeout distinct
@@ -1343,3 +1343,33 @@ Rollback: revert P1-PROC1 code/test commits. No configuration,
 credentials, user repositories, remote refs, main or release
 are intentionally modified during development; Git tests use
 disposable local shell/bare-repository fixtures only.
+
+### P1-PROC1 implementation checkpoint
+
+- Code `3c9c108`: tracked Fetch waits and constants prepared.
+  `fc08017`: shared read-only/push bounded process ownership
+  with separate stdout/stderr drainers, explicit stdin null,
+  private Unix process groups, read-only/remote deadlines and
+  distinct push-outcome-unknown errors.
+- `d6dfcda`: Fetch path uses the bounded owned wait, preserving
+  cancellation authority; `d630858`: Unix subprocess tests
+  for unrelated process survival, descendant timeout, pipe
+  backpressure, Fetch deadline versus explicit cancellation,
+  and unknown outbound status.
+- `17b5280`: Fetch cancellation and registration-failure cleanup
+  now perform bounded reap rather than unbounded wait_with_output.
+  `3be1687`: JS source contracts cover routed timeouts,
+  distinct error status, owned process group and unchanged
+  four-button card. `d59c81f`: Windows taskkill supervision
+  is also finite and scoped to an exact child PID/descendants.
+- **Latest source candidate** `d59c81f25cb474eede83bcfc12c30f9361e8a0bd`.
+  [Preflight #40103054220](https://github.com/morozhenko-apps/repoticker/actions/runs/40103054220)
+  was pending when this checkpoint was recorded. No source
+  success may be asserted until Rustfmt, Rust tests/Clippy,
+  JS contracts, Linux desktop compile and aggregate pass.
+- Remaining architectural limits: local ff-only merge is not
+  forcibly terminated, and a helper that survives after Git
+  itself has already exited may hold inherited pipes; the
+  caller still receives a bounded, outcome-unknown error
+  rather than blocking the GUI. Physical Linux/Windows
+  credential helpers and SSH descendants remain in #15.

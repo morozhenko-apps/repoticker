@@ -600,23 +600,68 @@ byId("add-root-form").addEventListener("submit", event => {
   renderRoots();
   updateApply();
 });
+const languageTrigger = byId("language-trigger");
+const languageList = byId("language-options");
+const languageOptions = [...languageList.querySelectorAll("[role=option]")];
+
 function updateLanguagePicker() {
-  byId("language-trigger").firstChild.textContent =
+  languageTrigger.firstChild.textContent =
     draft.language === "ru" ? "Русский " : "English ";
-  for (const option of byId("language-options").querySelectorAll("[role=option]")) {
+  for (const option of languageOptions) {
     option.setAttribute("aria-selected", String(option.dataset.value === draft.language));
+    option.tabIndex = -1; // Focus is programmatic; never add two tab stops.
   }
 }
-function closeLanguagePicker() {
-  byId("language-options").hidden = true;
-  byId("language-trigger").setAttribute("aria-expanded", "false");
+function closeLanguagePicker(returnFocus = false) {
+  const wasOpen = !languageList.hidden;
+  languageList.hidden = true;
+  languageTrigger.setAttribute("aria-expanded", "false");
+  if (returnFocus && wasOpen) languageTrigger.focus();
 }
-byId("language-trigger").addEventListener("click", () => {
-  const open = byId("language-options").hidden;
-  byId("language-options").hidden = !open;
-  byId("language-trigger").setAttribute("aria-expanded", String(open));
+function openLanguagePicker(position = "selected") {
+  if (!draft || saving) return;
+  languageList.hidden = false;
+  languageTrigger.setAttribute("aria-expanded", "true");
+  const selected = languageOptions.find(item => item.dataset.value === draft.language);
+  const target = position === "first" ? languageOptions[0]
+    : position === "last" ? languageOptions.at(-1) : selected || languageOptions[0];
+  target?.focus();
+}
+languageTrigger.addEventListener("click", () => {
+  if (!languageList.hidden) closeLanguagePicker(true);
+  else openLanguagePicker();
 });
-for (const option of byId("language-options").querySelectorAll("[role=option]")) {
+languageTrigger.addEventListener("keydown", event => {
+  if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) {
+    if (!draft || saving) return;
+    event.preventDefault();
+    openLanguagePicker(event.key === "Home" ? "first"
+      : event.key === "End" ? "last" : "selected");
+  }
+});
+languageList.addEventListener("keydown", event => {
+  if (languageList.hidden) return;
+  if (event.key === "Escape") {
+    event.preventDefault();
+    closeLanguagePicker(true);
+    return;
+  }
+  if (event.key === "Tab") {
+    closeLanguagePicker(); // Let browser advance to the next/previous control.
+    return;
+  }
+  if (!["ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) return;
+  event.preventDefault();
+  const current = languageOptions.indexOf(document.activeElement);
+  const selected = languageOptions.findIndex(item => item.dataset.value === draft?.language);
+  const index = current >= 0 ? current : Math.max(selected, 0);
+  const next = event.key === "Home" ? 0
+    : event.key === "End" ? languageOptions.length - 1
+      : (index + (event.key === "ArrowDown" ? 1 : -1)
+        + languageOptions.length) % languageOptions.length;
+  languageOptions[next]?.focus();
+});
+for (const option of languageOptions) {
   option.addEventListener("click", () => {
     if (!draft || saving) return;
     draft.language = option.dataset.value;
@@ -628,14 +673,17 @@ for (const option of byId("language-options").querySelectorAll("[role=option]"))
     githubButtons();
     updateApply();
     closeLanguagePicker();
-    byId("language-trigger").focus();
+    languageTrigger.focus();
   });
 }
 document.addEventListener("pointerdown", event => {
   if (!event.target.closest(".language-picker")) closeLanguagePicker();
 });
 document.addEventListener("keydown", event => {
-  if (event.key === "Escape") closeLanguagePicker();
+  if (event.key === "Escape" && !languageList.hidden) {
+    event.preventDefault();
+    closeLanguagePicker(true);
+  }
 });
 byId("cancel-settings").addEventListener("click", async () => {
   if (saving) return;

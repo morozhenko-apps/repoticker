@@ -268,10 +268,19 @@ export function startGithubMonitoring({ invoke, event, onError = () => {},
         lastState = next;
         hasPublishedResult = true;
       }
+      // Runner-inventory permission is separate from workflow-run access.
+      // Never let a runner-only 403 suppress otherwise authoritative CI
+      // failures; a jobs/installation failure or global rate limit still
+      // blocks this independent read.
+      const runnerOnlyDenied = result.failure === "permission_denied" &&
+        Array.isArray(result.state?.errors) && result.state.errors.length > 0 &&
+        result.state.errors.every(error =>
+          error?.scope === "runners" && error?.reason === "permission_denied");
       if (selection.ci_failure_notifications !== true) {
         ciTracker.reset();
       } else if (revision === selectionRevision && kind !== "runners" &&
-          !result.failure && next?.coverage?.jobs === true &&
+          (!result.failure || runnerOnlyDenied) &&
+          next?.coverage?.jobs === true &&
           next.scope?.organization && Array.isArray(next.scope.repositories)) {
         // Completed runs are deliberately independent of active job counts.
         // One bounded native REST page per repository; no requests when opt-out.

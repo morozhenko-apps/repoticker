@@ -15,6 +15,7 @@ function fixture(enabled) {
   const listeners = new Map();
   let runs = [run(10)];
   let setting = enabled;
+  let collectionFailure = null;
   const state = {
     coverage: { jobs: true, runners: true },
     scope: { organization: "team", repositories: ["team/repo"] },
@@ -37,13 +38,19 @@ function fixture(enabled) {
     event: { listen(name, callback) { listeners.set(name, callback); } },
     schedule() {},
     collect: async () => ({ state: structuredClone(state), repositoryCount: 1,
-      failure: null, reason: null })
+      failure: collectionFailure, reason: null })
   });
   return {
     calls, refresh,
     async ready() { await tick(); },
     setRuns(values) { runs = values; },
     setSetting(value) { setting = value; },
+    setCollectorFailure(reason, errors, jobsCovered = true) {
+      collectionFailure = reason;
+      state.errors = errors;
+      state.coverage.jobs = jobsCovered;
+      state.coverage.runners = !errors.some(e => e.scope === "runners");
+    },
     setAuthorized(value) { authorized = value; },
     disconnect() {
       authorized = false;
@@ -148,4 +155,45 @@ test("Given credential silently expires When authorization returns Then first re
   await app.refresh(true);
   assert.deepEqual(app.calls.filter(x => x.command === "ci_failure_notify")
     .map(x => x.args.runId), [23]);
+});
+
+test("Given successful workflows When runs complete after opt-in Then no alert is delivered", async () => {
+  const app = fixture(true);
+  await app.ready();
+  app.setRuns([{ ...run(30), conclusion: "success" }, run(10)]);
+  await app.refresh(true, "tasks");
+  assert.equal(app.calls.filter(x => x.command === "ci_failure_notify").length, 0,
+    "Finishing a successful runner job is never a CI failure");
+});
+
+test("Given runner inventory permission denied When tasks remain covered Then new CI failures still notify", async () => {
+  const app = fixture(true);
+  await app.ready();
+  app.setCollectorFailure("permission_denied",
+    [{ scope: "runners", reason: "permission_denied" }]);
+  app.setRuns([run(31), run(10)]);
+  await app.refresh(true, "tasks");
+  assert.deepEqual(app.calls.filter(x => x.command === "ci_failure_notify")
+    .map(x => x.args.runId), [31],
+    "Read-only Actions failures are independent of org runner inventory");
+});
+
+test("Given jobs are incomplete or globally rate-limited When runs change Then no CI alert is fabricated", async () => {
+  const app = fixture(true);
+  await app.ready();
+  const baselineReads = app.calls.filter(x => x.command === "github_api_get").length;
+  app.setRuns([run(40), run(10)]);
+  app.setCollectorFailure("permission_denied", [
+    { scope: "runners", reason: "permission_denied" },
+    { scope: "team/repo", reason: "permission_denied" }
+  ], false);
+  await app.refresh(true, "tasks");
+  assert.equal(app.calls.filter(x => x.command === "github_api_get").length,
+    baselineReads, "Missing job coverage blocks the completed-run read");
+  app.setCollectorFailure("rate_limited",
+    [{ scope: "runners", reason: "rate_limited" }], true);
+  await app.refresh(true, "tasks");
+  assert.equal(app.calls.filter(x => x.command === "ci_failure_notify").length, 0);
+  assert.equal(app.calls.filter(x => x.command === "github_api_get").length,
+    baselineReads, "Rate limiting blocks independent completed-run reads");
 });

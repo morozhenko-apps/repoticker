@@ -91,7 +91,7 @@ test("the separate usage WebView can listen without inheriting main permissions"
   assert.deepEqual(usageCapability.permissions, ["core:event:allow-listen"]);
   const quotaJs = read("../apps/desktop/ui/quota.mjs");
   assert.match(quotaJs, /subscribe\("repoticker-usage-shown", onUsageShown\)/);
-  assert.match(quotaJs, /subscribe\("repoticker-monitor-updated"\)/);
+  assert.match(quotaJs, /subscribe\("repoticker-monitor-updated", refreshMonitorOnly\)/);
   assert.match(quotaJs, /Status unavailable/);
   assert.doesNotMatch(quotaJs, /catch\s*\{\s*paint\(buildQuotaDetails\(null\)\)/);
 });

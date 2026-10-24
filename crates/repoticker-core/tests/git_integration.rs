@@ -572,7 +572,10 @@ fn safe_push_rejects_split_push_url_or_nonmatching_upstream_branch() {
         git::safe_push(&f.local).is_err(),
         "split push URL must be refused"
     );
-    run(&f.local, &["config", "--unset-all", "remote.origin.pushurl"]);
+    run(
+        &f.local,
+        &["config", "--unset-all", "remote.origin.pushurl"],
+    );
     run(
         &f.local,
         &["config", "branch.dev.merge", "refs/heads/other"],

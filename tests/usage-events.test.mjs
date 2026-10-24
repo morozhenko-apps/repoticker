@@ -51,6 +51,10 @@ test("native-selected tooltip switches reliably and auto-selected organization p
         async invoke(command, args) {
           calls.push([command, args]);
           if (command === "get_snapshot") return snapshot;
+          if (command === "github_monitor_snapshot") return {
+            connected: snapshot.connected, runner_state: snapshot.runner_state,
+            monitor_message: snapshot.monitor_message
+          };
           if (command === "get_usage_popup_kind") return nativeKind;
           if (command === "resize_usage_popup") return undefined;
           if (command === "github_api_get") {

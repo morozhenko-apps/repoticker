@@ -1022,3 +1022,33 @@ Implementation/acceptance:
 
 Rollback is an isolated Settings controller/HTML/CSS/tests code
 commit, without touching `main` or the published v0.2.0 package.
+
+### A3 Settings listbox code and test checkpoint (2026-10-24)
+
+- `a648b1d029bfd4fd508b5029a552e821ea2fc066`
+  introduces one shared open/close/focus path for the existing
+  EN/RU Settings language listbox. The two option buttons
+  now have stable IDs and programmatic `tabindex=-1`, with
+  selected state still communicated through `aria-selected`
+  and disclosure through `aria-expanded`.
+- Keyboard ArrowUp/ArrowDown, Home/End, Enter/Space via
+  native button click, Escape focus return, Tab without
+  `preventDefault`, and outside pointer dismissal preserve
+  the original 660×720 KDE popup geometry and preview semantics.
+  Focus never moves during config-only startup.
+- `dd91fa6d0a3a88ed51e1a435f5d03d689d2bae22`
+  upgrades the actual Settings controller fixture to record
+  active focus and document handlers and verifies wraparound,
+  Home/End, Escape, Tab, outside click and a keyboard-driven
+  RU preview followed by Cancel without config writes.
+- Exact executable/test candidate:
+  `dd91fa6d0a3a88ed51e1a435f5d03d689d2bae22`,
+  [Preflight #40139791710](https://github.com/morozhenko-apps/repoticker/actions/runs/40139791710).
+  The candidate's run was pending on first inspection. Do
+  not count A3 validated until stable Node + Rust + desktop
+  Linux + aggregate jobs pass on this SHA.
+- Prior tray EN/RU executable SHA `bdcd442b` passed
+  [Preflight #40139314507](https://github.com/morozhenko-apps/repoticker/actions/runs/40139314507),
+  **4/4 SUCCESS**. KDE/Windows physical menu refresh and
+  current keyboard/a11y acceptance are still open. Neither
+  app version, release nor OS autostart has changed.

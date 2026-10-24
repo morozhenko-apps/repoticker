@@ -70,10 +70,6 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
             };
             case "get_monitor_scope": return monitorOrg;
             case "github_auth_status": return { connected, phase };
-            case "ci_notification_permission": return options.osPermission ?? "granted";
-            case "ci_notification_test":
-              if (options.testFailure) throw Error(options.testFailure);
-              return undefined;
             case "github_api_get":
               if (args.path.includes("/repositories?"))
                 return { repositories: [
@@ -416,7 +412,6 @@ test("CI failure notifications stay OFF by default and Cancel does not persist o
 test("CI failure notification opt-in persists only on OK with existing GitHub scope", async () => {
   const ui = await fixture("notify-save", true);
   try {
-    assert.equal(ui.node("ci-notification-permission").textContent, "System notifications available");
     assert.equal(ui.node("ci-failure-notifications").checked, false);
     ui.node("ci-failure-notifications").checked = true;
     await ui.node("ci-failure-notifications").fire("change");
@@ -425,55 +420,4 @@ test("CI failure notification opt-in persists only on OK with existing GitHub sc
       ?.ciFailureNotifications, true);
     assert.equal(ui.closed, true);
   } finally { ui.restore(); }
-});
-
-test("Native notification test stays disabled until CI opt-in was saved", async () => {
-  const ui = await fixture("test-draft-only", true);
-  try {
-    assert.equal(ui.node("ci-test-notification").disabled, true);
-    ui.node("ci-failure-notifications").checked = true;
-    await ui.node("ci-failure-notifications").fire("change");
-    assert.equal(ui.node("apply-settings").disabled, false);
-    assert.equal(ui.node("ci-test-notification").disabled, true);
-    await ui.node("ci-test-notification").fire("click");
-    assert.equal(ui.calls.filter(([name]) => name === "ci_notification_test").length, 0);
-    assert.equal(ui.calls.filter(([name]) => name === "save_settings").length, 0);
-  } finally { ui.restore(); }
-});
-
-test("Persisted opt-in permits an explicit native test without sending GitHub requests", async () => {
-  const ui = await fixture("test-confirmed", true, [], { ciFailureNotifications: true });
-  try {
-    assert.equal(ui.node("ci-failure-notifications").checked, true);
-    assert.equal(ui.node("ci-test-notification").disabled, false);
-    const countBefore = ui.calls.filter(([name]) => name === "github_api_get").length;
-    await ui.node("ci-test-notification").fire("click");
-    assert.equal(ui.calls.filter(([name]) => name === "ci_notification_test").length, 1);
-    assert.equal(ui.calls.filter(([name]) => name === "github_api_get").length, countBefore);
-    assert.equal(ui.calls.filter(([name]) => name === "save_settings").length, 0);
-    assert.match(ui.node("message").textContent, /Test sent to the OS/);
-    assert.equal(ui.node("ci-test-notification").disabled, false);
-    ui.node("ci-failure-notifications").checked = false;
-    await ui.node("ci-failure-notifications").fire("change");
-    assert.equal(ui.node("ci-test-notification").disabled, true);
-  } finally { ui.restore(); }
-});
-
-test("OS permission denies diagnostic and native send errors are not called success", async () => {
-  const denied = await fixture("test-permission-denied", true, [], {
-    ciFailureNotifications: true, osPermission: "denied"
-  });
-  try {
-    assert.equal(denied.node("ci-test-notification").disabled, true);
-    await denied.node("ci-test-notification").fire("click");
-    assert.equal(denied.calls.some(([name]) => name === "ci_notification_test"), false);
-  } finally { denied.restore(); }
-  const failed = await fixture("test-native-failure", true, [], {
-    ciFailureNotifications: true, testFailure: "OS backend declined"
-  });
-  try {
-    await failed.node("ci-test-notification").fire("click");
-    assert.match(failed.node("message").textContent,
-      /Notification test failed: Error: OS backend declined/);
-  } finally { failed.restore(); }
 });

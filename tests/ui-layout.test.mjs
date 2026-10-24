@@ -193,7 +193,7 @@ test("GitHub Device Flow Settings never expose bearer tokens to JavaScript", () 
   assert.match(js, /githubFailureLabels/);
   assert.doesNotMatch(js, /accessToken|refreshToken|deviceCode|localStorage/);
   assert.equal(cfg.app.windows.find(w=>w.label==="main").height, 122);
-  assert.equal(cfg.app.windows.find(w=>w.label==="settings").height, 552);
+  assert.equal(cfg.app.windows.find(w=>w.label==="settings").height, 720);
 });
 
 test("read-only monitor flow shares native state and allows installation selection", () => {

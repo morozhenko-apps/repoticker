@@ -138,7 +138,6 @@ test("Given WebView alert data When native delivery runs Then permissions and co
   assert.match(html, /id="ci-failure-notifications" type="checkbox"/);
   assert.match(settings, /draft\.ciFailureNotifications/);
   assert.match(settings, /ciFailureNotifications: draft\.ciFailureNotifications/);
-  assert.match(settings, /ci_notification_permission/);
 });
 
 test("Given credential silently expires When authorization returns Then first recovered read is a silent baseline", async () => {
@@ -196,21 +195,4 @@ test("Given jobs are incomplete or globally rate-limited When runs change Then n
   assert.equal(app.calls.filter(x => x.command === "ci_failure_notify").length, 0);
   assert.equal(app.calls.filter(x => x.command === "github_api_get").length,
     baselineReads, "Rate limiting blocks independent completed-run reads");
-});
-
-test("native diagnostic is a fixed opt-in OS delivery, not a fabricated CI workflow", () => {
-  const rust = readFileSync(new URL(
-    "../apps/desktop/src-tauri/src/ci_notifications.rs", import.meta.url), "utf8");
-  const main = readFileSync(new URL(
-    "../apps/desktop/src-tauri/src/main.rs", import.meta.url), "utf8");
-  const source = rust.match(/pub\(crate\) fn ci_notification_test\([\s\S]*?\n\}/)?.[0];
-  assert.ok(source, "The native test IPC must exist");
-  assert.match(source, /read_config\(&app\)/);
-  assert.match(source, /notification_test_enabled\(&config\)/);
-  assert.match(source, /permission_state\(\)/);
-  assert.match(source, /\.title\("RepoTicker: test notification"\)/);
-  assert.match(source, /\.body\("Native notification test\. No CI workflow failed\."\)/);
-  assert.match(source, /\.show\(\)/);
-  assert.doesNotMatch(source, /repository|run_id|run_attempt|token|github_api_get|emit\(/);
-  assert.match(main, /ci_notifications::ci_notification_test,/);
 });

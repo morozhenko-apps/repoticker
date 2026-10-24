@@ -57,3 +57,42 @@ test("KDE GitHub selects have zero block padding and CSS-owned centered closed c
   }
   assert.doesNotMatch(html, /role="combobox"/);
 });
+
+
+test("Settings is taller and the full page and GitHub section never scroll", () => {
+  const conf = JSON.parse(readFileSync(
+    new URL("../apps/desktop/src-tauri/tauri.conf.json", import.meta.url), "utf8"));
+  const win = conf.app.windows.find(w => w.label === "settings");
+  assert.ok(win, "Settings window exists");
+  assert.deepEqual([win.width, win.minWidth, win.maxWidth], [660, 660, 660]);
+  assert.deepEqual([win.height, win.minHeight, win.maxHeight], [720, 720, 720]);
+  assert.equal(win.resizable, false);
+  assert.match(css, /\.settings-shell \{[^}]*height: 100%;[^}]*overflow: hidden;/);
+  assert.doesNotMatch(css, /\.settings-shell \{ overflow-y: auto; \}/);
+  assert.match(css, /\.block\.github \{[^}]*overflow: visible;/);
+  assert.doesNotMatch(css, /\.block\.github \{[^}]*overflow-y: auto/);
+  // Long lists retain their own bounded scroll, not the Settings page.
+  assert.match(css, /\.github-repo-list \{[^}]*overflow-y: auto;/);
+});
+
+test("One clean opt-in checkbox remains without temporary diagnostic UI or IPC", () => {
+  const rust = readFileSync(new URL(
+    "../apps/desktop/src-tauri/src/ci_notifications.rs", import.meta.url), "utf8");
+  const main = readFileSync(new URL(
+    "../apps/desktop/src-tauri/src/main.rs", import.meta.url), "utf8");
+  assert.doesNotMatch(html, /ci-test-notification|ci-notification-permission/);
+  assert.doesNotMatch(settings, /ci_notification_test|ci_notification_permission|ciNativePermission|ciTestRunning/);
+  assert.doesNotMatch(rust, /ci_notification_test|ci_notification_permission|notification_test_enabled/);
+  assert.doesNotMatch(main, /ci_notifications::ci_notification_test|ci_notifications::ci_notification_permission/);
+  assert.match(main, /ci_notifications::ci_failure_notify,/);
+  assert.match(rust, /app\.notification\(\)\.permission_state\(\)/);
+  assert.match(html, /id="ci-failure-notifications" type="checkbox"/);
+  assert.match(settings, /ciFailureNotifications: draft\.ciFailureNotifications/);
+});
+
+test("All-repositories helper text hides without losing selected-mode guidance", () => {
+  assert.match(html, /id="github-repo-status"[^>]*role="status" hidden/);
+  assert.match(settings, /byId\("github-repo-status"\)\.hidden = !show;/);
+  assert.match(settings, /Repository list unavailable\. Existing selection is preserved/);
+  assert.match(settings, /Select at most 100 repositories/);
+});

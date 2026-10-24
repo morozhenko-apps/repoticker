@@ -173,13 +173,16 @@ fn run_cancellable_command_with_timeout(
     match cancel.register(pid) {
         Ok(true) => {}
         Ok(false) => {
-            terminate_fetch_group(pid)?;
-            let _ = child.wait_with_output();
+            let terminated = terminate_fetch_group(pid);
+            let _ = wait_owned_child(child, PROCESS_REAP_GRACE,
+                "Cancelled Fetch child could not be reaped");
+            terminated?;
             return Err(GitError(FETCH_CANCELLED.into()));
         }
         Err(error) => {
             let _ = terminate_fetch_group(pid);
-            let _ = child.wait_with_output();
+            let _ = wait_owned_child(child, PROCESS_REAP_GRACE,
+                "Failed Fetch registration cleanup timed out");
             return Err(error);
         }
     }

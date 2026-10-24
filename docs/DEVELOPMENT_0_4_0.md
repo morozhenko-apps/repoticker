@@ -1426,3 +1426,67 @@ disposable local shell/bare-repository fixtures only.
   retention assignment.
 - Physical KDE/Windows tray action smoke and signed release
   acceptance remain deferred. No new tag/version/main promotion.
+
+## P1-GIT-EDGE1 — submodule status and remote/hook safety regression (2026-10-24)
+
+Mode: **A — Feature/Refactor**. Branch `dev`, no release, main
+promotion, config migration, background task, or new dependency.
+
+### Evidence and root cause
+
+A reproducible disposable Git fixture with a normal tracked
+submodule and untracked nested file showed:
+
+- `git status --porcelain=v1 --untracked-files=normal` reported
+  `M vendor/lib` under default Git configuration.
+- After `git config diff.ignoreSubmodules all`, exactly the
+  same Git command reported an **empty status**, although the
+  nested submodule worktree still contained an untracked file.
+- Appending `--ignore-submodules=none` restored `M vendor/lib`.
+
+RepoTicker currently trusts the first command in `git::inspect`
+for the Safe pull/Push dirty guard. Thus a user-level Git
+configuration can falsely classify a modified submodule as clean
+and permit Safe sync. The root cause is implicit reliance on a
+Git status configuration default, not its Rust safety classifier.
+Other likely edge classes checked against the source are external
+HEAD or upstream mutation, incorrect upstream among multiple
+remotes, split push URL, hook refusal, unfinished rebase and
+incorrect branch choice. Existing code already pins HEAD/upstream,
+uses ff-only/non-force, checks a single matching push URL and
+has tests for several of these paths; do not duplicate coverage
+without testing a distinct configuration or transition.
+
+### Decision and scope
+
+1. [ ] Always inspect repository/submodule dirtiness using
+   `git status --porcelain=v1 --untracked-files=normal
+   --ignore-submodules=none`. It explicitly overrides
+   `diff.ignoreSubmodules=all` and `status.ignoreSubmodules`
+   for the safety gate, while respecting the user's normal
+   Git configuration for their own interactive commands.
+2. [ ] Retain existing separate explicit Fetch, ff-only local
+   Safe pull, strictly-ahead non-force Safe push and upstream
+   selection. Do not recursively run `git submodule update`,
+   stage, commit, stash, reset or mutate a submodule.
+3. [ ] Add real Git tests for tracked nested dirty/untracked
+   submodules under configured ignore-all; verify Safe sync
+   refuses both a behind pull and an ahead push. Verify
+   no worktree/remote branch is mutated by the refusal.
+4. [ ] Add distinct real Git regressions for a safe origin
+   upstream amid an unrelated second remote, and for custom
+   failing `core.hooksPath` pre-push hook. Preserve hook
+   invocation and no-force semantics, with test-owned bare
+   remotes only. Existing linked worktree/race tests remain.
+5. [ ] Add source-level invariant contract; run final exact
+   SHA Preflight once (Rustfmt, core/integration/Clippy, JS/
+   Python contracts and Linux desktop). Record results in
+   separate docs commits; native KDE/Windows acceptance in #15.
+
+Risks: checking nested dirty state can be more expensive and
+Git's own submodule recursion semantics depend on initialized
+submodules. This stage does **not** inspect ignored files or
+non-enrolled unrelated sibling repositories; it changes only
+the classification of a tracked submodule's status.
+Rollback: revert the code and tests commit without touching
+settings or Git refs. Published v0.2.0 is unchanged.

@@ -299,10 +299,7 @@ fn should_schedule_git_target(
 ) -> bool {
     match operation {
         "fetch" | "safe_sync" => true,
-        "safe_pull" => matches!(
-            inspect_decision(),
-            Some(SyncDecision::FastForward { .. })
-        ),
+        "safe_pull" => matches!(inspect_decision(), Some(SyncDecision::FastForward { .. })),
         _ => false,
     }
 }
@@ -991,7 +988,10 @@ mod git_target_admission_tests {
                 inspected.set(true);
                 decision
             }));
-            assert!(!inspected.get(), "The core owns the final Safe Sync inspection");
+            assert!(
+                !inspected.get(),
+                "The core owns the final Safe Sync inspection"
+            );
         }
     }
 
@@ -1002,7 +1002,10 @@ mod git_target_admission_tests {
             inspected.set(true);
             None
         }));
-        assert!(!inspected.get(), "Fetch admission must never inspect Git status");
+        assert!(
+            !inspected.get(),
+            "Fetch admission must never inspect Git status"
+        );
         for decision in [
             Some(SyncDecision::UpToDate),
             Some(SyncDecision::NoUpstream),

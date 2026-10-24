@@ -115,7 +115,9 @@ export function createCiFailureTracker({ maxRemembered = 500 } = {}) {
           continue;
         }
         if (!Array.isArray(result.runs) || result.runs.length > 200 ||
-            !result.runs.every(validRun)) {
+            !result.runs.every(validRun) ||
+            new Set(result.runs.map(run => run.id + "/" + run.run_attempt)).size !==
+              result.runs.length) {
           throw Error("Invalid notification run facts");
         }
       }
@@ -133,16 +135,20 @@ export function createCiFailureTracker({ maxRemembered = 500 } = {}) {
         const seen = previous || new Map();
         for (const run of result.runs) {
           const key = run.id + "/" + run.run_attempt;
-          if (previous && !seen.has(key) && run.conclusion === "failure") {
+          const prior = seen.get(key);
+          // An already observed success/neutral outcome can be corrected to
+          // failure by GitHub. Once failure is observed, never alert again
+          // for this attempt even if stale cached reads temporarily disagree.
+          if (previous && run.conclusion === "failure" && prior !== "failure") {
             alerts.push({
               repository: result.repository, id: run.id,
               run_attempt: run.run_attempt, updated_at: run.updated_at
             });
           }
-          // Refresh LRU order only for valid conclusions; never include raw
-          // run titles, actor identities, URLs or response fields.
+          // Refresh LRU order; retain a monotonic failed marker.
+          // Do not retain titles, actors, URLs or any raw provider metadata.
           seen.delete(key);
-          seen.set(key, true);
+          seen.set(key, prior === "failure" ? prior : run.conclusion);
         }
         while (seen.size > maxRemembered) seen.delete(seen.keys().next().value);
         history.set(repo, seen);

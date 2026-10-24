@@ -43,9 +43,9 @@ jobs:
       - name: Check formatting
         run: cargo fmt --all --check
       - name: Core tests
-        run: cargo test -p repoticker-core
+        run: cargo test --locked -p repoticker-core
       - name: Core Clippy
-        run: cargo clippy -p repoticker-core --all-targets -- -D warnings
+        run: cargo clippy --locked -p repoticker-core --all-targets -- -D warnings
 
   ui:
     name: Card model and JS syntax
@@ -93,7 +93,7 @@ jobs:
             libwayland-bin \
             wayland-protocols
       - name: Check desktop shell
-        run: cargo check -p repoticker-desktop
+        run: cargo check --locked -p repoticker-desktop
 
   preflight:
     name: Preflight result

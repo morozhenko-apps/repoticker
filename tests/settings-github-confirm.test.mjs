@@ -42,6 +42,7 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
   });
   elements.get("language-options").querySelectorAll = () => languageOptions;
   const listeners = new Map();
+  const documentHandlers = new Map();
   const calls = [];
   let connected = initiallyConnected;
   let phase = connected ? "connected" : "idle";
@@ -54,14 +55,17 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
   const delayedInstallations = options.deferInstallations
     ? new Promise(resolve => { releaseInstallations = resolve; }) : null;
   const document = {
+    activeElement: null,
     documentElement: { lang: "en" },
     getElementById(id) {
       if (!elements.has(id)) throw Error("Unknown Settings element " + id);
       return elements.get(id);
     },
     createElement(tag) { return mockNode(tag); },
-    addEventListener() {},
+    addEventListener(name, handler) { documentHandlers.set(name, handler); },
   };
+  for (const node of [...elements.values(), ...languageOptions])
+    node.focus = () => { document.activeElement = node; };
   const window = {
     addEventListener() {},
     __TAURI__: {
@@ -134,6 +138,15 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
     ids: elements, calls, listeners,
     node: id => elements.get(id),
     languageOption: value => languageOptions.find(item => item.dataset.value === value),
+    get activeElement() { return document.activeElement; },
+    async documentKeydown(key) {
+      const handler = documentHandlers.get("keydown");
+      if (handler) return handler({ key, preventDefault() {} });
+    },
+    async outsidePointerdown() {
+      const handler = documentHandlers.get("pointerdown");
+      if (handler) return handler({ target: { closest: () => null } });
+    },
     get language() { return document.documentElement.lang; },
     authConnected() { connected = true; phase = "connected"; },
     get closed() { return closed; },
@@ -456,5 +469,76 @@ test("English saved Settings previews RU before OK and persists only chosen loca
     await ui.node("apply-settings").fire("click");
     assert.equal(ui.calls.find(([name]) => name === "save_settings")?.[1]?.language, "ru");
     assert.equal(ui.closed, true);
+  } finally { ui.restore(); }
+});
+
+test("Keyboard arrows wrap, Home/End move focus, Escape restores trigger and no change is saved", async () => {
+  const ui = await fixture("keyboard-navigation", true);
+  try {
+    const trigger = ui.node("language-trigger");
+    const list = ui.node("language-options");
+    await trigger.fire("keydown", { key: "ArrowDown" });
+    assert.equal(list.hidden, false);
+    assert.equal(ui.activeElement, ui.languageOption("en"));
+    assert.equal(ui.language, "en");
+    assert.equal(ui.calls.some(([command]) => command === "save_settings"), false);
+    await list.fire("keydown", { key: "ArrowDown" });
+    assert.equal(ui.activeElement, ui.languageOption("ru"));
+    await list.fire("keydown", { key: "ArrowDown" });
+    assert.equal(ui.activeElement, ui.languageOption("en"));
+    await list.fire("keydown", { key: "ArrowUp" });
+    assert.equal(ui.activeElement, ui.languageOption("ru"));
+    await list.fire("keydown", { key: "Home" });
+    assert.equal(ui.activeElement, ui.languageOption("en"));
+    await list.fire("keydown", { key: "End" });
+    assert.equal(ui.activeElement, ui.languageOption("ru"));
+    await list.fire("keydown", { key: "Escape" });
+    assert.equal(list.hidden, true);
+    assert.equal(ui.activeElement, trigger);
+    assert.equal(ui.language, "en");
+    assert.equal(ui.node("apply-settings").disabled, true);
+  } finally { ui.restore(); }
+});
+
+test("Tab leaves popup and mouse outside closes without stealing focus", async () => {
+  const ui = await fixture("keyboard-tab-outside", true);
+  try {
+    const trigger = ui.node("language-trigger");
+    const list = ui.node("language-options");
+    await trigger.fire("click");
+    assert.equal(list.hidden, false);
+    assert.equal(ui.activeElement, ui.languageOption("en"));
+    await list.fire("keydown", { key: "Tab" });
+    assert.equal(list.hidden, true);
+    assert.equal(ui.activeElement, ui.languageOption("en"),
+      "Tab must be left to native browser navigation");
+    await trigger.fire("keydown", { key: "End" });
+    assert.equal(ui.activeElement, ui.languageOption("ru"));
+    await ui.outsidePointerdown();
+    assert.equal(list.hidden, true);
+    assert.equal(ui.activeElement, ui.languageOption("ru"),
+      "An outside click must not cause focus theft");
+  } finally { ui.restore(); }
+});
+
+test("Keyboard language choice previews immediately, and Cancel leaves persistence unchanged", async () => {
+  const ui = await fixture("keyboard-confirmation", true);
+  try {
+    await ui.node("language-trigger").fire("keydown", { key: "ArrowDown" });
+    await ui.node("language-options").fire("keydown", { key: "ArrowDown" });
+    assert.equal(ui.activeElement, ui.languageOption("ru"));
+    await ui.languageOption("ru").fire("click");
+    assert.equal(ui.language, "ru");
+    assert.equal(ui.activeElement, ui.node("language-trigger"));
+    assert.equal(ui.node("language-options").hidden, true);
+    assert.equal(ui.node("apply-settings").disabled, false);
+    assert.equal(ui.calls.filter(([command]) => command === "save_settings").length, 0);
+    await ui.node("language-trigger").fire("click");
+    assert.equal(ui.activeElement, ui.languageOption("ru"));
+    await ui.documentKeydown("Escape");
+    assert.equal(ui.activeElement, ui.node("language-trigger"));
+    assert.equal(ui.node("language-options").hidden, true);
+    await ui.node("cancel-settings").fire("click");
+    assert.equal(ui.calls.filter(([command]) => command === "save_settings").length, 0);
   } finally { ui.restore(); }
 });

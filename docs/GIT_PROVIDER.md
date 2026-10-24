@@ -53,6 +53,39 @@ worktree is accepted; its unregistered implicit child remains excluded.
 These additions are not part of the published v0.2.0. See
 [P1-UI2](DEVELOPMENT_0_4_0.md) and deferred physical acceptance #15.
 
+## Unreleased P1-SYNC2: Safe sync and targeted live metrics
+
+The **dev** compact-card button and per-repository menu now expose
+**Safe sync**, replacing the displayed Safe pull option. The legacy
+`safe_pull` function remains in the Git core for compatibility.
+
+- **Strictly behind** an upstream fetched tip: the existing
+  offline clean fast-forward-only Safe pull (no implicit Fetch).
+- **Strictly ahead** and clean: conservative ordinary **non-force**
+  push of pinned HEAD commit OID to the same-named configured upstream
+  branch. Require one matching fetch/push URL, stable HEAD/upstream
+  and remote config, with server-side non-fast-forward protection
+  and pre-push hooks. No force, tags, automatic rebase/stash/reset
+  or upstream creation.
+- **Diverged, dirty, detached, no upstream or unfinished operation**:
+  skipped, never auto-reconciled. Fetch remains separate and
+  cancellable. A successful push to a normal upstream updates its
+  remote-tracking ref.
+
+Runners and Tasks in the compact status strip are separate manual
+refresh controls. Clicking Runners requests only runner inventory;
+Tasks requests only Actions runs/jobs. Both respect native GitHub
+authorization, cooldown and bounded request limits. A targeted
+result keeps the other group's counts, coverage and independently
+last-successful checked time; unknown stays unknown. Checked times
+render in the WebView's **local machine timezone**, not forced UTC.
+An open status balloon refreshes from the native monitor cache
+rather than launching a local Git status scan.
+
+These features remain **unreleased dev-only** until native KDE/
+Windows acceptance in [issue #15](https://github.com/morozhenko-apps/repoticker/issues/15)
+and separate release approval. See [P1-SYNC2](DEVELOPMENT_0_4_0.md).
+
 ## Manual Fetch
 
 - Command semantics: `git fetch --all --prune --quiet` for an eligible enrolled checkout, through an argv-based process invocation rather than a shell.

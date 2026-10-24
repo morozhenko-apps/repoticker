@@ -192,3 +192,25 @@ the present A1 code does not invoke OS notification APIs.
   the L10N-20 contextual audits, or physical KDE/
   Windows real-screen-reader/layout acceptance.
 - `main` and published v0.2.0 unchanged.
+
+## A1 visible metric-caption parity
+
+- The first 4/4-success A1 candidate `e3b414b`
+  localized the numeric `aria-label` and status-tooltip
+  text, but inspection found visible `.metric-caption`
+  elements still displayed literal English Runners/Tasks
+  when Russian was selected. This was not caught by the
+  original pure translation unit tests.
+- [`ca2f76a`](https://github.com/morozhenko-apps/repoticker/commit/ca2f76aabd70ae31fb12b215dd4dc5a43553dc43)
+  updates both visible captions in `setCardLanguage`
+  without changing fixed strip height or refresh flow.
+  [`c09bb87`](https://github.com/morozhenko-apps/repoticker/commit/c09bb876f549dbb32949f14a744f266a1b7246bc)
+  guards both DOM assignments with source contracts.
+- **Latest exact executable candidate**:
+  `c09bb876f549dbb32949f14a744f266a1b7246bc`.
+  [Preflight #40125144485](https://github.com/morozhenko-apps/repoticker/actions/runs/40125144485)
+  pending at this note. The previously documented
+  Preflight #40124889705 remains valid only for
+  its older source `e3b414b`, not this new candidate.
+  No physical KDE/Windows layout or accessibility
+  acceptance is claimed by source-contract tests.

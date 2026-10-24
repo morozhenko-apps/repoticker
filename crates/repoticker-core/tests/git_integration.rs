@@ -622,7 +622,10 @@ fn safe_push_refuses_to_recreate_deleted_upstream_branch() {
     let original_head = run(&f.local, &["rev-parse", "HEAD"]);
     let bare = f.base.join("remote.git");
     run(&bare, &["update-ref", "-d", "refs/heads/dev"]);
-    assert_eq!(git::inspect(&f.local).unwrap().decision, SyncDecision::LocalAhead);
+    assert_eq!(
+        git::inspect(&f.local).unwrap().decision,
+        SyncDecision::LocalAhead
+    );
 
     let error = git::safe_sync(&f.local).unwrap_err();
     assert!(error.to_string().contains("ls-remote"));
@@ -652,7 +655,9 @@ fn safe_push_refuses_remotely_advanced_tip_before_a_network_write() {
     run(&f.seed, &["push", "origin", "dev"]);
     let remote_head = run(&f.seed, &["rev-parse", "HEAD"]);
     let error = git::safe_push(&f.local).unwrap_err();
-    assert!(error.to_string().contains("Remote upstream moved since Fetch"));
+    assert!(error
+        .to_string()
+        .contains("Remote upstream moved since Fetch"));
     assert_eq!(
         run(&f.base.join("remote.git"), &["rev-parse", "refs/heads/dev"]),
         remote_head,

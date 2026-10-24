@@ -1509,7 +1509,7 @@ settings or Git refs. Published v0.2.0 is unchanged.
   explicit submodule status option and coverage discoverable.
 - **Exact code/test source candidate:**
   `f1522a9a6570f7c3e61200bfce38c3fe903a9cb4`.
-  [Preflight #40107980743](https://github.com/morozhenko-apps/repoticker/actions/runs/40107980743)
+  [Preflight #40109193713](https://github.com/morozhenko-apps/repoticker/actions/runs/40109193713)
   is the initial validation candidate; no CI success claim
   before the exact run completes. KDE/Windows submodule
   smoke and configured-hook acceptance remain in issue #15.

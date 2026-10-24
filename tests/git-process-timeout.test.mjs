@@ -22,7 +22,7 @@ test("read-only and remote Git commands have bounded owned execution", () => {
     assert.ok(invoke.includes('Some("' + op + '")'), op + " must have a deadline");
   }
   assert.match(invoke, /_ => run_bounded_command\(/);
-  assert.match(invoke, /Some\("merge"\) => command\.stdin\(Stdio::null\(\)\)\.output\(\)/);
+  assert.match(invoke, /Some\("merge"\) => command\s*\.stdin\(Stdio::null\(\)\)\s*\.output\(\)/);
   assert.doesNotMatch(invoke, /["'](?:sh|bash|cmd\.exe)["']/);
 });
 

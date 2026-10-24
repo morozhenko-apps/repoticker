@@ -999,3 +999,39 @@ Physical KDE and Windows acceptance remains deferred to
   assert aggregate 4/4 or native physical acceptance yet.
 - The published v0.2.0 remains immutable. Real KDE/Windows form
   and filter behavior remain tracked in issue #15.
+
+## P1-SYNC2 — bidirectional Safe sync and targeted status refresh (2026-10-24)
+
+Mode **A, Feature/Refactor**. Dev-only; no version, installer, `main` or published release changes. Baseline P1-IGNORE1 passed [Preflight #40096820859](https://github.com/morozhenko-apps/repoticker/actions/runs/40096820859) 4/4. Native KDE/Windows physical acceptance remains open in #15.
+
+### Observed root causes
+
+- The only Git sync command `safe_pull` allows clean, strictly-behind ff-only branches, but rejects `LocalAhead`. Its button/title never offers outbound synchronization.
+- Status balloon `quota-details.mjs::timestamp` converts ISO `checkedAt` to `toISOString()`, then adds `UTC`, ignoring local OS/WebView timezone.
+- `github-monitor.mjs` schedules a single full account collector and exposes no separate click-driven collection. Shared `checkedAt` makes independent refresh timestamps misleading.
+
+### Safe sync specification
+
+Keep Fetch a separate, explicitly cancellable operation. Replace the visible Safe pull operation with **Safe sync**, a conservative decision:
+1. Check exact branch, upstream, clean worktree, no unfinished Git operation and ahead/behind state.
+2. Strictly behind: existing offline fast-forward Safe pull unchanged. Strictly ahead: push only immutable local HEAD to same-named upstream branch, with single unambiguous remote and matching fetch/push destinations. Use explicit `<oid>:refs/heads/<branch>` refspec and **non-force** push, no tags, `--all` or `--mirror`, no shell.
+3. Re-inspect HEAD, upstream tip, branch and eligibility just before pushing; server rejects non-fast-forward changes. Detached/no upstream, dirty, diverged, nonstandard remote mapping, renamed branch, config ambiguity and hooks failures fail closed or skip. Never auto-commit, rebase, stash or create upstream.
+4. Serialize under existing native operation lock; preserve per-repo progress, Fetch cancellation and exactly four compact buttons. Outbound successes silent, errors visible.
+
+### Targeted status and local time
+
+- Runners and Tasks indicators are keyboard/click accessible while retaining their existing hover balloons. Runners requests only GitHub runner inventory; Tasks requests only Actions runs/jobs, never the other metric API or local Git scan.
+- Manual clicks bypass the client's adaptive interval **but never** rate-limit cooldown, OS keyring authorization or account scope. Requests are bounded and coalesced.
+- Preserve the other group's counts/coverage/check time. On failure invalidate only requested group's data, not its counterpart; account switch and disconnect still invalidate both.
+- Maintain separate `checkedAtRunners` and `checkedAtTasks` ISO instants with legacy `checkedAt` fallback. Render in **local WebView timezone** without hardcoded UTC; no false successful checked time.
+- Show refresh-in-progress feedback on clicked indicator; do not fabricate a fresh value while loading.
+
+### Test and acceptance
+
+1. [ ] Real disposable bare Git tests for clean ahead push, behind ff-only pull, diverged, dirty, detached, no upstream, ambiguous remotes, rejected push, custom pushurl and pre-push hook. No production remote tests.
+2. [ ] Native + JS source contracts for Safe sync action eligibility/progress and unchanged Fetch cancellation.
+3. [ ] Deterministic targeted collector/monitor tests for isolated REST requests, preservation of other metric, cooldown, overlap and disconnect; local timestamp tests under non-UTC zone.
+4. [ ] One exact-SHA stable Preflight: Rustfmt, Rust core/integration/Clippy, JS/release and Linux desktop compile; separate documentation-only evidence.
+5. [ ] KDE/Windows physical acceptance of push safety, time and manual refresh in issue #15.
+
+Rollback reverts code/tests changes without modifying stored schema or GitHub auth. Safe sync sends a Git network write only after explicit user click; never test against a production remote.

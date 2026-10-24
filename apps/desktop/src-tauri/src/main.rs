@@ -1113,18 +1113,49 @@ fn tray_image() -> Image<'static> {
 
 
 #[cfg(not(target_os = "linux"))]
-fn build_desktop_tray_menu(
-    app: &AppHandle,
-    language: &str,
-) -> tauri::Result<Menu<tauri::Wry>> {
-    let open = MenuItem::with_id(app, "open", tray_i18n::label(language, "open"), true, None::<&str>)?;
-    let settings = MenuItem::with_id(
-        app, "settings", tray_i18n::label(language, "settings"), true, None::<&str>,
+fn build_desktop_tray_menu(app: &AppHandle, language: &str) -> tauri::Result<Menu<tauri::Wry>> {
+    let open = MenuItem::with_id(
+        app,
+        "open",
+        tray_i18n::label(language, "open"),
+        true,
+        None::<&str>,
     )?;
-    let fetch = MenuItem::with_id(app, "fetch", tray_i18n::label(language, "fetch"), true, None::<&str>)?;
-    let sync = MenuItem::with_id(app, "sync", tray_i18n::label(language, "sync"), true, None::<&str>)?;
-    let about = MenuItem::with_id(app, "about", tray_i18n::label(language, "about"), true, None::<&str>)?;
-    let quit = MenuItem::with_id(app, "quit", tray_i18n::label(language, "quit"), true, None::<&str>)?;
+    let settings = MenuItem::with_id(
+        app,
+        "settings",
+        tray_i18n::label(language, "settings"),
+        true,
+        None::<&str>,
+    )?;
+    let fetch = MenuItem::with_id(
+        app,
+        "fetch",
+        tray_i18n::label(language, "fetch"),
+        true,
+        None::<&str>,
+    )?;
+    let sync = MenuItem::with_id(
+        app,
+        "sync",
+        tray_i18n::label(language, "sync"),
+        true,
+        None::<&str>,
+    )?;
+    let about = MenuItem::with_id(
+        app,
+        "about",
+        tray_i18n::label(language, "about"),
+        true,
+        None::<&str>,
+    )?;
+    let quit = MenuItem::with_id(
+        app,
+        "quit",
+        tray_i18n::label(language, "quit"),
+        true,
+        None::<&str>,
+    )?;
     Menu::with_items(app, &[&open, &settings, &fetch, &sync, &about, &quit])
 }
 
@@ -1136,8 +1167,8 @@ fn refresh_tray_language(app: &AppHandle, language: &str) {
 
     #[cfg(not(target_os = "linux"))]
     if let Some(tray) = app.tray_by_id("repoticker") {
-        if let Err(error) = build_desktop_tray_menu(app, language)
-            .and_then(|menu| tray.set_menu(Some(menu)))
+        if let Err(error) =
+            build_desktop_tray_menu(app, language).and_then(|menu| tray.set_menu(Some(menu)))
         {
             eprintln!("RepoTicker tray locale refresh unavailable: {error}");
         }

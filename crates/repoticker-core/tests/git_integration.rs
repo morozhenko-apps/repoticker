@@ -752,7 +752,7 @@ fn configured_ignore_all_cannot_hide_dirty_submodule_from_safe_pull() {
     let (f, module) = tracked_submodule_fixture();
     f.push_more();
     git::fetch(&f.local).expect("fetched remote");
-    run(&f.local, &["config", "diff.ignoreSubmodules", "all"]);
+    run(&f.local, &["config", "submodule.vendor/lib.ignore", "all"]);
     fs::write(module.join("nested-untracked.txt"), "preserve").unwrap();
     let before_head = run(&f.local, &["rev-parse", "HEAD"]);
     assert_eq!(

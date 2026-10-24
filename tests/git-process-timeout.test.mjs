@@ -16,7 +16,7 @@ test("read-only and remote Git commands have bounded owned execution", () => {
   assert.match(git, /fn drain_git_pipe</);
   assert.match(git, /read_to_end\(&mut bytes\)/);
   assert.match(git, /command\.process_group\(0\)/);
-  assert.match(git, /command\.stdin\(Stdio::null\(\)\)/);
+  assert.match(git, /command\s*\.stdin\(Stdio::null\(\)\)/);
   const invoke = git.match(/fn invoke\([\s\S]*?\n\}/)?.[0] ?? "";
   for (const op of ["push", "ls-remote", "fetch"]) {
     assert.ok(invoke.includes('Some("' + op + '")'), op + " must have a deadline");
@@ -40,8 +40,8 @@ test("push timeout errors cannot be reported as success or Fetch cancellation", 
 test("Fetch retains independent cancellation with finite child cleanup", () => {
   assert.match(git, /fn run_cancellable_command_with_timeout\(/);
   assert.match(git, /match cancel\.register\(pid\) \{/);
-  assert.match(git, /wait_owned_child\(child, timeout,/);
-  assert.match(git, /wait_owned_child\(child, PROCESS_REAP_GRACE,/);
+  assert.match(git, /wait_owned_child\(\s*child,\s*timeout,/);
+  assert.match(git, /wait_owned_child\(\s*child,\s*PROCESS_REAP_GRACE,/);
   assert.match(git, /cancel\.unregister\(pid\)/);
   assert.match(git, /pub fn fetch_with_cancel\(/);
 });

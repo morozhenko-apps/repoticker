@@ -654,3 +654,33 @@ Implementation contract:
 
 Rollback: independent code/test commit; the persisted config schema
 and installed v0.2.0 package are untouched.
+
+### Scroll-free Settings implementation and CI checkpoint (2026-10-24)
+
+- `d5ecb7320f0e9b0bab8099efa65d1cf7fc12f7b6` changes only
+  Settings window dimensions (`660×720`, fixed), Settings
+  HTML/CSS/JS, and unused Rust notification diagnostic IPC.
+  The standard Settings page and GitHub group no longer have
+  independent vertical scroll containers. Explicitly selected
+  repository inventories and unusually long local folder lists
+  still have bounded list-level scrolling.
+- The temporary `Test` button, native permission-status
+  explanation and native `ci_notification_test`/
+  `ci_notification_permission` commands are removed.
+  The real `ci_failure_notify` command retains persisted
+  opt-in, selected scope, permission checks and deduplication.
+  `ci_failure_notifications` remains unchanged on disk.
+- All-accessible mode no longer shows redundant explanatory
+  text. Selected-only inventory counts/errors remain accessible.
+- `6f1eb3b99eb81947c4dfc18fb72737c55a16550c` adds
+  exact markup/IPC/geometry regression tests and removes
+  obsolete diagnostic test fixtures.
+- The exact executable/test SHA is `6f1eb3b9`. Validation is
+  [Preflight #40135144357](https://github.com/morozhenko-apps/repoticker/actions/runs/40135144357).
+  **Final four-job result was pending when this note was drafted;
+  inspect the run before marking the gate PASS.**
+- Physical KDE smoke for 720px Settings without the right-side
+  scrollbar is still outstanding. The previously reported successful
+  manual test toast proves only a native OS dispatch path;
+  it does not establish live GitHub failure alert acceptance.
+  No `main`, tag, installer or release changes.

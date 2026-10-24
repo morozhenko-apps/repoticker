@@ -850,3 +850,80 @@ fn custom_hookspath_pre_push_failure_blocks_safe_sync_without_mutation() {
     assert_eq!(run(&remote, &["rev-parse", "refs/heads/dev"]), before);
     assert_eq!(run(&f.local, &["rev-parse", "HEAD"]), local);
 }
+
+
+#[test]
+fn safe_push_uses_explicit_upstream_despite_custom_default_push_settings() {
+    let f = Fixture::new();
+    let origin = f.base.join("remote.git");
+    let mirror = f.base.join("mirror.git");
+    run(
+        &f.base,
+        &[
+            "clone",
+            "--bare",
+            origin.to_str().expect("origin path"),
+            mirror.to_str().expect("mirror path"),
+        ],
+    );
+    run(
+        &f.local,
+        &["remote", "add", "mirror", mirror.to_str().expect("mirror")],
+    );
+    run(&f.local, &["config", "remote.pushDefault", "mirror"]);
+    run(&f.local, &["config", "branch.dev.pushRemote", "mirror"]);
+    run(&f.local, &["config", "push.default", "matching"]);
+    run(&f.local, &["config", "push.followTags", "true"]);
+    run(
+        &f.local,
+        &["config", "remote.origin.push", "refs/heads/dev:refs/heads/unwanted"],
+    );
+
+    let original = run(&origin, &["rev-parse", "refs/heads/dev"]);
+    let mirror_before = run(&mirror, &["rev-parse", "refs/heads/dev"]);
+    fs::write(f.local.join("tracked.txt"), "ahead for explicit push\n").unwrap();
+    run(&f.local, &["add", "tracked.txt"]);
+    run(&f.local, &["commit", "-m", "only configured upstream"]);
+    run(&f.local, &["tag", "-a", "unwanted-tag", "-m", "should not follow"]);
+    let committed = run(&f.local, &["rev-parse", "HEAD"]);
+    assert_ne!(committed, original);
+
+    assert_eq!(
+        git::safe_sync(&f.local).expect("explicit pinned push"),
+        git::OperationOutcome::Pushed(1)
+    );
+    assert_eq!(run(&origin, &["rev-parse", "refs/heads/dev"]), committed);
+    assert_eq!(
+        run(&mirror, &["rev-parse", "refs/heads/dev"]),
+        mirror_before,
+        "pushRemote must not redirect pinned Safe sync"
+    );
+    for suffix in ["refs/heads/unwanted", "refs/tags/unwanted-tag"] {
+        let exists = Command::new("git")
+            .arg("-C")
+            .arg(&origin)
+            .args(["show-ref", "--verify", "--quiet", suffix])
+            .status()
+            .expect("git installed")
+            .success();
+        assert!(!exists, "explicit refspec may not push {suffix}");
+    }
+}
+
+#[test]
+fn mirror_mode_cannot_turn_safe_sync_into_an_all_refs_push() {
+    let f = Fixture::new();
+    fs::write(f.local.join("tracked.txt"), "local ahead\n").unwrap();
+    run(&f.local, &["add", "tracked.txt"]);
+    run(&f.local, &["commit", "-m", "ahead with mirror configured"]);
+    let remote = f.base.join("remote.git");
+    let before = run(&remote, &["rev-parse", "refs/heads/dev"]);
+    run(&f.local, &["config", "remote.origin.mirror", "true"]);
+    let outcome = git::safe_sync(&f.local);
+    assert!(outcome.is_err(), "mirror cannot silently change exact-ref push");
+    assert_eq!(
+        run(&remote, &["rev-parse", "refs/heads/dev"]),
+        before,
+        "incompatible mirror option must not update the server"
+    );
+}

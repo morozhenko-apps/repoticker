@@ -69,6 +69,13 @@
         <input id="github-worker-url" disabled placeholder="https://your-worker.example">
       </label>
     </div>
+    <div class="ci-alert-controls">
+      <label for="ci-failure-notifications">
+        <input id="ci-failure-notifications" type="checkbox">
+        Notify on new CI failures
+      </label>
+      <span id="ci-notification-permission" class="hint" role="status">Checking system notifications...</span>
+    </div>
     <div id="github-repo-controls" class="github-repo-controls" hidden>
       <div class="github-repo-heading">
         <label for="github-repo-mode">Monitor repositories</label>

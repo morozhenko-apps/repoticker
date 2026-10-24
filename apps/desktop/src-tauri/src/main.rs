@@ -7,6 +7,7 @@ mod github_oauth_wire;
 mod github_rate_gate;
 mod github_session;
 mod monitor_cache;
+mod ci_notifications;
 mod startup_diagnostics;
 
 use repoticker_core::{
@@ -65,6 +66,8 @@ struct Config {
     github_monitor_org: Option<String>,
     #[serde(default)]
     github_monitor_repositories: Vec<String>,
+    #[serde(default)]
+    ci_failure_notifications: bool,
 }
 
 fn default_language() -> String {
@@ -154,6 +157,7 @@ fn default_config() -> Config {
         card_right_margin: None,
         github_monitor_org: None,
         github_monitor_repositories: Vec::new(),
+        ci_failure_notifications: false,
     }
 }
 
@@ -442,6 +446,7 @@ fn get_monitor_scope(app: AppHandle) -> Result<Option<String>, String> {
 struct MonitorSelection {
     github_monitor_org: Option<String>,
     github_monitor_repositories: Vec<String>,
+    ci_failure_notifications: bool,
 }
 
 #[tauri::command]
@@ -450,6 +455,7 @@ fn get_monitor_selection(app: AppHandle) -> Result<MonitorSelection, String> {
     Ok(MonitorSelection {
         github_monitor_org: config.github_monitor_org,
         github_monitor_repositories: config.github_monitor_repositories,
+        ci_failure_notifications: config.ci_failure_notifications,
     })
 }
 
@@ -462,6 +468,7 @@ struct SettingsConfig {
     github_monitor_org: Option<String>,
     github_monitor_repositories: Vec<String>,
     ignored_child_names: Vec<String>,
+    ci_failure_notifications: bool,
 }
 
 #[tauri::command]
@@ -474,6 +481,7 @@ fn get_settings_config(app: AppHandle) -> Result<SettingsConfig, String> {
         github_monitor_org: config.github_monitor_org,
         github_monitor_repositories: config.github_monitor_repositories,
         ignored_child_names: config.ignored_child_names,
+        ci_failure_notifications: config.ci_failure_notifications,
     })
 }
 
@@ -899,6 +907,7 @@ fn save_settings(
     roots: Vec<String>,
     language: String,
     ignored_child_names: Option<Vec<String>>,
+    ci_failure_notifications: Option<bool>,
 ) -> Result<(), String> {
     if language != "en" && language != "ru" {
         return Err("Unsupported language".into());
@@ -923,6 +932,9 @@ fn save_settings(
     update_config(&app, |config| {
         config.roots = validated;
         config.language = language;
+        if let Some(enabled) = ci_failure_notifications {
+            config.ci_failure_notifications = enabled;
+        }
         if let Some(ignored) = ignored {
             config.ignored_child_names = ignored;
         }
@@ -958,6 +970,7 @@ mod monitor_selection_tests {
         let config: Config = serde_json::from_value(old).unwrap();
         assert!(config.github_monitor_repositories.is_empty());
         assert!(config.ignored_child_names.is_empty());
+        assert!(!config.ci_failure_notifications);
     }
 
     #[test]
@@ -1124,10 +1137,12 @@ fn main() {
 
     tauri::Builder::default()
         .plugin(tauri_plugin_clipboard_manager::init())
+        .plugin(tauri_plugin_notification::init())
         .manage(OperationLock::default())
         .manage(ActiveFetch::default())
         .manage(JsonStore::default())
         .manage(monitor_cache::MonitorCache::default())
+        .manage(ci_notifications::DeliveredAlerts::default())
         .manage(github_rate_gate::GitHubRateGate::default())
         .manage(github_api::GitHubRestClient::default())
         .manage(github_etag_cache::GitHubETagCache::default())
@@ -1236,6 +1251,8 @@ fn main() {
             get_monitor_scope,
             get_monitor_selection,
             get_settings_config,
+            ci_notifications::ci_notification_permission,
+            ci_notifications::ci_failure_notify,
             startup_diagnostics::trace_startup_stage,
             github_session::github_auth_status,
             github_session::github_flow_status,

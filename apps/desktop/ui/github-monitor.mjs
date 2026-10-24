@@ -1,3 +1,4 @@
+import { collectRecentCompleted, createCiFailureTracker } from "./ci-failure-events.mjs";
 import { collectRunnerState } from "./runner-collector.mjs";
 import { listAvailableInstallations } from "./github-installations.mjs";
 export { listAvailableInstallations } from "./github-installations.mjs";
@@ -173,6 +174,7 @@ export function startGithubMonitoring({ invoke, event, onError = () => {},
   let minIntervalMs = monitorRefreshDelay(100);
   let hasPublishedResult = false;
   let selectionRevision = 0;
+  const ciTracker = createCiFailureTracker();
   // Native presentation writes must complete in the order issued.
   // Check the revision when each queued write executes: a delayed
   // old-account publication must not supersede a newer auth transition.
@@ -188,6 +190,7 @@ export function startGithubMonitoring({ invoke, event, onError = () => {},
     return write;
   }
   function invalidatePresentation(message) {
+    ciTracker.reset();
     selectionRevision++;
     hasPublishedResult = false;
     lastState = null;
@@ -264,6 +267,31 @@ export function startGithubMonitoring({ invoke, event, onError = () => {},
         lastState = next;
         hasPublishedResult = true;
       }
+      if (selection.ci_failure_notifications !== true) {
+        ciTracker.reset();
+      } else if (revision === selectionRevision && kind !== "runners" &&
+          !result.failure && next?.coverage?.jobs === true &&
+          next.scope?.organization && Array.isArray(next.scope.repositories)) {
+        // Completed runs are deliberately independent of active job counts.
+        // One bounded native REST page per repository; no requests when opt-out.
+        const observations = await collectRecentCompleted({
+          get, account: next.scope.organization,
+          repositories: next.scope.repositories, maxPages: 1
+        });
+        if (revision !== selectionRevision) return;
+        const alerts = ciTracker.observe({
+          account: next.scope.organization,
+          repositories: next.scope.repositories,
+          results: observations
+        });
+        for (const alert of alerts.slice(0, 5)) {
+          if (revision !== selectionRevision) break;
+          await invoke("ci_failure_notify", {
+            repository: alert.repository, runId: alert.id,
+            runAttempt: alert.run_attempt
+          }).catch(onError);
+        }
+      }
     } catch (error) {
       if (revision !== selectionRevision) return;
       if (first) onStage("monitor.failed");
@@ -295,6 +323,11 @@ export function startGithubMonitoring({ invoke, event, onError = () => {},
     }
   });
   event?.listen?.("repoticker-github-scope-changed", () => {
+    invalidatePresentation("Checking GitHub connection...");
+  });
+  event?.listen?.("repoticker-config-changed", () => {
+    // Settings may enable/disable notifications independently of the account.
+    // Invalidate old authorized observations before the next config-only read.
     invalidatePresentation("Checking GitHub connection...");
   });
   // Refresh only while the application is running, never an API request

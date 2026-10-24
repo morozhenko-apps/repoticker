@@ -432,6 +432,7 @@ function message(text, error = false) {
 function isDirty() {
   if (!original || !draft) return false;
   return original.language !== draft.language ||
+    original.ciFailureNotifications !== draft.ciFailureNotifications ||
     JSON.stringify(original.roots) !== JSON.stringify(draft.roots) ||
     JSON.stringify(original.ignoredChildNames) !== JSON.stringify(draft.ignoredChildNames);
 }
@@ -544,13 +545,16 @@ async function refresh() {
   original = {
     roots: [...(snapshot.roots || [])],
     language: snapshot.language || "en",
-    ignoredChildNames: [...(snapshot.ignored_child_names || [])].sort()
+    ignoredChildNames: [...(snapshot.ignored_child_names || [])].sort(),
+    ciFailureNotifications: snapshot.ci_failure_notifications === true
   };
   draft = {
     roots: [...original.roots],
     language: original.language,
-    ignoredChildNames: [...original.ignoredChildNames]
+    ignoredChildNames: [...original.ignoredChildNames],
+    ciFailureNotifications: original.ciFailureNotifications
   };
+  byId("ci-failure-notifications").checked = draft.ciFailureNotifications;
   byId("root-path").value = "";
   updateLanguagePicker();
   renderRoots();
@@ -558,8 +562,21 @@ async function refresh() {
   byId("ignored-child-name").value = "";
   message("");
   updateApply();
+  // Platform permission is independent of the persisted opt-in; DND may still suppress toasts.
+  try {
+    const permission = await invoke("ci_notification_permission");
+    byId("ci-notification-permission").textContent = permission === "granted"
+      ? "System notifications available" : "System notifications unavailable";
+  } catch {
+    byId("ci-notification-permission").textContent = "System notifications unavailable";
+  }
   await refreshGithub(authAtOpen);
 }
+byId("ci-failure-notifications").addEventListener("change", event => {
+  if (!draft || saving) return;
+  draft.ciFailureNotifications = event.target.checked === true;
+  updateApply();
+});
 byId("add-root-form").addEventListener("submit", event => {
   event.preventDefault();
   if (!draft || saving) return;
@@ -641,7 +658,8 @@ byId("apply-settings").addEventListener("click", async () => {
       await invoke("save_settings", {
         roots: [...draft.roots],
         language: draft.language,
-        ignoredChildNames: [...draft.ignoredChildNames]
+        ignoredChildNames: [...draft.ignoredChildNames],
+        ciFailureNotifications: draft.ciFailureNotifications
       });
     }
     if (githubConnected) {

@@ -91,10 +91,10 @@ Never infer a disconnected account or zero metrics while loading.
    source contract tests: EN default, RU snapshot,
    unsupported fallback, stale config read, no false
    zero and four fixed action buttons. No model mocking.
-4. [ ] Run one final exact-code Preflight once at stable
+4. [x] Run one final exact-code Preflight once at stable
    completion; document Rustfmt/core/Clippy, Node/Python
    and Linux desktop compile results in a docs-only commit.
-5. [ ] Keep physical KDE/Windows label overflow/contrast
+5. [x] Keep physical KDE/Windows label overflow/contrast
    and translated popup/tray/Settings in issue #15/#16.
 
 Rollback: revert A1 code/test commit. No schema migration,
@@ -157,3 +157,22 @@ new dependency, installer, security scope or release work.
   recording full source completion. Source tests do
   not substitute for physical KDE/Windows label-fit
   and keyboard navigation checks.
+
+## A1 validated test totals
+
+Corrected source/test SHA:
+`e3b414b52c1d6bffedd66b7f5720fc416f405e8d`.
+[Preflight #40124889705](https://github.com/morozhenko-apps/repoticker/actions/runs/40124889705)
+reported **SUCCESS** for Rustfmt, Rust core + Clippy
+(45 unit, 30 Git integration, 3 GitHub-origin =
+**78 Rust PASS**) and UI/release contracts
+(**180 Node PASS, 14 Python PASS**). Total
+**272 tests, zero failures**.
+Linux desktop compile and final aggregate had not yet
+finished at the last check; do not claim 4/4 until confirmed.
+Physical KDE/Windows locale-fit and future popup/tray/
+Settings translations are not covered by this source result.
+
+Notification and autostart architecture remains paused
+until owner chooses the native/REST option or alternative;
+the present A1 code does not invoke OS notification APIs.

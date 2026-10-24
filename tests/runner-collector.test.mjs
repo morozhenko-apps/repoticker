@@ -227,3 +227,50 @@ test("global cap releases failed requests without fabricating complete job count
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(fake.stats().active, 0);
 });
+
+
+test("manual runners refresh calls only runner inventory and preserves task timestamp", async () => {
+  const prior = await collectRunnerState({ ...config, get: async path => mockGithub(path) });
+  const paths = [];
+  const next = await collectRunnerState({
+    ...config, kind: "runners", previousState: prior,
+    now: () => "2026-10-20T13:45:00Z",
+    get: async path => { paths.push(path); return mockGithub(path); }
+  });
+  assert.ok(paths.length > 0);
+  assert.ok(paths.every(path => path.startsWith("/orgs/org/actions/runners?")));
+  assert.equal(next.counts.running, prior.counts.running);
+  assert.equal(next.counts.queued, prior.counts.queued);
+  assert.equal(next.checkedAtRunners, "2026-10-20T13:45:00Z");
+  assert.equal(next.checkedAtTasks, prior.checkedAt);
+});
+
+test("manual tasks refresh requests runs/jobs but never runner inventory", async () => {
+  const prior = await collectRunnerState({ ...config, get: async path => mockGithub(path) });
+  const paths = [];
+  const next = await collectRunnerState({
+    ...config, kind: "tasks", previousState: prior,
+    now: () => "2026-10-20T14:20:00Z",
+    get: async path => { paths.push(path); return mockGithub(path); }
+  });
+  assert.ok(paths.some(path => path.includes("/actions/runs?")));
+  assert.ok(paths.every(path => !path.startsWith("/orgs/")));
+  assert.equal(next.coverage.runners, prior.coverage.runners);
+  assert.equal(next.counts.busy, prior.counts.busy);
+  assert.equal(next.checkedAtRunners, prior.checkedAt);
+  assert.equal(next.checkedAtTasks, "2026-10-20T14:20:00Z");
+});
+
+test("manual runner errors do not invent fresh successful runner timestamp", async () => {
+  const prior = await collectRunnerState({ ...config, get: async path => mockGithub(path) });
+  const next = await collectRunnerState({
+    ...config, kind: "runners", previousState: prior,
+    get: async path => {
+      if (path.startsWith("/orgs/")) throw Error("unauthorized");
+      throw Error("Wrong API endpoint for runner-only collection");
+    }
+  });
+  assert.equal(next.counts.busy, null);
+  assert.equal(next.checkedAtRunners, null);
+  assert.equal(next.checkedAtTasks, prior.checkedAt);
+});

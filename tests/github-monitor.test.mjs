@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
   listAvailableInstallations, listInstalledRepositories, collectForAccount,
-  REFRESH_MS, monitorRefreshDelay, startGithubMonitoring
+  REFRESH_MS, monitorRefreshDelay, startGithubMonitoring,
+  mergeMetricGroup, invalidateMetricGroup
 } from "../apps/desktop/ui/github-monitor.mjs";
 
 const installation = (id, name) => ({ id, account: { login: name, type: "Organization" } });
@@ -701,4 +702,79 @@ test("native persisted selection defaults to all and validates account ownership
   assert.match(source, /config\.github_monitor_repositories = selected/);
   assert.match(source, /changed_account => Vec::new\(\)/);
   assert.match(source, /generate_handler!\[[\s\S]*?get_monitor_selection,/);
+});
+
+
+test("targeted metric merge preserves unrelated coverage, totals and checked time", () => {
+  const previous = {
+    scope: { organization: "team", repositories: ["team/repo"] },
+    runners: [{ id: 1, name: "Old" }],
+    runningJobs: [{ id: 4 }],
+    queuedJobs: [{ id: 5 }],
+    waitingJobs: [],
+    runningByLane: { selfHosted: [{ id: 4 }] },
+    queuedByLane: {},
+    counts: { busy: 1, idle: 0, offline: 2, running: 3, queued: 4,
+      runningSelfHosted: 2, runningGitHubHosted: 1, queuedObserved: 4 },
+    coverage: { runners: true, jobs: true, running: true, queue: true,
+      runningLanes: true, queuedLanes: true, unmatchedSelfHosted: 0 },
+    checkedAt: "2026-10-20T12:00:00Z",
+    checkedAtRunners: "2026-10-20T12:00:00Z",
+    checkedAtTasks: "2026-10-20T12:10:00Z",
+  };
+  const runnerOnly = {
+    ...previous, runners: [{ id: 2, name: "New" }],
+    counts: { ...previous.counts, busy: 0, idle: 2, offline: 0,
+      running: null, queued: null },
+    coverage: { ...previous.coverage, jobs: false },
+    checkedAtRunners: "2026-10-20T13:00:00Z",
+  };
+  const merged = mergeMetricGroup(previous, runnerOnly, "runners");
+  assert.equal(merged.counts.busy, 0);
+  assert.equal(merged.counts.running, 3);
+  assert.equal(merged.counts.queued, 4);
+  assert.equal(merged.coverage.jobs, true);
+  assert.equal(merged.checkedAtTasks, "2026-10-20T12:10:00Z");
+  assert.deepEqual(merged.runners, [{ id: 2, name: "New" }]);
+  const denied = invalidateMetricGroup(merged, "tasks");
+  assert.equal(denied.coverage.runners, true);
+  assert.equal(denied.counts.busy, 0);
+  assert.equal(denied.counts.running, null);
+  assert.equal(denied.checkedAtTasks, null);
+  assert.equal(denied.checkedAtRunners, "2026-10-20T13:00:00Z");
+  assert.equal(invalidateMetricGroup(merged, "all"), null);
+});
+
+test("manual refresh under active cooldown does not bypass GitHub rate gate", async () => {
+  let attempt = 0;
+  const messages = [];
+  let clock = 1000;
+  const refresh = startGithubMonitoring({
+    now: () => clock, schedule: () => {},
+    invoke: async (name, args) => {
+      if (name === "github_auth_status") return { connected: true };
+      if (name === "get_monitor_selection") return { github_monitor_org: "team", github_monitor_repositories: [] };
+      if (name === "github_api_cooldown_seconds") return 600;
+      if (name === "github_monitor_publish") { messages.push(args); return; }
+      throw Error("Unexpected command " + name);
+    },
+    collect: async () => {
+      attempt++;
+      return { repositoryCount: 1, state: {
+        coverage: { runners: false, jobs: false },
+        counts: { busy: null, running: null, queued: null },
+        scope: { organization: "team", repositories: ["team/repo"] },
+        checkedAtRunners: null, checkedAtTasks: null
+      }, failure: "rate_limited", reason: "Rate limited" };
+    }
+  });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(attempt, 1);
+  await refresh(true, "runners");
+  await refresh(true, "tasks");
+  assert.equal(attempt, 1);
+  assert.ok(messages.length >= 2);
+  clock += 600_000;
+  await refresh(true, "tasks");
+  assert.equal(attempt, 2);
 });

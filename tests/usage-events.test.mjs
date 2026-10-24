@@ -33,6 +33,7 @@ test("native-selected tooltip switches reliably and auto-selected organization p
   const calls = [];
   const listeners = new Map();
   let nativeKind = "billing";
+  let configuredOrg = null;
   let snapshot = { connected: false, runner_state: null, monitor_message: null };
   const document = {
     body: element("body"),
@@ -50,7 +51,7 @@ test("native-selected tooltip switches reliably and auto-selected organization p
       core: {
         async invoke(command, args) {
           calls.push([command, args]);
-          if (command === "get_snapshot") return snapshot;
+          if (command === "get_monitor_scope") return configuredOrg;
           if (command === "github_monitor_snapshot") return {
             connected: snapshot.connected, runner_state: snapshot.runner_state,
             monitor_message: snapshot.monitor_message
@@ -82,6 +83,9 @@ test("native-selected tooltip switches reliably and auto-selected organization p
     await new Promise(resolve => setImmediate(resolve));
     assert.match(allText(root), /Connect GitHub/);
     assert.ok(listeners.has("repoticker-usage-shown"));
+    assert.equal(calls.filter(([command]) => command === "get_snapshot").length, 0,
+      "opening the detached tooltip must never inspect local Git repositories");
+    assert.ok(calls.some(([command]) => command === "get_monitor_scope"));
 
     snapshot = {
       connected: true, github_monitor_org: null, monitor_message: null,
@@ -126,6 +130,21 @@ test("native-selected tooltip switches reliably and auto-selected organization p
       args.path.startsWith("/organizations/morozhenko-apps/")));
     assert.ok(calls.some(([command, args]) => command === "github_api_get" &&
       args.path === "/orgs/morozhenko-apps"));
+    // Auth and account-scope change events must use the same lightweight
+    // monitor/config IPC as initial popup startup. The configured account
+    // (not a stale cached scope) must be read afresh.
+    configuredOrg = "morozhenko-apps";
+    await listeners.get("repoticker-github-auth")();
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(calls.filter(([command]) => command === "get_snapshot").length, 0);
+    assert.match(title.textContent, /Actions/);
+    configuredOrg = null;
+    nativeKind = "tasks";
+    await listeners.get("repoticker-github-scope-changed")();
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(calls.filter(([command]) => command === "get_snapshot").length, 0);
+    assert.match(title.textContent, /Tasks/);
+    assert.ok(calls.filter(([command]) => command === "get_monitor_scope").length >= 3);
   } finally {
     if (prior.window === undefined) delete globalThis.window;
     else globalThis.window = prior.window;

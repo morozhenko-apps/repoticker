@@ -683,8 +683,7 @@ fn safe_push_source_unchanged(
             &["config", "--get", &format!("branch.{}.merge", pin.branch)],
         )? == pin.branch_ref
         && required(repo, &["remote", "get-url", "--all", &pin.remote])? == pin.url
-        && required(repo, &["remote", "get-url", "--push", "--all", &pin.remote])?
-            == pin.url)
+        && required(repo, &["remote", "get-url", "--push", "--all", &pin.remote])? == pin.url)
 }
 
 /// Never accept a different or ambiguous remote ref as evidence.
@@ -791,7 +790,13 @@ pub fn safe_push(repo: &Path) -> Result<OperationOutcome, GitError> {
     // Read the exact live ref without changing local remote-tracking refs.
     let live = required(
         repo,
-        &["ls-remote", "--exit-code", "--heads", &pin.remote, &pin.branch_ref],
+        &[
+            "ls-remote",
+            "--exit-code",
+            "--heads",
+            &pin.remote,
+            &pin.branch_ref,
+        ],
     )?;
     let remote_tip = parse_single_remote_branch(&live, &pin.branch_ref)?;
     if remote_tip != pin.upstream_tip {

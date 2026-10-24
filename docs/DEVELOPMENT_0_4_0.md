@@ -1740,3 +1740,80 @@ during test setup (fixtures are isolated temporary repos).
   nonstandard push destination and tag settings. A real
   Windows/KDE end-user smoke remains unperformed in #15.
 - `main`, published v0.2.0 and release artifacts unchanged.
+
+## P1-SYNC3 — stop silently omitting enrolled repositories from manual Safe Sync (2026-10-25)
+
+**Mode A — functional correction.** Development branch `dev`, no
+`main` promotion, version bump, signed package or OS autostart.
+The user explicitly prioritizes Git operation correctness over
+micro-level Settings/manual visual acceptance.
+
+### Expected versus actual
+
+The native `git::safe_sync(repo)` already returns a typed result:
+`Updated`, `Pushed`, `AlreadyCurrent`, `Skipped(decision)`, or
+a contextual `GitError`. An explicit manual Safe Sync should
+evaluate every discovered enrolled repository through that entrypoint;
+there must be one result per attempted repository and aligned
+`start`/`complete` progress events. Its fail-closed decision
+continues to prohibit any worktree mutation or push on unsafe states.
+
+Actual `apps/desktop/src-tauri/src/main.rs::execute` prefilters
+Safe Sync targets using a prior `git::inspect`, retaining only
+`FastForward` or `LocalAhead`. It silently discards
+`UpToDate`, `NoUpstream`, `LocalChanges`, `Diverged`,
+`GitOperationInProgress` and **any inspection error**. These
+checkouts are not included in `total`, progress or returned
+`ActionResult` at all, even though the Git core has explicit,
+safe outcomes for them. It may report a zero-target batch despite
+discovered repos. No direct data-loss event has been observed:
+this is a deterministic inspection/contract defect.
+
+Potential explanations for invisible results:
+1. Pre-execution `inspect` eligibility filter drops skip states (confirmed).
+2. Pre-execution `inspect` errors are swallowed by `matches!` (confirmed).
+3. Discovery failures are already separately mapped into error results.
+4. Core `safe_sync` lacks skipped outcomes (falsified by current code).
+5. UI intentionally suppresses successful/skipped notices (existing design;
+   distinct from native result loss).
+6. Concurrent changes after selection could invalidate state (core
+   rechecks on actual action; not a reason to filter early).
+
+### Scoped implementation and invariants
+
+1. Use a pure native target-admission decision:
+   `fetch` and `safe_sync` schedule **all discovered/enrolled**
+   checkouts; legacy `safe_pull` preserves its historical
+   FastForward-only prefilter. No extra Git inspection for
+   Fetch/Safe Sync admission. All actions remain serialized
+   by `OperationLock` with existing progress and cancellation.
+2. Keep exact `git::safe_sync` safety behavior and outcome mapping;
+   do not reimplement ahead/behind logic in desktop, introduce
+   retries, push, implicit Fetch, partial resets, or Git mutation
+   changes. Only the core determines per-repository eligibility at
+   execution time. `AlreadyCurrent` and `Skipped` are **not**
+   misclassified as an error. Git inspection failures must surface
+   as ordinary existing `ActionResult { status: error, ... }`.
+3. Preserve existing card success-silence policy and current
+   compact geometry. The native `perform_git_action` caller
+   gains an honest list of results and progress; no new warning
+   banner for expected no-op repositories in this slice.
+4. Add native unit tests for admission including lazy evaluation
+   (Fetch/Safe Sync must not inspect early, legacy Safe Pull
+   inspect only when relevant); existing real-Git Safe Sync
+   skipped/dirty/diverged/remote safety regressions remain
+   authoritative. Add a JS source contract for full target
+   admission and preserved progress/error mapping.
+5. Execute final stable Preflight on the exact code/test SHA
+   (Rustfmt/unit/integration/Clippy, JS/release, Linux desktop).
+   Preserve failures and record honest CI evidence in separate
+   documentation-only commit. Physical KDE/Windows testing
+   and aggressive concurrent-process matrix stay in issue #15.
+
+**Compatibility / rollback:** Reverting only the code-and-test
+commit restores prior target scheduling. No changes to config,
+native IPC schema, Git refs, GitHub permissions, UI layout or
+release artifacts. More Safe Sync local read-only inspections
+and skipped result rows per batch are intentional; network
+writes remain strictly contingent on the core's existing
+Safe Push safeguards.

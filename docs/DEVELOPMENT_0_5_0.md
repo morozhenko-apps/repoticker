@@ -922,3 +922,45 @@ card click behavior, native permissions or shortcuts.
 
 **Rollback:** isolated Rust production/test commits. Existing config
 format unchanged; published v0.2.0 remains untouched.
+
+### A1d native tray source and test checkpoint (2026-10-24)
+
+- `d03708fb69b04dda11258075c9dab11bfd219cf9`
+  adds a pure Rust `tray_i18n::label(language, action_id)`
+  EN/RU/fallback mapping and unit tests for all six stable
+  native IDs, including `safe_sync` preserving the original
+  action dispatcher. No menu command/event ID or Git action
+  has been renamed.
+- KDE `LinuxTray` now loads the language from existing
+  `read_config` with fallback to EN and refreshes the existing
+  blocking KSNI handle with `Handle::update` after a saved
+  preference change. The StatusNotifierItem is neither
+  unregistered nor respawned.
+- The non-Linux Tauri tray creates the six menu items from
+  the same dictionary at startup. After successful
+  `save_settings` or `set_language`, it rebuilds only the
+  **menu** through `tray_by_id("repoticker").set_menu`.
+  The icon, tray event listeners and action IDs are retained.
+  A platform repaint failure does not reverse the already
+  completed settings transaction.
+- `tests/tray-safe-sync.test.mjs` now asserts the full six-ID
+  dictionary, KDE handle update, Windows menu replacement,
+  stable Safe sync dispatcher and absence of unsafe pull
+  action. Rust unit tests check EN/RU/unsupported locale
+  fallbacks and an unknown action ID.
+- Exact first candidate
+  [Preflight #40139138207](https://github.com/morozhenko-apps/repoticker/actions/runs/40139138207)
+  passed the Node tests but reported deterministic Rustfmt
+  differences in the new non-Linux menu builder.
+  `24f6c7bb244198c7530d70d72c612ae6d6bfbd1d`
+  applied the exact formatter diff.
+- **Final executable/test SHA:**
+  `24f6c7bb244198c7530d70d72c612ae6d6bfbd1d`.
+  [Preflight #40139215931](https://github.com/morozhenko-apps/repoticker/actions/runs/40139215931)
+  is the exact result to inspect before claiming 4/4.
+  KDE and Windows physical tray popup localization and
+  post-Settings-OK label changes are unverified until
+  owner/device acceptance. Windows binaries were not
+  compiled in the Linux preflight.
+- Autostart, main, release tags, OS credential permissions,
+  HTTP transports and configuration schema are untouched.

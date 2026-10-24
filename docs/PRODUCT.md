@@ -1,5 +1,16 @@
 # RepoTicker product contract and v0.1.0 state
 
+> **Development update (2026-10-24):** The published release is
+> `v0.2.0`; the historical v0.1.0 contract below is retained for
+> release provenance. In `dev`, opt-in system notifications for new
+> GitHub CI failures are implemented using direct REST and native Tauri.
+> The setting defaults OFF; the initial completed-run read is silent
+> and new failed attempts are deduplicated. Code passed
+> [4/4 Preflight](https://github.com/morozhenko-apps/repoticker/actions/runs/40129124638)
+> on `5a027460`. Actual KDE/Windows notifications are not yet
+> physically accepted. No autostart, Hybrid relay or public release
+> change. See [v0.5 development](DEVELOPMENT_0_5_0.md).
+
 > **Release boundary (2026-10-21):** `v0.1.0` is the immutable
 > published local-Git-only baseline. On `dev`, native GitHub App
 > Device Flow/KWallet, authorized Actions runs and jobs, organization

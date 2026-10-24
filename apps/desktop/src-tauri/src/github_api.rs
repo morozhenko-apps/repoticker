@@ -252,9 +252,15 @@ fn project(path: &str, value: Value) -> Result<Value, String> {
                     .filter(|value| {
                         matches!(
                             *value,
-                            "success" | "failure" | "cancelled" | "skipped"
-                                | "timed_out" | "action_required" | "neutral"
-                                | "stale" | "startup_failure"
+                            "success"
+                                | "failure"
+                                | "cancelled"
+                                | "skipped"
+                                | "timed_out"
+                                | "action_required"
+                                | "neutral"
+                                | "stale"
+                                | "startup_failure"
                         )
                     })
                     .ok_or_else(|| "Invalid completed GitHub run conclusion.".to_owned())?;
@@ -269,11 +275,9 @@ fn project(path: &str, value: Value) -> Result<Value, String> {
                             && timestamp.as_bytes().get(13) == Some(&b':')
                             && timestamp.as_bytes().get(16) == Some(&b':')
                             && timestamp.ends_with('Z')
-                            && timestamp
-                                .bytes()
-                                .enumerate()
-                                .all(|(i, b)| matches!(i, 4 | 7 | 10 | 13 | 16 | 19)
-                                    || b.is_ascii_digit())
+                            && timestamp.bytes().enumerate().all(|(i, b)| {
+                                matches!(i, 4 | 7 | 10 | 13 | 16 | 19) || b.is_ascii_digit()
+                            })
                     })
                     .ok_or_else(|| "Invalid completed GitHub run timestamp.".to_owned())?;
                 Ok(json!({

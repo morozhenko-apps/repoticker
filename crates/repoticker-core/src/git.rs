@@ -653,6 +653,61 @@ fn safe_pull_with_checkpoints(
     }
 }
 
+/// Fixed source and target for one explicitly requested outbound operation.
+struct SafePushPin {
+    branch: String,
+    remote: String,
+    branch_ref: String,
+    url: String,
+    head: String,
+    upstream_tip: String,
+}
+
+fn safe_push_source_unchanged(
+    repo: &Path,
+    original: &RepoSnapshot,
+    pin: &SafePushPin,
+) -> Result<bool, GitError> {
+    let current = inspect(repo)?;
+    Ok(current.decision == SyncDecision::LocalAhead
+        && current.branch == original.branch
+        && current.upstream == original.upstream
+        && commit_oid(repo, "HEAD^{commit}")? == pin.head
+        && commit_oid(repo, "@{upstream}^{commit}")? == pin.upstream_tip
+        && required(
+            repo,
+            &["config", "--get", &format!("branch.{}.remote", pin.branch)],
+        )? == pin.remote
+        && required(
+            repo,
+            &["config", "--get", &format!("branch.{}.merge", pin.branch)],
+        )? == pin.branch_ref
+        && required(repo, &["remote", "get-url", "--all", &pin.remote])? == pin.url
+        && required(repo, &["remote", "get-url", "--push", "--all", &pin.remote])?
+            == pin.url)
+}
+
+/// Never accept a different or ambiguous remote ref as evidence.
+fn parse_single_remote_branch(raw: &str, branch_ref: &str) -> Result<String, GitError> {
+    let mut lines = raw.lines();
+    let Some(line) = lines.next() else {
+        return Err(GitError("Remote upstream branch is missing".into()));
+    };
+    if lines.next().is_some() {
+        return Err(GitError("Ambiguous remote upstream branch response".into()));
+    }
+    let Some((oid, found_ref)) = line.split_once('\t') else {
+        return Err(GitError("Malformed remote upstream response".into()));
+    };
+    if found_ref != branch_ref
+        || !matches!(oid.len(), 40 | 64)
+        || !oid.bytes().all(|byte| byte.is_ascii_hexdigit())
+    {
+        return Err(GitError("Invalid remote upstream branch identity".into()));
+    }
+    Ok(oid.to_owned())
+}
+
 /// Push only a strictly-ahead, clean, fully checked branch to its
 /// same-named configured upstream, without force, tags or default refspecs.
 /// Both tips and remote routing are checked again before the network write.
@@ -719,43 +774,46 @@ pub fn safe_push(repo: &Path) -> Result<OperationOutcome, GitError> {
             "Safe sync requires one matching fetch/push remote URL".into(),
         ));
     }
-    let head = commit_oid(repo, "HEAD^{commit}")?;
-    let tip = commit_oid(repo, "@{upstream}^{commit}")?;
+    let pin = SafePushPin {
+        branch: branch.to_owned(),
+        remote: config_remote,
+        branch_ref,
+        url: fetch_urls,
+        head: commit_oid(repo, "HEAD^{commit}")?,
+        upstream_tip: commit_oid(repo, "@{upstream}^{commit}")?,
+    };
 
-    let second = inspect(repo)?;
-    if second.decision != SyncDecision::LocalAhead
-        || second.branch != first.branch
-        || second.upstream != first.upstream
-        || commit_oid(repo, "HEAD^{commit}")? != head
-        || commit_oid(repo, "@{upstream}^{commit}")? != tip
-        || required(
-            repo,
-            &["config", "--get", &format!("branch.{branch}.remote")],
-        )? != config_remote
-        || required(
-            repo,
-            &["config", "--get", &format!("branch.{branch}.merge")],
-        )? != branch_ref
-        || required(repo, &["remote", "get-url", "--all", &config_remote])? != fetch_urls
-        || required(
-            repo,
-            &["remote", "get-url", "--push", "--all", &config_remote],
-        )? != push_urls
-    {
+    if !safe_push_source_unchanged(repo, &first, &pin)? {
+        return Err(GitError("Repository changed during Safe sync".into()));
+    }
+
+    // Non-force push alone would recreate a deleted upstream branch.
+    // Read the exact live ref without changing local remote-tracking refs.
+    let live = required(
+        repo,
+        &["ls-remote", "--exit-code", "--heads", &pin.remote, &pin.branch_ref],
+    )?;
+    let remote_tip = parse_single_remote_branch(&live, &pin.branch_ref)?;
+    if remote_tip != pin.upstream_tip {
         return Err(GitError(
-            "Repository or upstream changed during Safe sync".into(),
+            "Remote upstream moved since Fetch; Safe sync did not push".into(),
         ));
+    }
+
+    // Recheck local Git refs and remote routing after the network request.
+    if !safe_push_source_unchanged(repo, &first, &pin)? {
+        return Err(GitError("Repository changed during Safe sync".into()));
     }
     // Git's ordinary non-force push rejects remote non-fast-forwards.
     // A commit OID avoids pushing a moving local branch expression.
-    let refspec = format!("{head}:{branch_ref}");
+    let refspec = format!("{}:{}", pin.head, pin.branch_ref);
     required(
         repo,
         &[
             "push",
             "--porcelain",
             "--no-follow-tags",
-            &config_remote,
+            &pin.remote,
             &refspec,
         ],
     )?;
@@ -1029,5 +1087,47 @@ mod fetch_cancellation_tests {
         )
         .expect_err("cancelled");
         assert_eq!(error.0, FETCH_CANCELLED);
+    }
+}
+
+#[cfg(test)]
+mod remote_branch_parser_tests {
+    use super::parse_single_remote_branch;
+
+    #[test]
+    fn accepts_one_exact_ref_and_oid() {
+        let oid = "a".repeat(40);
+        let raw = format!("{oid}\trefs/heads/dev\n");
+        assert_eq!(
+            parse_single_remote_branch(&raw, "refs/heads/dev").unwrap(),
+            oid
+        );
+        let sha256 = "c".repeat(64);
+        assert_eq!(
+            parse_single_remote_branch(
+                &format!("{sha256}\trefs/heads/feature/subbranch\n"),
+                "refs/heads/feature/subbranch",
+            )
+            .unwrap(),
+            sha256
+        );
+    }
+
+    #[test]
+    fn refuses_absent_ambiguous_or_malformed_remote_branch() {
+        let oid = "b".repeat(40);
+        for raw in [
+            String::new(),
+            format!("{oid} refs/heads/dev"),
+            format!("{oid}\trefs/heads/other"),
+            format!("{oid}\trefs/heads/dev\n{oid}\trefs/heads/dev\n"),
+            format!("{}\trefs/heads/dev", "g".repeat(40)),
+            format!("{}\trefs/heads/dev", "c".repeat(39)),
+        ] {
+            assert!(
+                parse_single_remote_branch(&raw, "refs/heads/dev").is_err(),
+                "unexpectedly accepted {raw:?}"
+            );
+        }
     }
 }

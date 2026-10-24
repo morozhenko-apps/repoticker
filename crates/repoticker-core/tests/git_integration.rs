@@ -612,3 +612,47 @@ fn safe_push_respects_failing_pre_push_hook_without_bypassing_hooks() {
         previous
     );
 }
+
+#[test]
+fn safe_push_refuses_to_recreate_deleted_upstream_branch() {
+    let f = Fixture::new();
+    fs::write(f.local.join("tracked.txt"), "local ahead\n").unwrap();
+    run(&f.local, &["add", "tracked.txt"]);
+    run(&f.local, &["commit", "-m", "local ahead"]);
+    let original_head = run(&f.local, &["rev-parse", "HEAD"]);
+    let bare = f.base.join("remote.git");
+    run(&bare, &["update-ref", "-d", "refs/heads/dev"]);
+    assert_eq!(git::inspect(&f.local).unwrap().decision, SyncDecision::LocalAhead);
+
+    let error = git::safe_sync(&f.local).unwrap_err();
+    assert!(error.to_string().contains("ls-remote"));
+    let exists = Command::new("git")
+        .arg("-C")
+        .arg(&bare)
+        .args(["show-ref", "--verify", "--quiet", "refs/heads/dev"])
+        .status()
+        .expect("git should be installed")
+        .success();
+    assert!(!exists, "Safe push must not recreate a deleted upstream");
+    assert_eq!(run(&f.local, &["rev-parse", "HEAD"]), original_head);
+}
+
+#[test]
+fn safe_push_refuses_remotely_advanced_tip_before_a_network_write() {
+    let f = Fixture::new();
+    f.push_more();
+    git::fetch(&f.local).expect("prepare current upstream");
+    fs::write(f.local.join("tracked.txt"), "local ahead\n").unwrap();
+    run(&f.local, &["add", "tracked.txt"]);
+    run(&f.local, &["commit", "-m", "ahead from fetched upstream"]);
+    let local_head = run(&f.local, &["rev-parse", "HEAD"]);
+    f.push_more();
+    let remote_head = run(&f.seed, &["rev-parse", "HEAD"]);
+    let error = git::safe_push(&f.local).unwrap_err();
+    assert!(error.to_string().contains("Remote upstream moved since Fetch"));
+    assert_eq!(
+        run(&f.base.join("remote.git"), &["rev-parse", "refs/heads/dev"]),
+        remote_head,
+    );
+    assert_eq!(run(&f.local, &["rev-parse", "HEAD"]), local_head);
+}

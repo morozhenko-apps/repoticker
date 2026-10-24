@@ -1459,21 +1459,21 @@ without testing a distinct configuration or transition.
 
 ### Decision and scope
 
-1. [ ] Always inspect repository/submodule dirtiness using
+1. [x] Always inspect repository/submodule dirtiness using
    `git status --porcelain=v1 --untracked-files=normal
    --ignore-submodules=none`. It explicitly overrides
    `diff.ignoreSubmodules=all` and `status.ignoreSubmodules`
    for the safety gate, while respecting the user's normal
    Git configuration for their own interactive commands.
-2. [ ] Retain existing separate explicit Fetch, ff-only local
+2. [x] Retain existing separate explicit Fetch, ff-only local
    Safe pull, strictly-ahead non-force Safe push and upstream
    selection. Do not recursively run `git submodule update`,
    stage, commit, stash, reset or mutate a submodule.
-3. [ ] Add real Git tests for tracked nested dirty/untracked
+3. [x] Add real Git tests for tracked nested dirty/untracked
    submodules under configured ignore-all; verify Safe sync
    refuses both a behind pull and an ahead push. Verify
    no worktree/remote branch is mutated by the refusal.
-4. [ ] Add distinct real Git regressions for a safe origin
+4. [x] Add distinct real Git regressions for a safe origin
    upstream amid an unrelated second remote, and for custom
    failing `core.hooksPath` pre-push hook. Preserve hook
    invocation and no-force semantics, with test-owned bare
@@ -1490,3 +1490,26 @@ non-enrolled unrelated sibling repositories; it changes only
 the classification of a tracked submodule's status.
 Rollback: revert the code and tests commit without touching
 settings or Git refs. Published v0.2.0 is unchanged.
+
+### P1-GIT-EDGE1 code and regression checkpoint
+
+- [`441bd75`](https://github.com/morozhenko-apps/repoticker/commit/441bd7519d6990b8e42f0e3683586b02df4d4cea)
+  forces `--ignore-submodules=none` on the one canonical
+  `git::inspect` status query. All existing single/bulk Safe
+  sync paths share its dirty-state classification.
+- [`f1522a9`](https://github.com/morozhenko-apps/repoticker/commit/f1522a9a6570f7c3e61200bfce38c3fe903a9cb4)
+  adds four real disposable-Git regressions: one tracked
+  submodule with ignored nested untracked changes blocking
+  Safe push, the same condition blocking Safe pull, selected
+  origin with an unrelated second remote, and configured
+  custom hooksPath rejecting outbound Safe sync.
+- The tests assert actual local HEAD and server bare ref
+  identities on refusal and absence of accidental changes,
+  not only a source regex. JS source contracts keep the
+  explicit submodule status option and coverage discoverable.
+- **Exact code/test source candidate:**
+  `f1522a9a6570f7c3e61200bfce38c3fe903a9cb4`.
+  [Preflight #40107980743](https://github.com/morozhenko-apps/repoticker/actions/runs/40107980743)
+  is the initial validation candidate; no CI success claim
+  before the exact run completes. KDE/Windows submodule
+  smoke and configured-hook acceptance remain in issue #15.

@@ -261,7 +261,35 @@ fn ignored_child(path: &Path) -> bool {
 /// Search an explicitly enrolled root and its immediate children only.
 /// Linked worktrees and submodules (.git files) are excluded from automatic
 /// child discovery; a healthy linked worktree can be enrolled explicitly.
-pub fn discover(root: &Path) -> Result<Vec<PathBuf>, GitError> {
+/// Normalize a bounded, exact set of immediate-child folder names.
+pub fn validate_ignored_child_names(names: Vec<String>) -> Result<Vec<String>, GitError> {
+    if names.len() > 100 {
+        return Err(GitError("Too many ignored folder names (max 100)".into()));
+    }
+    let mut normalized = BTreeSet::new();
+    for name in names {
+        let name = name.trim();
+        if name.is_empty()
+            || matches!(name, "." | "..")
+            || name.len() > 255
+            || name.chars().any(|c| c == '/' || c == '\\' || c.is_control())
+        {
+            return Err(GitError(
+                "Ignored folder names must be single directory names (max 255 bytes)".into(),
+            ));
+        }
+        normalized.insert(name.to_owned());
+    }
+    Ok(normalized.into_iter().collect())
+}
+
+/// Discover an enrolled root and its direct children only.
+/// Custom exclusions apply only to automatically discovered children.
+pub fn discover_with_ignored(
+    root: &Path,
+    ignored_child_names: &[String],
+) -> Result<Vec<PathBuf>, GitError> {
+
     let root = fs::canonicalize(root)
         .map_err(|err| GitError(format!("Invalid root {}: {err}", root.display())))?;
     if !root.is_dir() {
@@ -290,6 +318,9 @@ pub fn discover(root: &Path) -> Result<Vec<PathBuf>, GitError> {
             .map_err(|err| GitError(err.to_string()))?
             .is_dir()
             || ignored_child(&path)
+            || path.file_name().is_some_and(|name| {
+                ignored_child_names.iter().any(|ignored| name == ignored.as_str())
+            })
             || !looks_like_checkout(&path, false)
         {
             continue;
@@ -302,11 +333,19 @@ pub fn discover(root: &Path) -> Result<Vec<PathBuf>, GitError> {
     Ok(repositories.into_iter().collect())
 }
 
-pub fn discover_all(roots: &[PathBuf]) -> (Vec<PathBuf>, Vec<String>) {
+/// Compatibility entrypoint: no configurable names are ignored.
+pub fn discover(root: &Path) -> Result<Vec<PathBuf>, GitError> {
+    discover_with_ignored(root, &[])
+}
+
+pub fn discover_all_with_ignored(
+    roots: &[PathBuf],
+    ignored_child_names: &[String],
+) -> (Vec<PathBuf>, Vec<String>) {
     let mut repositories = BTreeSet::new();
     let mut errors = Vec::new();
     for root in roots {
-        match discover(root) {
+        match discover_with_ignored(root, ignored_child_names) {
             Ok(paths) => repositories.extend(paths),
             Err(err) => errors.push(err.to_string()),
         }
@@ -314,11 +353,19 @@ pub fn discover_all(roots: &[PathBuf]) -> (Vec<PathBuf>, Vec<String>) {
     (repositories.into_iter().collect(), errors)
 }
 
-/// Resolve an exact canonical checkout against the user's enrolled roots.
-/// Unregistered paths and implicit linked worktree children are rejected.
-pub fn resolve_enrolled_checkout(roots: &[PathBuf], requested: &str) -> Result<PathBuf, GitError> {
+/// Compatibility entrypoint with no user-configured exclusions.
+pub fn discover_all(roots: &[PathBuf]) -> (Vec<PathBuf>, Vec<String>) {
+    discover_all_with_ignored(roots, &[])
+}
+
+/// Reject checkouts that are not currently discovered under enrolled roots.
+pub fn resolve_enrolled_checkout_with_ignored(
+    roots: &[PathBuf],
+    requested: &str,
+    ignored_child_names: &[String],
+) -> Result<PathBuf, GitError> {
     let selected = normalize_root(requested)?;
-    let (repositories, _) = discover_all(roots);
+    let (repositories, _) = discover_all_with_ignored(roots, ignored_child_names);
     if repositories.binary_search(&selected).is_ok() {
         Ok(selected)
     } else {
@@ -326,6 +373,11 @@ pub fn resolve_enrolled_checkout(roots: &[PathBuf], requested: &str) -> Result<P
             "Repository is not enrolled or no longer valid".into(),
         ))
     }
+}
+
+/// Compatibility resolver for callers without configured ignore names.
+pub fn resolve_enrolled_checkout(roots: &[PathBuf], requested: &str) -> Result<PathBuf, GitError> {
+    resolve_enrolled_checkout_with_ignored(roots, requested, &[])
 }
 
 pub fn normalize_root(path: &str) -> Result<PathBuf, GitError> {

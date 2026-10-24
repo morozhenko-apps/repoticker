@@ -28,8 +28,17 @@ test("native safe sync action is sequential, non-force and rechecked", () => {
   assert.match(native, /git::safe_sync\(&path\)/);
   assert.match(git, /pub fn safe_sync\(/);
   assert.match(git, /pub fn safe_push\(/);
-  assert.match(git, /let second = inspect\(repo\)\?/);
   const pushBody = git.match(/pub fn safe_push\([\s\S]*?\n\}/)?.[0] ?? "";
+  const checks = [...pushBody.matchAll(/safe_push_source_unchanged\(repo, &first, &pin\)/g)]
+    .map(match => match.index);
+  const probe = pushBody.indexOf('"ls-remote"');
+  assert.equal(checks.length, 2, "two local source revalidations required");
+  assert.ok(checks[0] < probe && probe < checks[1], "live remote probe must lie between checks");
+  const guard = git.match(/fn safe_push_source_unchanged\([\s\S]*?\n\}/)?.[0] ?? "";
+  assert.match(guard, /let current = inspect\(repo\)\?/);
+  assert.match(guard, /current\.decision == SyncDecision::LocalAhead/);
+  assert.match(pushBody, /remote_tip != pin\.upstream_tip/);
+
   assert.match(pushBody, /"push",\s*"--porcelain",\s*"--no-follow-tags"/);
   const pushCall = pushBody.match(/required\(\s*repo,\s*&\[\s*"push",[\s\S]*?\],\s*\)\?/);
   assert.ok(pushCall, "Safe push must invoke an explicit argv-only Git push");

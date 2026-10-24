@@ -1242,6 +1242,25 @@ commits. The prior local acceptance receipt above belongs to the first base.
 
 Rollback remains scoped docs/config reverts; never revert upstream tray work.
 
+
+### Integrated-source local acceptance (2026-10-24)
+
+The five owned cleanup commits were replayed cleanly onto upstream `b617899`;
+all new native tray code and 98 appended v0.5 evidence lines are retained.
+Initial and integrated baselines, command output and a pre-integration recovery
+bundle are preserved in the audit workspace. Integrated baseline: 165 tracked
+files, 28 Markdown; cleanup adds only the catalog. All 152 non-cleanup files,
+including native tray work and Cargo.lock, match upstream bytes.
+
+Affected final gates passed: Rustfmt exit 0, Node 221/221 with zero failed or
+skipped cases, and locked Linux desktop cargo check exit 0. Core 78/78, Clippy
+with warnings denied and Python release 14/14 remain valid from the first run:
+all their source/config/lock/test inputs were verified unchanged. No suite was
+weakened or repeated without an executable-source reason. Task-owned compiler
+output was removed after completion. Full PR Preflight remains the publication
+gate; its actual exact-head status and merge/remote/branch-cleanup receipts are
+exported externally, not inferred here. Earlier counts retain their baseline.
+
 ---
 
 ## Imported root README (before October 24 housekeeping)

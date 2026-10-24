@@ -74,10 +74,6 @@
         <input id="ci-failure-notifications" type="checkbox">
         Notify on new CI failures
       </label>
-      <div class="ci-alert-status">
-        <span id="ci-notification-permission" class="hint" role="status">Checking system notifications...</span>
-        <button id="ci-test-notification" type="button" aria-label="Test native system notification" title="Test system notification, not a CI failure" disabled>Test</button>
-      </div>
     </div>
     <div id="github-repo-controls" class="github-repo-controls" hidden>
       <div class="github-repo-heading">
@@ -89,7 +85,7 @@
       </div>
       <input id="github-repo-filter" type="search" placeholder="Filter repositories" aria-label="Filter repositories" hidden>
       <div id="github-repo-list" class="github-repo-list" role="group" aria-label="Repositories to monitor" hidden></div>
-      <span id="github-repo-status" class="hint" role="status">All accessible repositories will be monitored.</span>
+      <span id="github-repo-status" class="hint" role="status" hidden></span>
     </div>
   </section>
   <div class="settings-footer">

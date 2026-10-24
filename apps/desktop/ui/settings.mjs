@@ -24,8 +24,6 @@ traceStartup("settings.start");
 let original = null;
 let draft = null;
 let saving = false;
-let ciNativePermission = false;
-let ciTestRunning = false;
 let githubPending = false;
 let githubConnected = false;
 let githubChecking = true;
@@ -73,9 +71,9 @@ function renderRepoChoices() {
   list.hidden = !show;
   filter.hidden = !show;
   list.replaceChildren();
+  byId("github-repo-status").hidden = !show;
   if (!show) {
-    byId("github-repo-status").textContent =
-      "All accessible repositories will be monitored.";
+    byId("github-repo-status").textContent = "";
     return;
   }
   const query = filter.value.trim().toLowerCase();
@@ -444,11 +442,6 @@ function updateApply() {
     saving || githubStarting || githubPending || !repoChoiceValid() ||
     (githubScopeTouched && !!selectedScope && !availableAccounts.has(selectedScope)) ||
     !(isDirty() || authNeedsConfirmation || githubScopeTouched || repoChoiceTouched);
-  // Only persisted affirmative opt-in can authorize a native test request.
-  byId("ci-test-notification").disabled =
-    saving || ciTestRunning || !ciNativePermission ||
-    original?.ciFailureNotifications !== true ||
-    draft?.ciFailureNotifications !== true;
 }
 function renderRoots() {
   const list = byId("roots-list");
@@ -569,39 +562,12 @@ async function refresh() {
   byId("ignored-child-name").value = "";
   message("");
   updateApply();
-  // Native permission is independent of persisted opt-in and OS Do Not Disturb.
-  ciNativePermission = false;
-  try {
-    const permission = await invoke("ci_notification_permission");
-    ciNativePermission = permission === "granted";
-    byId("ci-notification-permission").textContent = ciNativePermission
-      ? "System notifications available" : "System notifications unavailable";
-  } catch {
-    byId("ci-notification-permission").textContent = "System notifications unavailable";
-  }
-  updateApply();
   await refreshGithub(authAtOpen);
 }
 byId("ci-failure-notifications").addEventListener("change", event => {
   if (!draft || saving) return;
   draft.ciFailureNotifications = event.target.checked === true;
   updateApply();
-});
-byId("ci-test-notification").addEventListener("click", async () => {
-  if (saving || ciTestRunning || !ciNativePermission ||
-      original?.ciFailureNotifications !== true ||
-      draft?.ciFailureNotifications !== true) return;
-  ciTestRunning = true;
-  updateApply();
-  try {
-    await invoke("ci_notification_test");
-    message("Test sent to the OS. Check the notification center.");
-  } catch (error) {
-    message("Notification test failed: " + String(error), true);
-  } finally {
-    ciTestRunning = false;
-    updateApply();
-  }
 });
 byId("add-root-form").addEventListener("submit", event => {
   event.preventDefault();

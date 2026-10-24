@@ -1251,8 +1251,6 @@ fn main() {
             get_monitor_scope,
             get_monitor_selection,
             get_settings_config,
-            ci_notifications::ci_notification_permission,
-            ci_notifications::ci_notification_test,
             ci_notifications::ci_failure_notify,
             startup_diagnostics::trace_startup_stage,
             github_session::github_auth_status,

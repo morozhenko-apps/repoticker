@@ -12,7 +12,7 @@ permissions:
 
 concurrency:
   group: repoticker-desktop-acceptance-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   linux:
@@ -79,7 +79,7 @@ jobs:
           python scripts/release_assets.py collect --source target/release/bundle --target "$env:OUT" --platform windows --version 0.2.0
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           Get-ChildItem "$env:OUT" -Filter *.sha256 | ForEach-Object {
-            $parts = (Get-Content $_.FullName).Trim() -split '\\s+', 2
+            $parts = (Get-Content $_.FullName).Trim() -split '\s+', 2
             $binary = Join-Path "$env:OUT" $parts[1]
             $actual = (Get-FileHash -Algorithm SHA256 $binary).Hash.ToLowerInvariant()
             if ($actual -ne $parts[0].ToLowerInvariant()) { throw "Checksum mismatch: $binary" }

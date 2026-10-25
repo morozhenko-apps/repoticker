@@ -2407,3 +2407,78 @@ signal to unrelated processes or reliance on broad process names.
   Physical Windows process-tree behavior still requires
   acceptance under issue #15; no v0.2.0 package was
   rebuilt or published.
+
+## P1-FETCH-RACE4 — retry failed owned termination and expose spawn/register cleanup errors (2026-10-25)
+
+**Mode A: functional safety correction.** Previous per-child outcome
+source `6a10a7f75f77609394c9f11fc297f638e05e44b5`
+passed [Preflight #40186476753](https://github.com/morozhenko-apps/repoticker/actions/runs/40186476753)
+4/4 SUCCESS. No changed `main`, published v0.2.0, OS permission,
+or UI interaction is authorized.
+
+### Confirmed root cause
+
+Two independent deficiencies in current `git.rs`:
+
+1. `FetchCancellation::cancel` sets `cancelled=true`, attempts
+   termination of all registered child groups, saves only the first
+   error, then returns it. **Every later `cancel` returns false**
+   solely because the flag is already set, even if termination of
+   one or more still-registered children failed. Those errors are
+   not retryable through the existing Cancel IPC, while the
+   subprocess watchdog may have a 120-second timeout.
+2. If cancellation happens **after spawn but before child
+   registration**, the caller attempts owned-group termination
+   and `wait_owned_child`, but explicitly discards that
+   reaping result. It can return ordinary `FETCH_CANCELLED`
+   even if the child cannot be reaped or inherited output
+   remains open. Registration mutex failure has the same
+   discarded cleanup outcome and can hide failure detail.
+
+Competing cases: first Cancel with no children (idempotent success);
+repeated Cancel with all targets successfully signalled (must be
+no-op); one failed PID and other successfully signalled PIDs
+(retry only failed still-registered group); child unregisters after
+a transient termination failure (do not touch stale PID); child
+exits naturally between cancel and unregister (preserve normal
+result); and pre-registration spawn race (never return harmless
+cancellation if cleanup is incomplete).
+
+### Invariants and implementation
+
+1. Preserve the existing `FetchChildren` mutex,
+   `running` ownership registry and `targeted` registry.
+   Retain the original cancellation flag (blocks future
+   registrations). A repeated Cancel may reattempt only PIDs
+   still in `running` but **not** successfully `targeted`.
+   Never signal already-targeted or unregistered PIDs;
+   return `Ok(false)` when no additional work is pending,
+   and keep existing first-error reporting. Test termination
+   failures via a scoped, injectable terminator function,
+   while production always calls the current platform-owned
+   process-group termination.
+2. For pre-registration cancellation or registration failure,
+   require **both** termination and bounded child reap to
+   succeed before returning the original classification.
+   If either fails, return a contextual `GitError` including
+   the termination/reap details and an unknown-outcome
+   warning. Do not mask a failed cleanup as `cancelled`.
+   No new process launches, unbounded waits, detached workers,
+   new retries in the background or API/schema changes.
+3. Add deterministic unit tests for one failed and one
+   successfully targeted fake PID, retry then idempotency,
+   successful-child unregister before retry, cleanup
+   result precedence, and the existing *real* Unix
+   pre-spawn, spawn/register, post-register, multi-child
+   cancellation regressions. Never send signals to fake
+   PID targets in tests. Progress and per-repo results
+   remain aligned with the rolling bounded Fetch pool.
+4. One exact-source stable Preflight on Rustfmt/core,
+   real Git integration, Clippy, Node/release and Linux
+   desktop compile. Physical Windows lifecycle acceptance
+   remains open under issue #15; not an excuse for UI
+   micro-smoke now.
+
+**Rollback:** revert the isolated core/test commit.
+Full manual Fetch remains the only cancellable Git mutation;
+Safe sync and push policies are unchanged.

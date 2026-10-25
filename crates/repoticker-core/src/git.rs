@@ -34,6 +34,54 @@ const PUSH_GIT_TIMEOUT: Duration = Duration::from_secs(120);
 const PROCESS_REAP_GRACE: Duration = Duration::from_secs(3);
 const POLL_INTERVAL: Duration = Duration::from_millis(15);
 
+// GUI-owned console helpers must not allocate a visible console on Windows.
+// This does not suppress Git stderr or exit status, which remain observable.
+#[cfg(windows)]
+fn configure_background_child(command: &mut Command) {
+    use std::os::windows::process::CommandExt;
+    const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+    command.creation_flags(CREATE_NO_WINDOW);
+}
+
+#[cfg(not(windows))]
+fn configure_background_child(_command: &mut Command) {}
+
+#[cfg(windows)]
+const GIT_DLL_INIT_FAILURE: &str =
+    "Git for Windows failed to initialize (0xC0000142); verify 'git --version' in a terminal";
+
+fn check_git_process_startup(output: &Output) -> Result<(), GitError> {
+    #[cfg(windows)]
+    if output.status.code() == Some(0xC000_0142_u32 as i32) {
+        return Err(GitError(GIT_DLL_INIT_FAILURE.into()));
+    }
+    let _ = output;
+    Ok(())
+}
+
+fn is_git_process_startup_failure(error: &GitError) -> bool {
+    #[cfg(windows)]
+    {
+        error.0 == GIT_DLL_INIT_FAILURE
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = error;
+        false
+    }
+}
+
+fn git_command(repo: &Path, args: &[&str]) -> Command {
+    let mut command = Command::new("git");
+    command
+        .arg("-C")
+        .arg(repo)
+        .args(args)
+        .env("GIT_TERMINAL_PROMPT", "0");
+    configure_background_child(&mut command);
+    command
+}
+
 #[derive(Default)]
 struct FetchChildren {
     cancelled: bool,
@@ -143,7 +191,9 @@ fn terminate_fetch_group(pid: u32) -> Result<(), GitError> {
     // taskkill /T terminates descendants of the exact owned PID. The
     // supervisor itself also has a deadline: never hang indefinitely
     // while trying to stop a hung SSH process.
-    let mut child = Command::new("taskkill.exe")
+    let mut terminator = Command::new("taskkill.exe");
+    configure_background_child(&mut terminator);
+    let mut child = terminator
         .args(["/PID", &pid.to_string(), "/T", "/F"])
         .stdin(Stdio::null())
         .stdout(Stdio::null())
@@ -474,13 +524,8 @@ fn run_bounded_command(
 }
 
 fn invoke(repo: &Path, args: &[&str]) -> Result<Output, GitError> {
-    let mut command = Command::new("git");
-    command
-        .arg("-C")
-        .arg(repo)
-        .args(args)
-        .env("GIT_TERMINAL_PROMPT", "0");
-    match args.first().copied() {
+    let mut command = git_command(repo, args);
+    let output = match args.first().copied() {
         // Local worktree/index mutations are never force-killed.
         Some("merge") => command
             .stdin(Stdio::null())
@@ -502,7 +547,9 @@ fn invoke(repo: &Path, args: &[&str]) -> Result<Output, GitError> {
             LOCAL_GIT_TIMEOUT,
             "Local Git command timed out",
         ),
-    }
+    }?;
+    check_git_process_startup(&output)?;
+    Ok(output)
 }
 fn stderr(output: &Output) -> String {
     let text = String::from_utf8_lossy(&output.stderr);
@@ -632,9 +679,15 @@ pub fn discover_with_ignored(
         {
             continue;
         }
-        // Broken .git metadata is skipped without aborting the complete scan.
-        if matches!(verified_checkout(&path), Ok(true)) {
-            repositories.insert(fs::canonicalize(&path).map_err(|err| GitError(err.to_string()))?);
+        // Broken .git metadata is isolated; a failing Windows Git loader
+        // is a global tool failure, not evidence that each repo is invalid.
+        match verified_checkout(&path) {
+            Ok(true) => {
+                repositories
+                    .insert(fs::canonicalize(&path).map_err(|err| GitError(err.to_string()))?);
+            }
+            Err(error) if is_git_process_startup_failure(&error) => return Err(error),
+            _ => {}
         }
     }
     Ok(repositories.into_iter().collect())
@@ -893,13 +946,9 @@ pub fn fetch_with_cancel(
         return Err(GitError(FETCH_CANCELLED.into()));
     }
     let args = ["fetch", "--all", "--prune", "--quiet"];
-    let mut command = Command::new("git");
-    command
-        .arg("-C")
-        .arg(repo)
-        .args(args)
-        .env("GIT_TERMINAL_PROMPT", "0");
+    let mut command = git_command(repo, &args);
     let output = run_cancellable_command(&mut command, cancel, || {}, || {})?;
+    check_git_process_startup(&output)?;
     if !output.status.success() {
         return Err(GitError(format!(
             "git {}: {}",

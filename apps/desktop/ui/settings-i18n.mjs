@@ -8,6 +8,7 @@ const russian = Object.freeze({
   "Direct children only": "Только вложенные папки",
   "Repository folder": "Папка репозиториев",
   "Add folder": "Добавить папку",
+  "Browse folders": "Выбрать папку…",
   "Add": "Добавить",
   "Ignored child folders": "Исключённые папки",
   "(all enrolled roots)": "(для всех добавленных папок)",

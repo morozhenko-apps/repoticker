@@ -2300,3 +2300,46 @@ classification, not in scheduler result collection.
 Rollback is limited to one Git core plus source-contract test
 commit. PID-targeting remains owned process-group only; no
 signal to unrelated processes or reliance on broad process names.
+
+### P1-FETCH-RACE3 implementation and CI checkpoint (2026-10-25)
+
+- `e846436465c9c4b9446fa2e7a25ef7e646f4830f`
+  adds a per-owned-child targeted cancellation set in the
+  existing `FetchChildren` mutex. `cancel` marks a PID
+  targeted only after an owned-group termination request
+  succeeds. `unregister` removes both active and targeted
+  entries atomically and returns the targeted flag for that
+  specific completed child.
+- The final fetch-result classifier no longer converts an
+  earlier successful Git exit to `cancelled` just because
+  a sibling's Cancel request was received. An interrupted
+  signal-terminated Unix child remains `FETCH_CANCELLED`;
+  concrete process/pipe/cleanup errors remain genuine
+  errors, including unknown remote outcome. On Windows,
+  `taskkill` targeting and a non-success exit are used
+  conservatively pending physical verification.
+- Unix Rust regressions cover successful result retention,
+  ordinary Git nonzero vs interrupted child, concrete
+  timeout preservation, cancellation of two concurrent
+  registered real process-group children with distinct
+  cancelled outcomes, registry cleanup and idempotency.
+  Existing pre-spawn/registration/after-registration
+  cancellation fixtures remain intact. JS contracts guard
+  both the per-child and native result mapping.
+- `ef8802a164ca20876da25f88744865420f570e67`
+  corrects a missing test-module import of the private
+  classifier and `GitError` before the test source is
+  finally accepted. Production code is unchanged by
+  this second commit.
+- **Current code/test candidate:**
+  `ef8802a164ca20876da25f88744865420f570e67`.
+  [Preflight #40186357617](https://github.com/morozhenko-apps/repoticker/actions/runs/40186357617)
+  was queued at this checkpoint. Check its exact SHA,
+  Rustfmt, complete Rust unit/integration, Clippy,
+  JS/release, Linux desktop compile and aggregate result
+  before marking verified. The earlier incomplete
+  `e8464364` run does not validate these regressions.
+- Safe pull/push, Git mutation policy, operation lock,
+  config, API contracts, GUI geometry, release and
+  `main` are unchanged. Windows physical cancellation
+  semantics stay open in issue #15.

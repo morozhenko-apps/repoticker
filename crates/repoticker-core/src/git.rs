@@ -1235,6 +1235,58 @@ pub fn safe_pull(repo: &Path) -> Result<OperationOutcome, GitError> {
     safe_pull_with_checkpoints(repo, || {}, || {})
 }
 
+#[cfg(all(test, windows))]
+mod windows_git_process_tests {
+    use super::{
+        check_git_process_startup, configure_background_child, git_command,
+        is_git_process_startup_failure, GIT_DLL_INIT_FAILURE,
+    };
+    use std::{
+        os::windows::process::ExitStatusExt,
+        process::{Command, ExitStatus, Output},
+    };
+
+    #[test]
+    fn loader_failure_reports_ntstatus_without_leaking_command_or_repo_path() {
+        let output = Output {
+            status: ExitStatus::from_raw(0xC000_0142),
+            stdout: Vec::new(),
+            stderr: Vec::new(),
+        };
+        let error = check_git_process_startup(&output).expect_err("DLL initialization failed");
+        assert_eq!(error.0, GIT_DLL_INIT_FAILURE);
+        assert!(is_git_process_startup_failure(&error));
+    }
+
+    #[test]
+    fn ordinary_failure_remains_a_regular_git_exit_status() {
+        let output = Output {
+            status: ExitStatus::from_raw(1),
+            stdout: Vec::new(),
+            stderr: Vec::new(),
+        };
+        assert!(check_git_process_startup(&output).is_ok());
+    }
+
+    #[test]
+    fn headless_git_command_executes_without_losing_output() {
+        let root = std::env::current_dir().expect("test checkout");
+        let output = git_command(&root, &["--version"])
+            .output()
+            .expect("Git for Windows is available on the Windows CI runner");
+        assert!(output.status.success(), "Git startup must succeed on CI");
+        assert!(String::from_utf8_lossy(&output.stdout).starts_with("git version "));
+    }
+
+    #[test]
+    fn headless_child_creation_preserves_exit_status() {
+        let mut command = Command::new("cmd.exe");
+        configure_background_child(&mut command);
+        let output = command.args(["/C", "exit", "17"]).output().expect("cmd child");
+        assert_eq!(output.status.code(), Some(17));
+    }
+}
+
 #[cfg(test)]
 mod concurrent_git_tests {
     use super::{safe_pull_with_checkpoints, safe_push_with_checkpoint};

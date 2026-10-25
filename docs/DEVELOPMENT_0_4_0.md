@@ -2097,3 +2097,60 @@ commit. No config schema, Tauri IPC, GitHub monitor, UI geometry,
   Linux desktop compile and aggregate result before marking
   the work verified. Do not conflate a source commit or the
   first failing format gate with full CI acceptance.
+
+## P1-PROC2 — cleanup owned helpers after Git exits with an inherited pipe (2026-10-25)
+
+**Mode A: process-lifecycle bugfix.** Prior rolling-worker source
+`6bb196b0ebb0c512314a86fdc94e522c902fd1da` passed
+[Preflight #40182426109](https://github.com/morozhenko-apps/repoticker/actions/runs/40182426109)
+4/4 SUCCESS.
+
+### Expected / actual / root cause
+
+Expected: a timed-out owned Git operation must not leave long-lived
+helpers in RepoTicker's owned process group. Exit success must not be
+claimed when output capture is incomplete.
+
+Actual in `git.rs::wait_owned_child`: after Git exits, a helper may
+still hold inherited stdout/stderr. The bounded `recv_timeout`
+reports an unknown outcome but **does not call the existing group
+terminator**, leaving the owned helper running.
+
+Plausible competing causes:
+1. Direct Git child still running (already handled by process timeout).
+2. Helper holds a pipe after direct Git exit (targeted source flaw).
+3. Helper explicitly detaches into a new process group (out of scope).
+4. Full pipe stalls Git (concurrent readers already handle this).
+5. Actual drain I/O error (must remain distinct from a timeout).
+6. Drain worker disconnects without a result (must not be called timeout).
+7. Ordinary nonzero Git exit with both pipes drained (unchanged).
+
+Root cause: the *post-exit* pipe timeout branch never invokes the
+owned process terminator, unlike the pre-exit timeout branch.
+
+### Bounded implementation and validation
+
+1. Retain argv-only process execution, existing private Unix group
+   and Windows exact-parent `taskkill /PID /T`, fixed grace deadline,
+   IPC/result contracts and existing timeouts. On a real post-exit
+   output-pipe timeout, invoke the **existing owned-group** terminator.
+   Distinguish `Timeout` from `Disconnected`; report cleanup
+   failure explicitly and never convert an unknown remote outcome to
+   success. Do not kill unrelated process names or groups.
+2. Add deterministic Linux real-process regression: spawn a helper
+   that inherits stdout, exit its parent, verify the helper no longer
+   runs after pipe timeout, and retain normal stderr/nonzero tests.
+   Keep bounded test cleanup even on failure; no real repositories,
+   credentials or network.
+3. The Windows limitation is explicit: `taskkill` can fail if the
+   tracked parent has already exited. This change reports that failure
+   but does not introduce new Windows Job Object process ownership;
+   physical Windows descendant acceptance stays in issue #15.
+4. Run exact code/test source SHA Preflight (Rustfmt, core/integration,
+   Clippy, Node/release, Linux desktop) only after implementation.
+   Record evidence in separate docs-only commit.
+5. Out of scope: new cancellation UI, autostart, Safe sync mutation,
+   config schema, process supervisor redesign, `main` or release.
+
+**Rollback:** revert the isolated Rust core/test commit; only
+post-exit helper cleanup behavior changes.

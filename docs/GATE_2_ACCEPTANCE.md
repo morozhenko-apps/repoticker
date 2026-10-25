@@ -38,6 +38,35 @@ proof of implementation or OS acceptance.
 
 **CI checkpoint, 2026-10-25:** Both exact-source Preflight runs above are complete and green. Source-level checks close the pending build/compile subtask for row 5, but **do not** change its `Pending runtime` acceptance status. The unpublished [desktop acceptance candidate run #40227612556](https://github.com/morozhenko-apps/repoticker/actions/runs/40227612556) builds Linux/Windows installers independently; its artifacts must be checked only after both relevant build/upload jobs actually succeed. No OS or installer lifecycle acceptance is inferred from Preflight.
 
+## Windows physical feedback — 2026-10-25
+
+An owner-operated Windows test of the unpublished NSIS build from
+[run #40227612556](https://github.com/morozhenko-apps/repoticker/actions/runs/40227612556)
+established these observations:
+
+- GitHub device sign-in completed and repository/runner status appeared.
+  This is useful partial evidence for rows 2/3, **not** the complete
+  revoked/offline/restart/scope acceptance.
+- Opening the installed app also opened a console window.
+- The tray card lost its previous position; its drawer kept excessive
+  vertical space and displayed pale unmasked corners on Windows.
+- Native local folder selection was missing; a root had to be typed.
+- With only one repository the list appeared empty; after adding a second
+  checkout both rows appeared. This is an **observed behavior** with root
+  cause still unconfirmed, not permission to alter Git core speculatively.
+- Chrome flagged the download archive as dangerous; Defender also challenged
+  it before permitting execution. Unsigned/low-reputation is plausible, but
+  no malware scan or clean security verdict is proven by GitHub CI.
+
+Targeted code and tests are recorded in
+[Windows QA defect ledger](WINDOWS_QA_DEFECTS_2026_10_25.md).
+The new unpublished [Windows/KDE candidate run #40232905905](https://github.com/morozhenko-apps/repoticker/actions/runs/40232905905)
+was triggered from **`c35446fc043fb84d4c5553dfbcb53f111efe9345`**.
+It must complete build and artifact checks before providing a new download.
+The previous installer **does not contain** the repairs. All revised UI
+behaviors and the one-repository case remain **PENDING PHYSICAL RECHECK**.
+The five original gate rows and overall Gate 2 status remain open.
+
 ## One batched physical acceptance, no per-commit user interruptions
 
 Reuse the **same** final owner KDE/Windows session and screenshots/logs

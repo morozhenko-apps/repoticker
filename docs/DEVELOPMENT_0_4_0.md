@@ -2078,3 +2078,22 @@ commit. No config schema, Tauri IPC, GitHub monitor, UI geometry,
   config, auth or UI layout changed. Windows/KDE
   live throughput remains a deferred performance
   measurement, not a feature completion prerequisite.
+
+### P1-POOL1 Rustfmt correction
+
+- The first-source candidate `09e7600f` triggered
+  [Preflight #40182333122](https://github.com/morozhenko-apps/repoticker/actions/runs/40182333122).
+  Its Node/release job was SUCCESS. The Rust job stopped at
+  `cargo fmt --check` on a single extra blank line at the
+  end of the new bounded worker test module, so core tests
+  and Clippy were not executed on that SHA.
+- `6bb196b0ebb0c512314a86fdc94e522c902fd1da`
+  removes that exact whitespace-only difference, with
+  no changed concurrency behavior or assertions.
+- **Final executable/test candidate:**
+  `6bb196b0ebb0c512314a86fdc94e522c902fd1da`.
+  [Preflight #40182426109](https://github.com/morozhenko-apps/repoticker/actions/runs/40182426109)
+  must provide successful Rustfmt/core/Clippy, Node/release,
+  Linux desktop compile and aggregate result before marking
+  the work verified. Do not conflate a source commit or the
+  first failing format gate with full CI acceptance.

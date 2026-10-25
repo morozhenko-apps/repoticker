@@ -1330,6 +1330,8 @@ fn main() {
     configure_gdk_for_native_wayland();
 
     tauri::Builder::default()
+        // Must precede all other plugins so a second launch never reaches setup.
+        .plugin(tauri_plugin_single_instance::init(|_app, _args, _cwd| {}))
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_autostart::Builder::new().app_name("RepoTicker").build())

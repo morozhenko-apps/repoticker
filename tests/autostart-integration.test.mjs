@@ -11,6 +11,12 @@ test("native OS login launch uses pinned maintained plugin and scoped IPC only",
   const main = read("../apps/desktop/src-tauri/src/main.rs");
   const capabilities = JSON.parse(read("../apps/desktop/src-tauri/capabilities/default.json"));
   assert.match(manifest, /tauri-plugin-autostart = "=2\.7\.0"/);
+  assert.match(manifest, /tauri-plugin-single-instance = "=2\.5\.4"/);
+  const plugins = main.slice(main.indexOf("tauri::Builder::default()"));
+  assert.ok(plugins.indexOf("tauri_plugin_single_instance::init(") >= 0);
+  assert.ok(plugins.indexOf("tauri_plugin_single_instance::init(") <
+    plugins.indexOf("tauri_plugin_clipboard_manager::init("),
+    "The single-instance plugin must be registered before other plugins");
   assert.match(main, /tauri_plugin_autostart::Builder::new\(\)\.app_name\("RepoTicker"\)\.build\(\)/);
   assert.match(main, /autostart::autostart_is_enabled/);
   assert.match(main, /autostart::autostart_set_enabled/);

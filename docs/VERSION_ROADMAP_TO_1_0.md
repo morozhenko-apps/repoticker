@@ -371,6 +371,8 @@ smoke each code commit. Do not duplicate the actual
 KDE/Windows OS acceptance in Gate 2 and Gate 3: reuse
 the same evidence when a check legitimately covers both.
 
+**Execution receipt:** [Gate 2/6 acceptance ledger](GATE_2_ACCEPTANCE.md) records source evidence separately from pending physical KDE/Windows and the autostart owner decision. Do not mistake a green CI for completion of these checks.
+
 ### Gate 1 — CLOSED / Git-core change freeze ACTIVATED (2026-10-25)
 
 - Exact functional patch: `301145ef54da141caff46e889acaffde0234be0a`;

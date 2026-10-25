@@ -18,6 +18,7 @@ No test inventory, branch map, release limit or signing/security rule was remove
 - [Roadmap and delivery evidence](../docs/ROADMAP.md) — `docs/ROADMAP.md`
 - [Test strategy and acceptance evidence](../docs/TEST_STRATEGY.md) — `docs/TEST_STRATEGY.md`
 - [RepoTicker — versioned roadmap v0.1.0 to v1.0.0](../docs/VERSION_ROADMAP_TO_1_0.md) — `docs/VERSION_ROADMAP_TO_1_0.md`
+- [Gate 2/6: finite functional acceptance ledger](../docs/GATE_2_ACCEPTANCE.md) — `docs/GATE_2_ACCEPTANCE.md`
 
 ## Versioned development chronology
 

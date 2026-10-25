@@ -1,3 +1,12 @@
+## Gate 2 source readiness (2026-10-25)
+
+The bounded five-check [functional acceptance ledger](GATE_2_ACCEPTANCE.md)
+records existing CI and source evidence without inventing KDE/Windows
+runtime acceptance. Real notification delivery, native auth, scope,
+startup timings and owner autostart decision remain open. Do not add a
+new Git-core improvement while waiting for the one batched physical
+acceptance with Gate 3.
+
 ## Execution cap and next gate (2026-10-25)
 
 The owner has approved a **finite six-gate v1.0 plan**, a Git-core

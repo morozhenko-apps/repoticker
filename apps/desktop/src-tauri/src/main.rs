@@ -591,10 +591,18 @@ fn resize_unmanaged_card(window: &tauri::WebviewWindow, height: f64) -> Result<(
 /// The card grows upward from its previous bottom edge when the platform
 /// permits setting window coordinates. Wayland compositors may deny it.
 #[tauri::command]
-async fn set_card_view(app: AppHandle, view: String) -> Result<(), String> {
+async fn set_card_view(
+    app: AppHandle,
+    view: String,
+    repository_count: Option<usize>,
+) -> Result<(), String> {
     let height = match view.as_str() {
         "compact" => 122.0,
-        "repos" => 510.0,
+        "repos" => {
+            let count = repository_count.unwrap_or(0);
+            let rows = count.clamp(1, 10);
+            (122 + 18 + 35 * rows + if count == 0 { 8 } else { 0 }) as f64
+        }
         "settings" => 318.0,
         _ => return Err("Unknown card view".into()),
     };

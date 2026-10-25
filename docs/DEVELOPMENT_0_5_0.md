@@ -1193,3 +1193,20 @@ manually enabled test OS startup registrations on
 acceptance hosts before reinstalling the previous
 package. No main/tag/release promotion, autostart ON
 by default or change to protected Git operations.
+
+### AUTOSTART1 — duplicate-session prevention is part of the existing acceptance scope
+
+The established Gate 2 check explicitly requires **one tray instance
+after OS login**. An OS autostart entry alone does not prevent a second
+manual desktop launch. The maintained Tauri v2 Single Instance plugin
+provides a Linux D-Bus name and Windows process mutex, has no JS
+permission surface, and official docs require it to be the **first**
+plugin registered. Verify its current crate version and pin it in
+Cargo together with autostart rather than implementing ad-hoc
+process-name checks or stale PID lockfiles. A redundant second launch
+must exit without re-running app setup or a Git operation, and should
+not automatically raise the card at login. Physical dual-launch
+acceptance remains a Gate 3 test; Snap/Flatpak are out of scope.
+
+Source: https://v2.tauri.app/plugin/single-instance/
+Rollback together with native autostart dependency and OS-test entries.

@@ -264,8 +264,9 @@ L10N-20 and Mode B acceptance gates.
 2. **Close essential v0.3–v0.5 functional acceptance:** focus on
    real GitHub failure notification, startup/credentials,
    selected-repository correctness and important settings.
-   Resolve the **autostart architecture STOP factor** by an explicit
-   owner decision; do not silently implement it.
+   **Autostart remains mandatory for v1.0** by owner decision
+   (2026-10-25). Implement the opt-in native integration and verify
+   the Linux/Windows OS lifecycle; no unattended Git mutation.
    Record real failures only; no additional micro-polish.
 3. **v0.8 platform gate:** batch one final KDE/Windows physical
    acceptance and packaging/upgrade tests for the platforms
@@ -350,12 +351,15 @@ new features, cosmetic UI adjustments or speculative optimizations.
    (no startup historical replay), and test disabled
    notifications. An artificial test notification is not
    acceptance of this path.
-5. **Autostart decision:** the platform-specific architectural
-   STOP remains. The owner must explicitly choose
-   **include + design/test** or **defer/disable for 1.0**;
-   until then do not code or advertise autostart. This is
-   a decision gate, not permission to begin another
-   implementation phase.
+5. **Autostart implementation and acceptance — required for v1.0.**
+   The owner explicitly rejected deferral on 2026-10-25.
+   Prefer a maintained Tauri-native autostart integration with
+   Settings opt-in default OFF, limited native permissions and
+   no background Git operations. Validate Linux/KDE XDG and
+   Windows enable/disable, login launch, one tray instance,
+   config persistence, upgrade and uninstall cleanup.
+   Confirm plugin compatibility and lifecycle design before
+   coding; do not hand-edit OS startup registries as a shortcut.
 
 Gate-2 **stop condition**: all five checks have either
 explicit, dated acceptance evidence or an approved
@@ -371,7 +375,7 @@ smoke each code commit. Do not duplicate the actual
 KDE/Windows OS acceptance in Gate 2 and Gate 3: reuse
 the same evidence when a check legitimately covers both.
 
-**Execution receipt:** [Gate 2/6 acceptance ledger](GATE_2_ACCEPTANCE.md) records source evidence separately from pending physical KDE/Windows and the autostart owner decision. Do not mistake a green CI for completion of these checks.
+**Execution receipt:** [Gate 2/6 acceptance ledger](GATE_2_ACCEPTANCE.md) records source evidence separately from pending physical KDE/Windows and the required autostart implementation and OS acceptance. Do not mistake a green CI for completion of these checks.
 
 ### Gate 1 — CLOSED / Git-core change freeze ACTIVATED (2026-10-25)
 
@@ -396,7 +400,24 @@ the same evidence when a check legitimately covers both.
   with exactly the five observable checks specified
   above. The five items are not marked passed by
   source CI; no real-device evidence has been
-  fabricated. Autostart architecture remains an owner
-  STOP decision and must not be implemented implicitly.
+  fabricated. Autostart inclusion is confirmed by the owner;
+  native implementation and physical acceptance remain open.
 - Main branch remains on published v0.2.0. No release,
   tag, installer, push to main, or deployment.
+
+## Autostart inclusion confirmed — 2026-10-25
+
+The owner explicitly **rejected moving autostart after 1.0**.
+Native opt-in autostart is a required part of the finite Gate 2
+and stable v1.0 contract, not a new seventh phase. Implement
+it for advertised Linux/KDE and Windows targets, and perform
+the necessary physical login, opt-in/opt-out, single-instance,
+upgrade/reinstall/uninstall and persistence acceptance.
+
+Preferred design: maintained Tauri autostart integration with
+narrow native Settings permissions and default OFF. Confirm
+platform support and plugin API before coding; no implicit
+Fetch, Safe sync or background jobs. Git-core remains frozen.
+Deferral of optional unattended sync and Hybrid/Webhook
+relay remains unchanged. **Scope approved is not acceptance
+of implementation or OS behavior.**

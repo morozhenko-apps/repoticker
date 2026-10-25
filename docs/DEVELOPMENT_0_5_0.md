@@ -4,8 +4,11 @@
 
 The initial native-notification architecture question below was subsequently
 resolved for the implemented direct REST/native opt-in path; its later owner
-choices and implementation receipts control that scope. Autostart remains a
-separate undecided architecture boundary. Initial card, Settings, About and
+choices and implementation receipts control that scope. **Owner decision
+2026-10-25: autostart is required for v1.0, with Linux/Windows testing.**
+Use a maintained Tauri-native default-OFF opt-in design as the candidate;
+validate permissions and OS lifecycle before implementation.
+Initial card, Settings, About and
 GitHub tooltip EN/RU slices exist on dev, not a complete L10N-20 product.
 The corrected runner-name projection at `55e1d504` passed
 [Preflight 40137480766](https://github.com/morozhenko-apps/repoticker/actions/runs/40137480766),

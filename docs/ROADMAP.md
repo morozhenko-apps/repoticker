@@ -3,7 +3,8 @@
 The bounded five-check [functional acceptance ledger](GATE_2_ACCEPTANCE.md)
 records existing CI and source evidence without inventing KDE/Windows
 runtime acceptance. Real notification delivery, native auth, scope,
-startup timings and owner autostart decision remain open. Do not add a
+startup timings and autostart implementation plus OS acceptance remain open.
+Owner confirmed native autostart must ship in v1.0. Do not add a
 new Git-core improvement while waiting for the one batched physical
 acceptance with Gate 3.
 

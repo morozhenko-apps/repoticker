@@ -27,12 +27,14 @@ or authorization to work on speculative bugs.
 | 2 | Native GitHub auth and secrets, offline/revocation/denial recovery | `github_session.rs` confines tokens to native code and serialized wallet, `github-monitor.mjs` invalidates stale state and handles permission/rate limits; `tests/github-monitor.test.mjs`, GitHub native/core and source regressions included in green gate | Physical Device Flow + wallet/restart/disconnect, meaningful 401/403/404/429/offline/locked-wallet scenarios; confirm zero token disclosure | **Pending runtime** |
 | 3 | Scope and counters are accurate, unknown != zero | `github-monitor.mjs` uses authorized installations/repositories and separate runner/job projection, `tests/settings-github-confirm.test.mjs` verifies draft vs OK/Cancel and account switch; `tests/github-monitor.test.mjs` verifies truncation, selected repo beyond first page, unknown coverage and scope races | Actual logged-in All/Selected/account-switch with pagination, runner/job/billing view, one unavailable repository and restart | **Pending runtime** |
 | 4 | Exactly one real opt-in CI failure notification, never historical replay | `ci-failure-events.mjs` silently baselines observed runs, `ci_notifications.rs` checks persisted opt-in + account/repo + system permission and bounds dedup; `tests/ci-failure-events.test.mjs` and `tests/ci-native-integration.test.mjs` verify disabled, new failure, duplicates, stale permissions and recovery | With explicit consent, use a disposable authorized CI workflow to produce one new failure **after** enabling monitoring; verify KDE/Windows desktop notification once, not historical, then disable. Never sabotage a production workflow or fabricate a failure event | **Pending real delivery** |
-| 5 | Autostart architecture owner STOP | Roadmap correctly identifies undecided autostart; no implementation or OS permission is added by the current freeze | **Explicit owner decision**: defer/disable for v1.0 (recommended), or include and approve a bounded cross-platform design/test requirement | **Pending decision** |
+| 5 | Native autostart for Linux and Windows, OFF by default | Owner confirmed 2026-10-25: **include in v1.0; do not defer**. Maintained Tauri autostart integration is the preferred bounded design, not yet implemented | Validate plugin/permissions, Settings opt-in, enable/disable, login/relogin, exactly one tray app, no Git auto-sync, persistence, upgrade/removal with no stale OS startup entries | **Scope approved; implementation and physical acceptance pending** |
 
 **Source conclusion:** existing source+targeted negative/contract suites
 provide substantive evidence for all four implemented flows. No new
-application bug was established by this review. **Zero of the five
+application bug was established by this review. **None of the five
 runtime/product checks is marked accepted** solely from automated tests.
+The owner's autostart inclusion decision is recorded, but is not
+proof of implementation or OS acceptance.
 
 ## One batched physical acceptance, no per-commit user interruptions
 
@@ -69,8 +71,8 @@ Do not ask the owner to install each intermediate development commit.
 
 ## Stop policy
 
-Gate 2 closes only when all five rows have explicit evidence
-or an approved owner decision on feature/platform scope.
+Gate 2 closes only when all five rows have explicit evidence.
+The autostart inclusion decision alone does not close check 5.
 Failing a mandatory check permits a **targeted defect fix**,
 not another generalized Git hardening campaign. Noncritical
 UI polish and speculative performance changes go to

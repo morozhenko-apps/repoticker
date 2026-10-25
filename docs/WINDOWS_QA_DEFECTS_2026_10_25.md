@@ -165,3 +165,35 @@ leaking paths/tokens.
 reverted without touching user configuration, authentication, or
 persistent data. Native Windows loader symptoms still require operator
 diagnostics if they persist under the controlled launch.
+
+
+### Implementation checkpoint — 2026-10-25
+
+- Code commit [`55981fde`](https://github.com/morozhenko-apps/repoticker/commit/55981fde6f028b42a08ef49328353eb35db51499)
+  centralizes production Git subprocess construction, sets
+  `CREATE_NO_WINDOW` on Windows (without changing Unix child groups),
+  and applies headless creation to owned `taskkill.exe` cleanup.
+  It distinguishes `0xC0000142` from ordinary Git nonzero status;
+  direct-child discovery reports the loader failure instead of
+  silently discarding checkouts as invalid.
+- Native Windows-only test commit [`6f2c2768`](https://github.com/morozhenko-apps/repoticker/commit/6f2c27682822121960eb87d4d1c09b85ecb5f404)
+  covers loader-error interpretation, ordinary nonzero exit,
+  Git version output and controlled `cmd.exe` child status.
+  Source contract test [`52db0ead`](https://github.com/morozhenko-apps/repoticker/commit/52db0ead40bee391617ea93899c493537fffaf10)
+  asserts headless creation is used by normal Git, cancellable Fetch
+  and taskkill paths.
+- The unpublished Windows candidate workflow now executes those
+  Windows-native tests before NSIS compilation. Source SHA
+  `342e6ec57a4797d72c436d4e34bc1e0ca7215440`:
+  [candidate #40238382619](https://github.com/morozhenko-apps/repoticker/actions/runs/40238382619),
+  [Preflight #40238382601](https://github.com/morozhenko-apps/repoticker/actions/runs/40238382601).
+  Both were running/pending at this checkpoint, so neither is
+  considered a verified build or release. Exact-SHA acceptance requires
+  **Windows native test PASS, NSIS compile PASS, checksums and artifacts**.
+- **Still physically unverified:** windows should not flash on
+  initial local repo scan, and Git should start normally. If
+  `0xC0000142` persists with a hidden child, compare independent
+  `git --version` in normal PowerShell, inspect Windows Application
+  events and Defender history; the loader cause must not be guessed.
+  No published version/tag/main modification.
+

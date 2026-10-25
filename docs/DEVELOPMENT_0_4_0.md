@@ -2543,3 +2543,20 @@ Safe sync and push policies are unchanged.
   before declaring CI acceptance.
 - The issue #15 Windows process-tree check remains
   deferred. No non-Git UI work, main or release.
+
+### P1-FETCH-RACE4 executable Rust/JS validation
+
+- Final code/test SHA `ebd65df51097e2c0aabcd16aee8eb1eb9df195c6`
+  has **SUCCESS** results in the Rustfmt/core/Clippy
+  and Node/release jobs of
+  [Preflight #40192087993](https://github.com/morozhenko-apps/repoticker/actions/runs/40192087993).
+- Exact test totals: **55 core unit + 30 real Git
+  integration + 3 GitHub origin = 88 Rust PASS**,
+  including all three new retry/cleanup regressions;
+  **232 Node PASS**, **14 Python release contracts PASS**;
+  zero failures in those completed jobs.
+- At this evidence checkpoint, Linux desktop compile
+  remained running. Do not claim aggregate 4/4 until
+  that job and the final result complete successfully.
+- OS physical Windows process-tree behavior remains
+  open in issue #15; the published v0.2.0 is untouched.

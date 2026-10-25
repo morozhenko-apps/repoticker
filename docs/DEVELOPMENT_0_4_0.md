@@ -2716,3 +2716,26 @@ is interceptable like tray Quit (not guaranteed).
 - Rollback: revert production/test commits, preserve docs.
   No main, version/tag, published installer, permission
   or persisted config changes.
+
+### P1-QUIT1 Rust test ownership correction
+
+- [Preflight #40195625148](https://github.com/morozhenko-apps/repoticker/actions/runs/40195625148)
+  for `cfed77b8` passed the Node/release job but
+  failed during Rust core test compilation with
+  `E0507` in the new `ShutdownSignal` unit fixture:
+  `JoinHandle::join` consumes the handle, whereas
+  `filter` passes a shared reference. This was a
+  test-source ownership mistake, not an application
+  shutdown outcome. Linux desktop compile ran
+  independently on that SHA.
+- `869f7e6a2b015e307949e1cb75bd5cbe02769360`
+  consumes each JoinHandle via `map(join)` before
+  filtering and counting the single successful
+  shutdown initiator. No behavior/production code or
+  test assertion was changed.
+- **Current executable/test candidate**:
+  `869f7e6a2b015e307949e1cb75bd5cbe02769360`.
+  [Preflight #40195794530](https://github.com/morozhenko-apps/repoticker/actions/runs/40195794530)
+  was queued at this checkpoint; do not claim core,
+  desktop or aggregate success until this exact SHA
+  passes all required jobs.

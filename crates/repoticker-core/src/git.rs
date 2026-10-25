@@ -260,6 +260,40 @@ fn drain_git_pipe<R: Read + Send + 'static>(mut reader: R) -> mpsc::Receiver<io:
     receiver
 }
 
+/// Receive one captured pipe. Git may have already exited while a helper
+/// still holds the inherited descriptor. The parent-child watchdog cannot
+/// catch that case, so terminate the same owned process group on timeout.
+fn receive_owned_pipe(
+    receiver: mpsc::Receiver<io::Result<Vec<u8>>>,
+    pid: u32,
+    timeout_message: &str,
+    name: &str,
+) -> Result<Vec<u8>, GitError> {
+    match receiver.recv_timeout(PROCESS_REAP_GRACE) {
+        Ok(Ok(bytes)) => Ok(bytes),
+        Ok(Err(err)) => Err(GitError(format!("Cannot read Git {name}: {err}"))),
+        Err(mpsc::RecvTimeoutError::Disconnected) => Err(GitError(format!(
+            "{timeout_message}; Git {name} drain disconnected; outcome unknown"
+        ))),
+        Err(mpsc::RecvTimeoutError::Timeout) => {
+            let cleanup = terminate_fetch_group(pid);
+            // Confirm closure of the inherited pipe when termination succeeds.
+            // If a helper escaped its group, the second wait is still finite
+            // and the result remains an explicit error, never success.
+            let closed = cleanup.is_ok()
+                && matches!(receiver.recv_timeout(PROCESS_REAP_GRACE), Ok(Ok(_)) | Ok(Err(_)));
+            let detail = match cleanup {
+                Ok(()) if closed => "owned helper group stopped".to_owned(),
+                Ok(()) => "owned helper cleanup could not be confirmed".to_owned(),
+                Err(err) => format!("owned helper termination failed: {err}"),
+            };
+            Err(GitError(format!(
+                "{timeout_message}; Git {name} held open by a descendant; {detail}; outcome unknown"
+            )))
+        }
+    }
+}
+
 // The caller retains ownership of the Child handle. Both pipes are drained
 // concurrently to avoid Git blocking when output exceeds the pipe capacity.
 fn wait_owned_child(
@@ -320,24 +354,11 @@ fn wait_owned_child(
         thread::sleep(POLL_INTERVAL);
     };
 
-    // A helper can outlive Git while retaining a pipe. Bound collection
-    // after Git exits; never block the GUI indefinitely.
-    let stdout = stdout_rx
-        .recv_timeout(PROCESS_REAP_GRACE)
-        .map_err(|_| {
-            GitError(format!(
-                "{timeout_message}; Git stdout held open by a descendant; outcome unknown"
-            ))
-        })?
-        .map_err(|err| GitError(format!("Cannot read Git stdout: {err}")))?;
-    let stderr = stderr_rx
-        .recv_timeout(PROCESS_REAP_GRACE)
-        .map_err(|_| {
-            GitError(format!(
-                "{timeout_message}; Git stderr held open by a descendant; outcome unknown"
-            ))
-        })?
-        .map_err(|err| GitError(format!("Cannot read Git stderr: {err}")))?;
+    // Git has exited, but a helper can still hold an inherited pipe.
+    // A post-exit timeout must also stop the owned group, not merely
+    // return an error while leaving a long-lived helper behind.
+    let stdout = receive_owned_pipe(stdout_rx, pid, timeout_message, "stdout")?;
+    let stderr = receive_owned_pipe(stderr_rx, pid, timeout_message, "stderr")?;
     Ok(Output {
         status,
         stdout,
@@ -1607,6 +1628,64 @@ mod owned_git_process_tests {
         assert!(error.0.contains("outcome unknown"));
         assert!(error.0.contains("before retrying"));
         assert_ne!(error.0, FETCH_CANCELLED);
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn helper_holding_pipe_after_parent_exit_is_stopped_without_killing_unrelated_process() {
+        use std::fs;
+        use std::time::{SystemTime, UNIX_EPOCH};
+
+        let nonce = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
+        let pid_file = std::env::temp_dir().join(format!(
+            "repoticker-inherited-stdout-{}-{nonce}.pid",
+            std::process::id()
+        ));
+        let mut unrelated = Command::new("sleep").arg("30").spawn().unwrap();
+        let mut command = Command::new("sh");
+        // Pass the temporary pathname as argv, never interpolate it into
+        // a shell command. The background child inherits both output pipes.
+        command
+            .arg("-c")
+            .arg("sleep 300 & printf '%s\\n' \"$!\" > \"$1\"")
+            .arg("sh")
+            .arg(&pid_file);
+
+        let result = run_bounded_command(
+            &mut command,
+            Duration::from_secs(10),
+            "Git output capture could not complete",
+        );
+        let owned_pid = fs::read_to_string(&pid_file)
+            .ok()
+            .and_then(|text| text.trim().parse::<u32>().ok());
+        // /proc reports Z for a killed-but-not-yet-reaped helper. This
+        // distinguishes it from a still-running process on Linux.
+        let state = owned_pid.and_then(|pid| {
+            fs::read_to_string(format!("/proc/{pid}/stat"))
+                .ok()
+                .and_then(|text| text.rsplit_once(") ").and_then(|(_, tail)| tail.chars().next()))
+        });
+        let unrelated_alive = unrelated.try_wait().unwrap().is_none();
+        // Ensure a failed assertion cannot leak the fixture's helper.
+        if let (Some(pid), Some(running)) = (owned_pid, state) {
+            if running != 'Z' && running != 'X' {
+                let _ = Command::new("kill").arg("-KILL").arg(pid.to_string()).status();
+            }
+        }
+        let _ = unrelated.kill();
+        let _ = unrelated.wait();
+        let _ = fs::remove_file(&pid_file);
+
+        let error = result.expect_err("inherited pipe must fail closed");
+        assert!(error.0.contains("stdout held open by a descendant"), "{error}");
+        assert!(error.0.contains("owned helper group stopped"), "{error}");
+        assert!(owned_pid.is_some(), "background helper PID must be recorded");
+        assert!(
+            state.is_none() || matches!(state, Some('Z' | 'X')),
+            "inherited-pipe helper must be terminated, actual state: {state:?}"
+        );
+        assert!(unrelated_alive, "unrelated process must not be killed");
     }
 
     #[test]

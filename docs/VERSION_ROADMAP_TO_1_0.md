@@ -314,3 +314,59 @@ while Rust-core/Node jobs passed. Fix by binding
 the lock result before matching; preserve actual
 lock-held exit behavior. Add one focused source
 contract and rerun the exact code/test gate only.
+
+### Gate 2: fixed acceptance set — not a new development backlog
+
+Gate 2 is capped at these **five observable checks**, drawn from
+the already-open issues [#4](https://github.com/morozhenko-apps/repoticker/issues/4),
+[#12](https://github.com/morozhenko-apps/repoticker/issues/12),
+[#15](https://github.com/morozhenko-apps/repoticker/issues/15)
+and the existing v0.5 work package. They do **not** authorize
+new features, cosmetic UI adjustments or speculative optimizations.
+
+1. **Startup correctness:** one cold and one warm KDE launch on
+   the same enrolled root set; record time to first local snapshot
+   and first authorized monitor result, full local scan count,
+   and whether false `Not connected` or repeated request storms
+   occur. Prior 2026-10-22 trace (~8.21 s local and ~18.23 s
+   visible metrics) is historical comparison, **not** a
+   fabricated SLA. If startup remains bounded, responsive and
+   truthful, defer speed micro-optimizations.
+2. **GitHub auth and secrets:** authorization/restart, refresh
+   or revoked access, explicit disconnect, locked wallet,
+   401/403/404/429 and network recovery must preserve
+   truthful unknown/stale results and keep access tokens
+   out of WebView/config/logs. Already-covered pure source
+   negatives need not be reimplemented or repeatedly rerun.
+3. **Monitored scope and counters:** all vs selected repositories
+   (including account switch and restart), authorized
+   multi-page selection, runner/job and opt-in informational
+   quota counters; inaccessible/partial data stays unknown,
+   not false zero. One successful test per meaningful
+   real integration transition, recorded in issue #15.
+4. **Real opt-in CI-failure alert:** enable notifications,
+   observe one *actual* GitHub job transition to failure,
+   ensure the single desktop notification is emitted once
+   (no startup historical replay), and test disabled
+   notifications. An artificial test notification is not
+   acceptance of this path.
+5. **Autostart decision:** the platform-specific architectural
+   STOP remains. The owner must explicitly choose
+   **include + design/test** or **defer/disable for 1.0**;
+   until then do not code or advertise autostart. This is
+   a decision gate, not permission to begin another
+   implementation phase.
+
+Gate-2 **stop condition**: all five checks have either
+explicit, dated acceptance evidence or an approved
+feature-defer/support-scope decision. A confirmed
+functional/security/data-loss failure is a scoped defect
+within this gate. An unconfirmed hypothetical race,
+minor layout tweak or additional unrequested test
+does not reopen Git-core development.
+
+Gate 3 remains the single combined platform/packaging
+acceptance rather than asking the owner to manually
+smoke each code commit. Do not duplicate the actual
+KDE/Windows OS acceptance in Gate 2 and Gate 3: reuse
+the same evidence when a check legitimately covers both.

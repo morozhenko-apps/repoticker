@@ -2581,3 +2581,96 @@ Safe sync and push policies are unchanged.
   The change requires no additional UI controls.
 - Physical Windows process-tree acceptance remains
   open. No main promotion, tag, installer or release.
+
+## P1-QUIT1 — drain owned Git actions on explicit tray Quit (2026-10-25)
+
+**Mode A / lifecycle reliability.** Previous exact-source
+`ebd65df51097e2c0aabcd16aee8eb1eb9df195c6`
+passed [Preflight #40192087993](https://github.com/morozhenko-apps/repoticker/actions/runs/40192087993),
+4/4 SUCCESS. Scope is explicit Quit from KDE KSNI or Tauri
+desktop tray. No change to the close-window-to-tray behavior,
+system forced termination, Linux session logout, autostart,
+Safe sync safety, release, or `main`.
+
+### Reproducible source defect and hypotheses
+
+Expected: explicit Quit does not orphan any Git/SSH process started
+by RepoTicker, and does not end the process mid-way through a
+non-cancellable Safe sync, whose Git worktree mutation must
+finish on its own. An explicit exit must not initiate new Git
+operations that the user had queued earlier.
+
+Actual: `linux_tray.rs::LinuxTray::on_ui("quit")` and
+`main.rs` Tauri menu's `"quit"` handler call
+`app.exit(0)` immediately. Concurrent Fetch executes in a
+Tokio `spawn_blocking` task under `OperationLock`, with an
+`ActiveFetch` token and independent OS process groups. Neither
+Quit caller checks that token or waits for the lock. App exit
+therefore can abandon a running Git child and lose its final
+classification, particularly on Windows.
+
+Competing hypotheses: (1) close-window event is also a process
+exit (false: explicitly prevented); (2) owned child automatically
+dies with app runtime (not guaranteed by private Unix process
+group/Windows process semantics); (3) Fetch always completes
+before Quit (false: separate async tasks); (4) queued operations
+cannot start after Quit (false without a shutdown flag);
+(5) Safe sync can be killed safely (false: local merge is
+deliberately not forcibly terminated); (6) logout/OS SIGKILL
+is interceptable like tray Quit (not guaranteed).
+
+### Scoped lifecycle protocol
+
+1. Add managed process-local `ShutdownState` (atomic flag)
+   with a pure, separately testable `begin()` that accepts
+   at most one explicit Quit request and `is_requested()`.
+   Do not add persistent config, platform dependencies or
+   a new Tauri command. Both tray Quit paths call a single
+   `request_quit` helper instead of directly exiting.
+2. On the first Quit request, set the flag **before** taking
+   the active token, marshal work off the GTK/DBus main
+   thread, cancel the current Fetch through its existing
+   owned-PID registry, and acquire `OperationLock` as a
+   completion barrier. Call `app.exit(0)` only **after**
+   all active Git work has released the lock, including
+   bounded Fetch cleanup. If a cleanup error occurs,
+   log it; the worker still waits for its configured
+   process deadline and reports the real Git result.
+   If the lock is poisoned, fail closed rather than
+   claiming a clean exit.
+3. Within `execute` under `OperationLock`, fail fast if
+   shutdown was requested: pending/queued operations must
+   not start Git work after the user chose Quit. Close the
+   publication race: after installing a new `ActiveFetch`
+   token, check the flag again and request cancellation if
+   Quit landed between the initial check and registration.
+   No polling, arbitrary new sleeps, or detached workers.
+4. Keep native Fetch results/progress and Tauri action events
+   unchanged until Git actions finish; no synthetic success
+   or cancellation events on process exit. Safe sync and
+   Safe pull are non-cancellable and must finish before Quit.
+   The existing `OperationLock` serializes both modes; UI
+   CloseRequested still hides the card/settings/usage.
+5. Add Rust state-machine tests for begin idempotence,
+   safe shutdown admission, and the Fetch publication race
+   through a pure coordinator if feasible. Add JS structural
+   regressions for both platform Quit paths and the lock
+   barrier, plus protection of the existing window-close
+   policy. Validate stable Rustfmt/core/Clippy, Node/release,
+   Linux desktop compile on exact source SHA; defer physical
+   Linux/Windows quit behavior to issue #15.
+
+### Explicit limits and rollback
+
+- OS power loss, `SIGKILL`, Task Manager End task and forced
+  session termination cannot be made transactional here.
+- A running Safe sync intentionally delays the explicit Quit
+  until its non-cancellable Git operation finishes; any
+  external Git hang remains bounded only by pre-existing
+  Git command semantics (merge has no force-kill deadline).
+  Do not introduce destructive termination to make Quit fast.
+- Windows descendant process-tree acceptance remains open.
+- Roll back the isolated native source/test commit to restore
+  previous direct-Quit semantics. No Git refs/config/schema,
+  native menu action IDs, GitHub REST, tokens, `main` or
+  published v0.2.0 are modified.

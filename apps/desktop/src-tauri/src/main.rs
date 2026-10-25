@@ -13,6 +13,7 @@ mod tray_i18n;
 
 use repoticker_core::{
     config_store::JsonStore,
+    shutdown::ShutdownSignal,
     git::{self, FetchCancellation, GitError, OperationOutcome, RepoSnapshot},
     SyncDecision,
 };
@@ -314,6 +315,9 @@ fn execute(
     }
     let state = app.state::<OperationLock>();
     let _guard = state.0.lock().map_err(|_| "Git operation lock poisoned")?;
+    if app.state::<ShutdownSignal>().is_requested() {
+        return Err("RepoTicker is shutting down".into());
+    }
     let active_fetch = app.state::<ActiveFetch>();
     let cancellation = if operation == "fetch" {
         let token = Arc::new(FetchCancellation::default());
@@ -328,6 +332,16 @@ fn execute(
     let _fetch_lease = cancellation
         .as_ref()
         .map(|_| ActiveFetchLease(&active_fetch));
+    // Close the race when Quit was requested after admission under
+    // OperationLock, but before the Fetch token was published.
+    if app.state::<ShutdownSignal>().is_requested() {
+        if let Some(token) = cancellation.as_ref() {
+            if let Err(error) = token.cancel() {
+                eprintln!("RepoTicker quit Fetch cancellation failed: {error}");
+            }
+        }
+        return Err("RepoTicker is shutting down".into());
+    }
     let config = read_config(app)?;
     let (repositories, failures) =
         git::discover_all_with_ignored(&roots_as_paths(&config), &config.ignored_child_names);
@@ -1245,6 +1259,43 @@ fn refresh_tray_language(app: &AppHandle, language: &str) {
     }
 }
 
+/// Explicit Quit must not orphan an owned Fetch or interrupt Safe sync.
+/// Keep the OS main loop responsive while the current Git operation drains.
+/// Repeated menu activation owns no second shutdown worker.
+fn request_quit(app: &AppHandle) {
+    if !app.state::<ShutdownSignal>().begin() {
+        return;
+    }
+    let app = app.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let active = match app.state::<ActiveFetch>().0.lock() {
+            Ok(state) => state.clone(),
+            Err(_) => {
+                eprintln!("RepoTicker quit refused: active Fetch registry unavailable");
+                return;
+            }
+        };
+        if let Some(token) = active {
+            if let Err(error) = token.cancel() {
+                // The worker still owns a bounded child watchdog. Do not
+                // exit before it has returned an outcome and released the lock.
+                eprintln!("RepoTicker quit Fetch cancellation failed: {error}");
+            }
+        }
+        let operation = app.state::<OperationLock>();
+        match operation.0.lock() {
+            Ok(_guard) => {
+                // The application may exit only after all registered Git
+                // worker groups have completed their bounded cleanup.
+                app.exit(0);
+            }
+            Err(_) => {
+                eprintln!("RepoTicker quit refused: Git operation lock poisoned");
+            }
+        }
+    });
+}
+
 fn dispatch_menu_action(app: &AppHandle, operation: &'static str) {
     let app = app.clone();
     tauri::async_runtime::spawn_blocking(move || {
@@ -1279,6 +1330,7 @@ fn main() {
         .plugin(tauri_plugin_notification::init())
         .manage(OperationLock::default())
         .manage(ActiveFetch::default())
+        .manage(ShutdownSignal::default())
         .manage(JsonStore::default())
         .manage(monitor_cache::MonitorCache::default())
         .manage(ci_notifications::DeliveredAlerts::default())
@@ -1325,7 +1377,7 @@ fn main() {
                         "about" => show_about(app),
                         "fetch" => dispatch_menu_action(app, "fetch"),
                         "sync" => dispatch_menu_action(app, "safe_sync"),
-                        "quit" => app.exit(0),
+                        "quit" => request_quit(app),
                         _ => {}
                     })
                     .on_tray_icon_event(|tray, event| {

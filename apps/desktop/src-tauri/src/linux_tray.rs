@@ -2,7 +2,7 @@
 //! fires for KDE's primary click. All UI/Git work is marshalled away from DBus.
 use crate::{
     app_icon, dispatch_menu_action, show_about, show_compact_card, show_settings, toggle_card,
-    tray_i18n,
+    request_quit, tray_i18n,
 };
 use ksni::{blocking::TrayMethods as _, menu::StandardItem, Icon, MenuItem, Tray};
 use tauri::{App, AppHandle, Manager};
@@ -23,7 +23,7 @@ impl LinuxTray {
             "about" => show_about(&app),
             "fetch" => dispatch_menu_action(&app, "fetch"),
             "sync" => dispatch_menu_action(&app, "safe_sync"),
-            "quit" => app.exit(0),
+            "quit" => request_quit(&app),
             _ => {}
         });
     }

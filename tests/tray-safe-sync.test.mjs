@@ -37,6 +37,7 @@ test("Windows changes menu labels without replacing tray icon or stable action I
   assert.match(native, /app\.tray_by_id\("repoticker"\)/);
   assert.match(native, /tray\.set_menu\(Some\(menu\)\)/);
   assert.match(native, /Menu::with_items\(app, &\[&open, &settings, &fetch, &sync, &about, &quit\]\)/);
-  assert.match(native, /"quit" => app\.exit\(0\)/);
+  assert.match(native, /"quit" => request_quit\(app\)/);
+  assert.match(linux, /"quit" => request_quit\(&app\)/);
   assert.doesNotMatch(native, /app\.exit\(0\);\s*refresh_tray_language/);
 });

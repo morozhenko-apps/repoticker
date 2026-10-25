@@ -1,4 +1,4 @@
-# Gate 2 Windows QA regression candidate, 2026-10-25. Never publish.
+# Gate 2 Windows QA typed-window compile correction; unpublished recheck (2026-10-25).
 name: Desktop acceptance candidates (no publishing)
 
 on:

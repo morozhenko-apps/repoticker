@@ -47,7 +47,7 @@ test("Git action admission and Fetch publication both check shutdown state", () 
 test("window close still hides, Safe sync is not killed, and events remain untouched", () => {
   assert.match(main, /WindowEvent::CloseRequested \{ api, \.\. \} = event/);
   assert.match(main, /api\.prevent_close\(\)/);
-  assert.match(main, /"safe_sync" => dispatch_menu_action\(app, "safe_sync"\)/);
+  assert.match(main, /"sync" => dispatch_menu_action\(app, "safe_sync"\)/);
   assert.match(main, /fn cancel_git_fetch\([\s\S]*?token\.cancel\(\)/);
   assert.match(main, /repoticker-git-action-finished/);
   const quit = main.match(/fn request_quit\([\s\S]*?\n\}/)?.[0] ?? "";

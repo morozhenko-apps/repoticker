@@ -13,8 +13,8 @@ mod tray_i18n;
 
 use repoticker_core::{
     config_store::JsonStore,
-    shutdown::ShutdownSignal,
     git::{self, FetchCancellation, GitError, OperationOutcome, RepoSnapshot},
+    shutdown::ShutdownSignal,
     SyncDecision,
 };
 use serde::{Deserialize, Serialize};

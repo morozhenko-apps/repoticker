@@ -1,0 +1,47 @@
+# Temporary, one-shot lockfile generation for the bounded native directory picker.
+# Delete this workflow immediately after Cargo.lock is resolved on dev.
+name: Resolve native dialog Cargo lock (one-shot)
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - '.github/workflows/resolve-dialog-lock.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: repoticker-dialog-lock
+  cancel-in-progress: false
+
+jobs:
+  resolve:
+    if: github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Resolve pinned dependencies
+        run: |
+          set -euo pipefail
+          cargo fetch
+          cargo metadata --locked --no-deps --format-version 1 > /dev/null
+          git diff --check
+          files="$(git diff --name-only)"
+          test -z "$files" || test "$files" = "Cargo.lock"
+      - name: Commit generated Cargo.lock to dev
+        run: |
+          set -euo pipefail
+          git add Cargo.lock
+          if git diff --cached --quiet; then
+            echo "Cargo.lock is already consistent"
+            exit 0
+          fi
+          git -c user.name='github-actions[bot]' \
+              -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+              commit -m 'build: generate native dialog Cargo lockfile'
+          git push origin HEAD:dev

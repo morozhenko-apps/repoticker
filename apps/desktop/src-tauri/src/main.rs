@@ -718,7 +718,10 @@ fn hide_card(app: AppHandle) -> Result<(), String> {
     }
     let _ = hide_usage_popup(app.clone());
     #[cfg(target_os = "windows")]
-    windows_geometry::save(&app, &window)?;
+    if let Err(error) = windows_geometry::save(&app, &window) {
+        // A read-only or unavailable config must never prevent hiding the card.
+        eprintln!("RepoTicker Windows anchor save failed: {error}");
+    }
     window.hide().map_err(|err| err.to_string())?;
     let _ = app.emit("repoticker-card-hidden", ());
     Ok(())

@@ -55,6 +55,7 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
   let monitorRepositories = [...initialRepositories];
   const persistedIgnored = [...(options.ignoredChildNames || [])];
   let closed = false;
+  let osAutostart = options.autostartEnabled === true;
   let tokenRemoved = false;
   let releaseInstallations = null;
   const delayedInstallations = options.deferInstallations
@@ -85,6 +86,13 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
               ci_failure_notifications: options.ciFailureNotifications === true
             };
             case "get_monitor_scope": return monitorOrg;
+            case "autostart_is_enabled":
+              if (options.autostartError) throw Error("OS autostart read failed");
+              return osAutostart;
+            case "autostart_set_enabled":
+              if (options.autostartWriteError) throw Error("OS registration denied");
+              osAutostart = args.enabled;
+              return osAutostart;
             case "github_auth_status": return { connected, phase };
             case "github_api_get":
               if (args.path.includes("/repositories?"))
@@ -157,6 +165,7 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
     get closed() { return closed; },
     get tokenRemoved() { return tokenRemoved; },
     get monitorOrg() { return monitorOrg; },
+    get autostartEnabled() { return osAutostart; },
     get monitorRepositories() { return monitorRepositories; },
     releaseInstallations: payload => releaseInstallations?.(payload),
     async dispatchAuth() {
@@ -560,5 +569,76 @@ test("Keyboard language choice previews immediately, and Cancel leaves persisten
     assert.equal(ui.node("language-options").hidden, true);
     await ui.node("cancel-settings").fire("click");
     assert.equal(ui.calls.filter(([command]) => command === "save_settings").length, 0);
+  } finally { ui.restore(); }
+});
+
+test("Login launch remains OFF by default and Cancel never registers with OS", async () => {
+  const ui = await fixture("login-cancel", true);
+  try {
+    assert.equal(ui.node("autostart-enabled").disabled, false);
+    assert.equal(ui.node("autostart-enabled").checked, false);
+    ui.node("autostart-enabled").checked = true;
+    await ui.node("autostart-enabled").fire("change");
+    assert.equal(ui.node("apply-settings").disabled, false);
+    assert.equal(ui.calls.some(([name]) => name === "autostart_set_enabled"), false);
+    await ui.node("cancel-settings").fire("click");
+    assert.equal(ui.autostartEnabled, false);
+    assert.equal(ui.calls.some(([name]) => name === "autostart_set_enabled"), false);
+  } finally { ui.restore(); }
+});
+
+test("Login launch uses native OS registration only on OK, not config.json", async () => {
+  const ui = await fixture("login-save", true);
+  try {
+    ui.node("autostart-enabled").checked = true;
+    await ui.node("autostart-enabled").fire("change");
+    await ui.node("apply-settings").fire("click");
+    assert.equal(ui.autostartEnabled, true);
+    assert.deepEqual(ui.calls.filter(([name]) => name === "autostart_set_enabled")
+      .map(([, args]) => args.enabled), [true]);
+    assert.equal(ui.calls.filter(([name]) => name === "save_settings").length, 0);
+    assert.equal(ui.closed, true);
+  } finally { ui.restore(); }
+});
+
+test("Existing OS autostart can be disabled and saved with another preference", async () => {
+  const ui = await fixture("login-disable", true, [], { autostartEnabled: true });
+  try {
+    assert.equal(ui.node("autostart-enabled").checked, true);
+    ui.node("autostart-enabled").checked = false;
+    await ui.node("autostart-enabled").fire("change");
+    ui.node("ci-failure-notifications").checked = true;
+    await ui.node("ci-failure-notifications").fire("change");
+    await ui.node("apply-settings").fire("click");
+    assert.equal(ui.autostartEnabled, false);
+    assert.ok(ui.calls.some(([name, args]) => name === "save_settings" &&
+      args.ciFailureNotifications === true));
+    assert.equal(ui.closed, true);
+  } finally { ui.restore(); }
+});
+
+test("Unavailable autostart state stays unknown but does not block other Settings", async () => {
+  const ui = await fixture("login-unavailable", true, [], { autostartError: true });
+  try {
+    assert.equal(ui.node("autostart-enabled").disabled, true);
+    assert.equal(ui.node("autostart-status").textContent, "Autostart unavailable");
+    ui.node("ci-failure-notifications").checked = true;
+    await ui.node("ci-failure-notifications").fire("change");
+    await ui.node("apply-settings").fire("click");
+    assert.equal(ui.closed, true);
+    assert.equal(ui.calls.some(([name]) => name === "autostart_set_enabled"), false);
+  } finally { ui.restore(); }
+});
+
+test("Failed native OS registration keeps dialog open and does not claim success", async () => {
+  const ui = await fixture("login-error", true, [], { autostartWriteError: true });
+  try {
+    ui.node("autostart-enabled").checked = true;
+    await ui.node("autostart-enabled").fire("change");
+    await ui.node("apply-settings").fire("click");
+    assert.equal(ui.autostartEnabled, false);
+    assert.equal(ui.closed, false);
+    assert.equal(ui.node("apply-settings").disabled, false);
+    assert.ok(ui.calls.some(([name]) => name === "autostart_set_enabled"));
   } finally { ui.restore(); }
 });

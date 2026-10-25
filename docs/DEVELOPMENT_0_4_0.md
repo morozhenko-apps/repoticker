@@ -2040,3 +2040,41 @@ four repositories. Overload remains bounded to four.
 **Rollback:** revert one isolated Rust implementation/test
 commit. No config schema, Tauri IPC, GitHub monitor, UI geometry,
 `main`, published release, or background service change.
+
+### P1-POOL1 implementation and exact-SHA gate
+
+- `09e7600f60d752e3e7c0ec6559e39fa398cb0238`
+  replaces fixed-size barrier batches in
+  `repoticker-core::bounded::bounded_map` with a single
+  bounded rolling window. Every completed worker immediately
+  frees one slot for the next pending task; the active
+  count never exceeds `max(1,limit)`. No caller/interface
+  change was required.
+- Both progress callbacks stay on the calling coordinator,
+  with `started` receiving the number of already completed
+  items and `completed` receiving a monotonically
+  increasing 1-based count. Results remain in completion
+  order. Existing `inspect_all` sorts its own snapshots
+  into discovery order afterward.
+- Worker panics are caught solely to deliver the panic
+  payload through the channel and then rethrown on the
+  coordinator. They are not converted to successful results.
+  This prevents a retained sender from indefinitely masking
+  a missing completion when a worker panics.
+- Added real bounded worker tests: a deterministic gate
+  keeps worker 0 blocked while tasks 4/5 must start from
+  freed slots (single bounded receive timeout only to
+  fail safely on regression), coordinator-thread progress
+  callbacks with counts, and non-swallowed worker panic.
+  Existing empty/zero-limit and max-4 parallelism tests
+  remain intact. No external repositories or network.
+- **Final code/test source candidate:** `09e7600f60d752e3e7c0ec6559e39fa398cb0238`.
+  The exact-source Preflight is the required stable
+  Rustfmt/core/Clippy + Node/release + Linux desktop
+  compile + aggregate acceptance gate. Final CI
+  evidence must be recorded separately; source changes
+  alone do not establish a successful compile/test.
+- No local Git behavior/safety gates, cancellation,
+  config, auth or UI layout changed. Windows/KDE
+  live throughput remains a deferred performance
+  measurement, not a feature completion prerequisite.

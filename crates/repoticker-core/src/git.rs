@@ -1282,7 +1282,10 @@ mod windows_git_process_tests {
     fn headless_child_creation_preserves_exit_status() {
         let mut command = Command::new("cmd.exe");
         configure_background_child(&mut command);
-        let output = command.args(["/C", "exit", "17"]).output().expect("cmd child");
+        let output = command
+            .args(["/C", "exit", "17"])
+            .output()
+            .expect("cmd child");
         assert_eq!(output.status.code(), Some(17));
     }
 }

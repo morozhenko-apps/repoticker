@@ -2560,3 +2560,24 @@ Safe sync and push policies are unchanged.
   that job and the final result complete successfully.
 - OS physical Windows process-tree behavior remains
   open in issue #15; the published v0.2.0 is untouched.
+
+### P1-FETCH-RACE4 final exact-SHA acceptance
+
+- Final executable/test source:
+  `ebd65df51097e2c0aabcd16aee8eb1eb9df195c6`.
+  [Preflight #40192087993](https://github.com/morozhenko-apps/repoticker/actions/runs/40192087993)
+  completed with **4/4 SUCCESS** (Rustfmt/core/Clippy,
+  Node/release, Linux desktop compile and aggregate).
+- On that SHA, **55 Rust unit, 30 real Git integration,
+  3 GitHub origin = 88 Rust tests passed**; **232 Node**
+  tests and **14 release-contract tests** passed with
+  zero failures. This includes three new regression
+  tests checking failed PID retry, stale PID avoidance
+  and honest cleanup-error classification.
+- A subsequent UI wiring source review confirmed
+  `cancelActiveFetch` resets the disabling flag on a
+  native IPC error, so the user can intentionally
+  retry Cancel; it never loops or polls autonomously.
+  The change requires no additional UI controls.
+- Physical Windows process-tree acceptance remains
+  open. No main promotion, tag, installer or release.

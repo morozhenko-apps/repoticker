@@ -1528,9 +1528,8 @@ mod fetch_cancellation_tests {
         };
         assert!(classify_fetch_completion(Ok(ordinary_failure), true).is_ok());
 
-        let actual_error = GitError(
-            "Git fetch timed out; remote-tracking refs may be partially updated".into(),
-        );
+        let actual_error =
+            GitError("Git fetch timed out; remote-tracking refs may be partially updated".into());
         let result = classify_fetch_completion(Err(actual_error), true)
             .expect_err("real timeout must not be masked");
         assert!(result.0.contains("remote-tracking refs"));

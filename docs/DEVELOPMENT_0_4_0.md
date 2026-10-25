@@ -2343,3 +2343,28 @@ signal to unrelated processes or reliance on broad process names.
   config, API contracts, GUI geometry, release and
   `main` are unchanged. Windows physical cancellation
   semantics stay open in issue #15.
+
+### P1-FETCH-RACE3 Rustfmt correction and exact-source final gate
+
+- [Preflight #40186357617](https://github.com/morozhenko-apps/repoticker/actions/runs/40186357617)
+  for `ef8802a1` stopped its Rust job before tests on a
+  single deterministic `cargo fmt --check` change in
+  the new classification test's `GitError` expression.
+  No behavior defect was established by that formatting
+  failure. The first incomplete `e8464364` candidate
+  also lacked required Rust test imports, corrected
+  previously.
+- `6a10a7f75f77609394c9f11fc297f638e05e44b5`
+  applies the exact Rustfmt hunk without touching
+  classifier semantics or assertions.
+- **Current executable/test SHA:**
+  `6a10a7f75f77609394c9f11fc297f638e05e44b5`.
+  [Preflight #40186476753](https://github.com/morozhenko-apps/repoticker/actions/runs/40186476753)
+  is the required exact-source aggregate result.
+  Mark accepted only after its Rustfmt, Rust unit and
+  real Git integration, Clippy, JavaScript/release,
+  Linux desktop compile and final result succeed.
+- All planned Windows cancellation and owned-process
+  behavior still requires physical OS acceptance.
+  The conservative remote-outcome/error semantics are
+  intentionally unchanged. No main/release promotion.

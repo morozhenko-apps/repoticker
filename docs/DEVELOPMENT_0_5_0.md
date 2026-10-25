@@ -1261,3 +1261,27 @@ Rollback together with native autostart dependency and OS-test entries.
   and the other four acceptance checks are actually
   passed. Uninstall and upgrade lifecycle is the
   existing physical Gate 3/issue #15 validation.
+
+### AUTOSTART1 exact-source partial CI acceptance (2026-10-25)
+
+- [Preflight #40223171041](https://github.com/morozhenko-apps/repoticker/actions/runs/40223171041)
+  is pinned to executable/dependency SHA
+  `faddbebb7e24633245f2b7b7321f459bfea4aa9d`,
+  after the generated Cargo.lock and removal of
+  the temporary helper.
+- Rust format/core/Clippy **SUCCESS**: 58 Rust
+  unit + 30 real Git integration + 3 origin =
+  **91/91** passed. JavaScript/release **SUCCESS**:
+  **243/243 Node tests** including login Settings
+  draft/Cancel/OK and native permission contracts;
+  **14/14 Python release contracts**.
+- The Linux desktop compile job and final aggregate
+  Preflight were **still in progress** when last checked;
+  do not report feature CI 4/4 until both succeed.
+  Physical Linux/Windows login, duplicate-instance,
+  package uninstall/upgrade and autostart registration
+  tests remain pending under Gate 2/3. No production
+  desktop launch was observed in this environment.
+- The Git-core freeze and five-check Gate-2 stop
+  criteria remain unchanged; no additional functional
+  scope is authorized.

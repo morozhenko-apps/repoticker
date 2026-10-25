@@ -82,3 +82,104 @@ relay and unsupported macOS stay out of v1.0.
 Gate 1 passed; Gate 2 is **not accepted** without actual
 runtime evidence or owner-approved scope decisions.
 Do not prematurely start full Mode B or publish v1.0.
+
+## Gate 2/3 autostart candidate build and OS test procedure (2026-10-25)
+
+**Build source:** `0ce766b774fe8c3444b4e405e8b0f18163211603`.
+[Non-publishing Linux+Windows candidate run #40227242651](https://github.com/morozhenko-apps/repoticker/actions/runs/40227242651)
+builds **DEB, AppImage and unsigned Windows NSIS**
+using the same source checkout, but never tags, signs,
+publishes APT, deploys R2 or creates a GitHub Release.
+It is independent from the published stable v0.2.0.
+
+**CI build status must be verified at download time.**
+A queued/in-progress build is **not an artifact**; do not
+claim an installer exists or cite a download until
+its corresponding job and upload succeed. Upon successful
+build, use the GitHub Actions page's Artifacts section:
+`repoticker-acceptance-linux` /
+`repoticker-acceptance-windows` (7-day retention).
+Each extracted archive contains `SOURCE_SHA.txt`,
+`NOT_A_RELEASE.txt`, package hash sidecars and packages.
+Confirm that `SOURCE_SHA.txt` matches the exact
+above commit, and validate SHA256 before executing.
+Windows NSIS is **unsigned**; this is a private QA
+candidate, not a publicly trusted release.
+
+**Important version constraint:** the development
+candidate still declares `0.2.0`, identical to the
+published release metadata. Do not interpret an equal
+APT version as an upgrade and do not overwrite a
+production install just for testing. Prefer the Linux
+AppImage for initial login behavior on a designated
+test session. Test DEB reinstall/uninstall and Windows
+NSIS lifecycle separately on an explicitly approved
+test installation. Back up any test-environment config
+and ensure the known running stable app is quit first.
+
+### KDE/Linux (one bounded session)
+
+1. Download and extract the successful Linux artifact.
+   From its extracted directory run
+   `sha256sum -c -- *.sha256`; verify
+   `SOURCE_SHA.txt` equals the CI run commit.
+   Make the AppImage executable and launch it only
+   after any existing RepoTicker process has quit.
+2. Open Settings: confirm **Launch at login** is
+   unchecked by default. Check it but press **Cancel**:
+   no startup entry must be created. Reopen Settings,
+   check it and press **OK**: exactly one XDG
+   autostart entry must exist for this executable.
+3. Run
+   `bash scripts/accept_autostart_linux.sh`
+   before/after enabling. It reports only counts,
+   desktop type and entry basenames, not credentials
+   or private paths. Do not use output counts in
+   isolation as proof of GUI behavior.
+4. Log out and back into the **test session** (not
+   an active work session). The tray should start
+   once with card windows hidden. Manually launch
+   the same candidate again: there must still be
+   one RepoTicker tray/process, with no new Fetch
+   or Safe sync and no forced focus theft.
+5. Uncheck **Launch at login** and press OK; confirm
+   the XDG entry disappears. Recheck enabling and
+   complete the **separate Gate 3** DEB removal/
+   upgrade lifecycle on a sacrificial test install.
+   A retained user XDG entry after removal is FAIL,
+   not automatically excused by working runtime toggle.
+
+### Windows (one bounded session)
+
+1. On a separate test PC/user profile, validate
+   `SOURCE_SHA.txt` and the NSIS EXE .sha256.
+   Installation is intentionally unsigned; do not
+   represent it as verified signed software.
+   Avoid replacing a live stable 0.2.0 installation.
+2. Confirm initial checkbox OFF; draft + Cancel
+   leaves Run registry unchanged. Enable + OK
+   should create exactly one user login entry.
+   Inspect using
+   `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/accept_autostart_windows.ps1`
+   or review the current user's Startup Apps in
+   Windows Settings. The script is read-only.
+3. Sign out and in to the **test user**, check one
+   tray instance with windows initially hidden,
+   launch the candidate a second time and verify
+   it exits without creating another instance or
+   performing Git mutations. Disable + OK should
+   remove its Run entry.
+4. On the test install, verify an enabled entry
+   is handled correctly on upgrade and uninstall,
+   including absence of stale startup pointers.
+   Capture observed result, not an inferred pass
+   from successful Linux CI compilation.
+
+Use the single five-row Gate 2 ledger above; append
+observed `PASS/FAIL/DEFER` and redacted proof for
+this autostart row only. A verified failure is a
+targeted implementation/packaging defect; do not
+add a seventh product milestone or re-open frozen
+Git core. User installation/logout/uninstall actions
+are explicitly manual; GitHub CI cannot exercise
+the user's running KDE/Windows desktop.

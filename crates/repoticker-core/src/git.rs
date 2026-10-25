@@ -1530,8 +1530,8 @@ mod concurrent_git_tests {
 #[cfg(all(test, unix))]
 mod fetch_cancellation_tests {
     use super::{
-        classify_fetch_completion, run_cancellable_command, FetchCancellation, GitError,
-        FETCH_CANCELLED,
+        classify_fetch_completion, run_cancellable_command, unregistered_fetch_cleanup_error,
+        FetchCancellation, GitError, FETCH_CANCELLED,
     };
     use std::{
         process::Command,
@@ -1539,6 +1539,102 @@ mod fetch_cancellation_tests {
         thread,
         time::Duration,
     };
+
+    #[test]
+    fn failed_termination_can_be_retried_without_resignalling_other_children() {
+        let token = FetchCancellation::default();
+        assert!(token.register(41).unwrap());
+        assert!(token.register(42).unwrap());
+        let mut first = Vec::new();
+        let error = token
+            .cancel_with(|pid| {
+                first.push(pid);
+                if pid == 41 {
+                    Err(GitError("fixture termination failed".into()))
+                } else {
+                    Ok(())
+                }
+            })
+            .expect_err("one owned process group failed to terminate");
+        assert_eq!(error.0, "fixture termination failed");
+        assert_eq!(first, vec![41, 42]);
+        assert!(token.is_cancelled());
+        assert!(!token.register(43).unwrap(), "new children remain blocked");
+        {
+            let state = token.children.lock().unwrap();
+            assert_eq!(state.targeted.iter().copied().collect::<Vec<_>>(), vec![42]);
+        }
+        let mut retry = Vec::new();
+        assert!(token
+            .cancel_with(|pid| {
+                retry.push(pid);
+                Ok(())
+            })
+            .expect("retry failed child only"));
+        assert_eq!(retry, vec![41]);
+        assert!(!token
+            .cancel_with(|_| panic!("no already-targeted PID may be re-signalled"))
+            .unwrap());
+        assert!(token.unregister(41).unwrap());
+        assert!(token.unregister(42).unwrap());
+        let state = token.children.lock().unwrap();
+        assert!(state.running.is_empty());
+        assert!(state.targeted.is_empty());
+    }
+
+    #[test]
+    fn failed_target_unregistered_before_retry_is_not_signalled_again() {
+        let token = FetchCancellation::default();
+        assert!(token.register(55).unwrap());
+        assert!(token.cancel_with(|_| Err(GitError("fixture termination failed".into()))).is_err());
+        assert!(!token.unregister(55).unwrap());
+        assert!(!token
+            .cancel_with(|_| panic!("stale PID must never be signalled"))
+            .unwrap());
+        assert!(token.is_cancelled());
+    }
+
+    #[test]
+    fn spawn_registration_cleanup_never_hides_unknown_outcomes() {
+        use std::os::unix::process::ExitStatusExt;
+        use std::process::{ExitStatus, Output};
+
+        let completed = || Output {
+            status: ExitStatus::from_raw(0),
+            stdout: Vec::new(),
+            stderr: Vec::new(),
+        };
+        let original = || GitError(FETCH_CANCELLED.into());
+        assert_eq!(
+            unregistered_fetch_cleanup_error(original(), Ok(()), Ok(completed())).0,
+            FETCH_CANCELLED
+        );
+        let failed_reap = unregistered_fetch_cleanup_error(
+            original(),
+            Ok(()),
+            Err(GitError("owned child still running".into())),
+        );
+        assert!(failed_reap.0.contains("reap failed: owned child still running"));
+        assert!(failed_reap.0.contains("outcome unknown"));
+        assert_ne!(failed_reap.0, FETCH_CANCELLED);
+
+        let failed_termination = unregistered_fetch_cleanup_error(
+            original(),
+            Err(GitError("cannot signal owned group".into())),
+            Ok(completed()),
+        );
+        assert!(failed_termination.0.contains("termination failed: cannot signal owned group"));
+        assert!(failed_termination.0.contains("outcome unknown"));
+
+        let both = unregistered_fetch_cleanup_error(
+            GitError("Fetch registration state unavailable".into()),
+            Err(GitError("signal denied".into())),
+            Err(GitError("reap deadline".into())),
+        );
+        assert!(both.0.contains("Fetch registration state unavailable"));
+        assert!(both.0.contains("signal denied"));
+        assert!(both.0.contains("reap deadline"));
+    }
 
     #[test]
     fn completed_fetch_result_is_not_overwritten_by_late_or_sibling_cancel() {

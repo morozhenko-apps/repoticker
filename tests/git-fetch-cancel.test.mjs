@@ -19,6 +19,12 @@ test("Fetch cancellation belongs to registered child groups, not all Git process
   assert.match(core, /fn completed_fetch_result_is_not_overwritten_by_late_or_sibling_cancel\(/);
   assert.match(core, /fn cancelling_two_owned_fetch_children_yields_two_distinct_cancelled_results\(/);
   assert.match(core, /pub fn cancel\(&self\)/);
+  assert.match(core, /self\.cancel_with\(terminate_fetch_group\)/);
+  assert.match(core, /fn cancel_with\(/);
+  assert.match(core, /\.running\s*\.difference\(&state\.targeted\)/);
+  assert.match(core, /if already_cancelled && pending\.is_empty\(\)/);
+  assert.match(core, /fn unregistered_fetch_cleanup_error\(/);
+  assert.match(core, /return Err\(unregistered_fetch_cleanup_error\(/);
   assert.match(core, /command\.process_group\(0\)/);
   assert.match(core, /kill\(-group, SIGKILL\)/);
   assert.match(core, /taskkill\.exe/);
@@ -61,4 +67,19 @@ test("per-repository Fetch outcomes preserve concrete errors instead of global c
   assert.match(classifier, /other => other/);
   assert.match(native, /Err\(GitError\(error\)\) => ActionResult/);
   assert.match(native, /Some\(match outcome/);
+});
+
+test("retry and pre-registration cleanup failure are covered by native regression tests", () => {
+  for (const name of [
+    "failed_termination_can_be_retried_without_resignalling_other_children",
+    "failed_target_unregistered_before_retry_is_not_signalled_again",
+    "spawn_registration_cleanup_never_hides_unknown_outcomes",
+  ]) assert.match(core, new RegExp("fn " + name + "\\("));
+
+  const command = core.match(/fn run_cancellable_command_with_timeout\([\s\S]*?\n\}/)?.[0] ?? "";
+  assert.match(command, /let reaped = wait_owned_child\(/);
+  assert.match(command, /let terminated = terminate_fetch_group\(pid\)/);
+  assert.match(command, /unregistered_fetch_cleanup_error\(error, terminated, reaped\)/);
+  assert.match(command, /GitError\(FETCH_CANCELLED\.into\(\)\),\s*terminated,\s*reaped/);
+  assert.doesNotMatch(command, /let _ = wait_owned_child\(/);
 });

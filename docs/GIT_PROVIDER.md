@@ -178,6 +178,20 @@ See [P1-PROC1](DEVELOPMENT_0_4_0.md) and
 [physical acceptance issue #15](https://github.com/morozhenko-apps/repoticker/issues/15).
 Published v0.2.0 is unchanged.
 
+**Unreleased P1-PROC2 (dev):** When the directly owned Git process
+has exited but an inherited stdout/stderr pipe remains open, the
+bounded pipe-drain error now also attempts to stop the original
+owned process group/tree and confirm that the pipe closes.
+The operation remains an explicit error with **unknown outcome**,
+not a successful Fetch or Safe sync. The cleanup confirmation can
+fail if a helper detached into a separate group; Windows
+`taskkill /PID /T` may reject an already-exited parent PID,
+and this limitation is surfaced rather than hidden. Linux
+process-boundary regression coverage and exact source validation
+are tracked in [P1-PROC2](DEVELOPMENT_0_4_0.md).
+This does not claim orphan-free execution across arbitrary
+third-party helpers or cross-platform physical acceptance.
+
 ## Manual Fetch
 
 - Command semantics: `git fetch --all --prune --quiet` for an eligible enrolled checkout, through an argv-based process invocation rather than a shell.

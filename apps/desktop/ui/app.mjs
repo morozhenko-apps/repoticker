@@ -5,6 +5,7 @@ import { compactStatus } from "./status-metrics.mjs";
 import { cardLocale, cardText, metricAccessibleLabel } from "./card-i18n.mjs";
 import { mergeMonitorPresentation, reconcileScanPresentation } from "./monitor-presentation.mjs";
 import { placeRepoMenu } from "./repo-menu.mjs";
+import { createScanRefreshQueue } from "./scan-refresh.mjs";
 
 const emptySnapshot = {
   roots: [], repositories: [], errors: [],
@@ -401,19 +402,26 @@ function render(next) {
   updateActionState();
   if (next.errors?.length) showError(next.errors[0]);
 }
-async function refresh() {
-  const revision = monitorRevision;
-  try {
+const refreshSnapshot = createScanRefreshQueue({
+  // Capture the monitor revision at the START of each native scan.
+  // The projection keeps newer remote-only metrics while local Git is read.
+  scan: async () => {
+    const revision = monitorRevision;
     const next = await invoke("get_snapshot");
+    return { revision, next };
+  },
+  publish: ({ revision, next }) => {
     render(reconcileScanPresentation(next, snapshot, revision, monitorRevision));
     if (!firstSnapshotReady) {
       firstSnapshotReady = true;
       traceStartup("card.snapshot_ready");
     }
     traceMonitorReady();
-  } catch (error) {
-    showError(error);
-  }
+  },
+  onError: showError
+});
+function refresh() {
+  return refreshSnapshot();
 }
 
 // Monitoring changes only the native in-memory presentation cache. A full

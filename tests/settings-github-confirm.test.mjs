@@ -665,7 +665,7 @@ test("Cancelling folder picker makes no draft change or write", async () => {
   const ui = await fixture("root-native-cancel", true);
   try {
     await ui.node("browse-root").fire("click");
-    assert.equal(ui.node("apply-settings").disabled, false, "Other saved options may be available");
+    assert.equal(ui.node("apply-settings").disabled, true);
     await ui.node("cancel-settings").fire("click");
     assert.equal(ui.calls.some(([name]) => name === "save_settings"), false);
     assert.equal(ui.closed, true);

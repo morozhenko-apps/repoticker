@@ -1,4 +1,4 @@
-import { nextCardView, syncReadyCommitCount } from "./view.mjs";
+import { nextCardView, cardWindowHeight, syncReadyCommitCount } from "./view.mjs";
 import { createNativeDragGesture } from "./native-drag.mjs";
 import { startGithubMonitoring } from "./github-monitor.mjs";
 import { compactStatus } from "./status-metrics.mjs";
@@ -387,7 +387,13 @@ function traceMonitorReady() {
 }
 function render(next) {
   hideRepoMenus();
+  const previousCount = snapshot.repositories.length;
   snapshot = next;
+  if (view === "repos" && previousCount !== next.repositories.length) {
+    void invoke("set_card_view", {
+      view: "repos", repositoryCount: next.repositories.length
+    }).catch(showError);
+  }
   setCardLanguage(next.language);
   renderMonitorMetrics(next.runner_state);
   const list = byId("repo-list");
@@ -495,7 +501,9 @@ async function openView(target) {
   const desired = nextCardView(view, target);
   if (desired === view) return;
   try {
-    await invoke("set_card_view", { view: desired });
+    await invoke("set_card_view", {
+      view: desired, repositoryCount: snapshot.repositories.length
+    });
     view = desired;
     armAutoHide();
     byId("card").dataset.view = view;

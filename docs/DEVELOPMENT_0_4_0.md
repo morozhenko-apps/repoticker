@@ -2388,3 +2388,22 @@ signal to unrelated processes or reliance on broad process names.
   The version, main branch, installer and OS credentials
   remain unchanged. Windows child-termination semantics
   and physical acceptance stay open in issue #15.
+
+### P1-FETCH-RACE3 final acceptance (2026-10-25)
+
+- **Verified final code/test SHA:**
+  `6a10a7f75f77609394c9f11fc297f638e05e44b5`.
+  [Preflight #40186476753](https://github.com/morozhenko-apps/repoticker/actions/runs/40186476753)
+  completed with **4/4 SUCCESS**: Rust format/core/Clippy,
+  Node/release contracts, Linux desktop compile and final
+  aggregate result.
+- Test totals for this exact SHA: **52 core unit + 30 real
+  Git integration + 3 GitHub origin = 85 Rust passed**;
+  **231 Node** and **14 Python release** tests passed.
+  No failures were reported.
+- A batch Cancel cannot erase a successful child exit
+  or obscure a concrete Git timeout/cleanup failure.
+  Cancelled process groups are tracked per child.
+  Physical Windows process-tree behavior still requires
+  acceptance under issue #15; no v0.2.0 package was
+  rebuilt or published.

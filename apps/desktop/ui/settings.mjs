@@ -616,6 +616,30 @@ byId("add-root-form").addEventListener("submit", event => {
   renderRoots();
   updateApply();
 });
+
+// The native OS picker only edits the Settings draft. OK persists; Cancel
+// discards. One active selector prevents duplicate modal dialogs.
+let rootBrowsePending = false;
+byId("browse-root").addEventListener("click", async () => {
+  if (!draft || saving || rootBrowsePending) return;
+  rootBrowsePending = true;
+  byId("browse-root").disabled = true;
+  try {
+    const selected = await invoke("select_repository_root");
+    if (typeof selected === "string" && selected.trim()) {
+      if (!draft.roots.includes(selected)) draft.roots.push(selected);
+      byId("root-path").value = "";
+      renderRoots();
+      updateApply();
+      message("");
+    }
+  } catch (error) {
+    message(String(error), true);
+  } finally {
+    rootBrowsePending = false;
+    byId("browse-root").disabled = false;
+  }
+});
 const languageTrigger = byId("language-trigger");
 const languageList = byId("language-options");
 const languageOptions = [...languageList.querySelectorAll("[role=option]")];

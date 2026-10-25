@@ -17,7 +17,7 @@ test("native OS login launch uses pinned maintained plugin and scoped IPC only",
   assert.ok(plugins.indexOf("tauri_plugin_single_instance::init(") <
     plugins.indexOf("tauri_plugin_clipboard_manager::init("),
     "The single-instance plugin must be registered before other plugins");
-  assert.match(main, /tauri_plugin_autostart::Builder::new\(\)\.app_name\("RepoTicker"\)\.build\(\)/);
+  assert.match(main, /tauri_plugin_autostart::Builder::new\(\)\s*\.app_name\("RepoTicker"\)\s*\.build\(\)/);
   assert.match(main, /autostart::autostart_is_enabled/);
   assert.match(main, /autostart::autostart_set_enabled/);
   assert.match(native, /\.autolaunch\(\)/);

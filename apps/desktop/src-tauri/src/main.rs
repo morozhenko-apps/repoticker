@@ -1334,7 +1334,11 @@ fn main() {
         .plugin(tauri_plugin_single_instance::init(|_app, _args, _cwd| {}))
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_notification::init())
-        .plugin(tauri_plugin_autostart::Builder::new().app_name("RepoTicker").build())
+        .plugin(
+            tauri_plugin_autostart::Builder::new()
+                .app_name("RepoTicker")
+                .build(),
+        )
         .manage(OperationLock::default())
         .manage(ActiveFetch::default())
         .manage(ShutdownSignal::default())

@@ -1,5 +1,6 @@
 //! RepoTicker desktop: local-only roots, Git provider and tray card.
 mod app_icon;
+mod autostart;
 mod ci_notifications;
 mod github_api;
 mod github_etag_cache;
@@ -1331,6 +1332,7 @@ fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_autostart::Builder::new().app_name("RepoTicker").build())
         .manage(OperationLock::default())
         .manage(ActiveFetch::default())
         .manage(ShutdownSignal::default())
@@ -1440,6 +1442,8 @@ fn main() {
             get_monitor_scope,
             get_monitor_selection,
             get_settings_config,
+            autostart::autostart_is_enabled,
+            autostart::autostart_set_enabled,
             ci_notifications::ci_failure_notify,
             startup_diagnostics::trace_startup_stage,
             github_session::github_auth_status,

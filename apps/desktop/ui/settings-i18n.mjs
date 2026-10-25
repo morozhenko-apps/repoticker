@@ -2,6 +2,8 @@
 const russian = Object.freeze({
   "General": "Общие",
   "Language": "Язык",
+  "Launch at login": "Запускать при входе в систему",
+  "Autostart unavailable": "Автозапуск недоступен",
   "Local repositories": "Локальные репозитории",
   "Direct children only": "Только вложенные папки",
   "Repository folder": "Папка репозиториев",

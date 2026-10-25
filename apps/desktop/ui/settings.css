@@ -104,6 +104,12 @@ label { font-size: 12px; }
 .ignore-settings .roots-list { max-height: 82px; }
 .ignore-settings .hint { margin: 4px 0 0; }
 
+/* Login launch is draft-only until Settings OK. */
+.autostart-controls { display: flex; align-items: center; gap: 12px; margin-top: 7px; }
+.autostart-controls label { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+.autostart-controls input[type="checkbox"] { width: 16px; height: 16px; padding: 0; }
+.autostart-controls .hint { margin-left: auto; }
+
 /* Native CI notifications are opt-in and do not change card geometry. */
 .ci-alert-controls { display: flex; align-items: center; margin-top: 8px; }
 .ci-alert-controls label { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }

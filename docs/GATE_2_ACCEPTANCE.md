@@ -87,6 +87,8 @@ Do not prematurely start full Mode B or publish v1.0.
 
 ## Gate 2/3 autostart candidate build and OS test procedure (2026-10-25)
 
+**Build completed:** [run #40227612556](https://github.com/morozhenko-apps/repoticker/actions/runs/40227612556) finished **SUCCESS** for Linux DEB/AppImage and Windows NSIS, with both artifacts uploaded. This is not OS acceptance. Windows-specific read-only checksum verification and operator steps are in [WINDOWS_ACCEPTANCE_0_2_CANDIDATE.md](WINDOWS_ACCEPTANCE_0_2_CANDIDATE.md). Artifacts expire on 2026-11-01 (UTC).
+
 **Final build candidate source:** `40aff5ec3a68e3053bf881bae9dafc2030250b3e`.
 [Non-publishing Linux+Windows candidate run #40227612556](https://github.com/morozhenko-apps/repoticker/actions/runs/40227612556)
 builds **DEB, AppImage and unsigned Windows NSIS**
@@ -94,19 +96,19 @@ using the same source checkout, but never tags, signs,
 publishes APT, deploys R2 or creates a GitHub Release.
 It is independent from the published stable v0.2.0.
 
-**CI build result (verified 2026-10-25):**
-[run #40227612556](https://github.com/morozhenko-apps/repoticker/actions/runs/40227612556)
-completed **SUCCESS**, both `KDE candidate DEB and AppImage` and
-`Windows acceptance NSIS candidate` succeeded and uploaded artifacts:
-`repoticker-acceptance-linux` (artifact `12611727361`) and
-`repoticker-acceptance-windows` (artifact `12612521927`).
-Artifacts have 7-day retention and must still be checked for expiry
-at download time. This confirms compilation, collection, upload and
-CI-side checksums, **not installation or physical OS acceptance**.
-Each archive contains `SOURCE_SHA.txt`, `NOT_A_RELEASE.txt`,
-package hash sidecars and packages. Verify both source SHA and
-local SHA256 before executing. Windows NSIS is **unsigned**;
-this is a private QA candidate, not a publicly trusted release.
+**CI build status must be verified at download time.**
+A queued/in-progress build is **not an artifact**; do not
+claim an installer exists or cite a download until
+its corresponding job and upload succeed. Upon successful
+build, use the GitHub Actions page's Artifacts section:
+`repoticker-acceptance-linux` /
+`repoticker-acceptance-windows` (7-day retention).
+Each extracted archive contains `SOURCE_SHA.txt`,
+`NOT_A_RELEASE.txt`, package hash sidecars and packages.
+Confirm that `SOURCE_SHA.txt` matches the exact
+above commit, and validate SHA256 before executing.
+Windows NSIS is **unsigned**; this is a private QA
+candidate, not a publicly trusted release.
 
 **Important version constraint:** the development
 candidate still declares `0.2.0`, identical to the
@@ -150,89 +152,6 @@ and ensure the known running stable app is quit first.
    upgrade lifecycle on a sacrificial test install.
    A retained user XDG entry after removal is FAIL,
    not automatically excused by working runtime toggle.
-
-### Windows candidate acquisition and read-only preflight
-
-On the designated Windows test user, download the **Windows artifact**
-from [run #40227612556](https://github.com/morozhenko-apps/repoticker/actions/runs/40227612556)
-and extract it to a new dedicated directory. Do not run the EXE
-directly from inside the ZIP. The test host needs no Rust or Python
-toolchain. Open PowerShell **in the extracted directory** and run
-this read-only verification **before** installing:
-
-~~~powershell
-$ErrorActionPreference = "Stop"
-$expectedSource = "40aff5ec3a68e3053bf881bae9dafc2030250b3e"
-$installer = "RepoTicker-Setup-0.2.0-win-x64.exe"
-$source = (Get-Content -LiteralPath ".\SOURCE_SHA.txt" -Raw).Trim()
-if ($source -cne $expectedSource) { throw "Wrong candidate SOURCE_SHA" }
-
-$line = (Get-Content -LiteralPath ".\$installer.sha256" -Raw).Trim()
-if ($line -notmatch '^([a-fA-F0-9]{64})\s{2}(.+)
-1. On a separate test PC/user profile, validate
-   `SOURCE_SHA.txt` and the NSIS EXE .sha256.
-   Installation is intentionally unsigned; do not
-   represent it as verified signed software.
-   Avoid replacing a live stable 0.2.0 installation.
-2. Confirm initial checkbox OFF; draft + Cancel
-   leaves Run registry unchanged. Enable + OK
-   should create exactly one user login entry.
-   Inspect using
-   `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/accept_autostart_windows.ps1`
-   or review the current user's Startup Apps in
-   Windows Settings. The script is read-only.
-3. Sign out and in to the **test user**, check one
-   tray instance with windows initially hidden,
-   launch the candidate a second time and verify
-   it exits without creating another instance or
-   performing Git mutations. Disable + OK should
-   remove its Run entry.
-4. On the test install, verify an enabled entry
-   is handled correctly on upgrade and uninstall,
-   including absence of stale startup pointers.
-   Capture observed result, not an inferred pass
-   from successful Linux CI compilation.
-
-Use the single five-row Gate 2 ledger above; append
-observed `PASS/FAIL/DEFER` and redacted proof for
-this autostart row only. A verified failure is a
-targeted implementation/packaging defect; do not
-add a seventh product milestone or re-open frozen
-Git core. User installation/logout/uninstall actions
-are explicitly manual; GitHub CI cannot exercise
-the user's running KDE/Windows desktop.
-
-### Candidate rebuild provenance (2026-10-25)
-
-The first unpublished builder run [#40227242651](https://github.com/morozhenko-apps/repoticker/actions/runs/40227242651) was superseded before acceptance because its read-only Windows SHA256 verification command incorrectly escaped the whitespace separator. Workflow-only commit `40aff5ec3a68e3053bf881bae9dafc2030250b3e` fixes the PowerShell parser, and supersedes the older candidate with [run #40227612556](https://github.com/morozhenko-apps/repoticker/actions/runs/40227612556). The resulting `SOURCE_SHA.txt` must equal **40aff5ec3a68e3053bf881bae9dafc2030250b3e**. Workflow-only change; no executable functionality changed. The old run and its packages, if any, are **not accepted**.
-
-Two read-only snapshots are now versioned in `scripts/accept_autostart_linux.sh` and `scripts/accept_autostart_windows.ps1`. Both deliberately hide executable paths, registry values and credentials. They provide observed counts to attach to **check 5**; no runtime PASS is inferred until the machine and session are exercised.
-) {
-  throw "Invalid SHA256 sidecar"
-}
-if ($Matches[2] -cne $installer) { throw "Unexpected sidecar filename" }
-$expectedHash = $Matches[1]
-$actualHash = (Get-FileHash -LiteralPath ".\$installer" -Algorithm SHA256).Hash
-if ($actualHash -ine $expectedHash) { throw "Installer SHA256 mismatch" }
-
-Write-Output "PASS: exact source and Windows NSIS SHA256 verified"
-~~~
-
-The code is intentionally read-only and prints no home directory,
-token, installer path or keyring information. A PASS validates
-artifact provenance **only**, not installer trust/signing, startup,
-login or cleanup. If any check throws, **do not install**.
-
-For runtime checks, use a disposable test Windows user/profile;
-record whether the stable app is running before installing or
-enabling startup. After installation, run the repository's
-scripts/accept_autostart_windows.ps1 from a checked-out
-40aff5ec3-compatible repository copy **before draft,
-after Cancel, after OK enable, after sign-in, after OK disable
-and after uninstall**. Use normal Explorer/Settings for the
-checkbox and sign-in steps. The script is diagnostic, not a
-toggle or uninstall tool. Preserve one redacted receipt for
-Gate 2 row 5 and reuse it for Gate 3.
 
 ### Windows (one bounded session)
 

@@ -1,3 +1,4 @@
+#![cfg_attr(all(target_os = "windows", not(debug_assertions)), windows_subsystem = "windows")]
 //! RepoTicker desktop: local-only roots, Git provider and tray card.
 mod app_icon;
 mod autostart;

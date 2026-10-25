@@ -75,11 +75,7 @@ impl FetchCancellation {
             .map_err(|_| GitError("Fetch cancellation state unavailable".into()))?;
         let already_cancelled = state.cancelled;
         state.cancelled = true;
-        let pending: Vec<u32> = state
-            .running
-            .difference(&state.targeted)
-            .copied()
-            .collect();
+        let pending: Vec<u32> = state.running.difference(&state.targeted).copied().collect();
         if already_cancelled && pending.is_empty() {
             return Ok(false);
         }
@@ -1586,7 +1582,9 @@ mod fetch_cancellation_tests {
     fn failed_target_unregistered_before_retry_is_not_signalled_again() {
         let token = FetchCancellation::default();
         assert!(token.register(55).unwrap());
-        assert!(token.cancel_with(|_| Err(GitError("fixture termination failed".into()))).is_err());
+        assert!(token
+            .cancel_with(|_| Err(GitError("fixture termination failed".into())))
+            .is_err());
         assert!(!token.unregister(55).unwrap());
         assert!(!token
             .cancel_with(|_| panic!("stale PID must never be signalled"))
@@ -1614,7 +1612,9 @@ mod fetch_cancellation_tests {
             Ok(()),
             Err(GitError("owned child still running".into())),
         );
-        assert!(failed_reap.0.contains("reap failed: owned child still running"));
+        assert!(failed_reap
+            .0
+            .contains("reap failed: owned child still running"));
         assert!(failed_reap.0.contains("outcome unknown"));
         assert_ne!(failed_reap.0, FETCH_CANCELLED);
 
@@ -1623,7 +1623,9 @@ mod fetch_cancellation_tests {
             Err(GitError("cannot signal owned group".into())),
             Ok(completed()),
         );
-        assert!(failed_termination.0.contains("termination failed: cannot signal owned group"));
+        assert!(failed_termination
+            .0
+            .contains("termination failed: cannot signal owned group"));
         assert!(failed_termination.0.contains("outcome unknown"));
 
         let both = unregistered_fetch_cleanup_error(

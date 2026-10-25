@@ -22,15 +22,15 @@ fn placement(
     )
 }
 
-fn monitor_area(
-    window: &WebviewWindow,
-) -> Result<Option<((i64, i64), (i64, i64))>, String> {
+fn monitor_area(window: &WebviewWindow) -> Result<Option<((i64, i64), (i64, i64))>, String> {
     let monitor = match window
         .current_monitor()
         .map_err(|error| error.to_string())?
     {
         Some(current) => Some(current),
-        None => window.primary_monitor().map_err(|error| error.to_string())?,
+        None => window
+            .primary_monitor()
+            .map_err(|error| error.to_string())?,
     };
     Ok(monitor.map(|monitor| {
         let area = monitor.work_area();
@@ -51,8 +51,16 @@ pub(crate) fn restore(app: &AppHandle, window: &WebviewWindow) -> Result<(), Str
         origin,
         available,
         (i64::from(size.width), i64::from(size.height)),
-        i64::from(config.card_right_margin.unwrap_or(DEFAULT_EDGE_MARGIN as i32)),
-        i64::from(config.card_bottom_margin.unwrap_or(DEFAULT_EDGE_MARGIN as i32)),
+        i64::from(
+            config
+                .card_right_margin
+                .unwrap_or(DEFAULT_EDGE_MARGIN as i32),
+        ),
+        i64::from(
+            config
+                .card_bottom_margin
+                .unwrap_or(DEFAULT_EDGE_MARGIN as i32),
+        ),
     );
     let x = i32::try_from(x).map_err(|_| "Invalid popup x coordinate")?;
     let y = i32::try_from(y).map_err(|_| "Invalid popup y coordinate")?;
@@ -87,23 +95,38 @@ mod tests {
 
     #[test]
     fn restores_position_for_bottom_right_work_area() {
-        assert_eq!(placement((0, 0), (1920, 1040), (390, 122), 12, 12), (1518, 906));
+        assert_eq!(
+            placement((0, 0), (1920, 1040), (390, 122), 12, 12),
+            (1518, 906)
+        );
     }
 
     #[test]
     fn keeps_bottom_edge_when_view_grows() {
-        assert_eq!(placement((0, 0), (1920, 1040), (390, 210), 12, 12), (1518, 818));
+        assert_eq!(
+            placement((0, 0), (1920, 1040), (390, 210), 12, 12),
+            (1518, 818)
+        );
     }
 
     #[test]
     fn supports_negative_monitor_coordinates_and_high_dpi_sizes() {
-        assert_eq!(placement((-2560, -100), (2560, 1440), (585, 315), 18, 18), (-603, 1007));
+        assert_eq!(
+            placement((-2560, -100), (2560, 1440), (585, 315), 18, 18),
+            (-603, 1007)
+        );
     }
 
     #[test]
     fn clamps_stale_margins_and_oversized_windows() {
         assert_eq!(placement((0, 0), (800, 600), (390, 122), 900, 900), (0, 0));
-        assert_eq!(placement((10, 20), (200, 100), (390, 122), 12, 12), (10, 20));
-        assert_eq!(placement((0, 0), (800, 600), (390, 122), -20, -30), (410, 478));
+        assert_eq!(
+            placement((10, 20), (200, 100), (390, 122), 12, 12),
+            (10, 20)
+        );
+        assert_eq!(
+            placement((0, 0), (800, 600), (390, 122), -20, -30),
+            (410, 478)
+        );
     }
 }

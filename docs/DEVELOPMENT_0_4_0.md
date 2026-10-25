@@ -2210,3 +2210,26 @@ post-exit helper cleanup behavior changes.
   before this repair is source-accepted. Physical Windows
   inherited-pipe helper lifecycle is explicitly not
   accepted by Linux tests.
+
+### P1-PROC2 exact-source Rust/JS verification
+
+- Exact executable/test SHA:
+  `38f536a020af2b136cf7baff2555c8fcc1db2ba2`,
+  [Preflight #40185461172](https://github.com/morozhenko-apps/repoticker/actions/runs/40185461172).
+- **Rust format/core/Clippy SUCCESS:** 50 Rust unit tests,
+  30 real Git integration tests, and 3 GitHub origin tests
+  passed (83/83, zero failed). The Linux
+  `helper_holding_pipe_after_parent_exit_is_stopped_without_killing_unrelated_process`
+  test and distinct drain-error test both passed.
+  It exercised a real background process which inherited
+  an output pipe after parent exit, and verified owned
+  termination without killing an unrelated process.
+- **JavaScript/release SUCCESS:** 230 Node tests passed,
+  zero failed; 14 Python release contracts passed.
+  This is source evidence, not a published installer.
+- Linux desktop compilation and aggregate Preflight
+  were **still in progress** at this record. Do not
+  assert 4/4 completion or Windows runtime acceptance
+  without a final exact-run check.
+- Main and published v0.2.0 untouched. All changes were
+  on `dev`, with documentation committed independently.

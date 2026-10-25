@@ -2154,3 +2154,40 @@ owned process terminator, unlike the pre-exit timeout branch.
 
 **Rollback:** revert the isolated Rust core/test commit; only
 post-exit helper cleanup behavior changes.
+
+### P1-PROC2 implementation checkpoint and test evidence boundary
+
+- `5f02723096dab1fe7ddc76747de14b4d41994df8`
+  adds a private, strongly typed `receive_owned_pipe`
+  in the core Git process supervisor. It preserves normal
+  bytes/read error behavior, separates channel disconnect
+  from deadline expiry, and requests termination of the
+  original tracked process group/tree on an actual
+  post-parent-exit inherited-pipe timeout. Successful
+  output collection after group termination provides
+  evidence that the inherited pipe has closed, but the
+  overall Git operation still returns **outcome unknown**.
+  A cleanup failure is explicitly included in the error.
+- `0c798de99c6dae2be02b95262f82162714b3c13d`
+  adds a test using an actual Linux background helper that
+  inherits stdout after its shell parent exits, and
+  observes its stopped/zombie process state; a separate
+  unrelated process must survive. The fixture cleans
+  up its helper even on assertion failure. A second unit
+  test distinguishes disconnected/failed output readers
+  from a timed-out pipe, and JS source contracts enforce
+  the cleanup path. Existing timeout, cancellation,
+  output and nonzero-exit regressions remain unchanged.
+- **Exact code/test source candidate:**
+  `0c798de99c6dae2be02b95262f82162714b3c13d`.
+  [Preflight #40185362660](https://github.com/morozhenko-apps/repoticker/actions/runs/40185362660)
+  was pending at initial inspection. All four jobs must
+  complete successfully before CI acceptance is claimed.
+- This correction intentionally does **not** guarantee
+  Windows cleanup after the direct parent PID is gone:
+  `taskkill /PID /T` may fail in that situation, and
+  the error now reports that limitation. No Job Object
+  architecture change was authorized. Detached Unix
+  process groups and Windows physical lifecycle remain
+  deferred to issue #15. No `main`, release, UI,
+  config, native API, or Git mutation changes.

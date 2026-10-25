@@ -2233,3 +2233,70 @@ post-exit helper cleanup behavior changes.
   without a final exact-run check.
 - Main and published v0.2.0 untouched. All changes were
   on `dev`, with documentation committed independently.
+
+## P1-FETCH-RACE3 — preserve per-repository cancellation vs completed outcomes (2026-10-25)
+
+**Mode A; functional Git reliability, not UI polishing.** Exact prior
+process-lifecycle source `38f536a020af2b136cf7baff2555c8fcc1db2ba2`
+passed [Preflight #40185461172](https://github.com/morozhenko-apps/repoticker/actions/runs/40185461172)
+**4/4 SUCCESS** on Linux.
+
+### Confirmed root cause and contract
+
+`git.rs::run_cancellable_command_with_timeout` currently calls
+`wait_owned_child`, then `cancel.unregister(pid)`, then checks
+`cancel.is_cancelled()` and returns `FETCH_CANCELLED` whenever
+the *batch-wide* cancellation flag is set. A sibling can request
+Cancel just after a Git process finishes; successful exit is
+then incorrectly overwritten with `cancelled`. Worse, an owned
+process-tree cleanup timeout or unknown-outcome error from
+`wait_owned_child` is swallowed and also reported as harmless
+user cancellation, concealing a real process/remote-state risk.
+
+Potential competing cases: cancel before launch (already safe),
+cancel after spawn but before register (already terminating),
+cancel of a still-running registered child (must remain cancelled),
+cancel of another child after this one's success (must preserve
+success), process I/O/timeout cleanup failure coinciding with
+Cancel (must preserve the concrete error), and race after
+unregister (must not overwrite any outcome). The existing
+`bounded_map` rolling window still yields one result per repo;
+this issue is in the shared cancellation token's global-vs-child
+classification, not in scheduler result collection.
+
+### Narrow implementation
+
+1. Track **which owned child PIDs were targeted by cancellation** in
+   the existing `FetchChildren` mutex state, alongside the running
+   registry. `cancel` marks all currently registered children
+   as targets and terminates their groups using the existing
+   bounded cross-platform implementation. The canceled flag
+   still prevents all later registrations and launches.
+2. Make `unregister` atomically remove the child from both
+   registries and return whether that exact child was
+   targeted. Never use the global token to rewrite a completed
+   per-child result. Retain the existing behavior for
+   pre-spawn and spawn/register race cancellation.
+3. A completed **successful** Git exit remains a successful
+   Fetch even when Cancel was requested for its batch;
+   a concrete `GitError` (including timeout/uncertain outcome
+   and failed owned cleanup) stays an error. A targeted,
+   forcibly interrupted Git child is `FETCH_CANCELLED`
+   rather than an unrelated Git failure. On Unix, require
+   actual signal termination for this classification;
+   Windows uses non-success exit after taskkill targeting,
+   with a physical OS test deferred to issue #15.
+4. Add tests for targeted vs untargeted statuses, preserved
+   concrete errors, cancellation idempotency, clean registry
+   removal, and multi-child real-process cancellation on Unix.
+   Keep Safe sync/merge untouched, result count and progress
+   exact per repo, and cancellation authority independent
+   of `OperationLock`.
+5. Run exact source SHA Preflight, stable Rust unit/integration/
+   Clippy, Node/release and Linux desktop compilation; record
+   evidence after tests. No new OS permission, IPC, config,
+   background auto-sync, `main` promotion or release.
+
+Rollback is limited to one Git core plus source-contract test
+commit. PID-targeting remains owned process-group only; no
+signal to unrelated processes or reliance on broad process names.

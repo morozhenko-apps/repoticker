@@ -85,8 +85,8 @@ Do not prematurely start full Mode B or publish v1.0.
 
 ## Gate 2/3 autostart candidate build and OS test procedure (2026-10-25)
 
-**Build source:** `0ce766b774fe8c3444b4e405e8b0f18163211603`.
-[Non-publishing Linux+Windows candidate run #40227242651](https://github.com/morozhenko-apps/repoticker/actions/runs/40227242651)
+**Final build candidate source:** `40aff5ec3a68e3053bf881bae9dafc2030250b3e`.
+[Non-publishing Linux+Windows candidate run #40227612556](https://github.com/morozhenko-apps/repoticker/actions/runs/40227612556)
 builds **DEB, AppImage and unsigned Windows NSIS**
 using the same source checkout, but never tags, signs,
 publishes APT, deploys R2 or creates a GitHub Release.
@@ -183,3 +183,9 @@ add a seventh product milestone or re-open frozen
 Git core. User installation/logout/uninstall actions
 are explicitly manual; GitHub CI cannot exercise
 the user's running KDE/Windows desktop.
+
+### Candidate rebuild provenance (2026-10-25)
+
+The first unpublished builder run [#40227242651](https://github.com/morozhenko-apps/repoticker/actions/runs/40227242651) was superseded before acceptance because its read-only Windows SHA256 verification command incorrectly escaped the whitespace separator. Workflow-only commit `40aff5ec3a68e3053bf881bae9dafc2030250b3e` fixes the PowerShell parser, and supersedes the older candidate with [run #40227612556](https://github.com/morozhenko-apps/repoticker/actions/runs/40227612556). The resulting `SOURCE_SHA.txt` must equal **40aff5ec3a68e3053bf881bae9dafc2030250b3e**. Workflow-only change; no executable functionality changed. The old run and its packages, if any, are **not accepted**.
+
+Two read-only snapshots are now versioned in `scripts/accept_autostart_linux.sh` and `scripts/accept_autostart_windows.ps1`. Both deliberately hide executable paths, registry values and credentials. They provide observed counts to attach to **check 5**; no runtime PASS is inferred until the machine and session are exercised.

@@ -2368,3 +2368,23 @@ signal to unrelated processes or reliance on broad process names.
   behavior still requires physical OS acceptance.
   The conservative remote-outcome/error semantics are
   intentionally unchanged. No main/release promotion.
+
+### P1-FETCH-RACE3 executable Rust/JS test evidence (2026-10-25)
+
+- At exact SHA `6a10a7f75f77609394c9f11fc297f638e05e44b5`,
+  [Preflight #40186476753](https://github.com/morozhenko-apps/repoticker/actions/runs/40186476753)
+  reported **SUCCESS** in Rust format, core tests and Clippy.
+  Counts: 52 core unit tests, 30 real Git integration tests,
+  3 GitHub origin tests; **85/85 Rust tests passed**, none failed.
+  Both new `fetch_cancellation_tests` regressions passed,
+  including two real simultaneous signal-terminated child groups.
+- The same exact-source JavaScript/release job reported
+  **231/231 Node tests**, zero failed, plus **14/14 Python
+  release contracts**. Source contracts assert that a
+  global batch cancellation is no longer used to override
+  a successful worker or a concrete Git error.
+- **Linux desktop compile and final aggregate Preflight**
+  were still in progress when this record was written.
+  The version, main branch, installer and OS credentials
+  remain unchanged. Windows child-termination semantics
+  and physical acceptance stay open in issue #15.

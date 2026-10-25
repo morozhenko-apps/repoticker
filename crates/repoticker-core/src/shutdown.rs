@@ -40,7 +40,8 @@ mod tests {
         barrier.wait();
         let winners = handles
             .into_iter()
-            .filter(|handle| handle.join().unwrap())
+            .map(|handle| handle.join().unwrap())
+            .filter(|won| *won)
             .count();
         assert_eq!(winners, 1);
         assert!(state.is_requested());

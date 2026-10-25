@@ -68,6 +68,9 @@ jobs:
         run: |
           cargo metadata --locked --no-deps --format-version 1 > $null
           cargo install tauri-cli --version '^2' --locked
+      - name: Validate headless Git process startup on Windows
+        shell: pwsh
+        run: cargo test --locked -p repoticker-core windows_git_process_tests
       - name: Build acceptance NSIS (never publish)
         working-directory: apps/desktop/src-tauri
         shell: pwsh

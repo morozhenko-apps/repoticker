@@ -1975,3 +1975,68 @@ version/main and Windows installer are unchanged.
   No new background polling, `main`, installer, version,
   or config migration. Further instrumented KDE
   before/after latency acceptance remains #12/#15.
+
+## P1-POOL1 — rolling four-worker local Git scheduling (2026-10-25)
+
+**Mode A, internal performance refactor; no public API change.** The
+existing `repoticker-core/src/bounded.rs::bounded_map` is shared by
+`git::inspect_all` and desktop multi-repository Fetch. It has a
+fixed maximum of four workers and correctly isolates results, but
+uses *barrier batches*: after spawning four workers, the coordinating
+thread drains that batch's completion channel and joins the entire
+scope before starting the next four. A slow/blocked Fetch or Git
+inspection can leave three worker slots idle even when many other
+repositories are awaiting work. This is a source-confirmed throughput
+limitation, not a measured production hang.
+
+### Design and invariants
+
+1. Retain the existing `bounded_map(tasks, limit, work, started,
+   completed) -> Vec<R>` signature and all callers. Replace
+   barrier batches with a single scoped rolling window of at most
+   `max(1, limit)` in-flight work items: fill the initial window,
+   then launch one next task immediately after each completion.
+2. Invoke both `started` and `completed` on the coordinating
+   caller thread. `started` still receives the number **already
+   completed** and total; `completed` receives monotonically
+   increasing 1-based completed count. Preserve completion-order
+   result collection. The existing `inspect_all` restores
+   discovery order separately, while Fetch results are keyed by path.
+3. Preserve worker panic propagation. A worker must report its
+   failure to the coordinator without leaving a sender alive and
+   hanging the receiver; rethrow the original panic and allow
+   the scoped threads to join. Do not swallow task failures or
+   coerce them to successful `R` values. Never detach workers.
+4. Preserve manual Fetch's existing cancellation registry and
+   per-repository `cancelled/error/fetched` outcome mapping.
+   Later tasks may still be scheduled *after* cancellation,
+   but `fetch_with_cancel` will fail before network/process
+   spawn; every discovered checkout retains its final result.
+   No new timeouts, automatic Fetch, Git ref mutations or
+   permission changes.
+5. Add deterministic multithreaded integration-like tests with
+   an explicit release gate: block the first worker, let other
+   workers finish, prove that the fifth/sixth task is admitted
+   before the first is released. Exercise zero limit, empty
+   work, completion count, result uniqueness, bounded concurrency
+   and worker-panic propagation. Test coordination via channel
+   events/condition variables, not sleeps or recurring polling.
+6. Execute one final exact-SHA stable CI gate (Rustfmt, core,
+   Clippy, Node/release, Linux desktop compile). Physical KDE
+   latency/throughput measurements remain optional batched
+   acceptance in issues #12 and #15, not a reason to delay
+   correctness/performance work for UI micro-smoke.
+
+### Alternative hypotheses and limits
+
+Possible sources of slow Fetch include SSH/network helpers,
+per-repository remote count, Git refs locks, and external clients;
+those are not attributed to the scheduler without runtime evidence.
+Barrier scheduling is independently established by source structure.
+The rolling window does not shorten an individual hung Git
+command's timeout or improve performance when there are at most
+four repositories. Overload remains bounded to four.
+
+**Rollback:** revert one isolated Rust implementation/test
+commit. No config schema, Tauri IPC, GitHub monitor, UI geometry,
+`main`, published release, or background service change.

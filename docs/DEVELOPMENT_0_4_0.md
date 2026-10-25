@@ -2757,3 +2757,18 @@ is interceptable like tray Quit (not guaranteed).
   running at this checkpoint. **Do not mark 4/4 SUCCESS**
   until final exact-run results verify it. Compilation
   is distinct from physical KDE/Windows shutdown safety.
+
+## P1-QUIT1 final compilation blocker, freeze exit (2026-10-25)
+
+[Preflight #40195794530](https://github.com/morozhenko-apps/repoticker/actions/runs/40195794530)
+completed **FAIL** despite 91/91 Rust core/integration tests, 236/236
+Node tests and passing Rustfmt/Clippy. Linux desktop compile failed
+with Rust `E0597` in `request_quit`: the temporary lock result
+from `match operation.0.lock()` can outlive its owning `operation`
+binding. **No broad Git refactor is authorized.** Store the lock
+result in a named local variable before matching so the owner
+lives long enough, preserve the graceful Quit barrier and add a
+source regression, then exact-SHA Linux desktop CI. Once the
+complete Preflight passes, Git core enters the approved freeze;
+only proven critical/mandatory failures reopen it. Details:
+[finite six-gate v1.0 scope](VERSION_ROADMAP_TO_1_0.md#scope-freeze-decision--2026-10-25-owner-approved).

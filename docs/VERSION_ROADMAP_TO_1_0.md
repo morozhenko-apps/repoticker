@@ -245,3 +245,72 @@ A 1.0.0 tag is permitted only after:
 - [ ] v0.2 release candidate built/tagged/published; unchanged here.
 - [ ] L10N-20: 20/20 UI languages and per-language context audit accepted **before** v0.9 Mode B starts.
 - [ ] v0.9 RC and v1.0 product/OS/QA acceptance achieved.
+
+## Scope freeze decision — 2026-10-25 (owner approved)
+
+**Stop inventing work.** The product goal is a finite v1.0 delivery,
+not an open-ended Git-hardening investigation. The owner accepted
+the six remaining delivery phases and a feature freeze. This
+section overrides earlier speculative suggestions of additional
+pre-1.0 hardening, while retaining the previously mandatory
+L10N-20 and Mode B acceptance gates.
+
+**The six remaining gates (in this order, no extra gates invented):**
+
+1. **Close the known executable blocker:** fix `E0597` at the
+   `request_quit` operation-lock guard (Linux desktop compile
+   of [Preflight #40195794530](https://github.com/morozhenko-apps/repoticker/actions/runs/40195794530));
+   exact-source stable Preflight 4/4, then freeze Git core.
+2. **Close essential v0.3–v0.5 functional acceptance:** focus on
+   real GitHub failure notification, startup/credentials,
+   selected-repository correctness and important settings.
+   Resolve the **autostart architecture STOP factor** by an explicit
+   owner decision; do not silently implement it.
+   Record real failures only; no additional micro-polish.
+3. **v0.8 platform gate:** batch one final KDE/Windows physical
+   acceptance and packaging/upgrade tests for the platforms
+   actually advertised, including APT signed upgrade and
+   Quit-during-Fetch.
+4. **L10N-20:** all 20 canonical UI languages and 20 separate
+   contextual audits, after feature/platform freeze and
+   before the full Mode B campaign.
+5. **v0.9 Mode B:** the existing mandatory 12-stage risk,
+   branch/interaction/coverage/mutation/negative-case
+   review and acceptance on a frozen release candidate.
+6. **v1.0:** immutable tagged source, installers/signatures/
+   hashes, release/docs/support gates, public readback.
+
+**Explicit exclusions for v1.0:** optional v0.6 unattended Git
+sync, optional v0.7 Cloudflare Hybrid/Webhook relay and unverified
+macOS support are **deferred to post-1.0**, absent/disabled in the
+stable feature contract. They are *not* blockers and may be
+reconsidered only by a separate future product decision.
+
+**Git-core freeze begins as soon as gate 1 is CI-green.** From
+that point accept Git/native behavior changes only for
+reproduced functional failures, confirmed security/data-loss
+risk, or a failure of one of the explicitly mandatory
+acceptance gates. Potential races, speculative reliability
+work, cosmetic controls, CI percentage chasing, and
+"one more enhancement" become post-1.0 backlog entries.
+Existing safe `ff-only`/non-force push, bounded cancellation
+and error-honesty invariants remain mandatory. A new confirmed
+critical bug may create a correction within a named gate,
+**not** a seventh milestone or another indefinite hardening
+phase.
+
+**Evidence policy:** each completed gate needs one exact SHA,
+an explicit pass/fail decision and a bounded remaining
+exception list. A Preflight success is not physical desktop
+acceptance or Mode B completion. No automatic promotions
+from `dev` to `main`; no releases without owner approval.
+
+**Current gate-1 known defect:** in native
+`request_quit`, the temporary produced by
+`match operation.0.lock()` outlives the local
+`operation` Tauri state binding within the closure.
+Rust compiler E0597 occurs on Linux desktop compile,
+while Rust-core/Node jobs passed. Fix by binding
+the lock result before matching; preserve actual
+lock-held exit behavior. Add one focused source
+contract and rerun the exact code/test gate only.

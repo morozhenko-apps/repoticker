@@ -1,3 +1,16 @@
+## Execution cap and next gate (2026-10-25)
+
+The owner has approved a **finite six-gate v1.0 plan**, a Git-core
+freeze after the known Linux desktop `request_quit` compilation
+blocker is fixed, and deferral of optional v0.6 auto-sync and v0.7
+Hybrid relay until after v1.0. **Do not start new speculative
+Git-hardening or interface-polish loops.** See the binding
+[Scope freeze decision](VERSION_ROADMAP_TO_1_0.md#scope-freeze-decision--2026-10-25-owner-approved)
+for the precise gates, acceptance evidence and exceptions.
+The first immediate action is to fix E0597 in the tray Quit
+handler and obtain 4/4 exact-code Preflight, not to launch a
+new feature or rewrite the release policy.
+
 # Roadmap and delivery evidence
 
 ## Current development handoff (2026-10-24)

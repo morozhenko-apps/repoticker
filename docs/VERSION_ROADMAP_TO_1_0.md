@@ -370,3 +370,31 @@ acceptance rather than asking the owner to manually
 smoke each code commit. Do not duplicate the actual
 KDE/Windows OS acceptance in Gate 2 and Gate 3: reuse
 the same evidence when a check legitimately covers both.
+
+### Gate 1 — CLOSED / Git-core change freeze ACTIVATED (2026-10-25)
+
+- Exact functional patch: `301145ef54da141caff46e889acaffde0234be0a`;
+  Rust E0597 on the explicit Quit `OperationLock` path was
+  fixed by assigning the mutex lock result to a named
+  binding before matching it. No other native behavior
+  was modified.
+- [Preflight #40197325988](https://github.com/morozhenko-apps/repoticker/actions/runs/40197325988)
+  completed **4/4 SUCCESS** on that exact code/test SHA:
+  91/91 Rust core/integration/origin tests, 236/236 Node
+  tests, 14/14 Python release contracts, Rustfmt,
+  Clippy, Linux desktop compile, aggregate result.
+  This validates compilation/source, **not** a real
+  KDE/Windows Quit-during-Fetch physical smoke.
+- **Git-core scope is now FROZEN** under the approved
+  decision above. No more routine core refactor,
+  speculative races or micro-improvements. Reopen only
+  for reproduced defects, verified security/data-loss
+  risk, or failed mandatory acceptance.
+- **Current next gate: 2/6** functional acceptance
+  with exactly the five observable checks specified
+  above. The five items are not marked passed by
+  source CI; no real-device evidence has been
+  fabricated. Autostart architecture remains an owner
+  STOP decision and must not be implemented implicitly.
+- Main branch remains on published v0.2.0. No release,
+  tag, installer, push to main, or deployment.

@@ -26,6 +26,10 @@ test("graceful Quit cancels Fetch before waiting for existing operation lock", (
   const exit = quit.indexOf("app.exit(0)");
   assert.ok(begin >= 0 && cancel > begin && lock > cancel && exit > lock);
   assert.match(quit, /spawn_blocking\(move \|\|/);
+  assert.match(quit, /let operation_guard = operation\.0\.lock\(\);\s*match operation_guard \{/,
+    "Keep OperationLock state binding alive until after its guard is consumed");
+  assert.doesNotMatch(quit, /match operation\.0\.lock\(\)/,
+    "Do not reintroduce the E0597 temporary-lifetime pattern");
   assert.match(quit, /Err\(_\) => \{\s*eprintln!\("RepoTicker quit refused: Git operation lock poisoned"/);
   assert.doesNotMatch(quit, /sleep|poll\(/);
 });

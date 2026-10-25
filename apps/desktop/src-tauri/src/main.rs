@@ -1283,7 +1283,10 @@ fn request_quit(app: &AppHandle) {
             }
         }
         let operation = app.state::<OperationLock>();
-        match operation.0.lock() {
+        // Keep the state owner alive longer than the guard/result temporary;
+        // matching a direct lock() call here caused E0597 in desktop compile.
+        let operation_guard = operation.0.lock();
+        match operation_guard {
             Ok(_guard) => {
                 // The application may exit only after all registered Git
                 // worker groups have completed their bounded cleanup.

@@ -1630,6 +1630,25 @@ mod owned_git_process_tests {
         assert_ne!(error.0, FETCH_CANCELLED);
     }
 
+    #[test]
+    fn completed_drain_errors_are_distinct_from_inherited_pipe_timeouts() {
+        let (sender, receiver) = mpsc::channel();
+        sender
+            .send(Err(io::Error::other("fixture read failure")))
+            .unwrap();
+        let error = receive_owned_pipe(receiver, 0, "Git process timeout", "stdout")
+            .expect_err("drain I/O failure");
+        assert!(error.0.contains("Cannot read Git stdout: fixture read failure"));
+        assert!(!error.0.contains("held open"));
+
+        let (sender, receiver) = mpsc::channel::<io::Result<Vec<u8>>>();
+        drop(sender);
+        let error = receive_owned_pipe(receiver, 0, "Git process timeout", "stderr")
+            .expect_err("drain disconnected");
+        assert!(error.0.contains("Git stderr drain disconnected"));
+        assert!(!error.0.contains("held open"));
+    }
+
     #[cfg(target_os = "linux")]
     #[test]
     fn helper_holding_pipe_after_parent_exit_is_stopped_without_killing_unrelated_process() {

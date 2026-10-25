@@ -15,6 +15,12 @@ test("read-only and remote Git commands have bounded owned execution", () => {
   assert.match(git, /terminate_fetch_group\(pid\)/);
   assert.match(git, /fn drain_git_pipe</);
   assert.match(git, /read_to_end\(&mut bytes\)/);
+  assert.match(git, /fn receive_owned_pipe\(/);
+  assert.match(git, /Err\(mpsc::RecvTimeoutError::Timeout\) => \{/);
+  assert.match(git, /let cleanup = terminate_fetch_group\(pid\)/);
+  assert.match(git, /Git \{name\} held open by a descendant/);
+  assert.match(git, /fn helper_holding_pipe_after_parent_exit_is_stopped_without_killing_unrelated_process\(/);
+  assert.match(git, /fn completed_drain_errors_are_distinct_from_inherited_pipe_timeouts\(/);
   assert.match(git, /command\.process_group\(0\)/);
   assert.match(git, /command\s*\.stdin\(Stdio::null\(\)\)/);
   const invoke = git.match(/fn invoke\([\s\S]*?\n\}/)?.[0] ?? "";

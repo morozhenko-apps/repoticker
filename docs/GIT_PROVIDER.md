@@ -205,6 +205,31 @@ concrete timeout/error classification are unchanged. Exact CI
 evidence and rollback scope: [P1-FETCH-RACE4](DEVELOPMENT_0_4_0.md).
 Windows physical process-tree acceptance remains deferred.
 
+## Unreleased P1-QUIT1: explicit tray Quit waits for owned Git work
+
+On `dev`, selecting **Quit** from the KDE or Windows tray first
+prevents new Git action admission, requests cancellation of the
+current explicit Fetch, and waits for the existing Git-operation
+mutex to be released before exiting the desktop process.
+An action already queued when Quit is selected cannot begin.
+A Fetch registered concurrently with Quit re-checks shutdown
+after publishing its cancellation token, so a late token is
+not missed. The UI event loop is not blocked while the Git
+operation and bounded child cleanup finish.
+
+Safe sync and legacy Safe pull are deliberately **not**
+forcibly cancelled: they must complete their existing
+Git worktree/remote operation before the explicit Quit can
+finish. This means Quit can remain pending during a slow
+non-cancellable Git command. OS SIGKILL, power failure,
+Task Manager forced termination or session teardown are
+not equivalent to explicit tray Quit and are **not**
+protected by this path.
+
+See [P1-QUIT1](DEVELOPMENT_0_4_0.md) and
+[deferred OS acceptance #15](https://github.com/morozhenko-apps/repoticker/issues/15).
+No behavior in the published v0.2.0 is changed.
+
 ## Manual Fetch
 
 - Command semantics: `git fetch --all --prune --quiet` for an eligible enrolled checkout, through an argv-based process invocation rather than a shell.

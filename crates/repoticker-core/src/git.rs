@@ -281,7 +281,10 @@ fn receive_owned_pipe(
             // If a helper escaped its group, the second wait is still finite
             // and the result remains an explicit error, never success.
             let closed = cleanup.is_ok()
-                && matches!(receiver.recv_timeout(PROCESS_REAP_GRACE), Ok(Ok(_)) | Ok(Err(_)));
+                && matches!(
+                    receiver.recv_timeout(PROCESS_REAP_GRACE),
+                    Ok(Ok(_)) | Ok(Err(_))
+                );
             let detail = match cleanup {
                 Ok(()) if closed => "owned helper group stopped".to_owned(),
                 Ok(()) => "owned helper cleanup could not be confirmed".to_owned(),
@@ -1638,7 +1641,9 @@ mod owned_git_process_tests {
             .unwrap();
         let error = receive_owned_pipe(receiver, 0, "Git process timeout", "stdout")
             .expect_err("drain I/O failure");
-        assert!(error.0.contains("Cannot read Git stdout: fixture read failure"));
+        assert!(error
+            .0
+            .contains("Cannot read Git stdout: fixture read failure"));
         assert!(!error.0.contains("held open"));
 
         let (sender, receiver) = mpsc::channel::<io::Result<Vec<u8>>>();
@@ -1655,7 +1660,10 @@ mod owned_git_process_tests {
         use std::fs;
         use std::time::{SystemTime, UNIX_EPOCH};
 
-        let nonce = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
         let pid_file = std::env::temp_dir().join(format!(
             "repoticker-inherited-stdout-{}-{nonce}.pid",
             std::process::id()
@@ -1683,13 +1691,19 @@ mod owned_git_process_tests {
         let state = owned_pid.and_then(|pid| {
             fs::read_to_string(format!("/proc/{pid}/stat"))
                 .ok()
-                .and_then(|text| text.rsplit_once(") ").and_then(|(_, tail)| tail.chars().next()))
+                .and_then(|text| {
+                    text.rsplit_once(") ")
+                        .and_then(|(_, tail)| tail.chars().next())
+                })
         });
         let unrelated_alive = unrelated.try_wait().unwrap().is_none();
         // Ensure a failed assertion cannot leak the fixture's helper.
         if let (Some(pid), Some(running)) = (owned_pid, state) {
             if running != 'Z' && running != 'X' {
-                let _ = Command::new("kill").arg("-KILL").arg(pid.to_string()).status();
+                let _ = Command::new("kill")
+                    .arg("-KILL")
+                    .arg(pid.to_string())
+                    .status();
             }
         }
         let _ = unrelated.kill();
@@ -1697,9 +1711,15 @@ mod owned_git_process_tests {
         let _ = fs::remove_file(&pid_file);
 
         let error = result.expect_err("inherited pipe must fail closed");
-        assert!(error.0.contains("stdout held open by a descendant"), "{error}");
+        assert!(
+            error.0.contains("stdout held open by a descendant"),
+            "{error}"
+        );
         assert!(error.0.contains("owned helper group stopped"), "{error}");
-        assert!(owned_pid.is_some(), "background helper PID must be recorded");
+        assert!(
+            owned_pid.is_some(),
+            "background helper PID must be recorded"
+        );
         assert!(
             state.is_none() || matches!(state, Some('Z' | 'X')),
             "inherited-pipe helper must be terminated, actual state: {state:?}"

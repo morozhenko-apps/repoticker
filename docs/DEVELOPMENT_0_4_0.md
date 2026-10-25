@@ -2482,3 +2482,41 @@ cancellation if cleanup is incomplete).
 **Rollback:** revert the isolated core/test commit.
 Full manual Fetch remains the only cancellable Git mutation;
 Safe sync and push policies are unchanged.
+
+### P1-FETCH-RACE4 implementation and validation checkpoint
+
+- `5abbaad8ce2e75740dccd39b72d23c75244c3906`
+  introduces `FetchCancellation::cancel_with`: production
+  calls the existing owned process-group terminator; the
+  test-only closure can simulate OS termination errors
+  without signalling arbitrary PIDs. `cancelled=true`
+  always blocks new registration. A later Cancel retries
+  only registered PIDs absent from the successfully
+  targeted set. Successfully targeted and unregistered
+  process groups are never signalled again. With no
+  pending work, repeat Cancel returns `false`.
+- Spawn-before-registration and registry-lock-error
+  branches now check both the process-group termination
+  and bounded child-reap result. `unregistered_fetch_cleanup_error`
+  preserves the original error when cleanup succeeds;
+  otherwise it reports all available cleanup failure
+  details and **outcome unknown**. An incomplete reap
+  cannot be mislabeled as harmless `FETCH_CANCELLED`.
+- `ca0e995b68e63bac12753763049c2afb2eecf7b0`
+  adds deterministic Rust state-machine tests for failed
+  and successful sibling termination, retry idempotency,
+  dropped/unregistered PID exclusion, pre-registration
+  cleanup error precedence, plus Node source contracts.
+  All previous real Unix cancellation, PID registration,
+  per-child result and owned process-group tests remain.
+- **Final code/test candidate:** `ca0e995b68e63bac12753763049c2afb2eecf7b0`.
+  [Preflight #40191918001](https://github.com/morozhenko-apps/repoticker/actions/runs/40191918001)
+  was pending when first checked. Count as verified only
+  after its exact-source Rustfmt/core/real-Git/Clippy,
+  Node/release, Linux desktop compile and aggregate
+  all report success. The preceding one-file production
+  candidate is not the final testable SHA.
+- No new Git mutation/retry on timers, native UI, config,
+  service, permissions, Windows Job Object, main or
+  published package. Windows process-tree runtime checks
+  remain open in issue #15.

@@ -83,3 +83,23 @@ or Git-core changes, no release publication.
   installer claim is made. All seven physical observations remain
   `PENDING RECHECK` until the new binary is run. The older #40227612556
   artifact does not include these fixes.
+
+
+## Windows NSIS build failure and targeted fix — 2026-10-25
+
+- [Candidate run #40232905905](https://github.com/morozhenko-apps/repoticker/actions/runs/40232905905)
+  built the Linux artifacts successfully but Windows compilation failed
+  with Rust `E0308` at `apps/desktop/src-tauri/src/main.rs:1506`.
+- Cause established from the Windows rustc log: `on_window_event`
+  passes a `&tauri::Window`; the Windows geometry helper accepts
+  `&tauri::WebviewWindow`. Linux did not compile the Windows-only branch.
+  This was not a bundler/NSIS or digital-signing failure.
+- Fix `a62bbfaa` resolves a typed `get_webview_window("main")` for
+  the close-handler and logs a nonsecret error if saving coordinates
+  fails. Regression check `23f4fa99` guards against restoring the
+  wrong-typed call.
+- [Rebuild #40236224117](https://github.com/morozhenko-apps/repoticker/actions/runs/40236224117)
+  started at SHA `0b67e298ada8db085d129a14d58610c3d5d9598d`
+  for unpublished Linux/Windows candidates. This is **not a PASS**
+  until the Windows compile, packaging and artifact upload actually succeed.
+  Previous Windows candidate remains unusable; do not test its stale EXE.

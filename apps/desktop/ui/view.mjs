@@ -9,9 +9,16 @@ export function nextCardView(current, requested) {
   if (!Object.hasOwn(CARD_HEIGHT, requested)) throw new Error("Unknown view");
   return current === requested ? "compact" : requested;
 }
-export function cardWindowHeight(view) {
+// Keep the list bottom-anchored, with enough room for the actual rows
+// instead of allocating the same 510 px to an empty list and a long one.
+export function cardWindowHeight(view, repositoryCount = 0) {
   if (!Object.hasOwn(CARD_HEIGHT, view)) throw new Error("Unknown view");
-  return CARD_HEIGHT[view];
+  if (view !== "repos") return CARD_HEIGHT[view];
+  if (!Number.isSafeInteger(repositoryCount) || repositoryCount < 0)
+    throw new Error("Invalid repository count");
+  const rows = Math.max(1, Math.min(10, repositoryCount));
+  return Math.min(CARD_HEIGHT.repos, CARD_HEIGHT.compact + 18 + 35 * rows +
+    (repositoryCount === 0 ? 8 : 0));
 }
 
 // A fast-forward cannot start if a repo is modified, ahead, divergent,

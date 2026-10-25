@@ -1107,3 +1107,89 @@ commit, without touching `main` or the published v0.2.0 package.
   geometry, native notifications, tray actions, config,
   `main`, or published installer. Physical KDE/Windows
   keyboard navigation is still unverified and remains open.
+
+## Gate 2/AUTOSTART1 — native opt-in login launch (2026-10-25)
+
+**Mode A: feature, user confirmed required for v1.0.** No Git-core
+changes and no new roadmap gate. The OS login registry is the
+single source of truth for autostart, not a second `config.json`
+copy that could drift. Existing version 0.2 configuration
+continues to deserialize without migration.
+
+### Verified design (Tauri v2 plugin 2.7.0)
+
+The officially maintained `tauri-plugin-autostart` v2.7.0
+supports Windows and Linux, uses a Tauri-managed
+`AutoLaunchManager` with `enable/disable/is_enabled`, and
+requires Rust 1.90. Current repository Tauri lock is
+2.12.4 and the plugin requires Tauri 2.12. The plugin
+preserves the current installed executable path, or the
+AppImage path when present, and does not initiate Git.
+Source: official Tauri autostart plugin docs
+(https://v2.tauri.app/plugin/autostart/) and
+the 2.7.0 crate source (docs.rs). Runtime KDE/Windows
+behavior is **not** inferred from these support claims.
+
+- Add **Rust-only** plugin dependency pinned to
+  `=2.7.0` in desktop Cargo, registered with
+  `tauri_plugin_autostart::Builder::new().app_name("RepoTicker").build()`.
+  Keep plugin commands inaccessible from WebView via
+  existing `capabilities/default.json`; export only
+  two narrow Tauri commands: `autostart_is_enabled`
+  and `autostart_set_enabled(bool)`. No shell, registry,
+  filesystem or broad plugin guest permission.
+- Settings General gains a single EN/RU localized
+  `Launch at login` checkbox, default OFF as long as
+  OS autostart was never enabled. Native status read
+  initializes `original` and `draft` on opening;
+  disabled/unavailable OS backend must be an **error**,
+  not a fabricated false default.
+- Draft toggle only marks OK dirty. Cancel leaves
+  the OS registration unchanged. On OK, the native
+  command applies the new OS registration using the
+  plugin and verifies `is_enabled`; if that fails,
+  Settings remains open with an error and no false
+  success. Existing config/GitHub choices retain
+  their current explicit OK behavior.
+- Avoid duplicate persistent config fields: OS registration
+  survives restarts and is queried whenever Settings
+  reopens. Startup itself is **tray-only**, because all
+  RepoTicker windows start hidden; it never calls
+  Fetch, Safe sync or GitHub mutations automatically.
+- Multiple-instance prevention after OS login and
+  uninstall/upgrade cleanup are mandatory **physical
+  Gate 3/issue #15** acceptance. Do not claim one
+  instance or clean uninstall solely because this
+  plugin compiled. Any verified packaging failure
+  will be a targeted Gate 3 defect, not a speculative
+  new features program.
+- Tests: source contracts ensure least privilege,
+  no config schema addition, both native commands,
+  EN/RU key parity, checkbox default/draft/Cancel,
+  saving through native only, OS-error visible and
+  no implicit Git mutation; monitor/auth behavior
+  unchanged. Normal exact-SHA Preflight with Rustfmt,
+  Rust unit/integration, Node/release, Linux desktop.
+
+### Lockfile/build boundary
+
+This environment has GitHub repository-edit tools but
+no local Cargo and no working outbound HTTP. **Do not
+edit generated Cargo.lock by hand.** Regenerate it
+using the repository's Ubuntu GitHub Actions Rust
+toolchain (`cargo update -p tauri-plugin-autostart`
+or a precise Cargo lock update), commit the generated
+result as executable/dependency code, and verify
+`cargo --locked` on the exact finished SHA. A red
+or pending CI gate is not a completed implementation.
+Keep any one-off CI lockfile helper scoped to dev and
+remove it after use.
+
+### Rollback
+
+Revert isolated plugin/Cargo.lock, native IPC, Settings
+HTML/CSS/JS/i18n and directly related tests. Remove
+manually enabled test OS startup registrations on
+acceptance hosts before reinstalling the previous
+package. No main/tag/release promotion, autostart ON
+by default or change to protected Git operations.

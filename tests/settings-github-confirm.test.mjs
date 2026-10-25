@@ -677,7 +677,8 @@ test("Folder picker error keeps Settings open without persisting roots", async (
   try {
     await ui.node("browse-root").fire("click");
     assert.equal(ui.node("browse-root").disabled, false);
-    assert.equal(ui.node("message").classList !== undefined, true);
+    assert.match(ui.node("message").textContent, /Folder picker unavailable/);
+    assert.equal(ui.closed, false);
     assert.equal(ui.calls.some(([name]) => name === "save_settings"), false);
   } finally { ui.restore(); }
 });

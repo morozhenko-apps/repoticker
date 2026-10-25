@@ -2191,3 +2191,22 @@ post-exit helper cleanup behavior changes.
   process groups and Windows physical lifecycle remain
   deferred to issue #15. No `main`, release, UI,
   config, native API, or Git mutation changes.
+
+### P1-PROC2 first-source CI correction
+
+- [Preflight #40185362660](https://github.com/morozhenko-apps/repoticker/actions/runs/40185362660)
+  at `0c798de9` passed the JavaScript/release job but
+  reported seven deterministic `cargo fmt --check`
+  formatting differences in `git.rs`. Rust core tests
+  did not execute on that source and no runtime conclusion
+  can be drawn from a failed format gate.
+- `38f536a020af2b136cf7baff2555c8fcc1db2ba2`
+  applies the exact Rustfmt changes only; no production
+  execution flow or assertion was relaxed.
+- **Revised exact code/test SHA:**
+  `38f536a020af2b136cf7baff2555c8fcc1db2ba2`.
+  The following Preflight must pass Rustfmt/core/Clippy,
+  Node/release, Linux desktop and aggregate result
+  before this repair is source-accepted. Physical Windows
+  inherited-pipe helper lifecycle is explicitly not
+  accepted by Linux tests.

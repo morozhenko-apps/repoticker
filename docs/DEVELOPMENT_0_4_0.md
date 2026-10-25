@@ -2674,3 +2674,45 @@ is interceptable like tray Quit (not guaranteed).
   previous direct-Quit semantics. No Git refs/config/schema,
   native menu action IDs, GitHub REST, tokens, `main` or
   published v0.2.0 are modified.
+
+### P1-QUIT1 implementation checkpoint and exact-source gate
+
+- `53aa97440f184e37d21c09d9188d2e3bb5e6e8e4`
+  introduces core `ShutdownSignal` with one-owner,
+  process-local atomic quit admission and deterministic
+  Rust concurrency tests. Native `request_quit` is the
+  common KDE KSNI / Tauri tray Quit handler; it sets
+  admission closed synchronously, requests owned Fetch
+  cancellation off the UI thread, waits for `OperationLock`
+  to drain, and exits only with that barrier held.
+  An operation waiting for the lock rejects the shutdown
+  before starting Git work. After an already-admitted
+  Fetch publishes its token, it checks shutdown again,
+  closing the token-publication race without new timers
+  or process-kill methods.
+- Native window `CloseRequested` still hides surfaces.
+  Non-cancellable Safe sync/pull run to completion; neither
+  is force killed by explicit Quit. Git results/progress
+  and tray menu action IDs remain unchanged. No forced OS
+  kill handling, Windows Job Object or autostart changes.
+- The same executable commit adds four Node wiring
+  contracts and updates the existing tray source test.
+  First-source
+  [Preflight #40195513021](https://github.com/morozhenko-apps/repoticker/actions/runs/40195513021)
+  reported deterministic Rustfmt import ordering differences
+  and one test-only source assertion expecting a nonexistent
+  `"safe_sync"` menu ID (existing ID is `"sync"`).
+- `cfed77b8378ec6a8dbda2589210767c003eb35ff`
+  applies the exact two Rustfmt hunks and corrects the
+  source assertion to the existing `"sync"` menu dispatch;
+  no implementation or behavior changed.
+- **Final executable/test SHA:** `cfed77b8378ec6a8dbda2589210767c003eb35ff`.
+  [Preflight #40195625148](https://github.com/morozhenko-apps/repoticker/actions/runs/40195625148)
+  is the exact pending Rustfmt/core/Clippy, Node/release,
+  Linux desktop compile and aggregate acceptance gate.
+  Source changes alone do not prove native runtime safety.
+  Physical KDE/Windows Quit-during-Fetch acceptance remains
+  deferred to issue #15.
+- Rollback: revert production/test commits, preserve docs.
+  No main, version/tag, published installer, permission
+  or persisted config changes.

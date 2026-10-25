@@ -192,6 +192,19 @@ are tracked in [P1-PROC2](DEVELOPMENT_0_4_0.md).
 This does not claim orphan-free execution across arbitrary
 third-party helpers or cross-platform physical acceptance.
 
+**Unreleased P1-FETCH-RACE4 (dev):** Explicit Cancel remains
+Fetch-only and prevents subsequent child registrations. If termination
+of one already-owned Git process group fails, a second Cancel can
+retry that *still-registered, unsuccessfully targeted* process,
+without sending another signal to completed or previously terminated
+groups. During a cancel-between-spawn-and-register race, the app
+must confirm both bounded termination and reap before reporting
+`cancelled`; incomplete cleanup is a Git error with an
+**unknown outcome** warning. The per-repository success and
+concrete timeout/error classification are unchanged. Exact CI
+evidence and rollback scope: [P1-FETCH-RACE4](DEVELOPMENT_0_4_0.md).
+Windows physical process-tree acceptance remains deferred.
+
 ## Manual Fetch
 
 - Command semantics: `git fetch --all --prune --quiet` for an eligible enrolled checkout, through an argv-based process invocation rather than a shell.

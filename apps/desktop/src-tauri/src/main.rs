@@ -12,6 +12,8 @@ mod github_session;
 mod monitor_cache;
 mod startup_diagnostics;
 mod tray_i18n;
+#[cfg(target_os = "windows")]
+mod windows_geometry;
 
 use repoticker_core::{
     config_store::JsonStore,
@@ -714,6 +716,8 @@ fn hide_card(app: AppHandle) -> Result<(), String> {
         return Ok(());
     }
     let _ = hide_usage_popup(app.clone());
+    #[cfg(target_os = "windows")]
+    windows_geometry::save(&app, &window)?;
     window.hide().map_err(|err| err.to_string())?;
     let _ = app.emit("repoticker-card-hidden", ());
     Ok(())
@@ -740,6 +744,10 @@ fn show_compact_card(app: &AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
         if let Err(error) = resize_unmanaged_card(&window, 122.0) {
             eprintln!("RepoTicker compact resize: {error}");
+        }
+        #[cfg(target_os = "windows")]
+        if let Err(error) = windows_geometry::restore(app, &window) {
+            eprintln!("RepoTicker Windows anchor restore failed: {error}");
         }
         let _ = app.emit("repoticker-reset-view", ());
         let _ = window.show();
@@ -924,8 +932,18 @@ async fn stop_card_drag(app: AppHandle) -> Result<(), String> {
     if linux_surface::enabled() {
         return linux_surface::stop_drag(&app).await;
     }
-    let _ = app;
-    Ok(())
+    #[cfg(target_os = "windows")]
+    {
+        let window = app
+            .get_webview_window("main")
+            .ok_or_else(|| "Card unavailable".to_owned())?;
+        return windows_geometry::save(&app, &window);
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = app;
+        Ok(())
+    }
 }
 
 #[tauri::command]
@@ -1192,6 +1210,10 @@ fn toggle_card(app: &AppHandle) {
     }
     if let Some(window) = app.get_webview_window("main") {
         if window.is_visible().unwrap_or(false) {
+            #[cfg(target_os = "windows")]
+            if let Err(error) = windows_geometry::save(app, &window) {
+                eprintln!("RepoTicker Windows anchor save failed: {error}");
+            }
             let _ = window.hide();
             let _ = app.emit("repoticker-card-hidden", ());
         } else {
@@ -1446,6 +1468,10 @@ fn main() {
                     let _ = linux_surface::request_resize(window.app_handle(), 122);
                 } else {
                     let _ = window.hide();
+                }
+                #[cfg(target_os = "windows")]
+                if window.label() == "main" {
+                    let _ = windows_geometry::save(window.app_handle(), window);
                 }
                 #[cfg(not(target_os = "linux"))]
                 let _ = window.hide();

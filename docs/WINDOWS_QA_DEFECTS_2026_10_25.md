@@ -50,3 +50,36 @@ Linux Wayland must not use Windows positioning; a native plugin must have a
 generated Cargo.lock; the new Windows binary has no signing reputation.
 Rollback: independent docs and code commits revertible; no persistent format
 or Git-core changes, no release publication.
+
+## Implementation checkpoint — 2026-10-25
+
+- Confirmed Windows release console issue: GUI subsystem attribute added in `main.rs`.
+- Confirmed excess drawer height: bounded 0/1/2/10+ count logic in
+  `view.mjs` and the native `set_card_view` argument; compact stays 390x122.
+- Windows popup work-area anchor: `windows_geometry.rs` reuses
+  existing right/bottom margin fields and saves on drag/hide; neither
+  Linux Layer Shell nor persistent schema is modified.
+- Windows white edge hypothesis: disabled default native DWM shadow
+  only for transparent, undecorated `main` and `usage` windows.
+  WebView2 corner transparency still needs physical confirmation.
+- Native folder selection: official pinned `tauri-plugin-dialog=2.8.3`,
+  `select_repository_root` native-only IPC, one Settings browse button,
+  localized EN/RU, draft-only selection, Cancel/OK semantics.
+  Generated Cargo.lock recorded by the successful one-shot
+  [CI #40232547593](https://github.com/morozhenko-apps/repoticker/actions/runs/40232547593);
+  temporary resolver removed. No broad WebView dialog permission.
+- Regression checks added in `tests/windows-card-regressions.test.mjs`
+  and `tests/settings-github-confirm.test.mjs` with native Windows
+  placement unit tests in `windows_geometry.rs`.
+- The **one-repository disappearance is still unconfirmed** as a logic
+  defect: `scan()` emits every inspected repo, `render()` loops every
+  entry and existing Rust tests cover a single explicitly enrolled root.
+  Recheck on physical Windows using a single valid checkout and collect
+  count-only diagnostics before altering Git discovery.
+- Build/test candidate: working `dev` at code SHA
+  `3ee0395a76243fae6814da37daa91eca8cbee635`. CI
+  [Preflight #40232723551](https://github.com/morozhenko-apps/repoticker/actions/runs/40232723551)
+  was not complete at this checkpoint; **no green claim** or fresh Windows
+  installer claim is made. All seven physical observations remain
+  `PENDING RECHECK` until the new binary is run. The older #40227612556
+  artifact does not include these fixes.

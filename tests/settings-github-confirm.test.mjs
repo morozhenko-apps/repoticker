@@ -125,6 +125,10 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
               monitorOrg = args.org;
               monitorRepositories = args.repositories ?? monitorRepositories;
               return undefined;
+            case "select_repository_root":
+              if (options.folderPickerError) throw Error("Folder picker unavailable");
+              if (options.folderPickerPromise) return options.folderPickerPromise;
+              return options.folderPath ?? null;
             case "save_settings": return undefined;
             case "close_settings": closed = true; return undefined;
             default: throw Error("Unexpected IPC " + command);
@@ -640,5 +644,57 @@ test("Failed native OS registration keeps dialog open and does not claim success
     assert.equal(ui.closed, false);
     assert.equal(ui.node("apply-settings").disabled, false);
     assert.ok(ui.calls.some(([name]) => name === "autostart_set_enabled"));
+  } finally { ui.restore(); }
+});
+
+test("Native folder selection stays a draft until Settings OK", async () => {
+  const ui = await fixture("root-native-ok", true, [], { folderPath: "C:\\\\GitHub" });
+  try {
+    await ui.node("browse-root").fire("click");
+    assert.equal(ui.node("browse-root").disabled, false);
+    assert.ok(ui.node("roots-list").children.some(row =>
+      row.children.some(node => node.textContent === "C:\\\\GitHub")));
+    assert.equal(ui.calls.some(([command]) => command === "save_settings"), false);
+    await ui.node("apply-settings").fire("click");
+    assert.ok(ui.calls.some(([command, args]) =>
+      command === "save_settings" && args.roots.includes("C:\\\\GitHub")));
+  } finally { ui.restore(); }
+});
+
+test("Cancelling folder picker makes no draft change or write", async () => {
+  const ui = await fixture("root-native-cancel", true);
+  try {
+    await ui.node("browse-root").fire("click");
+    assert.equal(ui.node("apply-settings").disabled, false, "Other saved options may be available");
+    await ui.node("cancel-settings").fire("click");
+    assert.equal(ui.calls.some(([name]) => name === "save_settings"), false);
+    assert.equal(ui.closed, true);
+  } finally { ui.restore(); }
+});
+
+test("Folder picker error keeps Settings open without persisting roots", async () => {
+  const ui = await fixture("root-native-error", true, [], { folderPickerError: true });
+  try {
+    await ui.node("browse-root").fire("click");
+    assert.equal(ui.node("browse-root").disabled, false);
+    assert.equal(ui.node("message").classList !== undefined, true);
+    assert.equal(ui.calls.some(([name]) => name === "save_settings"), false);
+  } finally { ui.restore(); }
+});
+
+test("Native folder picker rejects concurrent modal requests", async () => {
+  let finish;
+  const pending = new Promise(resolve => { finish = resolve; });
+  const ui = await fixture("root-native-single-flight", true, [], { folderPickerPromise: pending });
+  try {
+    const first = ui.node("browse-root").fire("click");
+    assert.equal(ui.node("browse-root").disabled, true);
+    await ui.node("browse-root").fire("click");
+    assert.equal(ui.calls.filter(([name]) => name === "select_repository_root").length, 1);
+    finish("C:\\\\Projects");
+    await first;
+    assert.equal(ui.node("browse-root").disabled, false);
+    await ui.node("cancel-settings").fire("click");
+    assert.equal(ui.calls.some(([name]) => name === "save_settings"), false);
   } finally { ui.restore(); }
 });

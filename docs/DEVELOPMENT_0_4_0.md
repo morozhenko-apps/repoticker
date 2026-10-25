@@ -2520,3 +2520,26 @@ Safe sync and push policies are unchanged.
   service, permissions, Windows Job Object, main or
   published package. Windows process-tree runtime checks
   remain open in issue #15.
+
+### P1-FETCH-RACE4 Rustfmt correction and final candidate
+
+- `ca0e995b68e63bac12753763049c2afb2eecf7b0`:
+  [Preflight #40191918001](https://github.com/morozhenko-apps/repoticker/actions/runs/40191918001)
+  confirmed its JavaScript/release job SUCCESS; the
+  Rust job stopped on four `cargo fmt --check` layout
+  differences and did not validate unit/integration
+  behavior. Neither the initial production-source run
+  nor this source-with-tests format failure is the final
+  acceptance gate.
+- `ebd65df51097e2c0aabcd16aee8eb1eb9df195c6`
+  applies the exact four formatter hunks without changing
+  cancellation state semantics, error precedence, test
+  assertions, or platform ownership.
+- **Final executable/test source:** `ebd65df51097e2c0aabcd16aee8eb1eb9df195c6`.
+  [Preflight #40192087993](https://github.com/morozhenko-apps/repoticker/actions/runs/40192087993)
+  was pending on first inspection. Verify all four
+  Rustfmt/unit/integration/Clippy, Node/release, Linux
+  desktop compile and aggregate jobs on this exact SHA
+  before declaring CI acceptance.
+- The issue #15 Windows process-tree check remains
+  deferred. No non-Git UI work, main or release.

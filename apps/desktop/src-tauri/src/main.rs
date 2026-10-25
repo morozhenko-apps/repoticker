@@ -40,6 +40,7 @@ use tauri::{
 };
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_clipboard_manager::ClipboardExt;
+use tauri_plugin_dialog::DialogExt;
 
 #[derive(Default)]
 struct OperationLock(Mutex<()>);
@@ -952,6 +953,30 @@ fn open_settings(app: AppHandle) {
 }
 
 #[tauri::command]
+async fn select_repository_root(app: AppHandle) -> Result<Option<String>, String> {
+    let (sender, receiver) = tokio::sync::oneshot::channel();
+    // The plugin owns the OS dialog; the WebView receives only the chosen path.
+    // Cancellation produces None and never mutates enrolled roots.
+    app.dialog().file().pick_folder(move |selected| {
+        let _ = sender.send(selected);
+    });
+    let selected = receiver
+        .await
+        .map_err(|_| "Folder selection unavailable".to_owned())?;
+    match selected {
+        None => Ok(None),
+        Some(folder) => {
+            let path = folder
+                .into_path()
+                .map_err(|_| "Folder path is not a local filesystem path".to_owned())?;
+            path.to_str()
+                .map(|text| Some(text.to_owned()))
+                .ok_or_else(|| "Folder path cannot be represented as UTF-8".to_owned())
+        }
+    }
+}
+
+#[tauri::command]
 fn save_settings(
     app: AppHandle,
     roots: Vec<String>,
@@ -1364,6 +1389,7 @@ fn main() {
         // Must precede all other plugins so a second launch never reaches setup.
         .plugin(tauri_plugin_single_instance::init(|_app, _args, _cwd| {}))
         .plugin(tauri_plugin_clipboard_manager::init())
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(
             tauri_plugin_autostart::Builder::new()
@@ -1514,6 +1540,7 @@ fn main() {
             open_settings,
             set_language,
             save_settings,
+            select_repository_root,
             close_settings,
             start_card_drag,
             stop_card_drag,

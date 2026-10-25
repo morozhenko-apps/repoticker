@@ -58,21 +58,34 @@ impl FetchCancellation {
             .unwrap_or(true)
     }
 
-    /// Request cancellation once and terminate only registered child groups.
-    /// The mutex also orders cancellation against concurrent child registration.
+    /// Cancel all owned Fetch groups. A termination failure can be retried
+    /// while its PID is still registered; previously signalled PIDs are never
+    /// targeted again, and new registrations stay blocked after the first call.
     pub fn cancel(&self) -> Result<bool, GitError> {
+        self.cancel_with(terminate_fetch_group)
+    }
+
+    fn cancel_with(
+        &self,
+        mut terminate: impl FnMut(u32) -> Result<(), GitError>,
+    ) -> Result<bool, GitError> {
         let mut state = self
             .children
             .lock()
             .map_err(|_| GitError("Fetch cancellation state unavailable".into()))?;
-        if state.cancelled {
+        let already_cancelled = state.cancelled;
+        state.cancelled = true;
+        let pending: Vec<u32> = state
+            .running
+            .difference(&state.targeted)
+            .copied()
+            .collect();
+        if already_cancelled && pending.is_empty() {
             return Ok(false);
         }
-        state.cancelled = true;
         let mut first_error = None;
-        let running: Vec<u32> = state.running.iter().copied().collect();
-        for pid in running {
-            match terminate_fetch_group(pid) {
+        for pid in pending {
+            match terminate(pid) {
                 Ok(()) => {
                     state.targeted.insert(pid);
                 }
@@ -199,6 +212,31 @@ fn fetch_was_interrupted(_status: &std::process::ExitStatus) -> bool {
     false
 }
 
+/// A cancelled/unregistered child must be both terminated and reaped.
+/// An incomplete cleanup may leave a running helper or partially changed
+/// remote-tracking refs; it must not be reported as harmless cancellation.
+fn unregistered_fetch_cleanup_error(
+    original: GitError,
+    terminated: Result<(), GitError>,
+    reaped: Result<Output, GitError>,
+) -> GitError {
+    if terminated.is_ok() && reaped.is_ok() {
+        return original;
+    }
+    let mut details = Vec::new();
+    if let Err(error) = terminated {
+        details.push(format!("termination failed: {error}"));
+    }
+    if let Err(error) = reaped {
+        details.push(format!("reap failed: {error}"));
+    }
+    GitError(format!(
+        "{}; owned Fetch child cleanup incomplete ({}); outcome unknown",
+        original.0,
+        details.join("; ")
+    ))
+}
+
 fn run_cancellable_command(
     command: &mut Command,
     cancel: &FetchCancellation,
@@ -242,22 +280,25 @@ fn run_cancellable_command_with_timeout(
         Ok(true) => {}
         Ok(false) => {
             let terminated = terminate_fetch_group(pid);
-            let _ = wait_owned_child(
+            let reaped = wait_owned_child(
                 child,
                 PROCESS_REAP_GRACE,
                 "Cancelled Fetch child could not be reaped",
             );
-            terminated?;
-            return Err(GitError(FETCH_CANCELLED.into()));
+            return Err(unregistered_fetch_cleanup_error(
+                GitError(FETCH_CANCELLED.into()),
+                terminated,
+                reaped,
+            ));
         }
         Err(error) => {
-            let _ = terminate_fetch_group(pid);
-            let _ = wait_owned_child(
+            let terminated = terminate_fetch_group(pid);
+            let reaped = wait_owned_child(
                 child,
                 PROCESS_REAP_GRACE,
                 "Failed Fetch registration cleanup timed out",
             );
-            return Err(error);
+            return Err(unregistered_fetch_cleanup_error(error, terminated, reaped));
         }
     }
     after_register();

@@ -1488,7 +1488,10 @@ mod concurrent_git_tests {
 
 #[cfg(all(test, unix))]
 mod fetch_cancellation_tests {
-    use super::{run_cancellable_command, FetchCancellation, FETCH_CANCELLED};
+    use super::{
+        classify_fetch_completion, run_cancellable_command, FetchCancellation, GitError,
+        FETCH_CANCELLED,
+    };
     use std::{
         process::Command,
         sync::{mpsc, Arc},

@@ -1859,3 +1859,77 @@ Safe Push safeguards.
 - Main/release/config/REST/OS permissions are untouched.
   Physical concurrent-client and Windows acceptance
   remain outstanding in issue #15.
+
+## P1-SCAN2 — single-flight, latest-only full local Git snapshot (2026-10-25)
+
+**Mode A / performance and correctness; user priority P0/P1.**
+The prior Safe Sync complete-target admission change
+`e08baea27c9c19041446b3c3dac7872fb1ed9c80`
+passed [Preflight #40142639971](https://github.com/morozhenko-apps/repoticker/actions/runs/40142639971)
+4/4 SUCCESS, so there is no unfinished prior core gate.
+
+### Concrete source flaw
+
+The card's `app.mjs::refresh` currently calls native
+`get_snapshot` on each invocation and immediately renders
+the result when that particular promise resolves. Request sites
+include cold startup, config change, reset view and the end of
+manual Git operations. Native `get_snapshot` launches
+`scan` in `spawn_blocking`; `scan` performs enrolled-root
+discovery and up to four parallel Git inspections of all repos.
+The current card function has **no coalescing or request-order
+gate**: overlapping calls can repeat expensive scans, and an
+older scan can finish after a later one and overwrite newer
+local repos/config. Existing `monitorRevision` protects the
+separate **remote metric projection**, not local snapshot order.
+Issue #12 documents real multi-scan startup measurements, but
+does not prove how many the present source still executes after
+other previously completed optimizations.
+
+Distinguish six causes: repeated full-scan triggers (confirmed
+by code); async out-of-order delivery (possible); slow local
+Git subprocesses (historical measured); monitor-only refreshes
+(already separated); deliberate post-operation authoritative
+rescan (required); Git config changes external to the process
+(no automatic filesystem watch contract).
+
+### Invariants and implementation scope
+
+1. Introduce a pure, independent, testable `createScanRefreshQueue`
+   helper: **one full scan in flight** per card instance.
+   Refresh requests during an active scan coalesce into one
+   additional scan. Discard stale intermediate scan success or
+   failure when a more recent request is pending.
+   Execute until a result corresponds to the latest request.
+2. Keep the externally visible card `refresh()` entrypoint
+   callable from startup/config/reset/action finish; return
+   a promise that resolves only when pending invalidations
+   are drained. Do not suppress an authoritative refresh after
+   a successful/failed manual Git action. Continue to surface
+   terminal scan errors and startup trace exactly once.
+3. Preserve `reconcileScanPresentation(next, snapshot, revision,
+   monitorRevision)` at the moment the native full scan was
+   requested so that GitHub monitor-only updates arriving during
+   a scan are not overwritten. Keep the separate
+   `github_monitor_snapshot` route unchanged.
+4. No new local filesystem watcher, TTL/stale-cache window,
+   changes to Git read commands, delayed polling, background
+   fetch, native IPC/schema or privileged permission.
+   No change to repository ordering, action progress or
+   390x122/660x720 window dimensions.
+5. Deterministic deferred-promise tests: concurrent calls
+   share one in-flight scan, multiple triggers schedule exactly
+   one trailing scan, older result cannot render, a new trigger
+   arriving during the trailing scan receives its own final
+   result, failures are not cached, no unhandled rejections,
+   and subsequent request after idle runs again. Add source
+   wiring contracts for startup, config change, and post-Git
+   action refresh. Then exact-SHA stable Preflight.
+6. Physical startup latency comparison across sizeable
+   enrolled roots can be batched with final OS acceptance
+   under issues #12/#15; do not interrupt user for minor
+   UI smoke after this code slice.
+
+**Rollback:** revert the isolated UI/helper/test commit.
+Preexisting git repo/config data unaffected; published
+version/main and Windows installer are unchanged.

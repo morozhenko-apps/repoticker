@@ -2,8 +2,8 @@
 //! the coordinating thread while workers may finish out of order.
 use std::sync::mpsc;
 
-/// Spawn no more than \`limit\` workers at once. A batch ends only after each
-/// result was delivered; the following batch then starts. Never coalesce errors.
+/// Maintain up to `limit` active workers, replacing each completed task
+/// immediately. Both callbacks execute on the coordinating thread.
 pub fn bounded_map<T, R, Work, Start, Complete>(
     tasks: Vec<T>,
     limit: usize,
@@ -21,30 +21,48 @@ where
     let total = tasks.len();
     let mut pending = tasks.into_iter();
     let mut results = Vec::with_capacity(total);
-    let batch_limit = limit.max(1);
-    loop {
-        let batch: Vec<T> = pending.by_ref().take(batch_limit).collect();
-        if batch.is_empty() {
-            break;
+    let parallelism = limit.max(1).min(total);
+    std::thread::scope(|scope| {
+        let (sender, receiver) = mpsc::channel();
+        let work = &work;
+        // The producer keeps a sender until all tasks have been submitted.
+        // Every worker also reports caught panics so a missing result
+        // cannot leave the coordinator blocked on that sender.
+        let mut start_next = |done: usize| -> bool {
+            let Some(task) = pending.next() else {
+                return false;
+            };
+            started(&task, done, total);
+            let tx = sender.clone();
+            scope.spawn(move || {
+                let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| work(task)));
+                let _ = tx.send(outcome);
+            });
+            true
+        };
+        let mut running = 0;
+        for _ in 0..parallelism {
+            if start_next(0) {
+                running += 1;
+            }
         }
-        std::thread::scope(|scope| {
-            let (sender, receiver) = mpsc::channel();
-            for task in batch {
-                started(&task, results.len(), total);
-                let tx = sender.clone();
-                let work = &work;
-                scope.spawn(move || {
-                    let _ = tx.send(work(task));
-                });
+        while running > 0 {
+            let outcome = receiver
+                .recv()
+                .expect("A scheduled worker must report a result or panic");
+            running -= 1;
+            let value = match outcome {
+                Ok(value) => value,
+                Err(panic) => std::panic::resume_unwind(panic),
+            };
+            let done = results.len() + 1;
+            completed(&value, done, total);
+            results.push(value);
+            if start_next(done) {
+                running += 1;
             }
-            drop(sender);
-            for result in receiver {
-                let count = results.len() + 1;
-                completed(&result, count, total);
-                results.push(result);
-            }
-        });
-    }
+        }
+    });
     results
 }
 
@@ -115,4 +133,99 @@ mod tests {
         assert_eq!(values, vec![1, 2, 3]);
         assert_eq!(done, 3);
     }
+    #[test]
+    fn blocked_worker_does_not_hold_available_slots_idle() {
+        use std::sync::{mpsc, Condvar, Mutex};
+        let gate = Arc::new((Mutex::new(false), Condvar::new()));
+        let worker_gate = Arc::clone(&gate);
+        let (tx, rx) = mpsc::channel();
+        let coordinator = thread::spawn(move || {
+            bounded_map(
+                (0..6).collect(),
+                4,
+                move |value| {
+                    tx.send(value).expect("start receiver");
+                    if value == 0 {
+                        let (lock, release) = &*worker_gate;
+                        let guard = lock.lock().unwrap();
+                        drop(release.wait_while(guard, |ready| !*ready).unwrap());
+                    }
+                    value
+                },
+                |_, _, _| {},
+                |_, _, _| {},
+            )
+        });
+
+        let mut started = Vec::new();
+        while started.len() < 6 {
+            match rx.recv_timeout(Duration::from_secs(10)) {
+                Ok(value) => started.push(value),
+                Err(_) => break,
+            }
+        }
+        // Always release the blocking worker before asserting; otherwise
+        // a regression in rolling admission would strand the test.
+        let (lock, release) = &*gate;
+        *lock.lock().unwrap() = true;
+        release.notify_all();
+        let mut results = coordinator.join().expect("coordinator");
+        started.sort_unstable();
+        results.sort_unstable();
+        assert_eq!(
+            started,
+            (0..6).collect::<Vec<_>>(),
+            "Later tasks must start before the blocked first task exits"
+        );
+        assert_eq!(results, (0..6).collect::<Vec<_>>());
+    }
+
+    #[test]
+    fn callbacks_remain_on_the_coordinator_with_monotonic_counts() {
+        use std::cell::Cell;
+        let caller = thread::current().id();
+        let done = Cell::new(0usize);
+        let mut starts = 0;
+        let mut result = bounded_map(
+            (0..9).collect(),
+            3,
+            |value| value,
+            |_, already_done, total| {
+                assert_eq!(thread::current().id(), caller);
+                assert_eq!(total, 9);
+                assert_eq!(already_done, done.get());
+                starts += 1;
+            },
+            |_, completed, total| {
+                assert_eq!(thread::current().id(), caller);
+                assert_eq!(total, 9);
+                assert_eq!(completed, done.get() + 1);
+                done.set(completed);
+            },
+        );
+        assert_eq!(starts, 9);
+        assert_eq!(done.get(), 9);
+        result.sort_unstable();
+        assert_eq!(result, (0..9).collect::<Vec<_>>());
+    }
+
+    #[test]
+    fn a_worker_panic_propagates_without_orphaned_workers() {
+        let outcome = std::panic::catch_unwind(|| {
+            bounded_map(
+                vec![0, 1, 2],
+                2,
+                |value| {
+                    if value == 1 {
+                        panic!("expected test failure");
+                    }
+                    value
+                },
+                |_, _, _| {},
+                |_, _, _| {},
+            )
+        });
+        assert!(outcome.is_err());
+    }
+
 }

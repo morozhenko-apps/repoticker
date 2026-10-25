@@ -11,6 +11,13 @@ test("Fetch cancellation belongs to registered child groups, not all Git process
   assert.match(core, /pub struct FetchCancellation/);
   assert.match(core, /fn register\(&self, pid: u32\)/);
   assert.match(core, /fn unregister\(&self, pid: u32\)/);
+  assert.match(core, /targeted: BTreeSet<u32>/);
+  assert.match(core, /state\.targeted\.insert\(pid\)/);
+  assert.match(core, /Ok\(state\.targeted\.remove\(&pid\)\)/);
+  assert.match(core, /fn classify_fetch_completion\(/);
+  assert.match(core, /status\.signal\(\)\.is_some\(\)/);
+  assert.match(core, /fn completed_fetch_result_is_not_overwritten_by_late_or_sibling_cancel\(/);
+  assert.match(core, /fn cancelling_two_owned_fetch_children_yields_two_distinct_cancelled_results\(/);
   assert.match(core, /pub fn cancel\(&self\)/);
   assert.match(core, /command\.process_group\(0\)/);
   assert.match(core, /kill\(-group, SIGKILL\)/);
@@ -41,4 +48,17 @@ test("existing four-button card reuses Fetch as Cancel without interrupting Safe
   assert.match(ui, /progress\?\.operation === "fetch"/);
   assert.match(ui, /if \(errors\.length\)/);
   assert.match(ui, /item\.status === "error"/);
+});
+
+test("per-repository Fetch outcomes preserve concrete errors instead of global cancellation", () => {
+  const body = core.match(/fn run_cancellable_command_with_timeout\([\s\S]*?\n\}/)?.[0] ?? "";
+  assert.match(body, /let targeted = cancel\.unregister\(pid\)/);
+  assert.match(body, /\(Err\(error\), _\) => Err\(error\)/);
+  assert.match(body, /classify_fetch_completion\(Ok\(output\), was_targeted\)/);
+  assert.doesNotMatch(body, /if cancel\.is_cancelled\(\) \{\s*return Err\(GitError\(FETCH_CANCELLED\.into\(\)\)\);\s*\}\s*result/);
+  const classifier = core.match(/fn classify_fetch_completion\([\s\S]*?\n\}/)?.[0] ?? "";
+  assert.match(classifier, /targeted && fetch_was_interrupted/);
+  assert.match(classifier, /other => other/);
+  assert.match(native, /Err\(GitError\(error\)\) => ActionResult/);
+  assert.match(native, /Some\(match outcome/);
 });

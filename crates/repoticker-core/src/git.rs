@@ -38,6 +38,9 @@ const POLL_INTERVAL: Duration = Duration::from_millis(15);
 struct FetchChildren {
     cancelled: bool,
     running: BTreeSet<u32>,
+    // Only processes successfully targeted by this specific Cancel.
+    // A batch-wide cancellation is not evidence that every Fetch failed.
+    targeted: BTreeSet<u32>,
 }
 
 /// One explicit Fetch operation owns this cancellation authority.
@@ -67,10 +70,16 @@ impl FetchCancellation {
         }
         state.cancelled = true;
         let mut first_error = None;
-        for &pid in &state.running {
-            if let Err(error) = terminate_fetch_group(pid) {
-                if first_error.is_none() {
-                    first_error = Some(error);
+        let running: Vec<u32> = state.running.iter().copied().collect();
+        for pid in running {
+            match terminate_fetch_group(pid) {
+                Ok(()) => {
+                    state.targeted.insert(pid);
+                }
+                Err(error) => {
+                    if first_error.is_none() {
+                        first_error = Some(error);
+                    }
                 }
             }
         }
@@ -92,10 +101,13 @@ impl FetchCancellation {
         Ok(true)
     }
 
-    fn unregister(&self, pid: u32) {
-        if let Ok(mut state) = self.children.lock() {
-            state.running.remove(&pid);
-        }
+    fn unregister(&self, pid: u32) -> Result<bool, GitError> {
+        let mut state = self
+            .children
+            .lock()
+            .map_err(|_| GitError("Fetch cancellation state unavailable".into()))?;
+        state.running.remove(&pid);
+        Ok(state.targeted.remove(&pid))
     }
 }
 
@@ -153,6 +165,38 @@ fn terminate_fetch_group(_pid: u32) -> Result<(), GitError> {
     Err(GitError(
         "Fetch cancellation is unsupported on this platform".into(),
     ))
+}
+
+// Preserve a successfully completed Fetch and all concrete subprocess errors,
+// including uncertain remote outcome/failed cleanup, if Cancel races with
+// completion of this or another repository.
+fn classify_fetch_completion(
+    result: Result<Output, GitError>,
+    targeted: bool,
+) -> Result<Output, GitError> {
+    match result {
+        Ok(output) if targeted && fetch_was_interrupted(&output.status) => {
+            Err(GitError(FETCH_CANCELLED.into()))
+        }
+        other => other,
+    }
+}
+
+#[cfg(unix)]
+fn fetch_was_interrupted(status: &std::process::ExitStatus) -> bool {
+    use std::os::unix::process::ExitStatusExt;
+    status.signal().is_some()
+}
+
+#[cfg(windows)]
+fn fetch_was_interrupted(status: &std::process::ExitStatus) -> bool {
+    // Windows taskkill termination usually appears as nonzero process exit.
+    !status.success()
+}
+
+#[cfg(not(any(unix, windows)))]
+fn fetch_was_interrupted(_status: &std::process::ExitStatus) -> bool {
+    false
 }
 
 fn run_cancellable_command(
@@ -222,11 +266,14 @@ fn run_cancellable_command_with_timeout(
         timeout,
         "Git fetch timed out; remote-tracking refs may be partially updated",
     );
-    cancel.unregister(pid);
-    if cancel.is_cancelled() {
-        return Err(GitError(FETCH_CANCELLED.into()));
+    let targeted = cancel.unregister(pid);
+    match (result, targeted) {
+        // Never hide a real Git timeout, failed process-tree cleanup or
+        // unknown remote outcome behind the batch cancellation flag.
+        (Err(error), _) => Err(error),
+        (Ok(_), Err(error)) => Err(error),
+        (Ok(output), Ok(was_targeted)) => classify_fetch_completion(Ok(output), was_targeted),
     }
-    result
 }
 
 #[derive(Debug, Clone)]
@@ -1448,6 +1495,90 @@ mod fetch_cancellation_tests {
         thread,
         time::Duration,
     };
+
+    #[test]
+    fn completed_fetch_result_is_not_overwritten_by_late_or_sibling_cancel() {
+        use std::os::unix::process::ExitStatusExt;
+        use std::process::{ExitStatus, Output};
+
+        let completed = || Output {
+            status: ExitStatus::from_raw(0),
+            stdout: Vec::new(),
+            stderr: Vec::new(),
+        };
+        assert!(classify_fetch_completion(Ok(completed()), true).is_ok());
+        assert!(classify_fetch_completion(Ok(completed()), false).is_ok());
+
+        let signalled = Output {
+            status: ExitStatus::from_raw(9),
+            stdout: Vec::new(),
+            stderr: Vec::new(),
+        };
+        let result = classify_fetch_completion(Ok(signalled), true)
+            .expect_err("targeted terminated child must be cancelled");
+        assert_eq!(result.0, FETCH_CANCELLED);
+
+        let ordinary_failure = Output {
+            status: ExitStatus::from_raw(7 << 8),
+            stdout: Vec::new(),
+            stderr: Vec::new(),
+        };
+        assert!(classify_fetch_completion(Ok(ordinary_failure), true).is_ok());
+
+        let actual_error = GitError(
+            "Git fetch timed out; remote-tracking refs may be partially updated".into(),
+        );
+        let result = classify_fetch_completion(Err(actual_error), true)
+            .expect_err("real timeout must not be masked");
+        assert!(result.0.contains("remote-tracking refs"));
+        assert_ne!(result.0, FETCH_CANCELLED);
+    }
+
+    #[test]
+    fn cancelling_two_owned_fetch_children_yields_two_distinct_cancelled_results() {
+        let cancellation = Arc::new(FetchCancellation::default());
+        let (tx, rx) = mpsc::channel();
+        let mut workers = Vec::new();
+        for _ in 0..2 {
+            let token = Arc::clone(&cancellation);
+            let ready = tx.clone();
+            workers.push(thread::spawn(move || {
+                let mut command = Command::new("sh");
+                command.args(["-c", "sleep 300 & wait"]);
+                run_cancellable_command(
+                    &mut command,
+                    &token,
+                    || {},
+                    || {
+                        ready.send(()).expect("registration signal");
+                    },
+                )
+            }));
+        }
+        drop(tx);
+        let mut registered = 0;
+        for _ in 0..2 {
+            if rx.recv_timeout(Duration::from_secs(5)).is_ok() {
+                registered += 1;
+            }
+        }
+        // Never strand the test workers if registration unexpectedly fails.
+        let cancelled = cancellation.cancel();
+        let results: Vec<_> = workers
+            .into_iter()
+            .map(|worker| worker.join().expect("Fetch worker joins"))
+            .collect();
+        assert_eq!(registered, 2, "both Fetch children must register");
+        assert!(cancelled.expect("Cancel two registered children"));
+        for outcome in results {
+            assert_eq!(outcome.expect_err("interrupted child").0, FETCH_CANCELLED);
+        }
+        let state = cancellation.children.lock().unwrap();
+        assert!(state.running.is_empty());
+        assert!(state.targeted.is_empty());
+        drop(state);
+        assert!(!cancellation.cancel().expect("idempotent Cancel"));
+    }
 
     #[test]
     fn cancelled_before_launch_does_not_start_a_child() {

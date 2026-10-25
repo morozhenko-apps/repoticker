@@ -10,11 +10,11 @@ not a new mandatory development gate.
 
 - CI workflow: https://github.com/morozhenko-apps/repoticker/actions/runs/40227612556
 - Result: **SUCCESS**, both Linux and Windows jobs completed; artifacts uploaded.
-- Source SHA: \`40aff5ec3a68e3053bf881bae9dafc2030250b3e\`.
-- Windows artifact: \`repoticker-acceptance-windows\`, artifact ID \`12612521927\`.
+- Source SHA: `40aff5ec3a68e3053bf881bae9dafc2030250b3e`.
+- Windows artifact: `repoticker-acceptance-windows`, artifact ID `12612521927`.
 - GitHub expiry: **2026-11-01 20:00 UTC** (download before expiry).
-- Expected EXE: \`RepoTicker-Setup-0.2.0-win-x64.exe\`. **Unsigned**.
-- The candidate declares \`0.2.0\`, the same version as the published stable;
+- Expected EXE: `RepoTicker-Setup-0.2.0-win-x64.exe`. **Unsigned**.
+- The candidate declares `0.2.0`, the same version as the published stable;
   installing over a valuable production copy is **not** part of this plan.
 
 ## Read-only integrity gate
@@ -51,7 +51,7 @@ Use a **test user/profile** and an expendable installation. Verify any
 existing RepoTicker instance has been closed without interrupting other
 desktop work. Do not manually edit the Run registry key or delete a stable
 production installation. Use the read-only script
-\`scripts/accept_autostart_windows.ps1\` from the same repository checkout
+`scripts/accept_autostart_windows.ps1` from the same repository checkout
 to capture sanitized snapshots at the following points.
 
 1. **Fresh start:** install the candidate, launch once, verify one tray icon,

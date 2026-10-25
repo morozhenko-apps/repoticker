@@ -25,10 +25,13 @@ fn placement(
 fn monitor_area(
     window: &WebviewWindow,
 ) -> Result<Option<((i64, i64), (i64, i64))>, String> {
-    let monitor = window
+    let monitor = match window
         .current_monitor()
         .map_err(|error| error.to_string())?
-        .or(window.primary_monitor().map_err(|error| error.to_string())?);
+    {
+        Some(current) => Some(current),
+        None => window.primary_monitor().map_err(|error| error.to_string())?,
+    };
     Ok(monitor.map(|monitor| {
         let area = monitor.work_area();
         (

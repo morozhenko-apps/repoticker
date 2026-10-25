@@ -104,8 +104,8 @@ test("desktop routes only full local snapshots through single-flight queue", () 
   assert.match(section, /reconcileScanPresentation\(next, snapshot, revision, monitorRevision\)/);
   assert.match(section, /function refresh\(\) \{\s*return refreshSnapshot\(\)/);
   assert.match(app, /await refresh\(\)/, "manual operations retain an authoritative post-action rescan");
-  assert.match(app, /listen\("repoticker-config-changed", refresh\)/);
-  assert.match(app, /listen\("repoticker-reset-view", \(\) => \{[\s\S]*?refresh\(\)/);
+  assert.match(app, /listen\?\.\("repoticker-config-changed", refresh\)/);
+  assert.match(app, /listen\?\.\("repoticker-reset-view", \(\) => \{[\s\S]*?refresh\(\)/);
   assert.match(app, /refreshMonitor\(\) \{[\s\S]*invoke\("github_monitor_snapshot"\)/);
   assert.equal([...app.matchAll(/invoke\("get_snapshot"\)/g)].length, 1,
     "the UI must not keep alternative bypass paths around scan single-flight");

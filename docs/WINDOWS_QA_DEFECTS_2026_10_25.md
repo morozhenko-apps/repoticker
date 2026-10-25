@@ -103,3 +103,65 @@ or Git-core changes, no release publication.
   for unpublished Linux/Windows candidates. This is **not a PASS**
   until the Windows compile, packaging and artifact upload actually succeed.
   Previous Windows candidate remains unusable; do not test its stale EXE.
+
+## Windows physical Git child-process failure — 2026-10-25
+
+**Mode A: targeted bugfix, pre-implementation analysis.** A real Windows
+tester installed the successful candidate from
+[run #40236224117](https://github.com/morozhenko-apps/repoticker/actions/runs/40236224117)
+and observed multiple flashing console windows followed by a native
+`git.exe - Application Error` dialog reporting `0xc0000142`
+(`STATUS_DLL_INIT_FAILED`). The card opened, but Git-related counters
+were not ready. Do **not** conflate the Git child process failure with
+an NSIS or RepoTicker process crash.
+
+Expected: a tray GUI makes bounded silent subprocess calls, reports
+Git process failures without private paths, and never launches a visible
+Git console or `taskkill.exe` window. Actual: core Git uses
+`Command::new("git")` in both `invoke` and cancellable Fetch, and the
+Windows `taskkill.exe` helper also inherits default console behavior.
+
+### Plausible causes and discriminating diagnostics
+
+1. **Confirmed:** Missing `CREATE_NO_WINDOW` process creation flag in
+   GUI-owned Git commands. Directly explains flashing windows.
+2. **Not yet confirmed:** Git for Windows DLL initialization failure
+   independent of RepoTicker; verify `git --version` in PowerShell
+   outside RepoTicker and read the Git executable path/version.
+3. Possible process/desktop-resource pressure with repeated Git launches;
+   compare errors during standalone and multi-repository runs.
+4. Endpoint security quarantine or injection into Git DLL startup;
+   inspect Windows Defender Protection history if the standalone probe fails.
+5. Incorrect Git executable resolution or damaged Git installation;
+   compare `Get-Command git` with standalone Git operation.
+6. Windows environment differences between normal terminal and GUI child
+   (PATH, runtime DLLs, user privileges) affecting DLL loading.
+
+**Priority:** (1) is source-confirmed. (2) / (3) could explain
+`0xc0000142`, but the screenshot does not distinguish them. Hiding a
+console alone is **not** proof of fixing DLL initialization. Preserve
+native stderr and exit status; make the fatal NTSTATUS observable without
+leaking paths/tokens.
+
+### Targeted, reversible fix
+
+- Route all product Git subprocess creation through a single
+  platform-aware native helper. On Windows set only the documented
+  `CREATE_NO_WINDOW=0x08000000` flag using Rust `CommandExt`. Apply
+  it to local Git, Fetch, and Windows `taskkill.exe` cleanup. Do not
+  change argv, timeouts, cancellation, subprocess concurrency, Unix
+  process groups, or interactive Git security policy.
+- Detect `0xC0000142` exit status distinctly and surface a safe,
+  actionable Git initialization error. Do not report a successful scan,
+  misclassify fatal child startup as a valid clean repository, or
+  silently ignore a loader error in shallow discovery.
+- Add scoped regression tests for creation-flag routing, controlled
+  Windows Git subprocess startup and fatal status interpretation.
+- Run the normal final stable validation once. Build a new unpublished
+  Windows candidate and keep Gate 2 physical PASS open until a clean
+  launch/one-repo reproduction. No changes to main or published release.
+
+**Rollback:** one Git subprocess helper and its focused tests can be
+reverted without touching user configuration, authentication, or
+persistent data. Native Windows loader symptoms still require operator
+diagnostics if they persist under the controlled launch.

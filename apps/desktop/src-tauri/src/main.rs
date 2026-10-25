@@ -1503,7 +1503,13 @@ fn main() {
                 }
                 #[cfg(target_os = "windows")]
                 if window.label() == "main" {
-                    let _ = windows_geometry::save(window.app_handle(), window);
+                    // on_window_event exposes tauri::Window, but native
+                    // geometry owns a WebviewWindow. Resolve the typed handle.
+                    if let Some(card) = window.app_handle().get_webview_window("main") {
+                        if let Err(error) = windows_geometry::save(window.app_handle(), &card) {
+                            eprintln!("RepoTicker Windows close anchor save failed: {error}");
+                        }
+                    }
                 }
                 #[cfg(not(target_os = "linux"))]
                 let _ = window.hide();

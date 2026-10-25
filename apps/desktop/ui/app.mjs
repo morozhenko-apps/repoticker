@@ -1,4 +1,4 @@
-import { nextCardView, cardWindowHeight, syncReadyCommitCount } from "./view.mjs";
+import { nextCardView, syncReadyCommitCount } from "./view.mjs";
 import { createNativeDragGesture } from "./native-drag.mjs";
 import { startGithubMonitoring } from "./github-monitor.mjs";
 import { compactStatus } from "./status-metrics.mjs";

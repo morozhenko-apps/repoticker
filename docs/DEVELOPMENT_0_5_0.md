@@ -1210,3 +1210,54 @@ acceptance remains a Gate 3 test; Snap/Flatpak are out of scope.
 
 Source: https://v2.tauri.app/plugin/single-instance/
 Rollback together with native autostart dependency and OS-test entries.
+
+### AUTOSTART1 implementation checkpoint (2026-10-25)
+
+- `d720fe4bee226e6ee9b0f8d9a08d96a745bbca67` adds
+  pinned maintained `tauri-plugin-autostart=2.7.0`, the
+  native-only `autostart_is_enabled` /
+  `autostart_set_enabled(bool)` IPC wrapper, and the
+  EN/RU Settings General checkbox. No raw plugin
+  permissions are exposed in `capabilities/default.json`.
+- `32055471eae7cdd1a1a3637a92ae557c1ba3d906`
+  makes Settings read the OS registration each time it
+  opens; unavailable state is displayed as unknown and
+  disables only that checkbox. Draft state is discarded
+  on Cancel; OK applies the OS change and checks the
+  confirmed value, leaving the window open on failure.
+  OS registration is authoritative, with **no new
+  persisted Config field** or automatic Git action.
+- `97ba1154a4f499c0b47d1d7e764d3c89c76955de`
+  and `690b80602d98b5c22b6bbd83ddac5941774140b1`
+  add deterministic Settings and native permission/
+  locale contract tests.
+- `79d01842f7569a61c3e96f9b2370d3f3c68c601c`
+  adds maintained `tauri-plugin-single-instance=2.5.4`,
+  registered before other Tauri plugins, to satisfy
+  the existing single tray process after OS login
+  acceptance contract. The callback intentionally
+  performs no Git action or UI focus request.
+- A temporary one-shot workflow ran Cargo on the
+  GitHub Ubuntu runner and committed the **generated**
+  pinned lockfile; do not hand-edit `Cargo.lock`.
+  `a1b747f074d359679299a8bd2db085f32590a973`
+  generated autostart dependencies;
+  `6f1a295aae7ef62d49e76b9a76865a630bb6d7bc`
+  added single-instance dependencies. The temporary
+  workflow was subsequently **removed** in
+  `faddbebb7e24633245f2b7b7321f459bfea4aa9d`.
+- `2aa5a17f514e205fc30f0e6efa99b699511ced13`
+  applies exact Rustfmt adjustments and preserves
+  source assertion intent. **Final executable/test
+  source candidate:** `faddbebb7e24633245f2b7b7321f459bfea4aa9d`.
+  [Preflight #40223171041](https://github.com/morozhenko-apps/repoticker/actions/runs/40223171041)
+  was pending when last checked. No native Linux/Windows
+  runtime or packaging acceptance is claimed before
+  the relevant exact-source CI and actual OS checks.
+- No `main`, tag, release, automatic Fetch, Safe sync,
+  Hybrid relay or per-user credential changes. This
+  completes the feature *source* work subject to CI;
+  Gate 2 remains open until OS login/start/disable
+  and the other four acceptance checks are actually
+  passed. Uninstall and upgrade lifecycle is the
+  existing physical Gate 3/issue #15 validation.

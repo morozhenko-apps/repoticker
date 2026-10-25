@@ -47,6 +47,14 @@ test("Windows popup restores and saves position using existing config margins", 
   assert.match(geometry, /config\.card_bottom_margin/);
 });
 
+test("Windows close handler saves using typed WebviewWindow rather than generic Window", () => {
+  const main = read("../apps/desktop/src-tauri/src/main.rs");
+  assert.match(main, /if let Some\(card\) = window\.app_handle\(\)\.get_webview_window\("main"\)/);
+  assert.match(main, /windows_geometry::save\(window\.app_handle\(\), &card\)/);
+  assert.doesNotMatch(main, /windows_geometry::save\(window\.app_handle\(\), window\)/);
+  assert.match(main, /Windows close anchor save failed/);
+});
+
 test("Native folder selection has no broad WebView permissions", () => {
   const main = read("../apps/desktop/src-tauri/src/main.rs");
   const settings = read("../apps/desktop/ui/settings.mjs");

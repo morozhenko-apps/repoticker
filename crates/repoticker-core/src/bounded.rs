@@ -227,5 +227,4 @@ mod tests {
         });
         assert!(outcome.is_err());
     }
-
 }

@@ -1933,3 +1933,45 @@ rescan (required); Git config changes external to the process
 **Rollback:** revert the isolated UI/helper/test commit.
 Preexisting git repo/config data unaffected; published
 version/main and Windows installer are unchanged.
+
+### P1-SCAN2 source, test and exact-SHA verification (2026-10-25)
+
+- `1aa1ee745fe0aa272da66c9a04b1b10617b08930` introduces pure
+  `apps/desktop/ui/scan-refresh.mjs` and integrates it
+  into the existing card `refresh` entrypoint. There is
+  one in-flight `get_snapshot` per card instance; repeated
+  config/reset/manual-action requests set one trailing
+  invalidation, never start an overlapping full scan. Only
+  the most recently requested scan result is published.
+  The old monitoring revision is captured at each scan
+  launch and still applied through
+  `reconcileScanPresentation` so GitHub monitor-only state
+  cannot be rewound.
+- Four Node tests use manually resolved/rejected promises,
+  with no sleeps: coalescing, multiple consecutive late
+  invalidations, stale-success suppression, terminal
+  error and retry, callback validation, and app wiring/
+  no duplicate `get_snapshot` bypass.
+- First-source
+  [Preflight #40181577389](https://github.com/morozhenko-apps/repoticker/actions/runs/40181577389)
+  reported one **test-source matcher** failure in the JS
+  job. Three behavioral tests passed; the app wiring
+  assertion expected `listen(...)` but production has
+  `listen?.(...)` for Tauri's optional event API.
+  This was not a runtime scan-order failure.
+- `6b6f5e40d2e708a52b81e7f4a70add2cd69e5a9b`
+  corrects both affected optional-listener assertions
+  while preserving the exact subscribed events and all
+  behavioral requirements; no runtime code changed.
+  **Final executable/test candidate SHA**:
+  `6b6f5e40d2e708a52b81e7f4a70add2cd69e5a9b`.
+  [Preflight #40181644702](https://github.com/morozhenko-apps/repoticker/actions/runs/40181644702)
+  is its full Rust/Node/Linux desktop/aggregate acceptance
+  gate and was pending at the initial checkpoint.
+- Source correctness is distinct from physical startup
+  latency measurements; expected duplicate scan savings
+  are not claimed as measured numbers. Git core and
+  authenticated GitHub REST calls have not been modified.
+  No new background polling, `main`, installer, version,
+  or config migration. Further instrumented KDE
+  before/after latency acceptance remains #12/#15.

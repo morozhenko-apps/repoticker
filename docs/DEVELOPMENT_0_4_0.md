@@ -2739,3 +2739,21 @@ is interceptable like tray Quit (not guaranteed).
   was queued at this checkpoint; do not claim core,
   desktop or aggregate success until this exact SHA
   passes all required jobs.
+
+### P1-QUIT1 exact-source Rust and JavaScript evidence
+
+- [Preflight #40195794530](https://github.com/morozhenko-apps/repoticker/actions/runs/40195794530)
+  at executable/test SHA `869f7e6a2b015e307949e1cb75bd5cbe02769360`:
+  Rust format/core/Clippy **SUCCESS**;
+  **58 Rust unit + 30 real Git integration + 3 GitHub origin
+  = 91/91 Rust tests passed**. All three `shutdown::tests`
+  for one-owner Quit, queued-operation admission, and
+  registration-race signal passed.
+- JavaScript/release **SUCCESS** with **236/236 Node
+  tests** and **14/14 Python release contracts**.
+  Includes all new KDE/Windows Quit wiring/source
+  contracts and prior safety constraints.
+- Linux desktop compile and aggregate status were still
+  running at this checkpoint. **Do not mark 4/4 SUCCESS**
+  until final exact-run results verify it. Compilation
+  is distinct from physical KDE/Windows shutdown safety.

@@ -17,6 +17,8 @@ function applySettingsLanguage(value) {
     item.setAttribute("aria-label", t(item.getAttribute("data-i18n-aria")));
   byId("github-auth-message").textContent = t(lastGithubText);
   byId("message").textContent = t(lastFormText);
+  if (draft) byId("autostart-status").textContent = draft.autostartEnabled === null
+    ? t("Autostart unavailable") : "";
 }
 
 
@@ -452,6 +454,8 @@ function message(text, error = false) {
 function isDirty() {
   if (!original || !draft) return false;
   return original.language !== draft.language ||
+    (original.autostartEnabled !== null &&
+     original.autostartEnabled !== draft.autostartEnabled) ||
     original.ciFailureNotifications !== draft.ciFailureNotifications ||
     JSON.stringify(original.roots) !== JSON.stringify(draft.roots) ||
     JSON.stringify(original.ignoredChildNames) !== JSON.stringify(draft.ignoredChildNames);
@@ -548,8 +552,9 @@ async function refresh() {
   githubMessage("Checking GitHub connection...");
   // Persistent form settings and native KWallet interrogation run independently.
   // Neither path triggers local Git discovery/inspection.
-  const [snapshot, authAtOpen] = await Promise.all([
-    invoke("get_settings_config"), invoke("github_auth_status")
+  const [snapshot, authAtOpen, autostartState] = await Promise.all([
+    invoke("get_settings_config"), invoke("github_auth_status"),
+    invoke("autostart_is_enabled").catch(() => null)
   ]);
   traceStartup("settings.config_auth_ready");
   githubWasConnectedAtOpen = authAtOpen.connected === true;
@@ -566,15 +571,21 @@ async function refresh() {
     roots: [...(snapshot.roots || [])],
     language: snapshot.language || "en",
     ignoredChildNames: [...(snapshot.ignored_child_names || [])].sort(),
-    ciFailureNotifications: snapshot.ci_failure_notifications === true
+    ciFailureNotifications: snapshot.ci_failure_notifications === true,
+    autostartEnabled: typeof autostartState === "boolean" ? autostartState : null
   };
   draft = {
     roots: [...original.roots],
     language: original.language,
     ignoredChildNames: [...original.ignoredChildNames],
-    ciFailureNotifications: original.ciFailureNotifications
+    ciFailureNotifications: original.ciFailureNotifications,
+    autostartEnabled: original.autostartEnabled
   };
   byId("ci-failure-notifications").checked = draft.ciFailureNotifications;
+  byId("autostart-enabled").checked = draft.autostartEnabled === true;
+  byId("autostart-enabled").disabled = draft.autostartEnabled === null;
+  byId("autostart-status").textContent = draft.autostartEnabled === null
+    ? t("Autostart unavailable") : "";
   applySettingsLanguage(draft.language);
   byId("root-path").value = "";
   updateLanguagePicker();
@@ -585,6 +596,11 @@ async function refresh() {
   updateApply();
   await refreshGithub(authAtOpen);
 }
+byId("autostart-enabled").addEventListener("change", event => {
+  if (!draft || saving || original?.autostartEnabled === null) return;
+  draft.autostartEnabled = event.target.checked === true;
+  updateApply();
+});
 byId("ci-failure-notifications").addEventListener("change", event => {
   if (!draft || saving) return;
   draft.ciFailureNotifications = event.target.checked === true;
@@ -720,7 +736,13 @@ byId("apply-settings").addEventListener("click", async () => {
   saving = true;
   updateApply();
   try {
-    if (isDirty()) {
+    const autostartChanged = original.autostartEnabled !== null &&
+      draft.autostartEnabled !== original.autostartEnabled;
+    const configChanged = original.language !== draft.language ||
+      original.ciFailureNotifications !== draft.ciFailureNotifications ||
+      JSON.stringify(original.roots) !== JSON.stringify(draft.roots) ||
+      JSON.stringify(original.ignoredChildNames) !== JSON.stringify(draft.ignoredChildNames);
+    if (configChanged) {
       await invoke("save_settings", {
         roots: [...draft.roots],
         language: draft.language,
@@ -741,6 +763,14 @@ byId("apply-settings").addEventListener("click", async () => {
       originalRepoNames = repositories;
       repoChoiceTouched = false;
       await refreshMonitorScopes();
+    }
+    if (autostartChanged) {
+      const actual = await invoke("autostart_set_enabled", {
+        enabled: draft.autostartEnabled
+      });
+      if (actual !== draft.autostartEnabled)
+        throw Error("System autostart registration could not be verified.");
+      original.autostartEnabled = actual;
     }
     githubStartedHere = false;
     await invoke("close_settings");

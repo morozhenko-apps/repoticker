@@ -64,9 +64,25 @@ test("Windows drawer pointer interaction does not start window dragging", () => 
 });
 
 test("Metric hover uses nonfocusable pointer-through Windows balloon without native misleading titles", () => {
-  assert.match(native, /popup\s*\.set_focusable\(false\)/);
-  assert.match(native, /popup\s*\.set_ignore_cursor_events\(true\)/);
+  assert.match(native, /if let Err\(error\) = popup\.set_focusable\(false\)/);
+  assert.match(native, /if let Err\(error\) = popup\.set_ignore_cursor_events\(true\)/);
+  assert.match(native, /popup\.show\(\)\.map_err/);
+  assert.match(native, /position_unmanaged_usage_popup\(&card, &popup\)/);
+  assert.doesNotMatch(native, /popup\s*\.set_focusable\(false\)\s*\.map_err\([^;]+\?;/);
+
   assert.doesNotMatch(cardHtml, /title="Click to update (Runners|Tasks)"/);
   assert.match(card, /anchor\.addEventListener\("mouseenter"/);
   assert.match(card, /show_usage_popup/);
+});
+
+test("Settings and About cannot minimize and use the explicit native RepoTicker icon", () => {
+  const config = JSON.parse(read("../apps/desktop/src-tauri/tauri.conf.json"));
+  for (const label of ["settings", "about"]) {
+    const popup = config.app.windows.find(w => w.label === label);
+    assert.ok(popup);
+    assert.equal(popup.minimizable, false);
+    assert.equal(popup.maximizable, false);
+  }
+  assert.match(native, /for label in \["settings", "about"\]/);
+  assert.match(native, /window\.set_icon\(tauri::image::Image::new_owned\(rgba, width, height\)\)/);
 });

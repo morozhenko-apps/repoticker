@@ -17,6 +17,24 @@
         <div id="language-options" role="listbox" tabindex="-1" aria-label="Language" data-i18n-aria="Language" hidden>
           <button id="language-option-en" type="button" role="option" data-value="en" aria-selected="true" tabindex="-1">English</button>
           <button id="language-option-ru" type="button" role="option" data-value="ru" aria-selected="false" tabindex="-1">Русский</button>
+          <button id="language-option-es" type="button" role="option" data-value="es" aria-selected="false" tabindex="-1">Español</button>
+          <button id="language-option-pt" type="button" role="option" data-value="pt" aria-selected="false" tabindex="-1">Português (Portugal)</button>
+          <button id="language-option-de" type="button" role="option" data-value="de" aria-selected="false" tabindex="-1">Deutsch</button>
+          <button id="language-option-fr" type="button" role="option" data-value="fr" aria-selected="false" tabindex="-1">Français</button>
+          <button id="language-option-it" type="button" role="option" data-value="it" aria-selected="false" tabindex="-1">Italiano</button>
+          <button id="language-option-pl" type="button" role="option" data-value="pl" aria-selected="false" tabindex="-1">Polski</button>
+          <button id="language-option-hi" type="button" role="option" data-value="hi" aria-selected="false" tabindex="-1">हिन्दी</button>
+          <button id="language-option-zh-Hant" type="button" role="option" data-value="zh-Hant" aria-selected="false" tabindex="-1">繁體中文</button>
+          <button id="language-option-ja" type="button" role="option" data-value="ja" aria-selected="false" tabindex="-1">日本語</button>
+          <button id="language-option-nl" type="button" role="option" data-value="nl" aria-selected="false" tabindex="-1">Nederlands</button>
+          <button id="language-option-sv" type="button" role="option" data-value="sv" aria-selected="false" tabindex="-1">Svenska</button>
+          <button id="language-option-tr" type="button" role="option" data-value="tr" aria-selected="false" tabindex="-1">Türkçe</button>
+          <button id="language-option-ko" type="button" role="option" data-value="ko" aria-selected="false" tabindex="-1">한국어</button>
+          <button id="language-option-bn" type="button" role="option" data-value="bn" aria-selected="false" tabindex="-1">বাংলা</button>
+          <button id="language-option-th" type="button" role="option" data-value="th" aria-selected="false" tabindex="-1">ไทย</button>
+          <button id="language-option-id" type="button" role="option" data-value="id" aria-selected="false" tabindex="-1">Bahasa Indonesia</button>
+          <button id="language-option-fil" type="button" role="option" data-value="fil" aria-selected="false" tabindex="-1">Filipino</button>
+          <button id="language-option-ar" type="button" role="option" data-value="ar" aria-selected="false" tabindex="-1">العربية</button>
         </div>
       </div>
       
@@ -33,7 +51,7 @@
     <div class="section-heading"><h2 data-i18n="Local repositories">Local repositories</h2><span class="hint" data-i18n="Direct children only">Direct children only</span></div>
     <form id="add-root-form" class="inline">
       <label for="root-path" class="sr-only" data-i18n="Repository folder">Repository folder</label>
-      <input id="root-path" required placeholder="~/Documents/GitHub" autocomplete="off">
+      <input id="root-path" dir="ltr" required placeholder="~/Documents/GitHub" autocomplete="off">
       <button id="browse-root" type="button" data-i18n="Browse folders">Browse...</button>
       <button type="submit" data-i18n="Add folder">Add folder</button>
     </form>
@@ -42,7 +60,7 @@
       <summary><span data-i18n="Ignored child folders">Ignored child folders</span> <span class="hint" data-i18n="(all enrolled roots)">(all enrolled roots)</span></summary>
       <form id="ignore-child-form" class="inline">
         <label for="ignored-child-name" class="sr-only" data-i18n="Child folder name">Child folder name</label>
-        <input id="ignored-child-name" data-i18n-placeholder="e.g. Archive" placeholder="e.g. Archive" autocomplete="off" maxlength="255">
+        <input id="ignored-child-name" dir="ltr" data-i18n-placeholder="e.g. Archive" placeholder="e.g. Archive" autocomplete="off" maxlength="255">
         <button id="browse-ignored-child" type="button" data-i18n="Browse folders">Browse...</button>
         <button type="submit" data-i18n="Add">Add</button>
       </form>
@@ -92,7 +110,7 @@
           <option value="selected" data-i18n="Selected">Selected</option>
         </select>
       </div>
-      <input id="github-repo-filter" type="search" placeholder="Filter repositories" aria-label="Filter repositories" data-i18n-placeholder="Filter repositories" data-i18n-aria="Filter repositories" hidden>
+      <input id="github-repo-filter" dir="ltr" type="search" placeholder="Filter repositories" aria-label="Filter repositories" data-i18n-placeholder="Filter repositories" data-i18n-aria="Filter repositories" hidden>
       <div id="github-repo-list" class="github-repo-list" role="group" aria-label="Repositories to monitor" data-i18n-aria="Repositories to monitor" hidden></div>
       <span id="github-repo-status" class="hint" role="status" hidden></span>
     </div>

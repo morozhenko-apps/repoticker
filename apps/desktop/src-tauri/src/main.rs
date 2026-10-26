@@ -647,8 +647,8 @@ fn position_unmanaged_usage_popup(
     let position = card.outer_position().map_err(|error| error.to_string())?;
     let card_size = card.outer_size().map_err(|error| error.to_string())?;
     let popup_size = popup.outer_size().map_err(|error| error.to_string())?;
-    let mut x = i64::from(position.x) + i64::from(card_size.width)
-        - i64::from(popup_size.width) - 5;
+    let mut x =
+        i64::from(position.x) + i64::from(card_size.width) - i64::from(popup_size.width) - 5;
     let mut y = i64::from(position.y) - i64::from(popup_size.height) + 8;
     if let Some(monitor) = card.current_monitor().map_err(|error| error.to_string())? {
         let area = monitor.work_area();
@@ -704,7 +704,9 @@ fn show_usage_popup(app: AppHandle, kind: String) -> Result<(), String> {
         if std::env::var_os("REPOTICKER_UI_DEBUG").is_some() {
             eprintln!("RepoTicker usage popup show requested: {kind}");
         }
-        popup.show().map_err(|error| format!("Usage popup show failed: {error}"))?;
+        popup
+            .show()
+            .map_err(|error| format!("Usage popup show failed: {error}"))?;
         if std::env::var_os("REPOTICKER_UI_DEBUG").is_some() {
             eprintln!("RepoTicker usage popup visible: {kind}");
         }

@@ -56,6 +56,7 @@ let githubScopeAtOpen = null;
 let githubScopeTouched = false;
 let githubWasConnectedAtOpen = false;
 let githubStartedHere = false;
+let disconnectPending = false;
 let githubStarting = false;
 let availableAccounts = new Map();
 let repoInventory = [];
@@ -426,19 +427,19 @@ byId("github-cancel-device").addEventListener("click", async () => {
   githubButtons();
   githubMessage("Authorization cancelled.");
 });
-byId("github-disconnect").addEventListener("click", async () => {
-  try {
-    await invoke("github_disconnect");
-    stopGithubStatusUpdates();
-    githubConnected = false;
-    clearMonitorScopes();
-    githubPending = false;
-    byId("github-user-code").textContent = "";
-    githubButtons();
-    githubMessage("GitHub disconnected.");
-  } catch (error) {
-    githubMessage(String(error), true);
-  }
+byId("github-disconnect").addEventListener("click", () => {
+  // Disconnect is destructive to the stored credential. Defer it until OK,
+  // exactly like roots, language, scope and autostart.
+  if (saving || !githubConnected) return;
+  disconnectPending = true;
+  stopGithubStatusUpdates();
+  githubConnected = false;
+  clearMonitorScopes();
+  githubPending = false;
+  byId("github-user-code").textContent = "";
+  githubButtons();
+  githubMessage("Disconnect will apply after OK.");
+  updateApply();
 });
 
 window.__TAURI__?.event?.listen?.("repoticker-github-auth", () => {
@@ -462,7 +463,7 @@ function isDirty() {
     JSON.stringify(original.ignoredChildNames) !== JSON.stringify(draft.ignoredChildNames);
 }
 function updateApply() {
-  const authNeedsConfirmation = githubConnected && githubStartedHere;
+  const authNeedsConfirmation = (githubConnected && githubStartedHere) || disconnectPending;
   byId("apply-settings").disabled =
     saving || githubStarting || githubPending || !repoChoiceValid() ||
     (githubScopeTouched && !!selectedScope && !availableAccounts.has(selectedScope)) ||
@@ -572,6 +573,7 @@ async function refresh() {
   githubWasConnectedAtOpen = authAtOpen.connected === true;
   githubStartedHere = false;
   githubStarting = false;
+  disconnectPending = false;
   githubScopeTouched = false;
   githubScopeAtOpen = snapshot.github_monitor_org || "";
   originalRepoNames = [...(snapshot.github_monitor_repositories || [])].sort();
@@ -799,7 +801,7 @@ byId("apply-settings").addEventListener("click", async () => {
   if (saving || githubPending || githubStarting || !repoChoiceValid() ||
       (githubScopeTouched && !!selectedScope && !availableAccounts.has(selectedScope)) ||
       !(isDirty() || githubScopeTouched || repoChoiceTouched ||
-        (githubConnected && githubStartedHere))) return;
+        (githubConnected && githubStartedHere) || disconnectPending)) return;
   saving = true;
   updateApply();
   try {
@@ -838,6 +840,10 @@ byId("apply-settings").addEventListener("click", async () => {
       if (actual !== draft.autostartEnabled)
         throw Error("System autostart registration could not be verified.");
       original.autostartEnabled = actual;
+    }
+    if (disconnectPending) {
+      await invoke("github_disconnect");
+      disconnectPending = false;
     }
     githubStartedHere = false;
     await invoke("close_settings");

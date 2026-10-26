@@ -197,3 +197,30 @@ diagnostics if they persist under the controlled launch.
   events and Defender history; the loader cause must not be guessed.
   No published version/tag/main modification.
 
+
+
+### Operator standalone Git probe — 2026-10-26
+
+The tester ran the following in regular Windows PowerShell, outside
+RepoTicker: `Get-Command git.exe -All`, `git --version`, and
+`$LASTEXITCODE`. Observed executable is the Git for Windows
+`cmd/git.exe` launcher under Program Files, version
+`2.51.0.windows.1`, with **exit code 0**. The private user-profile
+path is intentionally omitted.
+
+This is **PASS for standalone Git launch only**, not proof that
+RepoTicker-owned, possibly concurrent Git subprocesses initialize
+under the same environment. It lowers the probability of a globally
+broken Git installation, and leaves transient loader failure and
+GUI-specific process conditions open.
+
+The unpublished
+[candidate #40238382619](https://github.com/morozhenko-apps/repoticker/actions/runs/40238382619)
+subsequently completed **SUCCESS** on both Linux and Windows,
+including the Windows-native `windows_git_process_tests`, NSIS build,
+integrity checks, and upload. Exact source:
+`342e6ec57a4797d72c436d4e34bc1e0ca7215440`.
+The post-source rustfmt-only commit `f16a0d1` also passed
+[Preflight #40238522150](https://github.com/morozhenko-apps/repoticker/actions/runs/40238522150).
+**Physical RepoTicker startup after this fix remains NOT TESTED.**
+No clean malware/SmartScreen/Defender verdict is implied by CI.

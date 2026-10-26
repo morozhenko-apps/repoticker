@@ -21,6 +21,8 @@ const russian = Object.freeze({
   "Checking GitHub connection...": "Проверка подключения GitHub...",
   "Connect GitHub": "Подключить GitHub",
   "Disconnect": "Отключить",
+  "Pending disconnect": "Отключение после OK",
+  "Disconnect will apply after OK.": "Подключение будет отключено после OK.",
   "Enter this code on GitHub:": "Введите этот код на GitHub:",
   "Copy code": "Копировать код",
   "Open GitHub": "Открыть GitHub",

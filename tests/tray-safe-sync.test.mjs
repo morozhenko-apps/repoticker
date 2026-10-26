@@ -7,19 +7,26 @@ const native = rust("../apps/desktop/src-tauri/src/main.rs");
 const linux = rust("../apps/desktop/src-tauri/src/linux_tray.rs");
 const locale = rust("../apps/desktop/src-tauri/src/tray_i18n.rs");
 
-test("the six stable tray actions include Safe sync, never unsafe legacy pull", () => {
+const nativeLabels = JSON.parse(rust("../apps/desktop/ui/locales/native.json"));
+
+test("six stable tray actions have 20-language labels and keep Safe Sync dispatch", () => {
+  assert.equal(Object.keys(nativeLabels).length, 20);
+  const names = ["Open card", "Settings", "Fetch", "Sync", "About RepoTicker", "Quit"];
+  for (const values of Object.values(nativeLabels)) {
+    for (const name of names)
+      assert.ok(values[name]?.trim(), "Native label missing: " + name);
+  }
+  assert.equal(nativeLabels.ru.Sync, "Синхронизация");
+  assert.equal(nativeLabels.pt.Settings, "Definições");
+  assert.match(locale, /"sync" => "Sync"/);
   for (const id of ["open", "settings", "fetch", "sync", "about", "quit"]) {
-    assert.match(locale, new RegExp('\\("ru", "' + id + '"\\)'));
-    assert.match(locale, new RegExp('\\(_, "' + id + '"\\)'));
     assert.match(linux, new RegExp('tray_i18n::label\\(&self\\.language, "' + id + '"\\)'));
     assert.match(native, new RegExp('tray_i18n::label\\(language, "' + id + '"\\)'));
   }
-  assert.match(locale, /\(_, "sync"\) => "Sync"/);
-  assert.match(locale, /\("ru", "sync"\) => "Синхронизация"/);
-  assert.match(native, /"sync" => dispatch_menu_action\(app, "safe_sync"\)/);
-  assert.match(linux, /"sync" => dispatch_menu_action\(&app, "safe_sync"\)/);
-  assert.doesNotMatch(native, /"sync" => dispatch_menu_action\(app, "safe_pull"\)/);
-  assert.doesNotMatch(linux, /"sync" => dispatch_menu_action\(&app, "safe_pull"\)/);
+  assert.match(native, /"sync" => dispatch_menu_action\\(app, "safe_sync"\\)/);
+  assert.match(linux, /"sync" => dispatch_menu_action\\(&app, "safe_sync"\\)/);
+  assert.doesNotMatch(native, /"sync" => dispatch_menu_action\\(app, "safe_pull"\\)/);
+  assert.doesNotMatch(linux, /"sync" => dispatch_menu_action\\(&app, "safe_pull"\\)/);
 });
 
 test("KDE maintains one KSNI tray handle and updates labels on successful save", () => {

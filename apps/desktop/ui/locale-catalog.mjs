@@ -595,7 +595,7 @@ export const CORE_TERMS = Object.freeze({
     "All accessible": "Alla tillgängliga",
     "Selected": "Valda",
     "Remove": "Ta bort",
-    "Runners": "Körare",
+    "Runners": "Runner",
     "Tasks": "Uppgifter",
     "Repositories": "Kodförråd",
     "Safe sync": "Säker synkronisering",

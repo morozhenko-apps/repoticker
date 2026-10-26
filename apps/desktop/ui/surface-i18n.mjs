@@ -11,6 +11,7 @@ const ru = Object.freeze({
   "Open morozhenko.com in your browser": "Открыть morozhenko.com в браузере",
   "Open source · Apache License 2.0": "Открытый исходный код · Apache License 2.0",
   "GitHub Actions and usage": "GitHub Actions и использование",
+  "Detailed billing is available only in the usage panel.": "Подробные данные о лимитах доступны только в отдельной панели.",
   "Not connected.": "Не подключено.",
   "Not connected": "Не подключено",
   "Connecting": "Подключение",

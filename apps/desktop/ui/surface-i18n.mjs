@@ -58,7 +58,7 @@ export function surfaceText(language, key) {
 }
 
 function translatedStatus(language, status) {
-  if (surfaceLocale(language) !== "ru") return status;
+  if (surfaceLocale(language) === "en") return status;
   const runners = /^Runners · (.+)$/.exec(status);
   if (runners) return surfaceText(language, "Runners") + " · " + runners[1];
   const tasks = /^Tasks · Running (.+) \/ Queued (.+)$/.exec(status);
@@ -69,7 +69,7 @@ function translatedStatus(language, status) {
 }
 
 function translatedMessage(language, message) {
-  if (surfaceLocale(language) !== "ru") return message;
+  if (surfaceLocale(language) === "en") return message;
   if (typeof message !== "string") return message;
   const checked = /^Checked: (.+)$/.exec(message);
   if (checked) return surfaceText(language, "Checked") + ": " + checked[1];
@@ -79,7 +79,7 @@ function translatedMessage(language, message) {
 /** Immutable, strictly presentation-only projection of an existing
  * validated usage model; do not translate arbitrary row values. */
 export function translateHoverDetails(details, language, runnerNameRows = 0) {
-  if (surfaceLocale(language) !== "ru" || !details) return details;
+  if (surfaceLocale(language) === "en" || !details) return details;
   // GitHub runner names are user-controlled. Preserve the first N
   // actual runner rows even when a name equals a built-in label.
   const protectedRows = /^Tasks · Running /.test(details.status) &&

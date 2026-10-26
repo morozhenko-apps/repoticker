@@ -16,18 +16,18 @@ test("KDE monitor selectors share two-column alignment and control height", () =
   assert.doesNotMatch(css, /\.github-repo-heading select \{[^}]*width: 165px/);
 });
 
-test("notification and selected-repository checkboxes are consistent and keyboard accessible", () => {
+test("all three Settings checkbox groups have identical visuals and keyboard access", () => {
   assert.match(html, /<label for="ci-failure-notifications">\s*<input id="ci-failure-notifications" type="checkbox">/);
   assert.match(settings, /checkbox\.type = "checkbox"/);
-  const base = css.match(/\.ci-alert-controls input\[type="checkbox"\],\s*\.github-repo-choice input\[type="checkbox"\] \{([^}]+)\}/)?.[1];
-  assert.ok(base, "Both kinds of checkbox must share a single control reset");
+  const base = css.match(/\.autostart-controls input\[type="checkbox"\],\s*\.ci-alert-controls input\[type="checkbox"\],\s*\.github-repo-choice input\[type="checkbox"\] \{([^}]+)\}/)?.[1];
+  assert.ok(base, "Autostart, CI and selected repositories must share one checkbox style");
   for (const rule of [
     /-webkit-appearance: none/, /appearance: none/, /width: 16px/,
     /height: 16px/, /margin: 0/, /padding: 0/, /background-position: center/,
     /background-size: 12px 12px/
   ]) assert.match(base, rule);
-  assert.match(css, /\.ci-alert-controls input\[type="checkbox"\]:checked,\s*\.github-repo-choice input\[type="checkbox"\]:checked \{[^}]*background-image: url\("data:image\/svg\+xml/);
-  assert.match(css, /\.ci-alert-controls input\[type="checkbox"\]:focus-visible,\s*\.github-repo-choice input\[type="checkbox"\]:focus-visible \{[^}]*outline:/);
+  assert.match(css, /\.autostart-controls input\[type="checkbox"\]:checked,\s*\.ci-alert-controls input\[type="checkbox"\]:checked,\s*\.github-repo-choice input\[type="checkbox"\]:checked \{[^}]*background-image: url\("data:image\/svg\+xml/);
+  assert.match(css, /\.autostart-controls input\[type="checkbox"\]:focus-visible,\s*\.ci-alert-controls input\[type="checkbox"\]:focus-visible,\s*\.github-repo-choice input\[type="checkbox"\]:focus-visible \{[^}]*outline:/);
   assert.match(css, /@media \(forced-colors: active\)/);
 });
 

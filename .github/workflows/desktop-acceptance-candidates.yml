@@ -1,4 +1,4 @@
-# Gate 2 Windows QA typed-window compile correction; unpublished recheck (2026-10-25).
+# Gate 2 Windows UI and Settings regressions; unpublished physical recheck (2026-10-26).
 name: Desktop acceptance candidates (no publishing)
 
 on:

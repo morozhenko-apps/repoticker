@@ -33,7 +33,7 @@ test("ignore Settings edits are draft-only and saved on the existing OK contract
   }
   assert.match(settings, /draft\.ignoredChildNames/);
   assert.match(settings, /original\.ignoredChildNames/);
-  assert.match(settings, /ignoredChildNames: \[\.\.\.draft\.ignoredChildNames\]/);
+  assert.match(settings, /configChanges\.ignoredChildNames = \[\.\.\.draft\.ignoredChildNames\]/);
   assert.match(settings, /ignored_child_names/);
   assert.match(settings, /function renderIgnoredChildren\(/);
   assert.match(settings, /byId\("ignore-child-form"\)\.addEventListener\("submit"/);

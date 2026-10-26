@@ -7,7 +7,7 @@ if [[ "$#" -ne 2 || ! "$1" =~ ^[0-9]+$ || ! "$2" =~ ^[0-9a-f]{40}$ ]]; then
   echo "Usage: bash scripts/install_qa_linux.sh RUN_ID SOURCE_SHA" >&2
   exit 2
 fi
-for binary in gh sha256sum dpkg-deb dpkg-query sudo; do
+for binary in gh sha256sum dpkg-deb dpkg-query sudo pgrep; do
   command -v "$binary" >/dev/null || { echo "Missing: $binary" >&2; exit 1; }
 done
 RESULT="$(gh run view "$1" -R "$REPO" --json conclusion --jq '.conclusion')"
@@ -35,7 +35,13 @@ if [[ ! -f "$DEB" ||
   echo "Unexpected DEB package; installation refused" >&2
   exit 1
 fi
-echo "Close existing RepoTicker via tray Quit before confirming the install."
+# Do not replace the on-disk DEB while an old installed/AppImage
+# instance remains active: the single-instance plugin can leave the old
+# UI and icons visible even after the package is reinstalled.
+if pgrep -f '[r]epoticker-desktop' >/dev/null; then
+  echo "RepoTicker is still running. Use tray Quit, then retry." >&2
+  exit 1
+fi
 sudo apt install "$DEB"
 BIN="$(dpkg-query -L repo-ticker | grep -E '^/usr/bin/[^/]+$' || true)"
 if [[ -z "$BIN" || "$BIN" == *$'\n'* || ! -x "$BIN" ]]; then

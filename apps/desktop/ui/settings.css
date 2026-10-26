@@ -115,6 +115,7 @@ label { font-size: 12px; }
 .ci-alert-controls label { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
 /* WebKitGTK native checkbox painting can overrun a custom 16px box.
  * Use one deterministic visual treatment with unchanged input semantics. */
+.autostart-controls input[type="checkbox"],
 .ci-alert-controls input[type="checkbox"],
 .github-repo-choice input[type="checkbox"] {
   -webkit-appearance: none;
@@ -136,18 +137,21 @@ label { font-size: 12px; }
   cursor: pointer;
   flex: 0 0 16px;
 }
+.autostart-controls input[type="checkbox"]:checked,
 .ci-alert-controls input[type="checkbox"]:checked,
 .github-repo-choice input[type="checkbox"]:checked {
   border-color: #258ac7;
   background-color: #258ac7;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 8l3 3 7-7' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
+.autostart-controls input[type="checkbox"]:focus-visible,
 .ci-alert-controls input[type="checkbox"]:focus-visible,
 .github-repo-choice input[type="checkbox"]:focus-visible {
   outline: 2px solid #258ac7;
   outline-offset: 2px;
 }
 @media (forced-colors: active) {
+  .autostart-controls input[type="checkbox"],
   .ci-alert-controls input[type="checkbox"],
   .github-repo-choice input[type="checkbox"] {
     -webkit-appearance: checkbox;

@@ -9,15 +9,16 @@ const card = readFileSync(new URL("../apps/desktop/ui/app.mjs", import.meta.url)
 const markup = readFileSync(new URL("../apps/desktop/ui/index.html", import.meta.url), "utf8");
 const native = readFileSync(new URL("../apps/desktop/src-tauri/src/main.rs", import.meta.url), "utf8");
 
-test("stored en/ru values are the entire supported card locale set", () => {
+test("card recognizes canonical locales and rejects unknown variants", () => {
   assert.equal(cardLocale("ru"), "ru");
-  for (const value of ["en", "", null, "pt", undefined, "RU"]) {
+  for (const value of ["en", "", null, "pt-BR", undefined, "RU"]) {
     assert.equal(cardLocale(value), "en");
   }
   assert.equal(cardText("en", "fetch"), "Fetch");
   assert.equal(cardText("ru", "repos"), "Репо");
   assert.equal(cardText("ru", "safeSync"), "Синхр.");
-  assert.equal(cardText("pt", "repos"), "Repos");
+  assert.equal(cardLocale("pt"), "pt");
+  assert.equal(cardText("pt", "repos"), "Repositórios");
   assert.throws(() => cardText("ru", "__invalid__"), /translation key/);
 });
 

@@ -3,18 +3,18 @@
 
 pub(crate) fn label(language: &str, action: &str) -> &'static str {
     match (language, action) {
-        ("ru", "open") => "Открыть карточку",
+        ("ru", "open") => "Открыть",
         ("ru", "settings") => "Настройки",
-        ("ru", "fetch") => "Fetch всех репозиториев",
-        ("ru", "sync") => "Безопасная синхронизация всех",
+        ("ru", "fetch") => "Фетч",
+        ("ru", "sync") => "Синхронизация",
         ("ru", "about") => "О RepoTicker",
-        ("ru", "quit") => "Выход из RepoTicker",
+        ("ru", "quit") => "Выход",
         (_, "open") => "Open card",
         (_, "settings") => "Settings",
-        (_, "fetch") => "Fetch all",
-        (_, "sync") => "Safe sync all",
+        (_, "fetch") => "Fetch",
+        (_, "sync") => "Sync",
         (_, "about") => "About RepoTicker",
-        (_, "quit") => "Quit RepoTicker",
+        (_, "quit") => "Quit",
         // Unreachable for the six hardcoded internal action IDs.
         _ => "RepoTicker",
     }
@@ -27,12 +27,12 @@ mod tests {
     #[test]
     fn all_tray_actions_have_english_and_russian_labels() {
         for (id, english, russian) in [
-            ("open", "Open card", "Открыть карточку"),
+            ("open", "Open card", "Открыть"),
             ("settings", "Settings", "Настройки"),
-            ("fetch", "Fetch all", "Fetch всех репозиториев"),
-            ("sync", "Safe sync all", "Безопасная синхронизация всех"),
+            ("fetch", "Fetch", "Фетч"),
+            ("sync", "Sync", "Синхронизация"),
             ("about", "About RepoTicker", "О RepoTicker"),
-            ("quit", "Quit RepoTicker", "Выход из RepoTicker"),
+            ("quit", "Quit", "Выход"),
         ] {
             assert_eq!(label("en", id), english);
             assert_eq!(label("ru", id), russian);

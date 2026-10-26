@@ -14,8 +14,8 @@ test("the six stable tray actions include Safe sync, never unsafe legacy pull", 
     assert.match(linux, new RegExp('tray_i18n::label\\(&self\\.language, "' + id + '"\\)'));
     assert.match(native, new RegExp('tray_i18n::label\\(language, "' + id + '"\\)'));
   }
-  assert.match(locale, /\(_, "sync"\) => "Safe sync all"/);
-  assert.match(locale, /\("ru", "sync"\) => "Безопасная синхронизация всех"/);
+  assert.match(locale, /\(_, "sync"\) => "Sync"/);
+  assert.match(locale, /\("ru", "sync"\) => "Синхронизация"/);
   assert.match(native, /"sync" => dispatch_menu_action\(app, "safe_sync"\)/);
   assert.match(linux, /"sync" => dispatch_menu_action\(&app, "safe_sync"\)/);
   assert.doesNotMatch(native, /"sync" => dispatch_menu_action\(app, "safe_pull"\)/);

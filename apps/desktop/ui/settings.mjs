@@ -9,6 +9,7 @@ let lastFormText = "";
 function applySettingsLanguage(value) {
   uiLocale = settingsLocale(value);
   document.documentElement.lang = uiLocale;
+  document.title = t("RepoTicker Settings");
   for (const item of document.querySelectorAll?.("[data-i18n]") ?? [])
     item.textContent = t(item.getAttribute("data-i18n"));
   for (const item of document.querySelectorAll?.("[data-i18n-placeholder]") ?? [])
@@ -467,6 +468,17 @@ function updateApply() {
     (githubScopeTouched && !!selectedScope && !availableAccounts.has(selectedScope)) ||
     !(isDirty() || authNeedsConfirmation || githubScopeTouched || repoChoiceTouched);
 }
+function displayRootPath(path) {
+  // Windows canonical paths may use the verbatim namespace; keep that
+  // canonical value for persistence and compare, but present a normal path.
+  const slash = String.fromCharCode(92);
+  const prefix = slash + slash + "?" + slash;
+  if (!path.startsWith(prefix)) return path;
+  const remainder = path.slice(prefix.length);
+  return remainder.startsWith("UNC" + slash)
+    ? slash + slash + remainder.slice(4) : remainder;
+}
+
 function renderRoots() {
   const list = byId("roots-list");
   list.replaceChildren();
@@ -480,8 +492,8 @@ function renderRoots() {
     const row = document.createElement("div");
     row.className = "root";
     const label = document.createElement("span");
-    label.textContent = root;
-    label.title = root;
+    label.textContent = displayRootPath(root);
+    label.title = displayRootPath(root);
     const remove = document.createElement("button");
     remove.type = "button";
     remove.textContent = t("Remove");
@@ -640,6 +652,40 @@ byId("browse-root").addEventListener("click", async () => {
     byId("browse-root").disabled = false;
   }
 });
+
+// Ignored child folders are NAME-only exclusions shared by all enrolled
+// roots. Picking a folder extracts its final segment, never stores a path.
+let ignoredBrowsePending = false;
+byId("browse-ignored-child").addEventListener("click", async () => {
+  if (!draft || saving || ignoredBrowsePending) return;
+  ignoredBrowsePending = true;
+  byId("browse-ignored-child").disabled = true;
+  try {
+    const selected = await invoke("select_repository_root");
+    if (typeof selected === "string") {
+      const name = selected.replace(/[\\/]+$/, "").split(/[\\/]/).at(-1);
+      if (!name || name === "." || name === ".." ||
+          name.length > 255 || /[\\/\x00-\x1f\x7f]/.test(name)) {
+        throw Error("Invalid folder name");
+      }
+      if (!draft.ignoredChildNames.includes(name)) {
+        if (draft.ignoredChildNames.length >= 100)
+          throw Error("You can exclude at most 100 child folder names.");
+        draft.ignoredChildNames.push(name);
+        draft.ignoredChildNames.sort();
+      }
+      renderIgnoredChildren();
+      updateApply();
+      message("");
+    }
+  } catch (error) {
+    message(String(error), true);
+  } finally {
+    ignoredBrowsePending = false;
+    byId("browse-ignored-child").disabled = false;
+  }
+});
+
 const languageTrigger = byId("language-trigger");
 const languageList = byId("language-options");
 const languageOptions = [...languageList.querySelectorAll("[role=option]")];
@@ -705,12 +751,9 @@ for (const option of languageOptions) {
   option.addEventListener("click", () => {
     if (!draft || saving) return;
     draft.language = option.dataset.value;
-    applySettingsLanguage(draft.language);
+    // The selected locale is a draft. Neither this window nor the card,
+    // native title, tooltips or tray change language before OK.
     updateLanguagePicker();
-    renderRoots();
-    renderIgnoredChildren();
-    renderRepoChoices();
-    githubButtons();
     updateApply();
     closeLanguagePicker();
     languageTrigger.focus();
@@ -762,19 +805,19 @@ byId("apply-settings").addEventListener("click", async () => {
   try {
     const autostartChanged = original.autostartEnabled !== null &&
       draft.autostartEnabled !== original.autostartEnabled;
-    const configChanged = original.language !== draft.language ||
-      original.ciFailureNotifications !== draft.ciFailureNotifications ||
-      JSON.stringify(original.roots) !== JSON.stringify(draft.roots) ||
-      JSON.stringify(original.ignoredChildNames) !== JSON.stringify(draft.ignoredChildNames);
-    if (configChanged) {
-      await invoke("save_settings", {
-        roots: [...draft.roots],
-        language: draft.language,
-        ignoredChildNames: [...draft.ignoredChildNames],
-        ciFailureNotifications: draft.ciFailureNotifications
-      });
+    const configChanges = {};
+    if (original.language !== draft.language)
+      configChanges.language = draft.language;
+    if (original.ciFailureNotifications !== draft.ciFailureNotifications)
+      configChanges.ciFailureNotifications = draft.ciFailureNotifications;
+    if (JSON.stringify(original.roots) !== JSON.stringify(draft.roots))
+      configChanges.roots = [...draft.roots];
+    if (JSON.stringify(original.ignoredChildNames) !== JSON.stringify(draft.ignoredChildNames))
+      configChanges.ignoredChildNames = [...draft.ignoredChildNames];
+    if (Object.keys(configChanges).length) {
+      await invoke("save_settings", configChanges);
     }
-    if (githubConnected) {
+    if (githubConnected && (githubScopeTouched || repoChoiceTouched || githubStartedHere)) {
       // Commit the account selection only on explicit OK. Reapplying the
       // selection also sends repoticker-github-scope-changed to refresh
       // the running monitor/card while they remain visible.

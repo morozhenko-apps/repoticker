@@ -13,7 +13,7 @@ button:focus-visible, input:focus-visible, .status-hover:focus-visible { outline
 
 .card { height: 100%; width: 100%; display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden; position: relative; background: #e9ecef; border: 1px solid #c7cbd0; border-radius: 17px; padding: 9px 10px 10px; box-shadow: inset 0 1px 0 #ffffffbb; color: #242b30; }
 .drawer { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 0; border-bottom: 1px solid #d1d5d9; margin-bottom: 6px; position: relative; isolation: isolate; }
-.rows { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; }
+.rows { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; scrollbar-color: #a2adb8 transparent; cursor: default; }
 .repo-row { min-height: 35px; padding: 2px 7px; display: flex; gap: 9px; align-items: center; position: relative; font-size: 14px; border-bottom: 1px solid #d8dce0; }
 .repo-name { flex: 1; min-width: 0; font-weight: 400; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; }
 .repo-branch { max-width: 85px; font-size: 13px; color: GrayText; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -23,8 +23,8 @@ button:focus-visible, input:focus-visible, .status-hover:focus-visible { outline
 .repo-delta.is-behind { color: #246da0; }
 .repo-more { width: 28px; height: 29px; font-size: 20px; border-radius: 5px; flex-shrink: 0; }
 .repo-more:hover { background: color-mix(in srgb, CanvasText 9%, transparent); }
-.drawer > .repo-menu { position: absolute; z-index: 30; background: #ffffff; color: #242b30; border: 1px solid #aeb8c1; border-radius: 7px; padding: 4px; box-shadow: 0 7px 20px #0004; min-width: 155px; display: flex; flex-direction: column; pointer-events: auto; }
-.repo-menu button { text-align: left; border-radius: 4px; font-size: 13px; padding: 9px 11px; min-height: 35px; white-space: nowrap; }
+.drawer > .repo-menu { position: absolute; z-index: 30; background: #ffffff; color: #242b30; border: 1px solid #aeb8c1; border-radius: 7px; padding: 0; box-shadow: 0 7px 20px #0004; min-width: 155px; display: flex; flex-direction: column; pointer-events: auto; }
+.repo-menu button { display: flex; align-items: center; text-align: left; border-radius: 4px; font-size: 13px; padding: 0 11px; min-height: 35px; line-height: 1.2; white-space: nowrap; }
 .repo-menu button:hover { background: color-mix(in srgb, CanvasText 10%, transparent); }
 .empty { margin: 12px 15px; font-size: 13px; color: GrayText; }
 
@@ -43,6 +43,8 @@ button:focus-visible, input:focus-visible, .status-hover:focus-visible { outline
 .action:hover:not(:disabled) { border-color: #81bfe5; background: #eaf5fc; }
 .action[aria-pressed="true"] { border-color: #78bde9; background: #d1e9f7; }
 .action-icon { font-size: 25px; font-weight: 400; line-height: 28px; font-variant-numeric: tabular-nums; }
+.hide-chevron { display: flex; align-items: center; justify-content: center; height: 28px; line-height: 1; }
+.hide-chevron svg { display: block; }
 .action-icon.has-commits { font-size: 18px; color: #1f8b4c; font-weight: 500; }
 
 #notice { position: absolute; left: 11px; right: 11px; bottom: 100px; z-index: 25; padding: 8px 10px; background: Canvas; border: 1px solid #cd664d; border-radius: 6px; box-shadow: 0 4px 10px #0003; font-size: 12px; font-weight: 400; max-height: 82px; overflow-y: auto; }
@@ -92,3 +94,11 @@ button:focus-visible, input:focus-visible, .status-hover:focus-visible { outline
 @media (prefers-reduced-motion: reduce) {
   .metric-button[aria-busy="true"]::after { animation: none; transform: scaleX(1); }
 }
+
+/* Windows WebView2 uses the same slim scrollbar as WebKitGTK; the drawer
+   is interactive and cannot start a native drag when selecting rows. */
+.drawer, .rows, .repo-row, .repo-menu { cursor: default; }
+.rows::-webkit-scrollbar { width: 7px; }
+.rows::-webkit-scrollbar-track { background: transparent; }
+.rows::-webkit-scrollbar-thumb { background: #a2adb8; border-radius: 8px; }
+.rows::-webkit-scrollbar-thumb:hover { background: #758390; }

@@ -1,4 +1,5 @@
 import { surfaceLocale, surfaceText } from "./surface-i18n.mjs";
+import { localeDirection } from "./locale-catalog.mjs";
 
 const invoke = command => window.__TAURI__?.core?.invoke(command) ??
   Promise.reject(new Error("Open About in RepoTicker."));
@@ -7,6 +8,7 @@ let localeRevision = 0;
 function paintLocale(value) {
   const language = surfaceLocale(value);
   document.documentElement.lang = language;
+  document.documentElement.dir = localeDirection(language);
   document.title = surfaceText(language, "About RepoTicker");
   for (const item of document.querySelectorAll("[data-i18n]"))
     item.textContent = surfaceText(language, item.getAttribute("data-i18n"));

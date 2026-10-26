@@ -18,13 +18,13 @@
     <div id="notice" role="status" aria-live="polite" hidden></div>
 
     <div class="status-strip" aria-label="GitHub Actions and runners">
-      <button id="runner-status" type="button" class="status-hover metric-button" aria-label="Refresh self-hosted runners" aria-expanded="false" aria-busy="false" title="Click to update Runners">
+      <button id="runner-status" type="button" class="status-hover metric-button" aria-label="Refresh self-hosted runners" aria-expanded="false" aria-busy="false">
         <span class="metric-caption">Runners</span>
         <span id="runners-total" class="metric-neutral">—</span><span class="metric-divider">/</span>
         <span id="runners-online" class="metric-online">—</span><span class="metric-divider">/</span>
         <span id="runners-offline" class="metric-offline">—</span>
       </button>
-      <button id="ci-tasks" type="button" class="status-hover metric-button" aria-label="Refresh running and queued Actions tasks" aria-expanded="false" aria-busy="false" title="Click to update Tasks">
+      <button id="ci-tasks" type="button" class="status-hover metric-button" aria-label="Refresh running and queued Actions tasks" aria-expanded="false" aria-busy="false">
         <span class="metric-caption">Tasks</span>
         <span id="tasks-running" class="metric-online">—</span><span class="metric-divider">/</span>
         <span id="tasks-queued" class="metric-queued">—</span>
@@ -46,7 +46,7 @@
         <span class="action-icon" aria-hidden="true">▤</span><span class="action-label">Repos</span>
       </button>
       <button id="hide-card" class="action" type="button" title="Hide the card (keep RepoTicker running)">
-        <span class="action-icon" aria-hidden="true">⌄</span><span class="action-label">Hide</span>
+        <span class="action-icon hide-chevron" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" focusable="false"><path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="action-label">Hide</span>
       </button>
     </nav>
   </main>

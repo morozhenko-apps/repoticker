@@ -1051,7 +1051,7 @@ fn save_settings(
 ) -> Result<(), String> {
     if language
         .as_deref()
-        .is_some_and(|locale| locale != "en" && locale != "ru")
+        .is_some_and(|locale| !tray_i18n::is_supported_locale(locale))
     {
         return Err("Unsupported language".into());
     }
@@ -1302,7 +1302,7 @@ fn github_set_monitor_org(
 
 #[tauri::command]
 fn set_language(app: AppHandle, language: String) -> Result<(), String> {
-    if language != "en" && language != "ru" {
+    if !tray_i18n::is_supported_locale(&language) {
         return Err("Unsupported language".into());
     }
     let language_for_tray = language.clone();

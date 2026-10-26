@@ -37,7 +37,7 @@ test("KDE alignment fix does not alter settings confirmation or popup geometry",
   assert.match(html, /id="github-repo-controls"[^>]*hidden/);
   assert.match(css, /\.github-repo-controls\[hidden\]/);
   assert.match(css, /\.settings-shell \{[^}]*height: 100%/);
-  assert.match(settings, /ciFailureNotifications: draft\.ciFailureNotifications/);
+  assert.match(settings, /configChanges\.ciFailureNotifications = draft\.ciFailureNotifications/);
 });
 
 test("KDE GitHub selects have zero block padding and CSS-owned centered closed controls", () => {
@@ -59,7 +59,7 @@ test("KDE GitHub selects have zero block padding and CSS-owned centered closed c
 });
 
 
-test("Settings is taller and the full page and GitHub section never scroll", () => {
+test("Settings scrolls vertically when repository selections expand beyond the window", () => {
   const conf = JSON.parse(readFileSync(
     new URL("../apps/desktop/src-tauri/tauri.conf.json", import.meta.url), "utf8"));
   const win = conf.app.windows.find(w => w.label === "settings");
@@ -67,11 +67,9 @@ test("Settings is taller and the full page and GitHub section never scroll", () 
   assert.deepEqual([win.width, win.minWidth, win.maxWidth], [660, 660, 660]);
   assert.deepEqual([win.height, win.minHeight, win.maxHeight], [720, 720, 720]);
   assert.equal(win.resizable, false);
-  assert.match(css, /\.settings-shell \{[^}]*height: 100%;[^}]*overflow: hidden;/);
-  assert.doesNotMatch(css, /\.settings-shell \{ overflow-y: auto; \}/);
+  assert.match(css, /\.settings-shell \{[^}]*height: 100%;[^}]*overflow-y: auto;/);
+  assert.match(css, /\.settings-footer \{[^}]*position: sticky;[^}]*bottom:/);
   assert.match(css, /\.block\.github \{[^}]*overflow: visible;/);
-  assert.doesNotMatch(css, /\.block\.github \{[^}]*overflow-y: auto/);
-  // Long lists retain their own bounded scroll, not the Settings page.
   assert.match(css, /\.github-repo-list \{[^}]*overflow-y: auto;/);
 });
 
@@ -87,7 +85,7 @@ test("One clean opt-in checkbox remains without temporary diagnostic UI or IPC",
   assert.match(main, /ci_notifications::ci_failure_notify,/);
   assert.match(rust, /app\.notification\(\)\.permission_state\(\)/);
   assert.match(html, /id="ci-failure-notifications" type="checkbox"/);
-  assert.match(settings, /ciFailureNotifications: draft\.ciFailureNotifications/);
+  assert.match(settings, /configChanges\.ciFailureNotifications = draft\.ciFailureNotifications/);
 });
 
 test("All-repositories helper text hides without losing selected-mode guidance", () => {

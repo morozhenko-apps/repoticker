@@ -9,6 +9,7 @@ import { EXTENDED_TERMS } from "../apps/desktop/ui/locale-extended.mjs";
 import { WORKFLOW_TERMS } from "../apps/desktop/ui/locale-workflow.mjs";
 import { AUTH_TERMS } from "../apps/desktop/ui/locale-auth.mjs";
 import { SURFACE_TERMS } from "../apps/desktop/ui/locale-surface.mjs";
+import { CARD_TERMS } from "../apps/desktop/ui/locale-card.mjs";
 import { settingsLocale, settingsText } from "../apps/desktop/ui/settings-i18n.mjs";
 import { cardLocale, cardText } from "../apps/desktop/ui/card-i18n.mjs";
 import { surfaceLocale, surfaceText } from "../apps/desktop/ui/surface-i18n.mjs";
@@ -124,4 +125,38 @@ test("direction and persistence are presentation-only, provider IDs stay LTR", (
   assert.match(settingsHtml, /id="root-path" dir="ltr"/);
   assert.match(settingsHtml, /id="github-repo-filter" dir="ltr"/);
   assert.doesNotMatch(settingsController, /draft\.language = option\.dataset\.value;\s*applySettingsLanguage/);
+});
+
+
+test("dynamic Git card templates preserve placeholders and untranslated values", () => {
+  const expectedKeys = [
+    "repositoryActions", "githubMetrics", "stopping", "noValidRepos",
+    "addRoot", "gitOperations", "gitOperationsFor", "showRepos",
+    "hideRepos", "hideCard", "fetchTitle", "fetchCancel", "syncTitle",
+    "syncReady", "syncUnavailable", "refreshRunners", "refreshTasks",
+    "billing", "refresh", "refreshing", "cannotResize", "gitErrors", "total"
+  ];
+  for (const code of expected.slice(2)) {
+    assert.deepEqual(Object.keys(CARD_TERMS[code]).sort(), [...expectedKeys].sort());
+    const withName = CARD_TERMS[code].gitOperationsFor;
+    const withCount = CARD_TERMS[code].syncReady;
+    assert.equal((withName.match(/\{name\}/g) ?? []).length, 1, code);
+    assert.equal((withCount.match(/\{count\}/g) ?? []).length, 1, code);
+    assert.equal((CARD_TERMS[code].gitErrors.match(/\{count\}/g) ?? []).length, 1, code);
+    assert.match(CARD_TERMS[code].syncTitle, /fast-forward/i,
+      code + " must preserve fast-forward requirement");
+    assert.match(CARD_TERMS[code].syncTitle, /force/i,
+      code + " must not imply force-push");
+    assert.match(CARD_TERMS[code].fetchCancel, /Fetch/,
+      code + " cancellation warning must retain Git operation");
+    assert.ok(CARD_TERMS[code].noValidRepos.trim());
+    assert.ok(CARD_TERMS[code].addRoot.trim());
+    assert.ok(cardText(code, "gitOperationsFor", "feature/main").includes("feature/main"));
+    assert.ok(cardText(code, "syncReady", 3).includes("3"));
+  }
+  const arabic = cardText("ar", "gitOperationsFor", "feature/main");
+  assert.match(arabic, /\u2068feature\/main\u2069/,
+    "Arabic mixed direction must isolate repository references");
+  assert.equal(cardText("en", "gitOperationsFor", "feature/main"),
+    "Git operations for feature/main");
 });

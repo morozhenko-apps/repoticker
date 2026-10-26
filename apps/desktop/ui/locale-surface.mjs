@@ -183,9 +183,9 @@ export const SURFACE_TERMS = Object.freeze({
     "GitHub Actions updates are unavailable in this window.": "GitHub Actions-uppdateringar är inte tillgängliga i detta fönster.",
     "GitHub Actions updates cannot be subscribed to.": "Kan inte prenumerera på GitHub Actions-uppdateringar.",
     "Unknown tooltip type.": "Okänd typ av verktygstips.",
-    "Unnamed runner": "Namnlös körare",
+    "Unnamed runner": "Namnlös runner",
     "Actions": "Actions",
-    "More self-hosted": "Fler egenvärdade körare"
+    "More self-hosted": "Fler självhostade runner"
   },
   "tr": {
     "RepoTicker application icon": "RepoTicker uygulama simgesi",

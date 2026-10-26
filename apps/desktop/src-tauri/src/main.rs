@@ -1004,45 +1004,74 @@ async fn select_repository_root(app: AppHandle) -> Result<Option<String>, String
 #[tauri::command]
 fn save_settings(
     app: AppHandle,
-    roots: Vec<String>,
-    language: String,
+    roots: Option<Vec<String>>,
+    language: Option<String>,
     ignored_child_names: Option<Vec<String>>,
     ci_failure_notifications: Option<bool>,
 ) -> Result<(), String> {
-    if language != "en" && language != "ru" {
+    if language
+        .as_deref()
+        .is_some_and(|locale| locale != "en" && locale != "ru")
+    {
         return Err("Unsupported language".into());
     }
-    if roots.len() > 100 {
-        return Err("Too many enrolled roots".into());
-    }
-    let mut validated = Vec::new();
-    for root in roots {
-        let canonical = git::normalize_root(&root).map_err(|err| err.to_string())?;
-        git::discover(&canonical).map_err(|err| err.to_string())?;
-        let text = canonical.to_string_lossy().into_owned();
-        if !validated.contains(&text) {
-            validated.push(text);
+    let mut validated = None;
+    if let Some(roots) = roots {
+        if roots.len() > 100 {
+            return Err("Too many enrolled roots".into());
         }
+        let mut paths = Vec::new();
+        for root in roots {
+            let canonical = git::normalize_root(&root).map_err(|err| err.to_string())?;
+            git::discover(&canonical).map_err(|err| err.to_string())?;
+            let text = canonical.to_string_lossy().into_owned();
+            if !paths.contains(&text) {
+                paths.push(text);
+            }
+        }
+        paths.sort();
+        validated = Some(paths);
     }
-    validated.sort();
     let ignored = ignored_child_names
         .map(git::validate_ignored_child_names)
         .transpose()
         .map_err(|error| error.to_string())?;
-    let language_for_tray = language.clone();
-    update_config(&app, |config| {
-        config.roots = validated;
-        config.language = language;
+    let mut saved_locale = None;
+    let changed = update_config(&app, |config| {
+        let mut changed = false;
+        if let Some(roots) = validated {
+            if config.roots != roots {
+                config.roots = roots;
+                changed = true;
+            }
+        }
+        if let Some(language) = language {
+            if config.language != language {
+                config.language = language;
+                saved_locale = Some(config.language.clone());
+                changed = true;
+            }
+        }
         if let Some(enabled) = ci_failure_notifications {
-            config.ci_failure_notifications = enabled;
+            if config.ci_failure_notifications != enabled {
+                config.ci_failure_notifications = enabled;
+                changed = true;
+            }
         }
         if let Some(ignored) = ignored {
-            config.ignored_child_names = ignored;
+            if config.ignored_child_names != ignored {
+                config.ignored_child_names = ignored;
+                changed = true;
+            }
         }
-        Ok(((), true))
+        Ok((changed, changed))
     })?;
-    refresh_tray_language(&app, &language_for_tray);
-    let _ = app.emit("repoticker-config-changed", ());
+    if let Some(locale) = saved_locale {
+        refresh_tray_language(&app, &locale);
+    }
+    if changed {
+        let _ = app.emit("repoticker-config-changed", ());
+    }
     Ok(())
 }
 

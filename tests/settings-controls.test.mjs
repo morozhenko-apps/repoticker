@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
 import { listAvailableInstallations } from "../apps/desktop/ui/github-installations.mjs";
 import { settingsLocale, settingsText } from "../apps/desktop/ui/settings-i18n.mjs";
+import { localeName, localeDirection } from "../apps/desktop/ui/locale-catalog.mjs";
 
 const html = readFileSync(
   new URL("../apps/desktop/ui/settings.html", import.meta.url), "utf8"
@@ -75,11 +76,13 @@ test("Device Flow buttons register and invoke native commands after JS startup",
   // Fail closed if the controller's single known import changes.
   const importLine =
     'import { listAvailableInstallations } from "./github-installations.mjs";\n' +
-    'import { settingsLocale, settingsText } from "./settings-i18n.mjs";\n';
+    'import { settingsLocale, settingsText } from "./settings-i18n.mjs";\n' +
+    'import { localeName, localeDirection } from "./locale-catalog.mjs";\n';
   assert.equal(js.startsWith(importLine), true,
     "Settings harness must recognize its real ESM dependency");
   runInNewContext(js.slice(importLine.length), {
     document, window, listAvailableInstallations, settingsLocale, settingsText,
+    localeName, localeDirection,
     setInterval: () => 1,
     clearInterval() {},
   }, { filename: "settings.mjs" });

@@ -430,7 +430,7 @@ export const EXTENDED_TERMS = Object.freeze({
     "Not connected.": "Inte ansluten.",
     "Connecting": "Ansluter",
     "Status unavailable": "Status otillgänglig",
-    "Runners unavailable": "Körare otillgängliga",
+    "Runners unavailable": "Runnerdata är otillgängliga",
     "Tasks unavailable": "Uppgifter otillgängliga",
     "Busy": "Upptagna",
     "Idle": "Lediga",

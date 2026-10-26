@@ -54,10 +54,10 @@ mod tests {
     #[test]
     fn native_registry_contains_exactly_twenty_locales() {
         assert_eq!(super::catalog().len(), 20);
-        for code in ["en", "ru", "es", "pt", "de", "fr", "it", "pl",
-            "hi", "zh-Hant", "ja", "nl", "sv", "tr", "ko", "bn",
-            "th", "id", "fil", "ar"]
-        {
+        for code in [
+            "en", "ru", "es", "pt", "de", "fr", "it", "pl", "hi", "zh-Hant", "ja", "nl", "sv",
+            "tr", "ko", "bn", "th", "id", "fil", "ar",
+        ] {
             assert!(is_supported_locale(code), "Missing {code}");
         }
         for invalid in ["pt-BR", "zh", "tl", "", "EN"] {

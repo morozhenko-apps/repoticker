@@ -632,7 +632,7 @@ function stopDragging(event = null) {
 
 dragSurface.addEventListener("pointerdown", event => {
   if (event.button !== 0 || !event.isPrimary ||
-      event.target.closest("button,input,select,a,.status-hover,[role=button]")) return;
+      event.target.closest("button,input,select,a,.status-hover,[role=button],.drawer,.rows,.repo-row,.repo-menu")) return;
   if (!dragGesture.begin(event.pointerId)) return;
   activePointerId = event.pointerId;
   dragSurface.setPointerCapture(event.pointerId);

@@ -74,3 +74,50 @@ is included. A remaining missing Windows tooltip requires an operator
 runtime observation with the new candidate.
 
 Do not add OS-specific hacks to Git core, KWallet or CI monitor data.
+
+
+## 2026-10-26 follow-up: two-language selector and missing Windows hover
+
+**Current facts.** The full L10N-20 gate is explicitly documented in
+[LOCALE_CONTEXT_AUDIT.md](localization/LOCALE_CONTEXT_AUDIT.md)
+and is *not implemented*. The Settings HTML lists EN/RU, the JavaScript
+translation catalogs contain only EN/RU and the native configuration
+validator rejects all other locale codes. Do not create an apparently
+working 20-language selector populated with untranslated English fallback.
+The 20 validated bundles, parity checks and per-locale audits remain
+issue #16, ahead of Mode B. This runtime batch does not claim L10N-20 PASS.
+
+**Windows hover root-cause candidates**, in descending confidence:
+
+1. Stale presentation state: `setQuotaOpen()` checks an event-maintained
+   `cardVisible` boolean before issuing *any* native show IPC. A visible
+   Windows WebView can receive pointer hover even when its previous
+   `repoticker-card-shown` event listener was not ready/received. Treat an
+   actual pointer-enter/focus-in as positive visibility evidence.
+2. Native detached usage window still not visible, despite the Rust
+   `show()` call returning success (WebView2/DWM composition, focus or
+   placement). No physical evidence yet isolates the cause.
+3. The native popup may initially appear then be hidden due to pointer
+   event transitions or missed kind/race events.
+4. Window may be placed outside the real work area on multi-monitor/DPI.
+5. The hover window's own WebView may fail to initialize/update.
+6. Busy/disabled metric buttons could suppress pointer events and keyboard
+   focus during explicit manual refresh.
+
+**Architectural choice for this scoped repair:** keep the existing
+read-only, rich detached window for all OSs. Eliminate dependence on a
+possibly stale show-event boolean when the OS demonstrably delivered
+pointer/focus into the visible card. Provide a separate **read-only
+native WebView title fallback** on all three metrics, derived only from
+trusted, already fetched status (never exposing paths/tokens, never
+inventing GitHub usage). This makes a meaningful status inspectable on
+Windows even when the detached popup cannot be displayed. The fallback
+is not a replacement for complete runner/job/billing details and does
+not close the rich Windows hover acceptance.
+
+**Scope and validation:** no Git/GitHub API calls for the fallback,
+no persistent settings changes, no new filesystem/network permissions.
+Test a missing shown-event, known/unknown counts, all three anchors,
+and non-interference with click-to-refresh. Keep existing KDE hover
+contract untouched and the complete 20-locale scope open. A successful
+CI run is source evidence, not Windows runtime confirmation.

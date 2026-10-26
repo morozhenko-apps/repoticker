@@ -1,7 +1,8 @@
 import { normalizeLocale, coreText } from "./locale-catalog.mjs";
+import { CARD_TERMS } from "./locale-card.mjs";
 /** Card-only i18n foundation. The persisted language setting already
- * supports en/ru; other surfaces are translated in later milestones.
- * Keep keys stable for the eventual 20-locale contextual audit.
+ * supports the canonical twenty locales without translating provider values.
+ * Keep stable keys and value-bearing templates for contextual audits.
  */
 const messages = Object.freeze({
   en: Object.freeze({
@@ -104,9 +105,16 @@ export function cardText(language, key, value) {
   const message = messages[locale === "ru" ? "ru" : "en"][key];
   if (message === undefined) throw new Error("Unknown card translation key");
   const rendered = typeof message === "function" ? message(value) : message;
-  // Provider names and value-bearing templates are not machine-substituted.
-  if (locale === "en" || locale === "ru" || !(key in coreCardTerms)) return rendered;
-  return coreText(locale, coreCardTerms[key]);
+  if (locale === "en" || locale === "ru") return rendered;
+  const localized = CARD_TERMS[locale]?.[key];
+  if (localized !== undefined) {
+    // Interpolate into text nodes only. Unicode isolate protects an Arabic
+    // sentence from a Latin repo name without modifying the real name.
+    const dynamic = locale === "ar" && value !== undefined
+      ? "\u2068" + String(value) + "\u2069" : String(value);
+    return localized.replaceAll("{name}", dynamic).replaceAll("{count}", dynamic);
+  }
+  return key in coreCardTerms ? coreText(locale, coreCardTerms[key]) : rendered;
 }
 
 function countText(language, value) {

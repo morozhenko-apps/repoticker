@@ -13,6 +13,8 @@ test("QA installer is bash-valid and uses a unique extraction directory", () => 
   assert.match(source, /mktemp -d/);
   assert.match(source, /repoticker-qa-/);
   assert.doesNotMatch(source, /rm -rf/);
+  assert.match(source, /pgrep -f/);
+  assert.match(source, /still running/);
 });
 
 test("QA installer refuses stale source and unverified package", () => {

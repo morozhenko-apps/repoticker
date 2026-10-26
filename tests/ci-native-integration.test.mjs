@@ -137,7 +137,7 @@ test("Given WebView alert data When native delivery runs Then permissions and co
   assert.match(main, /#\[serde\(default\)\]\s*ci_failure_notifications: bool/);
   assert.match(html, /id="ci-failure-notifications" type="checkbox"/);
   assert.match(settings, /draft\.ciFailureNotifications/);
-  assert.match(settings, /ciFailureNotifications: draft\.ciFailureNotifications/);
+  assert.match(settings, /configChanges\.ciFailureNotifications = draft\.ciFailureNotifications/);
 });
 
 test("Given credential silently expires When authorization returns Then first recovered read is a silent baseline", async () => {

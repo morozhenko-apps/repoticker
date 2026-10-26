@@ -2,6 +2,7 @@
  * Project values, run counts, runner names and provider errors stay untouched.
  */
 import { cardLocale } from "./card-i18n.mjs";
+import { coreText } from "./locale-catalog.mjs";
 
 const ru = Object.freeze({
   "About RepoTicker": "О RepoTicker",
@@ -53,7 +54,7 @@ export const surfaceLocale = cardLocale;
 
 export function surfaceText(language, key) {
   if (typeof key !== "string") throw Error("Invalid surface translation key");
-  return surfaceLocale(language) === "ru" ? (ru[key] ?? key) : key;
+  return surfaceLocale(language) === "ru" ? (ru[key] ?? key) : coreText(language, key);
 }
 
 function translatedStatus(language, status) {

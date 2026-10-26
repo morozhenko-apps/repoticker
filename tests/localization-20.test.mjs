@@ -102,9 +102,13 @@ test("technical semantics: Git safety, unknown values, errors and credential bou
     );
     assert.ok(walletFailure.includes("KWallet/Secret Service"),
       code + ": wallet integration label changed its technical identifier: " + walletFailure);
-    assert.ok(coreText(code,
+    const copyShortcut = coreText(code,
       "Cannot access system clipboard. Select the code and copy with Ctrl+C."
-    ).includes("Ctrl+C"));
+    );
+    // German keyboard conventions label Control as Strg. Preserve the
+    // actual shortcut semantics rather than an untranslated literal.
+    assert.ok(copyShortcut.includes(code === "de" ? "Strg+C" : "Ctrl+C"),
+      code + " must retain the platform copy shortcut");
     assert.ok(coreText(code,
       "Open source · Apache License 2.0").includes("Apache"));
     assert.ok(coreText(code,

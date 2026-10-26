@@ -121,3 +121,26 @@ Test a missing shown-event, known/unknown counts, all three anchors,
 and non-interference with click-to-refresh. Keep existing KDE hover
 contract untouched and the complete 20-locale scope open. A successful
 CI run is source evidence, not Windows runtime confirmation.
+
+
+### Scoped implementation checkpoint
+
+- Presentation-only module `apps/desktop/ui/hover-fallback.mjs` now
+  projects existing validated runner/task statuses into a native
+  WebView2 `title`, and reports billing as **unknown** unless the
+  original detailed usage panel supplies authoritative data. It never
+  initiates provider requests or changes configuration.
+- The card's `mouseenter` and `focusin` callbacks now treat a real
+  pointer/focus event as proof that the card is visible, repairing the
+  lost `repoticker-card-shown` event gate. Native popup calls remain
+  available, with the existing KDE behavior preserved.
+- Regression tests `tests/hover-fallback.test.mjs` cover known and
+  unknown counts, runner names, billing unknown and missing show
+  events. The whole 20-language audit **remains planned and not passed**;
+  English and Russian remain the only enabled locales.
+- [Source Preflight](https://github.com/morozhenko-apps/repoticker/actions/runs/40412656085)
+  and [new unpublished platform candidate](https://github.com/morozhenko-apps/repoticker/actions/runs/40412656157)
+  started from exact SHA
+  `54b6974232661799d3ffa4ecd2578ac825c2a0ed`.
+  At checkpoint time neither had completed; no Windows runtime PASS
+  or new installer availability is asserted.

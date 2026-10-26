@@ -91,7 +91,7 @@ export const WORKFLOW_TERMS = Object.freeze({
     "selected of": "sélectionnés sur",
     "accessible": "accessibles",
     "(inventory truncated)": "(liste incomplète)",
-    "; filter to find more": " ; filtrez pour en voir plus",
+    "; filter to find more": "; filtrez pour en voir plus",
     "GitHub installation list incomplete. Some accounts may be unavailable.": "La liste des installations GitHub est incomplète. Certains comptes peuvent manquer.",
     "GitHub authorized; cannot list available installations.": "GitHub autorisé, mais impossible de lister les installations disponibles.",
     "Press OK to confirm the monitoring account.": "Appuyez sur OK pour confirmer le compte surveillé.",

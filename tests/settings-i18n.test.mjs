@@ -25,6 +25,8 @@ test("All Settings declarative labels and accessibility keys have RU text", () =
   }
   assert.match(settings, /document\.documentElement\.lang = uiLocale/);
   assert.match(settings, /applySettingsLanguage\(draft\.language\)/);
-  assert.match(settings, /draft\.language = option\.dataset\.value;[\s\S]*?applySettingsLanguage\(draft\.language\)/);
-  assert.match(settings, /ciFailureNotifications: draft\.ciFailureNotifications/);
+  assert.match(settings, /draft\.language = option\.dataset\.value;/);
+  assert.doesNotMatch(settings, /draft\.language = option\.dataset\.value;\s*applySettingsLanguage/);
+  assert.match(settings, /configChanges\.ciFailureNotifications = draft\.ciFailureNotifications/);
+  assert.equal(settingsText("ru", "RepoTicker Settings"), "Настройки RepoTicker");
 });

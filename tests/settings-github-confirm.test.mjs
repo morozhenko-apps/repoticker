@@ -412,11 +412,8 @@ test("OK commits normalized ignored names alongside roots and language", async (
     const saved = ui.calls.find(([name]) => name === "save_settings");
     assert.ok(saved);
     assert.deepEqual(saved[1], {
-      roots: ["/repos"],
-      language: "en",
-      ignoredChildNames: ["Archive", "Old"],
-      ciFailureNotifications: false
-    });
+      ignoredChildNames: ["Archive", "Old"]
+    }, "Unchanged roots, language and notifications must not be resent");
     assert.equal(ui.closed, true);
   } finally { ui.restore(); }
 });
@@ -431,7 +428,7 @@ test("removing an ignored name re-enables OK without changing enrolled roots", a
     await ui.node("apply-settings").fire("click");
     const saved = ui.calls.find(([name]) => name === "save_settings");
     assert.deepEqual(saved[1].ignoredChildNames, []);
-    assert.deepEqual(saved[1].roots, ["/repos"]);
+    assert.equal(Object.hasOwn(saved[1], "roots"), false);
   } finally { ui.restore(); }
 });
 
@@ -469,21 +466,21 @@ test("Saved Russian Settings renders native status in Russian and draft EN previ
     assert.equal(ui.node("github-account-status").value, "Авторизовано");
     assert.equal(ui.node("language-trigger").firstChild.textContent, "Русский ");
     await ui.languageOption("en").fire("click");
-    assert.equal(ui.language, "en");
-    assert.equal(ui.node("github-account-status").value, "Authorized");
+    assert.equal(ui.language, "ru", "Draft selection must not change visible persisted locale");
+    assert.equal(ui.node("github-account-status").value, "Авторизовано");
     assert.equal(ui.node("apply-settings").disabled, false);
     await ui.node("cancel-settings").fire("click");
     assert.equal(ui.calls.some(([name]) => name === "save_settings"), false);
   } finally { ui.restore(); }
 });
 
-test("English saved Settings previews RU before OK and persists only chosen locale", async () => {
+test("English saved Settings keeps EN until OK and persists only chosen locale", async () => {
   const ui = await fixture("locale-en-save", true);
   try {
     assert.equal(ui.language, "en");
     await ui.languageOption("ru").fire("click");
-    assert.equal(ui.language, "ru");
-    assert.equal(ui.node("github-account-status").value, "Авторизовано");
+    assert.equal(ui.language, "en");
+    assert.equal(ui.node("github-account-status").value, "Authorized");
     await ui.node("apply-settings").fire("click");
     assert.equal(ui.calls.find(([name]) => name === "save_settings")?.[1]?.language, "ru");
     assert.equal(ui.closed, true);
@@ -554,14 +551,14 @@ test("Tab leaves popup and mouse outside closes without stealing focus", async (
   } finally { ui.restore(); }
 });
 
-test("Keyboard language choice previews immediately, and Cancel leaves persistence unchanged", async () => {
+test("Keyboard language choice stays a draft, and Cancel leaves locale unchanged", async () => {
   const ui = await fixture("keyboard-confirmation", true);
   try {
     await ui.node("language-trigger").fire("keydown", { key: "ArrowDown" });
     await ui.node("language-options").fire("keydown", { key: "ArrowDown" });
     assert.equal(ui.activeElement, ui.languageOption("ru"));
     await ui.languageOption("ru").fire("click");
-    assert.equal(ui.language, "ru");
+    assert.equal(ui.language, "en");
     assert.equal(ui.activeElement, ui.node("language-trigger"));
     assert.equal(ui.node("language-options").hidden, true);
     assert.equal(ui.node("apply-settings").disabled, false);
@@ -695,6 +692,35 @@ test("Native folder picker rejects concurrent modal requests", async () => {
     finish("C:\\\\Projects");
     await first;
     assert.equal(ui.node("browse-root").disabled, false);
+    await ui.node("cancel-settings").fire("click");
+    assert.equal(ui.calls.some(([name]) => name === "save_settings"), false);
+  } finally { ui.restore(); }
+});
+
+test("Changing only language never reapplies existing GitHub account or other settings", async () => {
+  const ui = await fixture("locale-no-reapply", true, ["one/core"], {
+    language: "en", ignoredChildNames: ["Archive"], ciFailureNotifications: true
+  });
+  try {
+    await ui.languageOption("ru").fire("click");
+    assert.equal(ui.language, "en");
+    await ui.node("apply-settings").fire("click");
+    const patches = ui.calls.filter(([name]) => name === "save_settings");
+    assert.equal(patches.length, 1);
+    assert.deepEqual(patches[0][1], { language: "ru" });
+    assert.equal(ui.calls.some(([name]) => name === "github_set_monitor_org"), false);
+    assert.equal(ui.calls.some(([name]) => name === "autostart_set_enabled"), false);
+  } finally { ui.restore(); }
+});
+
+test("Native browse for excluded children captures only the final folder NAME", async () => {
+  const ui = await fixture("ignored-native-folder", true, [], {
+    folderPath: "C:\\\\Projects\\\\Archive"
+  });
+  try {
+    await ui.node("browse-ignored-child").fire("click");
+    assert.deepEqual(ui.node("ignored-child-list").children.map(row => row.children[0].textContent),
+      ["Archive"]);
     await ui.node("cancel-settings").fire("click");
     assert.equal(ui.calls.some(([name]) => name === "save_settings"), false);
   } finally { ui.restore(); }

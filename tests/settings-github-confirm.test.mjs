@@ -376,7 +376,8 @@ test("late installation API response cannot resurrect Settings account controls 
     await tick();
     assert.equal(ui.node("github-monitor-scope-row").hidden, true);
     assert.equal(ui.node("github-repo-controls").hidden, true);
-    assert.equal(ui.node("github-connection-indicator").textContent, "Not connected");
+    assert.equal(ui.node("github-connection-indicator").textContent, "Pending disconnect");
+    assert.equal(ui.tokenRemoved, false, "Disconnect stays draft until OK");
     assert.equal(ui.monitorOrg, "one", "native disconnection is not account selection");
   } finally { ui.restore(); }
 });
@@ -723,5 +724,29 @@ test("Native browse for excluded children captures only the final folder NAME", 
       ["Archive"]);
     await ui.node("cancel-settings").fire("click");
     assert.equal(ui.calls.some(([name]) => name === "save_settings"), false);
+  } finally { ui.restore(); }
+});
+
+test("Existing GitHub authorization survives Cancel after draft disconnect", async () => {
+  const ui = await fixture("disconnect-cancel-transaction", true);
+  try {
+    await ui.node("github-disconnect").fire("click");
+    assert.equal(ui.tokenRemoved, false);
+    assert.equal(ui.node("apply-settings").disabled, false);
+    await ui.node("cancel-settings").fire("click");
+    assert.equal(ui.tokenRemoved, false);
+    assert.equal(ui.monitorOrg, "one");
+  } finally { ui.restore(); }
+});
+
+test("Existing GitHub authorization is revoked only by explicit OK", async () => {
+  const ui = await fixture("disconnect-apply-transaction", true);
+  try {
+    await ui.node("github-disconnect").fire("click");
+    assert.equal(ui.tokenRemoved, false);
+    await ui.node("apply-settings").fire("click");
+    assert.equal(ui.tokenRemoved, true);
+    assert.equal(ui.closed, true);
+    assert.equal(ui.calls.filter(([cmd]) => cmd === "github_disconnect").length, 1);
   } finally { ui.restore(); }
 });

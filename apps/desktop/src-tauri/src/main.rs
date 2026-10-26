@@ -1463,6 +1463,20 @@ fn main() {
             github_session::GitHubAuthManager::default(),
         ))
         .setup(|app| {
+            // Explicit per-window icon: the OS titlebar is independent from
+            // the tray icon and WebView's About PNG. Without this GTK may
+            // fall back to a generic WebView icon even when the DEB icon is
+            // correctly installed.
+            for label in ["settings", "about"] {
+                if let Some(window) = app.get_webview_window(label) {
+                    let (rgba, width, height) = app_icon::tray_rgba();
+                    if let Err(error) =
+                        window.set_icon(tauri::image::Image::new_owned(rgba, width, height))
+                    {
+                        eprintln!("RepoTicker native window icon unavailable: {error}");
+                    }
+                }
+            }
             #[cfg(target_os = "linux")]
             {
                 linux_surface::install(app)?;

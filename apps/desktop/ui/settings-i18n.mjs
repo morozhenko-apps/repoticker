@@ -1,3 +1,4 @@
+import { normalizeLocale, coreText } from "./locale-catalog.mjs";
 /** Settings EN/RU display translations; native identifiers and values are never translated. */
 const russian = Object.freeze({
   "RepoTicker Settings": "Настройки RepoTicker",
@@ -92,8 +93,9 @@ const russian = Object.freeze({
   "GitHub rejected this device code. Start a new authorization.": "GitHub отклонил код. Начните заново."
 });
 
-export function settingsLocale(value) { return value === "ru" ? "ru" : "en"; }
+export const settingsLocale = normalizeLocale;
 export function settingsText(language, english) {
   if (typeof english !== "string") throw Error("Invalid Settings translation key");
-  return settingsLocale(language) === "ru" ? (russian[english] ?? english) : english;
+  if (settingsLocale(language) === "ru") return russian[english] ?? english;
+  return coreText(language, english);
 }

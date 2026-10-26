@@ -1,3 +1,4 @@
+import { normalizeLocale, coreText } from "./locale-catalog.mjs";
 /** Card-only i18n foundation. The persisted language setting already
  * supports en/ru; other surfaces are translated in later milestones.
  * Keep keys stable for the eventual 20-locale contextual audit.
@@ -87,14 +88,25 @@ const messages = Object.freeze({
   }),
 });
 
-export function cardLocale(value) {
-  return value === "ru" ? "ru" : "en";
-}
+export const cardLocale = normalizeLocale;
+const coreCardTerms = Object.freeze({
+  repositories: "Repositories",
+  runners: "Runners", tasks: "Tasks", fetch: "Fetch",
+  safeSync: "Safe sync", repos: "Repositories", hide: "Hide",
+  cancel: "Cancel", openGithub: "Open on GitHub",
+  openFolder: "Open folder", copyPath: "Copy path",
+  total: "Total", online: "Online", offline: "Offline",
+  running: "Running", queued: "Queued", unknown: "Unknown"
+});
 
 export function cardText(language, key, value) {
-  const message = messages[cardLocale(language)][key];
+  const locale = cardLocale(language);
+  const message = messages[locale === "ru" ? "ru" : "en"][key];
   if (message === undefined) throw new Error("Unknown card translation key");
-  return typeof message === "function" ? message(value) : message;
+  const rendered = typeof message === "function" ? message(value) : message;
+  // Provider names and value-bearing templates are not machine-substituted.
+  if (locale === "en" || locale === "ru" || !(key in coreCardTerms)) return rendered;
+  return coreText(locale, coreCardTerms[key]);
 }
 
 function countText(language, value) {

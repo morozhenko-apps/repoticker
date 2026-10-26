@@ -306,6 +306,7 @@ function githubButtons() {
   const status = githubChecking ? t("Checking connection...")
     : githubCheckFailed ? t("Connection unavailable")
     : githubPending ? t("Authorization pending")
+    : disconnectPending ? t("Pending disconnect")
     : githubConnected ? t("Authorized") : t("Not connected");
   byId("github-connection-indicator").textContent = status;
   byId("github-account-status").value = status;

@@ -775,6 +775,10 @@ fn show_compact_card(app: &AppHandle) {
 
 fn show_settings(app: &AppHandle) {
     if let Some(window) = app.get_webview_window("settings") {
+        let language = read_config(app)
+            .map(|config| config.language)
+            .unwrap_or_else(|_| "en".to_owned());
+        let _ = window.set_title(tray_i18n::window_title(&language, "settings"));
         let _ = window.show();
         let _ = window.set_focus();
         let _ = app.emit("repoticker-settings-opened", ());
@@ -783,6 +787,10 @@ fn show_settings(app: &AppHandle) {
 
 fn show_about(app: &AppHandle) {
     if let Some(window) = app.get_webview_window("about") {
+        let language = read_config(app)
+            .map(|config| config.language)
+            .unwrap_or_else(|_| "en".to_owned());
+        let _ = window.set_title(tray_i18n::window_title(&language, "about"));
         let _ = window.show();
         let _ = window.set_focus();
     }

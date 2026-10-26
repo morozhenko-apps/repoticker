@@ -2,11 +2,11 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; overflow: hidden; }
 body { background: Canvas; color: CanvasText; }
-.settings-shell { max-width: 680px; height: 100%; margin: auto; padding: 14px 20px 12px; display: flex; flex-direction: column; gap: 9px; overflow: hidden; }
+.settings-shell { max-width: 680px; height: 100%; min-height: 0; margin: auto; padding: 14px 20px 12px; display: flex; flex-direction: column; gap: 9px; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scrollbar-width: thin; }
 .section-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
 h2 { font-size: 14px; font-weight: 600; margin: 0 0 8px; }
 .hint { color: GrayText; font-size: 12px; }
-.block { border: 1px solid color-mix(in srgb, CanvasText 15%, Canvas); border-radius: 9px; padding: 10px 12px; min-width: 0; }
+.block { border: 1px solid color-mix(in srgb, CanvasText 15%, Canvas); border-radius: 9px; padding: 10px 12px; min-width: 0; flex-shrink: 0; }
 .general-line { display: flex; align-items: center; gap: 12px; }
 .general-line label { min-width: 70px; }
 .general-line .hint { margin-left: auto; }
@@ -34,7 +34,7 @@ label { font-size: 12px; }
 .github-grid input, .github-grid select { min-width: 0; width: 100%; height: 34px; }
 .worker-label { grid-column: 1/-1; }
 .github-grid :disabled { opacity: .58; }
-.settings-footer { margin-top: auto; display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 39px; }
+.settings-footer { position: sticky; bottom: -12px; z-index: 20; background: Canvas; margin-top: auto; padding: 8px 0 4px; display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 48px; flex-shrink: 0; }
 .footer-buttons { display: flex; gap: 8px; }
 .footer-buttons button { min-width: 80px; }
 .footer-buttons .primary:not(:disabled) { border-color: #529acb; background: #d4eafa; color: #173e56; }
@@ -45,8 +45,8 @@ label { font-size: 12px; }
 /* WebKitGTK's native select menu can be clipped or displaced on Wayland. */
 .language-picker { position: relative; z-index: 10; min-width: 126px; }
 #language-trigger { width: 126px; display: flex; align-items: center; justify-content: space-between; gap: 8px; text-align: left; background: Canvas; }
-#language-options { position: absolute; top: calc(100% + 3px); left: 0; width: 140px; padding: 4px; background: Canvas; border: 1px solid color-mix(in srgb, CanvasText 32%, Canvas); border-radius: 6px; box-shadow: 0 5px 13px #0003; }
-#language-options button { width: 100%; height: 32px; display: block; border: 0; text-align: left; background: transparent; }
+#language-options { position: absolute; top: calc(100% + 3px); left: 0; width: 140px; padding: 0; background: Canvas; border: 1px solid color-mix(in srgb, CanvasText 32%, Canvas); border-radius: 6px; box-shadow: 0 5px 13px #0003; }
+#language-options button { width: 100%; height: 32px; display: flex; align-items: center; line-height: 1.2; border: 0; text-align: left; background: transparent; }
 #language-options button:hover, #language-options button[aria-selected="true"] { background: color-mix(in srgb, #5aa4d4 19%, Canvas); }
 #language-trigger:focus-visible, #language-options button:focus-visible { outline: 2px solid #258ac7; outline-offset: -2px; }
 
@@ -155,3 +155,8 @@ label { font-size: 12px; }
     background-image: none;
   }
 }
+
+/* Keep keyboard and pointer scrolling usable when account selection expands. */
+.settings-shell::-webkit-scrollbar, .github-repo-list::-webkit-scrollbar { width: 7px; }
+.settings-shell::-webkit-scrollbar-thumb, .github-repo-list::-webkit-scrollbar-thumb { background: color-mix(in srgb, CanvasText 32%, Canvas); border-radius: 8px; }
+.settings-shell::-webkit-scrollbar-track, .github-repo-list::-webkit-scrollbar-track { background: transparent; }

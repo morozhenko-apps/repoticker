@@ -637,6 +637,35 @@ fn get_usage_popup_kind() -> &'static str {
     }
 }
 
+// The detached tooltip is anchored in physical monitor coordinates on
+// unmanaged Windows/X11 windows. Recalculate after each content-driven
+// resize to avoid silently placing an expanded balloon off-screen.
+fn position_unmanaged_usage_popup(
+    card: &tauri::WebviewWindow,
+    popup: &tauri::WebviewWindow,
+) -> Result<(), String> {
+    let position = card.outer_position().map_err(|error| error.to_string())?;
+    let card_size = card.outer_size().map_err(|error| error.to_string())?;
+    let popup_size = popup.outer_size().map_err(|error| error.to_string())?;
+    let mut x = i64::from(position.x) + i64::from(card_size.width)
+        - i64::from(popup_size.width) - 5;
+    let mut y = i64::from(position.y) - i64::from(popup_size.height) + 8;
+    if let Some(monitor) = card.current_monitor().map_err(|error| error.to_string())? {
+        let area = monitor.work_area();
+        let left = i64::from(area.position.x);
+        let top = i64::from(area.position.y);
+        let right = left + (i64::from(area.size.width) - i64::from(popup_size.width)).max(0);
+        let bottom = top + (i64::from(area.size.height) - i64::from(popup_size.height)).max(0);
+        x = x.clamp(left, right);
+        y = y.clamp(top, bottom);
+    }
+    let x = i32::try_from(x).map_err(|_| "Invalid tooltip x coordinate")?;
+    let y = i32::try_from(y).map_err(|_| "Invalid tooltip y coordinate")?;
+    popup
+        .set_position(tauri::PhysicalPosition::new(x, y))
+        .map_err(|error| error.to_string())
+}
+
 #[tauri::command]
 fn show_usage_popup(app: AppHandle, kind: String) -> Result<(), String> {
     let code = match kind.as_str() {
@@ -656,26 +685,29 @@ fn show_usage_popup(app: AppHandle, kind: String) -> Result<(), String> {
         let popup = app
             .get_webview_window("usage")
             .ok_or_else(|| "Usage popup unavailable".to_owned())?;
-        if let (Ok(position), Ok(size)) = (card.outer_position(), card.outer_size()) {
-            let outer = popup.outer_size().map_err(|error| error.to_string())?;
-            let x = i64::from(position.x) + i64::from(size.width) - i64::from(outer.width) - 5;
-            let y = i64::from(position.y) - i64::from(outer.height) + 8;
-            if let (Ok(x), Ok(y)) = (i32::try_from(x), i32::try_from(y)) {
-                let _ = popup.set_position(tauri::PhysicalPosition::new(x, y));
-            }
+        if let Err(error) = position_unmanaged_usage_popup(&card, &popup) {
+            // Geometry failure must not prevent showing the tooltip.
+            eprintln!("RepoTicker usage popup positioning unavailable: {error}");
         }
-        // An informational balloon must not steal focus or intercept the
-        // pointer hovering over the originating metric on Windows.
+        // Both options are best-effort OS hints. On some Windows WebView2/
+        // Wry builds these APIs return Unsupported; previously '?' returned
+        // early *before* popup.show(), hiding all three tooltips.
         #[cfg(target_os = "windows")]
         {
-            popup
-                .set_focusable(false)
-                .map_err(|error| format!("Cannot disable tooltip focus: {error}"))?;
-            popup
-                .set_ignore_cursor_events(true)
-                .map_err(|error| format!("Cannot pass through tooltip pointer: {error}"))?;
+            if let Err(error) = popup.set_focusable(false) {
+                eprintln!("RepoTicker usage popup focus hint unavailable: {error}");
+            }
+            if let Err(error) = popup.set_ignore_cursor_events(true) {
+                eprintln!("RepoTicker usage popup cursor hint unavailable: {error}");
+            }
         }
-        popup.show().map_err(|error| error.to_string())?;
+        if std::env::var_os("REPOTICKER_UI_DEBUG").is_some() {
+            eprintln!("RepoTicker usage popup show requested: {kind}");
+        }
+        popup.show().map_err(|error| format!("Usage popup show failed: {error}"))?;
+        if std::env::var_os("REPOTICKER_UI_DEBUG").is_some() {
+            eprintln!("RepoTicker usage popup visible: {kind}");
+        }
     }
     // Deliver a typed presentation change even when the detached usage
     // window missed an ordinary event. The injected string is selected from
@@ -715,7 +747,13 @@ async fn resize_usage_popup(app: AppHandle, height: i32) -> Result<(), String> {
         .ok_or_else(|| "Usage popup unavailable".to_owned())?;
     popup
         .set_size(tauri::LogicalSize::new(340.0, f64::from(height)))
-        .map_err(|error| error.to_string())
+        .map_err(|error| error.to_string())?;
+    if let Some(card) = app.get_webview_window("main") {
+        if let Err(error) = position_unmanaged_usage_popup(&card, &popup) {
+            eprintln!("RepoTicker usage popup resize placement failed: {error}");
+        }
+    }
+    Ok(())
 }
 
 #[tauri::command]

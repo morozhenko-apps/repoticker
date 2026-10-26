@@ -664,6 +664,17 @@ fn show_usage_popup(app: AppHandle, kind: String) -> Result<(), String> {
                 let _ = popup.set_position(tauri::PhysicalPosition::new(x, y));
             }
         }
+        // An informational balloon must not steal focus or intercept the
+        // pointer hovering over the originating metric on Windows.
+        #[cfg(target_os = "windows")]
+        {
+            popup
+                .set_focusable(false)
+                .map_err(|error| format!("Cannot disable tooltip focus: {error}"))?;
+            popup
+                .set_ignore_cursor_events(true)
+                .map_err(|error| format!("Cannot pass through tooltip pointer: {error}"))?;
+        }
         popup.show().map_err(|error| error.to_string())?;
     }
     // Deliver a typed presentation change even when the detached usage

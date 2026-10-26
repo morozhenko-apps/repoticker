@@ -97,9 +97,11 @@ test("technical semantics: Git safety, unknown values, errors and credential bou
     assert.notEqual(coreText(code, "Running"), coreText(code, "Queued"));
     assert.ok(coreText(code, "GitHub authorization failed.").includes("GitHub"));
     assert.ok(coreText(code, "GitHub returned an unsuccessful HTTP response.").includes("HTTP"));
-    assert.ok(coreText(code,
+    const walletFailure = coreText(code,
       "Authorization reached the system wallet, but KWallet/Secret Service could not store the token."
-    ).includes("KWallet/Secret Service"));
+    );
+    assert.ok(walletFailure.includes("KWallet/Secret Service"),
+      code + ": wallet integration label changed its technical identifier: " + walletFailure);
     assert.ok(coreText(code,
       "Cannot access system clipboard. Select the code and copy with Ctrl+C."
     ).includes("Ctrl+C"));

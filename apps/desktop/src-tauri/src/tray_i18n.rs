@@ -20,9 +20,19 @@ pub(crate) fn label(language: &str, action: &str) -> &'static str {
     }
 }
 
+pub(crate) fn window_title(language: &str, window: &str) -> &'static str {
+    match (language, window) {
+        ("ru", "settings") => "Настройки RepoTicker",
+        ("ru", "about") => "О RepoTicker",
+        (_, "settings") => "RepoTicker Settings",
+        (_, "about") => "About RepoTicker",
+        _ => "RepoTicker",
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::label;
+    use super::{label, window_title};
 
     #[test]
     fn all_tray_actions_have_english_and_russian_labels() {
@@ -39,6 +49,14 @@ mod tests {
             assert_eq!(label("pt", id), english, "unknown locales fall back to EN");
             assert_eq!(label("", id), english);
         }
+    }
+
+    #[test]
+    fn native_window_titles_are_localized_only_after_persisted_language_change() {
+        assert_eq!(window_title("ru", "settings"), "Настройки RepoTicker");
+        assert_eq!(window_title("ru", "about"), "О RepoTicker");
+        assert_eq!(window_title("en", "settings"), "RepoTicker Settings");
+        assert_eq!(window_title("en", "about"), "About RepoTicker");
     }
 
     #[test]

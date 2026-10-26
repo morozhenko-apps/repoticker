@@ -5,6 +5,7 @@ import { compactStatus } from "./status-metrics.mjs";
 import { cardLocale, cardText, metricAccessibleLabel } from "./card-i18n.mjs";
 import { mergeMonitorPresentation, reconcileScanPresentation } from "./monitor-presentation.mjs";
 import { placeRepoMenu } from "./repo-menu.mjs";
+import { hoverFallbackText } from "./hover-fallback.mjs";
 import { createScanRefreshQueue } from "./scan-refresh.mjs";
 
 const emptySnapshot = {
@@ -298,12 +299,18 @@ function setQuotaOpen(kind = null) {
   return quotaQueue;
 }
 
+// A real hover/focus proves this WebView is currently shown even if the
+// window-shown event was delivered before its listener was registered.
 for (const [kind, anchor] of Object.entries(hoverTargets)) {
-  anchor.addEventListener("mouseenter", () => { void setQuotaOpen(kind); });
+  const enter = () => {
+    cardVisible = true;
+    void setQuotaOpen(kind);
+  };
+  anchor.addEventListener("mouseenter", enter);
   anchor.addEventListener("mouseleave", () => {
     if (hoveredKind === kind) void setQuotaOpen(null);
   });
-  anchor.addEventListener("focusin", () => { void setQuotaOpen(kind); });
+  anchor.addEventListener("focusin", enter);
   anchor.addEventListener("focusout", () => {
     if (hoveredKind === kind) void setQuotaOpen(null);
   });
@@ -329,6 +336,16 @@ function monitorRefreshState(kind, active) {
   }
   updateMetricAccessibleNames();
 }
+function updateHoverFallbacks() {
+  // WebView2's built-in title is a reliable minimum when the dedicated
+  // unmanaged Windows balloon is not painted. KDE retains its rich native
+  // detached balloon without duplicate browser tooltips.
+  const windows = navigator.userAgent.includes("Windows");
+  for (const [kind, node] of Object.entries(hoverTargets)) {
+    if (windows) node.title = hoverFallbackText(kind, snapshot, cardLanguage);
+    else node.removeAttribute("title");
+  }
+}
 function updateMetricAccessibleNames() {
   for (const [kind, node] of Object.entries(manualIndicator)) {
     const busy = node.getAttribute("aria-busy") === "true";
@@ -353,8 +370,6 @@ function setCardLanguage(language) {
     cardText(cardLanguage, "runners");
   byId("ci-tasks").querySelector(".metric-caption").textContent =
     cardText(cardLanguage, "tasks");
-  byId("runner-status").title = cardText(cardLanguage, "refreshRunners");
-  byId("ci-tasks").title = cardText(cardLanguage, "refreshTasks");
   byId("fetch-all").querySelector(".action-label").textContent =
     cardText(cardLanguage, "fetch");
   byId("sync-all").querySelector(".action-label").textContent =
@@ -368,11 +383,13 @@ function setCardLanguage(language) {
   byId("hide-card").title = cardText(cardLanguage, "hideCard");
   updateActionState();
   updateMetricAccessibleNames();
+  updateHoverFallbacks();
 }
 function renderMonitorMetrics(state) {
   const status = compactStatus(state);
   lastMetricStatus = status;
   updateMetricAccessibleNames();
+  updateHoverFallbacks();
   byId("runners-total").textContent = status.total;
   byId("runners-online").textContent = status.online;
   byId("runners-offline").textContent = status.offline;

@@ -53,6 +53,7 @@
         "decorations": true,
         "maxWidth": 660,
         "maxHeight": 720,
+        "minimizable": false,
         "maximizable": false
       },
       {
@@ -67,6 +68,7 @@
         "maxHeight": 265,
         "visible": false,
         "resizable": false,
+        "minimizable": false,
         "maximizable": false,
         "decorations": true
       }

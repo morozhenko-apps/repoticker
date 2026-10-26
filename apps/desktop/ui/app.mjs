@@ -6,6 +6,7 @@ import { cardLocale, cardText, metricAccessibleLabel } from "./card-i18n.mjs";
 import { mergeMonitorPresentation, reconcileScanPresentation } from "./monitor-presentation.mjs";
 import { placeRepoMenu } from "./repo-menu.mjs";
 import { hoverFallbackText } from "./hover-fallback.mjs";
+import { localeDirection } from "./locale-catalog.mjs";
 import { createScanRefreshQueue } from "./scan-refresh.mjs";
 
 const emptySnapshot = {
@@ -358,6 +359,7 @@ function setCardLanguage(language) {
   if (next === cardLanguage) return;
   cardLanguage = next;
   document.documentElement.lang = cardLanguage;
+  document.documentElement.dir = localeDirection(cardLanguage);
   repoDrawer.setAttribute("aria-label", cardText(cardLanguage, "repositories"));
   repoMenu.setAttribute("aria-label", cardText(cardLanguage, "repositoryActions"));
   document.querySelector(".status-strip").setAttribute("aria-label",

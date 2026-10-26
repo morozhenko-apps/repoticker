@@ -1,5 +1,6 @@
 import { listAvailableInstallations } from "./github-installations.mjs";
 import { settingsLocale, settingsText } from "./settings-i18n.mjs";
+import { localeName, localeDirection } from "./locale-catalog.mjs";
 // Settings are transactional: editing never writes on disk until Apply.
 const byId = id => document.getElementById(id);
 let uiLocale = "en";
@@ -9,6 +10,7 @@ let lastFormText = "";
 function applySettingsLanguage(value) {
   uiLocale = settingsLocale(value);
   document.documentElement.lang = uiLocale;
+  document.documentElement.dir = localeDirection(uiLocale);
   document.title = t("RepoTicker Settings");
   for (const item of document.querySelectorAll?.("[data-i18n]") ?? [])
     item.textContent = t(item.getAttribute("data-i18n"));
@@ -495,6 +497,7 @@ function renderRoots() {
     row.className = "root";
     const label = document.createElement("span");
     label.textContent = displayRootPath(root);
+    label.dir = "ltr";
     label.title = displayRootPath(root);
     const remove = document.createElement("button");
     remove.type = "button";
@@ -694,8 +697,7 @@ const languageList = byId("language-options");
 const languageOptions = [...languageList.querySelectorAll("[role=option]")];
 
 function updateLanguagePicker() {
-  languageTrigger.firstChild.textContent =
-    draft.language === "ru" ? "Русский " : "English ";
+  languageTrigger.firstChild.textContent = localeName(draft.language) + " ";
   for (const option of languageOptions) {
     option.setAttribute("aria-selected", String(option.dataset.value === draft.language));
     option.tabIndex = -1; // Focus is programmatic; never add two tab stops.

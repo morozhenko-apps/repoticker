@@ -1,3 +1,4 @@
+import { EXTENDED_TERMS } from "./locale-extended.mjs";
 /** Reviewed shared locale roster and high-frequency terminology.
  * Unresolved keys fall back to English and MUST fail completeness audit.
  * English/Russian legacy dictionaries remain authoritative until merged.
@@ -945,5 +946,6 @@ export function localeDirection(value) {
 }
 export function coreText(value, english) {
   if (typeof english !== "string") throw new Error("Invalid translation key");
-  return CORE_TERMS[normalizeLocale(value)]?.[english] ?? english;
+  const code = normalizeLocale(value);
+  return CORE_TERMS[code]?.[english] ?? EXTENDED_TERMS[code]?.[english] ?? english;
 }

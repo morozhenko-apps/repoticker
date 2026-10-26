@@ -1,5 +1,6 @@
 /** Settings EN/RU display translations; native identifiers and values are never translated. */
 const russian = Object.freeze({
+  "RepoTicker Settings": "Настройки RepoTicker",
   "General": "Общие",
   "Language": "Язык",
   "Launch at login": "Запускать при входе в систему",

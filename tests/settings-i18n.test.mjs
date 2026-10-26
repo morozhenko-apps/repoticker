@@ -5,12 +5,13 @@ import { settingsLocale, settingsText } from "../apps/desktop/ui/settings-i18n.m
 const html = readFileSync(new URL("../apps/desktop/ui/settings.html", import.meta.url), "utf8");
 const settings = readFileSync(new URL("../apps/desktop/ui/settings.mjs", import.meta.url), "utf8");
 
-test("Settings uses EN/RU with safe English fallback and never translates identifiers", () => {
+test("Settings preserves English and Russian and supports canonical Portugal locale", () => {
   assert.equal(settingsLocale("ru"), "ru");
-  assert.equal(settingsLocale("pt"), "en");
+  assert.equal(settingsLocale("pt"), "pt");
+  assert.equal(settingsLocale("pt-BR"), "en");
   assert.equal(settingsText("ru", "Local repositories"), "Локальные репозитории");
   assert.equal(settingsText("en", "Local repositories"), "Local repositories");
-  assert.equal(settingsText("pt", "Local repositories"), "Local repositories");
+  assert.equal(settingsText("pt", "Local repositories"), "Repositórios locais");
   assert.equal(settingsText("ru", "owner/repository"), "owner/repository");
   assert.throws(() => settingsText("ru", null));
 });

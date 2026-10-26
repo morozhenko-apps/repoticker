@@ -32,8 +32,11 @@ test("Windows verbatim paths are normalized only in the display projection", () 
 test("Native titles use saved locale and pending locale cannot repaint Settings", () => {
   assert.match(native, /window\.set_title\(tray_i18n::window_title\(&language, "settings"\)\)/);
   assert.match(native, /window\.set_title\(tray_i18n::window_title\(&language, "about"\)\)/);
-  assert.match(tray, /\("ru", "settings"\) => "Настройки RepoTicker"/);
-  assert.match(tray, /\("ru", "about"\) => "О RepoTicker"/);
+  const labels = JSON.parse(read("../apps/desktop/ui/locales/native.json"));
+  assert.equal(labels.ru["RepoTicker Settings"], "Настройки RepoTicker");
+  assert.equal(labels.ru["About RepoTicker"], "О RepoTicker");
+  assert.equal(labels.pt["RepoTicker Settings"], "Definições do RepoTicker");
+  assert.match(tray, /include_str!\("\.\.\/\.\.\/ui\/locales\/native\.json"\)/);
   assert.match(settings, /draft\.language = option\.dataset\.value;\s*\/\/ The selected locale is a draft/);
   assert.match(settings, /if \(Object\.keys\(configChanges\)\.length\)/);
   assert.match(settings, /githubConnected && \(githubScopeTouched \|\| repoChoiceTouched \|\| githubStartedHere\)/);

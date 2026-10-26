@@ -77,6 +77,9 @@ test("Metric hover uses nonfocusable pointer-through Windows balloon without nat
 
 test("Settings and About cannot minimize and use the explicit native RepoTicker icon", () => {
   const config = JSON.parse(read("../apps/desktop/src-tauri/tauri.conf.json"));
+  assert.equal(config.app.enableGTKAppId, true,
+    "KDE Wayland needs the GTK application identity for the correct icon");
+  assert.equal(config.identifier, "com.morozhenko.repoticker");
   for (const label of ["settings", "about"]) {
     const popup = config.app.windows.find(w => w.label === label);
     assert.ok(popup);

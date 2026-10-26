@@ -23,10 +23,10 @@ test("six stable tray actions have 20-language labels and keep Safe Sync dispatc
     assert.match(linux, new RegExp('tray_i18n::label\\(&self\\.language, "' + id + '"\\)'));
     assert.match(native, new RegExp('tray_i18n::label\\(language, "' + id + '"\\)'));
   }
-  assert.match(native, /"sync" => dispatch_menu_action\\(app, "safe_sync"\\)/);
-  assert.match(linux, /"sync" => dispatch_menu_action\\(&app, "safe_sync"\\)/);
-  assert.doesNotMatch(native, /"sync" => dispatch_menu_action\\(app, "safe_pull"\\)/);
-  assert.doesNotMatch(linux, /"sync" => dispatch_menu_action\\(&app, "safe_pull"\\)/);
+  assert.match(native, /"sync" => dispatch_menu_action\(app, "safe_sync"\)/);
+  assert.match(linux, /"sync" => dispatch_menu_action\(&app, "safe_sync"\)/);
+  assert.doesNotMatch(native, /"sync" => dispatch_menu_action\(app, "safe_pull"\)/);
+  assert.doesNotMatch(linux, /"sync" => dispatch_menu_action\(&app, "safe_pull"\)/);
 });
 
 test("KDE maintains one KSNI tray handle and updates labels on successful save", () => {

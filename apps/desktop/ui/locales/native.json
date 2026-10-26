@@ -1,0 +1,182 @@
+{
+  "en": {
+    "Open card": "Open card",
+    "Settings": "Settings",
+    "Fetch": "Fetch",
+    "Sync": "Sync",
+    "About RepoTicker": "About RepoTicker",
+    "Quit": "Quit",
+    "RepoTicker Settings": "RepoTicker Settings"
+  },
+  "ru": {
+    "Open card": "Открыть",
+    "Settings": "Настройки",
+    "Fetch": "Фетч",
+    "Sync": "Синхронизация",
+    "About RepoTicker": "О RepoTicker",
+    "Quit": "Выход",
+    "RepoTicker Settings": "Настройки RepoTicker"
+  },
+  "es": {
+    "Open card": "Abrir panel",
+    "Settings": "Configuración",
+    "Fetch": "Fetch",
+    "Sync": "Sincronizar",
+    "About RepoTicker": "Acerca de RepoTicker",
+    "Quit": "Salir",
+    "RepoTicker Settings": "Configuración de RepoTicker"
+  },
+  "pt": {
+    "Open card": "Abrir painel",
+    "Settings": "Definições",
+    "Fetch": "Fetch",
+    "Sync": "Sincronizar",
+    "About RepoTicker": "Sobre o RepoTicker",
+    "Quit": "Sair",
+    "RepoTicker Settings": "Definições do RepoTicker"
+  },
+  "de": {
+    "Open card": "Karte öffnen",
+    "Settings": "Einstellungen",
+    "Fetch": "Fetch",
+    "Sync": "Synchronisieren",
+    "About RepoTicker": "Über RepoTicker",
+    "Quit": "Beenden",
+    "RepoTicker Settings": "RepoTicker-Einstellungen"
+  },
+  "fr": {
+    "Open card": "Ouvrir la fenêtre",
+    "Settings": "Paramètres",
+    "Fetch": "Fetch",
+    "Sync": "Synchroniser",
+    "About RepoTicker": "À propos de RepoTicker",
+    "Quit": "Quitter",
+    "RepoTicker Settings": "Paramètres de RepoTicker"
+  },
+  "it": {
+    "Open card": "Apri scheda",
+    "Settings": "Impostazioni",
+    "Fetch": "Fetch",
+    "Sync": "Sincronizza",
+    "About RepoTicker": "Informazioni su RepoTicker",
+    "Quit": "Esci",
+    "RepoTicker Settings": "Impostazioni di RepoTicker"
+  },
+  "pl": {
+    "Open card": "Otwórz panel",
+    "Settings": "Ustawienia",
+    "Fetch": "Fetch",
+    "Sync": "Synchronizuj",
+    "About RepoTicker": "O RepoTicker",
+    "Quit": "Zakończ",
+    "RepoTicker Settings": "Ustawienia RepoTicker"
+  },
+  "hi": {
+    "Open card": "कार्ड खोलें",
+    "Settings": "सेटिंग्स",
+    "Fetch": "Fetch",
+    "Sync": "सिंक करें",
+    "About RepoTicker": "RepoTicker के बारे में",
+    "Quit": "बाहर निकलें",
+    "RepoTicker Settings": "RepoTicker सेटिंग्स"
+  },
+  "zh-Hant": {
+    "Open card": "開啟面板",
+    "Settings": "設定",
+    "Fetch": "Fetch",
+    "Sync": "同步",
+    "About RepoTicker": "關於 RepoTicker",
+    "Quit": "結束",
+    "RepoTicker Settings": "RepoTicker 設定"
+  },
+  "ja": {
+    "Open card": "カードを開く",
+    "Settings": "設定",
+    "Fetch": "Fetch",
+    "Sync": "同期",
+    "About RepoTicker": "RepoTicker について",
+    "Quit": "終了",
+    "RepoTicker Settings": "RepoTicker の設定"
+  },
+  "nl": {
+    "Open card": "Kaart openen",
+    "Settings": "Instellingen",
+    "Fetch": "Fetch",
+    "Sync": "Synchroniseren",
+    "About RepoTicker": "Over RepoTicker",
+    "Quit": "Afsluiten",
+    "RepoTicker Settings": "RepoTicker-instellingen"
+  },
+  "sv": {
+    "Open card": "Öppna panel",
+    "Settings": "Inställningar",
+    "Fetch": "Fetch",
+    "Sync": "Synkronisera",
+    "About RepoTicker": "Om RepoTicker",
+    "Quit": "Avsluta",
+    "RepoTicker Settings": "RepoTicker-inställningar"
+  },
+  "tr": {
+    "Open card": "Kartı aç",
+    "Settings": "Ayarlar",
+    "Fetch": "Fetch",
+    "Sync": "Eşitle",
+    "About RepoTicker": "RepoTicker hakkında",
+    "Quit": "Çıkış",
+    "RepoTicker Settings": "RepoTicker ayarları"
+  },
+  "ko": {
+    "Open card": "카드 열기",
+    "Settings": "설정",
+    "Fetch": "Fetch",
+    "Sync": "동기화",
+    "About RepoTicker": "RepoTicker 정보",
+    "Quit": "종료",
+    "RepoTicker Settings": "RepoTicker 설정"
+  },
+  "bn": {
+    "Open card": "কার্ড খুলুন",
+    "Settings": "সেটিংস",
+    "Fetch": "Fetch",
+    "Sync": "সিঙ্ক করুন",
+    "About RepoTicker": "RepoTicker সম্পর্কে",
+    "Quit": "প্রস্থান",
+    "RepoTicker Settings": "RepoTicker সেটিংস"
+  },
+  "th": {
+    "Open card": "เปิดการ์ด",
+    "Settings": "การตั้งค่า",
+    "Fetch": "Fetch",
+    "Sync": "ซิงค์",
+    "About RepoTicker": "เกี่ยวกับ RepoTicker",
+    "Quit": "ออก",
+    "RepoTicker Settings": "การตั้งค่า RepoTicker"
+  },
+  "id": {
+    "Open card": "Buka kartu",
+    "Settings": "Pengaturan",
+    "Fetch": "Fetch",
+    "Sync": "Sinkronkan",
+    "About RepoTicker": "Tentang RepoTicker",
+    "Quit": "Keluar",
+    "RepoTicker Settings": "Pengaturan RepoTicker"
+  },
+  "fil": {
+    "Open card": "Buksan ang card",
+    "Settings": "Mga setting",
+    "Fetch": "Fetch",
+    "Sync": "I-sync",
+    "About RepoTicker": "Tungkol sa RepoTicker",
+    "Quit": "Lumabas",
+    "RepoTicker Settings": "Mga setting ng RepoTicker"
+  },
+  "ar": {
+    "Open card": "فتح البطاقة",
+    "Settings": "الإعدادات",
+    "Fetch": "Fetch",
+    "Sync": "مزامنة",
+    "About RepoTicker": "حول RepoTicker",
+    "Quit": "خروج",
+    "RepoTicker Settings": "إعدادات RepoTicker"
+  }
+}

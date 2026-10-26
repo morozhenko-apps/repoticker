@@ -3,6 +3,7 @@ import { mergeMonitorPresentation } from "./monitor-presentation.mjs";
 import { usageHeight } from "./quota-size.mjs";
 import { createBillingCache } from "./github-billing.mjs";
 import { surfaceLocale, surfaceText, translateHoverDetails } from "./surface-i18n.mjs";
+import { localeDirection } from "./locale-catalog.mjs";
 
 const byId = id => document.getElementById(id);
 const invoke = (name, args = {}) => window.__TAURI__.core.invoke(name, args);
@@ -25,6 +26,7 @@ let lastRunnerNameRows = 0;
 function setLocale(value) {
   currentLanguage = surfaceLocale(value);
   document.documentElement.lang = currentLanguage;
+  document.documentElement.dir = localeDirection(currentLanguage);
   document.querySelector(".usage-bubble").setAttribute("aria-label",
     surfaceText(currentLanguage, "GitHub Actions and usage"));
   if (lastRawDetails) paint(lastRawDetails, lastRunnerNameRows);

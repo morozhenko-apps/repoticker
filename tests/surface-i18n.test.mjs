@@ -6,11 +6,12 @@ const about = readFileSync(new URL("../apps/desktop/ui/about.html", import.meta.
 const quota = readFileSync(new URL("../apps/desktop/ui/quota.html", import.meta.url), "utf8");
 const quotaController = readFileSync(new URL("../apps/desktop/ui/quota.mjs", import.meta.url), "utf8");
 
-test("Both detached surfaces use EN/RU safely, with English fallback", () => {
+test("Detached surfaces retain EN/RU and translate canonical 20-locale values", () => {
   assert.equal(surfaceLocale("ru"), "ru");
-  assert.equal(surfaceLocale("pt"), "en");
+  assert.equal(surfaceLocale("pt"), "pt");
+  assert.equal(surfaceLocale("pt-BR"), "en");
   assert.equal(surfaceText("ru", "Version"), "Версия");
-  assert.equal(surfaceText("pt", "Version"), "Version");
+  assert.equal(surfaceText("pt", "Version"), "Versão");
   assert.equal(surfaceText("en", "Version"), "Version");
   assert.equal(surfaceText("ru", "morozhenko-apps"), "morozhenko-apps");
   assert.throws(() => surfaceText("ru", null));
@@ -46,7 +47,7 @@ test("Runner/task numeric and provider data are retained in immutable translated
   ]);
   assert.deepEqual(model, source, "English data must remain untouched");
   assert.equal(translateHoverDetails(model, "en"), model);
-  assert.equal(translateHoverDetails(model, "it"), model);
+  assert.match(translateHoverDetails(model, "it").status, /Attività/);
   assert.notEqual(ru.sections, model.sections);
   const reservedName = {
     connected: true, status: "Tasks · Running 1 / Queued 0", message: "",

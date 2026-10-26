@@ -66,7 +66,7 @@ test("Windows drawer pointer interaction does not start window dragging", () => 
 test("Metric hover uses nonfocusable pointer-through Windows balloon without native misleading titles", () => {
   assert.match(native, /if let Err\(error\) = popup\.set_focusable\(false\)/);
   assert.match(native, /if let Err\(error\) = popup\.set_ignore_cursor_events\(true\)/);
-  assert.match(native, /popup\.show\(\)\.map_err/);
+  assert.match(native, /popup\s*\.show\(\)\s*\.map_err/);
   assert.match(native, /position_unmanaged_usage_popup\(&card, &popup\)/);
   assert.doesNotMatch(native, /popup\s*\.set_focusable\(false\)\s*\.map_err\([^;]+\?;/);
 

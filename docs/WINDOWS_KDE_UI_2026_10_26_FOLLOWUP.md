@@ -17,6 +17,17 @@ still fails to display any of the three runner/task/billing hover windows.
    fallback image. Attach the embedded `app_icon::tray_rgba()` image
    explicitly to the Settings and About native windows at setup. Do not
    replace committed image assets or silently blame icon caches.
+**KDE/Wayland follow-up:** Tauri explicitly documents that
+`app.enableGTKAppId` associates GTK windows with the application's
+desktop identifier so Wayland compositors can select the correct icon.
+This was previously unset. Keep the existing stable
+`com.morozhenko.repoticker` identifier and enable GTK app identity,
+in addition to the direct per-window icon assignment. It also uses
+GTK's session bus single-instance registration, consistent with
+RepoTicker's existing single-instance product invariant. If
+KDE's installed .desktop filename does not match, inspect the
+installed DEB manifest before changing the identifier.
+
 2. **Confirmed:** Autostart has a separate native checkbox from the existing
    custom CI/repository checkboxes. Reuse one appearance/checked/focus/
    forced-colors CSS contract for all three.

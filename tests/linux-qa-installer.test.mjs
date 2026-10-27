@@ -26,7 +26,7 @@ test("QA installer refuses stale source and unverified package", () => {
 });
 
 test("QA installer starts exactly one actual installed binary, not guessed CLI", () => {
-  assert.match(source, /dpkg-query -L repo-ticker/);
+  assert.match(source, /dpkg-query -L repoticker/);
   assert.match(source, /exec "\$BIN"/);
   assert.doesNotMatch(source, /^repo-ticker\s*$/m);
 });

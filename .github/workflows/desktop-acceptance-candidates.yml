@@ -1,4 +1,4 @@
-# Windows QA seven findings: topmost rich usage popups, full locale and layout (2026-10-27).
+# Windows seven-item QA retest: canonical exact-source rich native popup candidate (2026-10-27).
 name: Desktop acceptance candidates (no publishing)
 
 on:

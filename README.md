@@ -58,10 +58,10 @@ cargo test --locked -p repoticker-core
 cargo clippy --locked -p repoticker-core --all-targets -- -D warnings
 node --test tests/*.test.mjs
 python3 -m unittest discover -s tests -p 'test_release_*.py' -v
-cargo check --locked -p repoticker-desktop
+cargo check --locked -p repoticker
 ~~~
 
-To launch the source build explicitly: `cargo run -p repoticker-desktop`.
+To launch the source build explicitly: `cargo run -p repoticker`.
 This is separate from testing; housekeeping does not install packages, open a
 wallet, enroll or synchronize user repositories, or register autostart.
 [Testing strategy](docs/TEST_STRATEGY.md) separates stable source checks,

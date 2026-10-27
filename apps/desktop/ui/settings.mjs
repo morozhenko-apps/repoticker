@@ -1,6 +1,7 @@
 import { listAvailableInstallations } from "./github-installations.mjs";
 import { settingsLocale, settingsText } from "./settings-i18n.mjs";
 import { localeName, localeDirection } from "./locale-catalog.mjs";
+import { repositorySelectionMessage } from "./locale-counts.mjs";
 // Settings are transactional: editing never writes on disk until Apply.
 const byId = id => document.getElementById(id);
 let uiLocale = "en";
@@ -127,10 +128,13 @@ function renderRepoChoices() {
     ? t("Repository list unavailable. Existing selection is preserved.")
     : selectedRepoNames.size === 0 ? t("Choose at least one repository.")
     : selectedRepoNames.size > 100 ? t("Select at most 100 repositories.")
-    : unavailable ? unavailable + " " + t("selected repositories are no longer accessible.")
-    : selectedRepoNames.size + " " + t("selected of") + " " + repoInventory.length +
-      " " + t("accessible") + (repoInventoryComplete ? "" : " " + t("(inventory truncated)")) +
-      (visible.length > 100 ? t("; filter to find more") : "");
+    : repositorySelectionMessage(uiLocale, {
+      selected: selectedRepoNames.size,
+      total: repoInventory.length,
+      unavailable,
+      complete: repoInventoryComplete,
+      filterHasMore: visible.length > 100
+    });
 }
 
 async function refreshRepoInventory() {

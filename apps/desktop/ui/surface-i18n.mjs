@@ -55,7 +55,7 @@ export const surfaceLocale = cardLocale;
 
 export function surfaceText(language, key) {
   if (typeof key !== "string") throw Error("Invalid surface translation key");
-  return surfaceLocale(language) === "ru" ? (ru[key] ?? key) : coreText(language, key);
+  return surfaceLocale(language) === "ru" ? (ru[key] ?? coreText(language, key)) : coreText(language, key);
 }
 
 function translatedStatus(language, status) {

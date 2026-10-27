@@ -104,6 +104,21 @@ test("Unknown/disconnected state remains unknown, with no fabricated zeros", () 
   assert.equal(inaccessible.message, "server says 'secret'.");
 });
 
+test("checked timestamp preserves unknown as localized unknown, never zero", () => {
+  const details = {
+    connected: true, status: "Runners · —",
+    sections: [],
+    message: "Checked: Unknown"
+  };
+  for (const code of ["ru", "pt", "de", "ar"]) {
+    const result = translateHoverDetails(details, code);
+    assert.equal(result.message, surfaceText(code, "Checked") +
+      ": " + surfaceText(code, "Unknown"));
+    assert.doesNotMatch(result.message, /: 0$/);
+  }
+  assert.equal(details.message, "Checked: Unknown");
+});
+
 test("Usage balloon reads only the local saved locale, not local Git repos", () => {
   assert.match(quota, /data-i18n-aria="GitHub Actions and usage"/);
   assert.match(quotaController, /get_settings_config/);

@@ -2,6 +2,7 @@ import { EXTENDED_TERMS } from "./locale-extended.mjs";
 import { WORKFLOW_TERMS } from "./locale-workflow.mjs";
 import { AUTH_TERMS } from "./locale-auth.mjs";
 import { SURFACE_TERMS } from "./locale-surface.mjs";
+import { ERROR_TERMS } from "./locale-errors.mjs";
 /** Reviewed shared locale roster and high-frequency terminology.
  * Unresolved keys fall back to English and MUST fail completeness audit.
  * English/Russian legacy dictionaries remain authoritative until merged.
@@ -954,5 +955,6 @@ export function coreText(value, english) {
     EXTENDED_TERMS[code]?.[english] ??
     WORKFLOW_TERMS[code]?.[english] ??
     AUTH_TERMS[code]?.[english] ??
-    SURFACE_TERMS[code]?.[english] ?? english;
+    SURFACE_TERMS[code]?.[english] ??
+    ERROR_TERMS[code]?.[english] ?? english;
 }

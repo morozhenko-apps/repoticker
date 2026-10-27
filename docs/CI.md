@@ -22,7 +22,7 @@ Runs for pushes to `dev` and `main`, pull requests against either branch, and ma
 Jobs on Ubuntu 24.04:
 1. Rust formatting, core unit/integration tests and Clippy with warnings denied.
 2. JS syntax checks, Node built-in JS tests and Python release-contract tests. The runner installs APT/GPG tools, so the signed-APT integration test is not intentionally skipped.
-3. Desktop Rust/Tauri Linux compile smoke (`cargo check -p repoticker-desktop`) with native dependencies.
+3. Desktop Rust/Tauri Linux compile smoke (`cargo check --locked -p repoticker`) with native dependencies.
 4. A required aggregate `Preflight result` that succeeds only when all three checks succeed.
 
 **Verified v0.1.0 evidence:** [dev Preflight #39302540338](https://github.com/morozhenko-apps/repoticker/actions/runs/39302540338) and [main Preflight #39309058200](https://github.com/morozhenko-apps/repoticker/actions/runs/39309058200) both completed successfully for `21f3b61d9774b931b57a4e3c83f61b2bcf2bb0ee`. These validate source checks, not full installers or end-user runtime on every OS.

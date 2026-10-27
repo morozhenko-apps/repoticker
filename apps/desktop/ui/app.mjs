@@ -33,6 +33,7 @@ let monitorRevision = 0;
 let monitorRequest = 0;
 let snapshot = emptySnapshot;
 let cardLanguage = "en";
+let authoritativeSavedLocale = null;
 let lastMetricStatus = compactStatus(null);
 let busy = false;
 let fetchCancelling = false;
@@ -409,7 +410,7 @@ function render(next) {
       view: "repos", repositoryCount: next.repositories.length
     }).catch(showError);
   }
-  setCardLanguage(next.language);
+  setCardLanguage(authoritativeSavedLocale ?? next.language);
   renderMonitorMetrics(next.runner_state);
   const list = byId("repo-list");
   list.replaceChildren();
@@ -609,7 +610,10 @@ function refreshCardConfiguration() {
   const revision = ++appliedLocaleRevision;
   void invoke("get_settings_config").then(config => {
     if (revision !== appliedLocaleRevision) return;
-    if (typeof config?.language === "string") setCardLanguage(config.language);
+    if (typeof config?.language === "string") {
+      authoritativeSavedLocale = config.language;
+      setCardLanguage(config.language);
+    }
   }).catch(() => {});
   void refresh();
 }

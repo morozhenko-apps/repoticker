@@ -10,6 +10,14 @@ fi
 for binary in gh sha256sum dpkg-deb dpkg-query sudo pgrep; do
   command -v "$binary" >/dev/null || { echo "Missing: $binary" >&2; exit 1; }
 done
+# The legacy DEB is a DIFFERENT package. Never silently leave two
+# launchers or autostart registrations with the same application identity.
+if [[ "$(dpkg-query -W -f='${Status}' repo-ticker 2>/dev/null || true)" == "install ok installed" ]]; then
+  echo "Legacy package repo-ticker is installed. Close RepoTicker and run:" >&2
+  echo "  sudo apt remove repo-ticker" >&2
+  echo "Then rerun this QA installer; your user settings will remain." >&2
+  exit 1
+fi
 RESULT="$(gh run view "$1" -R "$REPO" --json conclusion --jq '.conclusion')"
 if [[ "$RESULT" != "success" ]]; then
   echo "Refusing unsuccessful CI run: $RESULT" >&2
@@ -43,10 +51,10 @@ if pgrep -x repoticker >/dev/null || pgrep -f '[r]epoticker-desktop' >/dev/null;
   exit 1
 fi
 sudo apt install "$DEB"
-BIN="$(dpkg-query -L repoticker | grep -E '^/usr/bin/[^/]+$' || true)"
-if [[ -z "$BIN" || "$BIN" == *$'\n'* || ! -x "$BIN" ]]; then
-  echo "Cannot identify exactly one installed executable: $BIN" >&2
+BIN="/usr/bin/repoticker"
+if [[ ! -x "$BIN" ]] || ! dpkg-query -L repoticker | grep -Fxq "$BIN"; then
+  echo "Installed repoticker package has no expected executable: $BIN" >&2
   exit 1
 fi
-echo "Launching installed executable: $BIN"
+echo "Launching RepoTicker: $BIN"
 exec "$BIN"

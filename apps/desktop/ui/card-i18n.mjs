@@ -1,5 +1,6 @@
 import { normalizeLocale, coreText } from "./locale-catalog.mjs";
 import { CARD_TERMS } from "./locale-card.mjs";
+import { localizedGitCount } from "./locale-plurals.mjs";
 /** Card-only i18n foundation. The persisted language setting already
  * supports the canonical twenty locales without translating provider values.
  * Keep stable keys and value-bearing templates for contextual audits.
@@ -102,6 +103,8 @@ const coreCardTerms = Object.freeze({
 
 export function cardText(language, key, value) {
   const locale = cardLocale(language);
+  if (key === "syncReady" || key === "gitErrors")
+    return localizedGitCount(locale, key, value);
   const message = messages[locale === "ru" ? "ru" : "en"][key];
   if (message === undefined) throw new Error("Unknown card translation key");
   const rendered = typeof message === "function" ? message(value) : message;

@@ -79,7 +79,7 @@ test("all CI notifications preserve provider run identity and opt-in scope", () 
   assert.deepEqual(Object.keys(notifications), LOCALE_ROSTER.map(x => x.code));
   for (const [language, values] of Object.entries(notifications)) {
     assert.ok(values.title.includes("RepoTicker"), language);
-    assert.ok(values.body.includes("workflow"), language);
+    assert.ok(values.title.includes("CI"), language);
     for (const name of ["permissionError", "stateError", "deliveryError"]) {
       assert.equal(typeof values[name], "string", language + "/" + name);
       assert.ok(values[name].trim(), language + "/" + name);

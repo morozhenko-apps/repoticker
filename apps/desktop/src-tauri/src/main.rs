@@ -603,7 +603,7 @@ async fn set_card_view(
     repository_count: Option<usize>,
 ) -> Result<(), String> {
     let height = match view.as_str() {
-        "compact" => 122.0,
+        "compact" => if cfg!(target_os = "windows") { 108.0 } else { 122.0 },
         "repos" => {
             let count = repository_count.unwrap_or(0);
             let rows = count.clamp(1, 10);
@@ -810,7 +810,7 @@ fn show_compact_card(app: &AppHandle) {
 
     // Non-layer-shell platforms retain the existing compact geometry.
     if let Some(window) = app.get_webview_window("main") {
-        if let Err(error) = resize_unmanaged_card(&window, 122.0) {
+        if let Err(error) = resize_unmanaged_card(&window, if cfg!(target_os = "windows") { 108.0 } else { 122.0 }) {
             eprintln!("RepoTicker compact resize: {error}");
         }
         #[cfg(target_os = "windows")]

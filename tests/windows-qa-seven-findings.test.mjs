@@ -29,8 +29,8 @@ test("Fetch controls are meaningful localized verbs, not 19 English Fetch labels
 
 test("all three Windows metrics use a single styled native usage window", () => {
   assert.match(native, /popup\.set_always_on_top\(false\)/);
-  assert.match(native, /popup\.set_always_on_top\(true\)/);
-  assert.ok(native.indexOf("popup.set_always_on_top(true)") > native.indexOf(".show()"));
+  assert.match(native, /popup\s*\.set_always_on_top\(true\)/);
+  assert.ok(native.indexOf(".set_always_on_top(true)") > native.indexOf(".show()"));
   assert.match(card, /function clearBrowserTooltips/);
   assert.match(card, /node\.removeAttribute\("title"\)/);
   assert.doesNotMatch(card, /node\.title = hoverFallbackText/);

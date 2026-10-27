@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Prepare and sign a minimal Debian APT snapshot for RepoTicker (amd64).
 
-No network access. Signing happens only in a protected release job. Immutable
-pool and by-hash objects can be published before mutable InRelease.
+No network access. Signing happens only in a protected release job.
+Creates a flat signed index next to the one approved versioned Linux DEB.
+The temporary local DEB copy is never published a second time to R2.
 """
 import argparse
 import datetime as dt
@@ -41,47 +42,46 @@ def assemble(deb: Path, out: Path, version: str, gpg_home: Path,
             raise ValueError(f"Invalid {name}")
     if "libgtk-layer-shell0" not in package_field(deb, "Depends"):
         raise ValueError("Missing GTK Layer Shell runtime dependency")
+    # Do not produce signed metadata for arbitrary or tampered packages.
+    if not fingerprint or len(fingerprint) != 40:
+        raise ValueError("Missing dedicated RepoTicker signing fingerprint")
 
-    pool = out / "pool/main/r/repoticker"
-    pool.mkdir(parents=True)
-    package = pool / f"repoticker_{version}_amd64.deb"
+    out.mkdir(parents=True, exist_ok=True)
+    # dpkg-scanpackages emits "Filename: ./repoticker_VERSION_amd64.deb"
+    # when scanning "." from the flat APT root. The temporary copy is
+    # validated for parity but never uploaded to R2 as a second object.
+    package = out / f"repoticker_{version}_amd64.deb"
     shutil.copyfile(deb, package)
-    index = out / "dists/stable/main/binary-amd64"
-    index.mkdir(parents=True)
-    # Filename is relative to the APT repository root.
     proc = subprocess.run(
-        ["dpkg-scanpackages", "--multiversion", "pool", "/dev/null"],
+        ["dpkg-scanpackages", ".", "/dev/null"],
         cwd=out, capture_output=True, check=True
     )
     packages = proc.stdout
-    if b"Filename: pool/main/r/repoticker/" not in packages:
-        raise ValueError("APT package index did not contain the expected pool path")
-    (index / "Packages").write_bytes(packages)
-    # Deterministic gzip (mtime 0) and content-addressed archive.
-    with (index / "Packages.gz").open("wb") as f:
+    if (packages.count(b"Package: repoticker\n") != 1 or
+            b"Filename: ./repoticker_" + version.encode() + b"_amd64.deb\n" not in packages):
+        raise ValueError("Flat APT index did not contain the exact RepoTicker DEB")
+    (out / "Packages").write_bytes(packages)
+    with (out / "Packages.gz").open("wb") as f:
         with gzip.GzipFile(filename="", mode="wb", fileobj=f, mtime=0) as g:
             g.write(packages)
-    archive = index / "Packages.gz"
-    for archive in (index / "Packages", index / "Packages.gz"):
-        checksum = sha256(archive)
-        by_hash = index / "by-hash/SHA256" / checksum
-        by_hash.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(archive, by_hash)
-
-    release_dir = out / "dists/stable"
-    release_body = subprocess.run(["apt-ftparchive", "release", "."],
-                                  cwd=release_dir, check=True, capture_output=True).stdout
     today = dt.datetime.now(dt.timezone.utc)
+    # SHA256-only Release is sufficient for APT and deliberately contains
+    # only the two flat package indexes. The whole Release is GPG clearsigned.
     headers = (
-        "Origin: RepoTicker\nLabel: RepoTicker\nSuite: stable\nCodename: stable\n"
-        "Architectures: amd64\nComponents: main\nAcquire-By-Hash: yes\n"
+        "Origin: RepoTicker\nLabel: RepoTicker\n"
+        "Architectures: amd64\n"
         f"Date: {today.strftime('%a, %d %b %Y %H:%M:%S +0000')}\n"
+        "SHA256:\n"
         # Metadata expiration requires an independent refresh workflow,
         # which is not yet configured: do not advertise stale Valid-Until.
     )
-    release = release_dir / "Release"
-    release.write_bytes(headers.encode() + release_body)
-    inrelease = release_dir / "InRelease"
+    rows = "".join(
+        f" {sha256(out / name)} {(out / name).stat().st_size} {name}\n"
+        for name in ("Packages", "Packages.gz")
+    )
+    release = out / "Release"
+    release.write_text(headers + rows, encoding="utf8")
+    inrelease = out / "InRelease"
     subprocess.run([
         "gpg", "--homedir", str(gpg_home), "--batch", "--yes", "--no-tty",
         "--pinentry-mode", "loopback", "--passphrase-file", str(passphrase_file),
@@ -98,12 +98,15 @@ def assemble(deb: Path, out: Path, version: str, gpg_home: Path,
 
 
 def verify(root, keyring):
-    signed = root / "dists/stable/InRelease"
+    signed = root / "InRelease"
     invoke("gpgv", "--keyring", str(keyring), str(signed))
-    archive = root / "dists/stable/main/binary-amd64/Packages.gz"
-    by_hash = archive.parent / "by-hash/SHA256" / sha256(archive)
-    if archive.read_bytes() != by_hash.read_bytes():
-        raise ValueError("APT by-hash mismatch")
+    from r2_release import verify_signed_apt_indexes, verify_apt_package_catalog
+    verify_signed_apt_indexes(signed, root)
+    packages = list(root.glob("repoticker_*_amd64.deb"))
+    if len(packages) != 1:
+        raise ValueError("Expected one flat RepoTicker DEB")
+    verify_apt_package_catalog(root / "Packages", root / "Packages.gz", packages[0],
+                               package_field(packages[0], "Version"))
 
 
 def main():

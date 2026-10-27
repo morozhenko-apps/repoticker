@@ -3576,7 +3576,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "repoticker-desktop"
+name = "repoticker"
 version = "0.2.0"
 dependencies = [
  "gtk",

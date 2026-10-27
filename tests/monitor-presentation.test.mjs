@@ -66,7 +66,7 @@ test("monitor events only refresh metrics; real Git events still rescan local re
     assert.ok(card.includes('listen?.("' + event + '", refreshMonitor)'));
     assert.ok(!card.includes('listen?.("' + event + '", refresh)'));
   }
-  assert.match(card, /"repoticker-config-changed", refresh\)/);
+  assert.match(card, /"repoticker-config-changed", refreshCardConfiguration\)/);
   assert.match(card, /"repoticker-git-action-finished"[\s\S]*?await refresh\(\)/);
   const partial = card.match(/async function refreshMonitor\(\) \{[\s\S]*?\n\}/)?.[0];
   assert.ok(partial);

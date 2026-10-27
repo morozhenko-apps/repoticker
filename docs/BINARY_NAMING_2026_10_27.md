@@ -1,66 +1,74 @@
-# RepoTicker binary naming correction — 2026-10-27
+# RepoTicker package identity — 2026-10-27
 
-**Mode A: Refactor.** Owner directive: remove the accidental `desktop`
-suffix from the application's executable/package identity and stop
-propagating it to user-facing command examples.
+**Mode A refactor, dev only.** The owner explicitly authorized manual removal
+of the old Debian package on their Ubuntu machine. No active release or
+public signing has been performed.
 
-## Diagnosis
+## Why the original names differed
 
-- `apps/desktop/src-tauri/Cargo.toml` defines
-  `[package] name = "repoticker-desktop"`; Cargo derives the
-  compiled executable basename from this. This is why QA found
-  `repoticker-desktop` rather than an executable called `repoticker`.
-- Product and application identity already read `RepoTicker`,
-  `com.morozhenko.repoticker`, and the Debian **package**
-  `repo-ticker`. The package and app ID are public stable contracts
-  and are not being renamed.
-- The internal source folder `apps/desktop/` describes the Tauri
-  target inside a multi-component repository. It is **not** the
-  product, an installed command, or a launcher label; moving this
-  tree would needlessly change every file path, Rust build and CI
-  reference. Keep it internal, never surface it as the app name.
-- Historical committed release versions and previous acceptance
-  reports describe older binaries; do not silently falsify them.
+1. The initial Cargo package was `repoticker-desktop`, so the binary
+   installed under that name regardless of the Tauri `productName`.
+2. Tauri kebab-cases `RepoTicker` on Linux, yielding the old Debian
+   package `repo-ticker` and its old desktop-entry name.
+3. Release scripts, signed APT metadata, the allowlisted download Worker
+   and QA helper were written against that old package name.
 
-## Contract and migration policy
+## Canonical identity after this refactor
 
-1. New Cargo package and executable basename: **`repoticker`**.
-   User-visible terminal command: **`repoticker`**.
-   User-visible brand: **RepoTicker**.
-   `repo-ticker` remains the **DEB package name**; both `0.2.0`
-   source version markers and the existing NSIS/AppImage artifact
-   canonical names are preserved in unpublished QA candidates.
-2. Lockfile, compile commands, current installer/QA scripts and
-   active tests must follow the new package name. Do not introduce
-   another spelling in release assets, service configuration,
-   icons or product-page names.
-3. OS autostart is an explicit compatibility risk: a previously
-   enabled login entry may point at `repoticker-desktop`. The
-   migration must not silently disable autostart, create duplicates,
-   or run Git in the background. Do not claim the new filename has
-   passed OS login acceptance on source/CI alone.
-4. Prevent backsliding with focused regression tests for Cargo
-   manifest/lockfile, launcher command, installed package identity,
-   native autostart registration and Linux/Windows script semantics.
-5. Run stable source tests and compile at the **final** validation
-   gate, then build unpublished Linux/Windows candidates for runtime
-   acceptance. No tag, version bump, `main` promotion, APT or public
-   release.
+| Contract | Value | Implementation |
+| --- | --- | --- |
+| Visible product / Windows installer title | `RepoTicker` | Main Tauri config `productName` |
+| Installed executable on Linux | `/usr/bin/repoticker` | Cargo package `repoticker` and `mainBinaryName` |
+| Executable on Windows | `repoticker.exe` | Same Cargo/main binary |
+| Debian package | `repoticker` | Tauri's `tauri.linux.conf.json` |
+| Debian QA/release filename | `repoticker_VERSION_amd64.deb` | Release asset collector |
+| Desktop launcher displayed name | `RepoTicker` | Linux `desktopTemplate` |
+| APT pool path (future release) | `pool/main/r/repoticker/` | APT publisher/download allowlist |
+| Application identifier and settings namespace | `com.morozhenko.repoticker` | Unchanged base Tauri config |
+| AppImage and NSIS canonical filenames | `RepoTicker-…` | Unchanged release collector |
 
-## Risks and rollback
+Using Tauri's **built-in, automatically merged Linux-specific**
+configuration is intentional: it changes the Linux packaging identity
+without changing Windows installer branding or rewriting packaged DEB
+control files after build. The desktop-entry template independently
+sets `Name=RepoTicker`. The internal directory `apps/desktop`
+remains a source-tree path, not the product's displayed name.
 
-A Cargo package rename invalidates `cargo -p repoticker-desktop`
-commands; all current CI checks/scripts must use `-p repoticker`.
-A previous Linux process can remain active after reinstall because
-RepoTicker enforces single instance: QA installer must check both
-legacy and new process names before replacing the binary. Previous
-OS autostart path needs a scoped migration or explicit OS acceptance,
-not a duplicate fixed launch entry. A failing login migration blocks
-Gate 2 regardless of green source tests.
+## Installation on Ubuntu KDE
 
-Rollback is the exact inverse rename of manifest/lockfile, any
-preflight helpers and QA script/test only; existing persisted
-user settings are not changed.
+- Fully quit an old instance of RepoTicker using the tray action.
+- `sudo apt remove repo-ticker` removes **only the package**; do not
+  `purge` and do not delete `~/.config` or `~/.local/share`.
+- Install the new, checksum-verified unpublished `repoticker` package.
+  The installer checks that the old package is absent to prevent two
+  separate packages and desktop launchers with the same application ID.
+- Launch `repoticker`. Inspect `dpkg-query -W repoticker`,
+  `dpkg -L repoticker` and the generated
+  `/usr/share/applications/repoticker.desktop`; it must contain
+  `Name=RepoTicker`, `Exec=repoticker`, not a legacy executable.
+- Previously enabled OS autostart could point at the **old** executable.
+  Verify login registration in Settings and perform a login/logoff
+  acceptance test. Do not delete or rewrite credentials or repository
+  config as part of package renaming.
 
-**Status:** analysis recorded; implementation and physical acceptance
-pending.
+The already published 0.1.0 APT package and historical documentation
+correctly retain the **old** name. The new `repoticker` APT pool must
+not be published without a separate release approval and version/tag.
+Any old repository listing remains historical and distinct.
+
+## Required validation
+
+1. Test exact product/Cargo/main binary consistency and Linux platform
+   merge contract, native desktop-entry template and launch target.
+2. Run source Preflight: JS, Python release contract, Rustfmt,
+   core/Clippy, Linux desktop compile. Do not consider source checks
+   equivalent to an installed package.
+3. Build separate unpublished Linux DEB/AppImage and Windows NSIS.
+   Verify actual Debian control `Package: repoticker`,
+   `/usr/bin/repoticker`, `Name=RepoTicker`, dependencies and
+   SHA256, and Windows installer branding.
+4. Physical verification on KDE and Windows includes autostart and
+   single-instance behavior after the rename.
+
+**Release remains blocked** until independent physical acceptance;
+`main` and tags must remain unchanged.

@@ -23,6 +23,9 @@ else
     if grep -Eiq '^(Name|Exec|X-GNOME-Autostart-enabled)=(.*[Rr]epo[- ]?[Tt]icker|.*repoticker)' "$entry"; then
       count=$((count+1))
       printf 'Autostart entry name: %s\n' "$(basename "$entry")"
+      if grep -Eiq '^Exec=.*(repoticker-desktop|repo-ticker)' "$entry"; then
+        echo "WARNING: stale legacy executable in login entry; toggle Launch at login off/on after installing repoticker"
+      fi
       # Never print the Exec path; it can expose home directories.
       if grep -Eqi '^Hidden=true$|^X-GNOME-Autostart-enabled=false$' "$entry"; then
         echo "Entry flags: disabled/hidden"

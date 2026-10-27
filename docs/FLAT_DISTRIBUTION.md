@@ -184,3 +184,10 @@ product's former Worker/route from its retained Git source/config if needed.
 The dedicated old rQuickShare bucket and all historical published R2 objects
 were retained. No remote snapshot or alternate DEB copy is created by the
 new pipeline. All task-owned command sessions exited; no watcher/server remains.
+
+Final delivery: merged-dev [Preflight 40603301356](https://github.com/morozhenko-apps/repoticker/actions/runs/40603301356)
+completed successfully. Subsequent commits change only this document; the
+validated executable tree is preserved. Source and scoped Worker retirement
+are complete. No new flat application release was requested or published.
+Historical R2 apt/ and releases/ files remain until a separately authorized
+cleanup after the first verified flat release; no automatic deletion is added.

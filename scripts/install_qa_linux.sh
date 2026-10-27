@@ -38,7 +38,7 @@ fi
 # Do not replace the on-disk DEB while an old installed/AppImage
 # instance remains active: the single-instance plugin can leave the old
 # UI and icons visible even after the package is reinstalled.
-if pgrep -f '[r]epoticker-desktop' >/dev/null; then
+if pgrep -x repoticker >/dev/null || pgrep -f '[r]epoticker-desktop' >/dev/null; then
   echo "RepoTicker is still running. Use tray Quit, then retry." >&2
   exit 1
 fi

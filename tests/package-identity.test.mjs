@@ -10,7 +10,7 @@ const cargo = read("apps/desktop/src-tauri/Cargo.toml");
 const lock = read("Cargo.lock");
 const assets = read("scripts/release_assets.py");
 const apt = read("scripts/apt_repository.py");
-const worker = read("infra/download-worker/src/worker.mjs");
+const publisher = read("scripts/r2_release.py");
 const qa = read("scripts/install_qa_linux.sh");
 const release = read(".github/workflows/desktop-release-candidates.yml");
 const preflight = read(".github/workflows/preflight.yml");
@@ -38,8 +38,8 @@ test("packaging keeps a branded launcher but no hyphenated Debian package", () =
   assert.match(assets, /usr\/share\/applications\/repoticker\.desktop/);
   assert.match(assets, /Name=RepoTicker/);
   assert.match(apt, /"Package": "repoticker"/);
-  assert.match(apt, /pool\/main\/r\/repoticker/);
-  assert.match(worker, /apt\\\/pool\\\/main\\\/r\\\/repoticker/);
+  assert.match(apt, /Filename: \.\/repoticker_/);
+  assert.match(publisher, /linux\/repoticker_/);
   assert.match(release, /-name 'repoticker_\*\.deb'/);
 });
 
@@ -56,7 +56,7 @@ test("unpublished installer refuses legacy package and launches canonical execut
 test("active release and QA scripts contain no accidental alternate product spelling", () => {
   for (const path of [
     "scripts/release_assets.py", "scripts/apt_repository.py",
-    "scripts/r2_release.py", "infra/download-worker/src/worker.mjs",
+    "scripts/r2_release.py",
     ".github/workflows/desktop-release-candidates.yml"
   ]) {
     const content = read(path);

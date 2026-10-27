@@ -14,6 +14,7 @@ const emptySnapshot = {
   connected: false
 };
 const byId = id => document.getElementById(id);
+if (navigator.userAgent.includes("Windows")) document.documentElement.classList.add("windows-platform");
 const invoke = (command, args = {}) => {
   if (!window.__TAURI__?.core?.invoke) {
     return Promise.reject(new Error("Launch the desktop application to use Git."));

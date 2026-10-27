@@ -609,7 +609,7 @@ async fn set_card_view(
             } else {
                 122.0
             }
-        },
+        }
         "repos" => {
             let count = repository_count.unwrap_or(0);
             let rows = count.clamp(1, 10);

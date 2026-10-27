@@ -606,7 +606,18 @@ window.__TAURI__?.event?.listen?.("repoticker-reset-view", () => {
   clearError();
   refresh();
 });
-window.__TAURI__?.event?.listen?.("repoticker-config-changed", refresh);
+// A saved locale must repaint controls immediately even if the local Git
+// snapshot is still scanning an expanded drawer.
+let appliedLocaleRevision = 0;
+function refreshCardConfiguration() {
+  const revision = ++appliedLocaleRevision;
+  void invoke("get_settings_config").then(config => {
+    if (revision !== appliedLocaleRevision) return;
+    if (typeof config?.language === "string") setCardLanguage(config.language);
+  }).catch(() => {});
+  void refresh();
+}
+window.__TAURI__?.event?.listen?.("repoticker-config-changed", refreshCardConfiguration);
 window.__TAURI__?.event?.listen?.("repoticker-monitor-updated", refreshMonitor);
 window.__TAURI__?.event?.listen?.("repoticker-github-auth", refreshMonitor);
 window.__TAURI__?.event?.listen?.("repoticker-github-scope-changed", refreshMonitor);

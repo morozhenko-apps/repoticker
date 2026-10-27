@@ -1,5 +1,11 @@
 # Flat R2 distribution
 
+**Current status:** source refactor is merged into dev and live download Worker
+retirement is verified. Both exact routes/Workers are absent; existing public
+objects and all sibling routes are preserved. Git disconnection and the RQS
+app-dist token replacement are owner-confirmed. No new application release,
+version/tag change or R2 object upload was performed.
+
 ## Approved contract (2026-10-27)
 
 Mode A. The owner approved replacing the download Worker, nested APT/release
@@ -120,7 +126,7 @@ artifact provenance are tested without production access. No secret values,
 production signing, R2 mutation, route retirement or release tag was used.
 Hosted CI and final dev integration are the remaining source-delivery gates.
 
-## Hosted source acceptance and integration
+## Hosted source acceptance and integration (pre-cutover checkpoint)
 
 PR [#18](https://github.com/morozhenko-apps/repoticker/pull/18) merged into
 `dev` as `89901941cb56c3264af364d6149110d3de411fb5` after exact source
@@ -145,3 +151,36 @@ Rollback: revert the executable refactor commit and its documentation commits
 if required; old production objects/tags and the recorded Worker deployment
 are unchanged. The completed source milestone is separate from live cutover
 and a future owner-authorized release.
+
+## Verified operational cutover
+
+After the owner confirmed both Git build connections were disconnected and
+the rQuickShare R2 token was replaced, Wrangler 4.151.0 deleted only
+`repoticker-download` and `rquickshare-download`; both commands exited 0.
+Neither deletion used --force or changed bucket objects, signing keys, DNS,
+WAF, unrelated Workers or any other application's configuration.
+
+Independent post-deletion Cloudflare settings GET returns 404 for each Worker.
+Zone routes changed from 13 to 11, exactly removing the two recorded product
+routes. Every other route ID and field matches the immediate pre-cutover
+baseline. The app-dist Custom Domain remains enabled. Public full-body GET
+readback confirms unchanged Picturix latest.json (565 bytes), RepoTicker's
+published InRelease (1,418 bytes) and v0.2.0 DEB checksum (94 bytes).
+
+Picturix manifest SHA256:
+`73a2d36a8a1e4b37ba9ddd05266f66323b9a763a845a9de45defbc88238b7fdc`.
+RepoTicker historical InRelease SHA256:
+`f0c129e8737c87e9126d1eb037aa4632bccf9e073f4d20427806e310f23141d9`.
+This proves scoped routing retirement and preservation of those existing
+public bytes; it does not claim that a new flat release has been published.
+
+The earlier Builds API 403 remains a limitation of the agent's OAuth scope;
+Git disconnection and token scope are owner-provided evidence, not an API
+verification. GitHub keeps secret values encrypted. A future normal protected
+release must still verify actual S3 permissions and full public byte readback.
+
+Rollback remains scoped: revert the source refactor and recreate only the
+product's former Worker/route from its retained Git source/config if needed.
+The dedicated old rQuickShare bucket and all historical published R2 objects
+were retained. No remote snapshot or alternate DEB copy is created by the
+new pipeline. All task-owned command sessions exited; no watcher/server remains.

@@ -12,7 +12,7 @@ const notifications = JSON.parse(read("../apps/desktop/ui/locales/notifications.
 const native = read("../apps/desktop/src-tauri/src/ci_notifications.rs");
 const settings = read("../apps/desktop/ui/settings.mjs");
 const quota = read("../apps/desktop/ui/quota.mjs");
-const hover = read("../apps/desktop/ui/hover-fallback.mjs");
+const app = read("../apps/desktop/ui/app.mjs");
 
 test("every locale has complete, placeholder-safe repository-count sentences", () => {
   const codes = LOCALE_ROSTER.map(x => x.code);

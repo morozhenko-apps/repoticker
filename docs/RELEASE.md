@@ -226,13 +226,19 @@ Artifact paths:
     dist/RepoTicker/releases/vVERSION/linux/
     dist/RepoTicker/releases/vVERSION/windows/
     dist/RepoTicker/apt/dists/stable/InRelease
-    dist/RepoTicker/apt/pool/main/r/repo-ticker/
+    dist/RepoTicker/apt/pool/main/r/repoticker/ (next published release)
     dist/RepoTicker/apt/repoticker-archive-keyring.gpg
 
-The Debian package identity is repo-ticker (apt install repo-ticker).
-Bundled input from Tauri is named RepoTicker_VERSION_amd64.deb; the
-release collector verifies its dpkg identity and publishes the canonical
-repo-ticker_VERSION_amd64.deb name. This is independent of the GUI title.
+**For new releases after the dev naming change:** Linux DEB package and
+executable are both `repoticker` (`apt install repoticker`, `repoticker`
+to launch). Tauri's Linux-specific configuration uses lowercase
+`productName` for Debian identity while its desktop-entry template shows
+`RepoTicker`; Windows installer branding remains `RepoTicker`.
+The collector checks the Debian control field and emits
+`repoticker_VERSION_amd64.deb` with matching checksums.
+**Already published** 0.1.0 DEBs still use `repo-ticker`. The new
+identity is not in the public signed APT repository until a separately
+approved tagged release; the unpublished QA packages do not modify APT.
 
 The Worker permits GET/HEAD for specified RepoTicker files only; it does
 not expose listing, mutation or sibling project storage.

@@ -1,8 +1,41 @@
 //! Native-only, opt-in CI failure delivery. Never accepts arbitrary text or URLs.
-use std::collections::VecDeque;
-use std::sync::Mutex;
+use std::{collections::{BTreeMap, VecDeque}, sync::{Mutex, OnceLock}};
 use tauri::{plugin::PermissionState, AppHandle, Manager};
 use tauri_plugin_notification::NotificationExt;
+
+type NotificationCatalog = BTreeMap<String, NotificationTemplate>;
+
+#[derive(serde::Deserialize)]
+struct NotificationTemplate {
+    title: String,
+    body: String,
+}
+
+fn notification_catalog() -> &'static NotificationCatalog {
+    static CATALOG: OnceLock<NotificationCatalog> = OnceLock::new();
+    CATALOG.get_or_init(|| {
+        serde_json::from_str(include_str!("../../ui/locales/notifications.json"))
+            .expect("Bundled native notification translations must be valid")
+    })
+}
+
+fn notification_text(
+    language: &str,
+    repository: &str,
+    run_id: u64,
+    attempt: u32,
+) -> (String, String) {
+    let templates = notification_catalog()
+        .get(language)
+        .or_else(|| notification_catalog().get("en"))
+        .expect("English notification templates must exist");
+    let body = templates
+        .body
+        .replace("{repository}", repository)
+        .replace("{runId}", &run_id.to_string())
+        .replace("{attempt}", &attempt.to_string());
+    (templates.title.clone(), body)
+}
 
 const MAX_DELIVERED: usize = 512;
 
@@ -75,12 +108,11 @@ pub(crate) fn ci_failure_notify(
     if delivered.contains(&key) {
         return Ok(false);
     }
+    let (title, body) = notification_text(&config.language, &repository, run_id, run_attempt);
     app.notification()
         .builder()
-        .title("RepoTicker: CI failure")
-        .body(format!(
-            "{repository}: workflow run {run_id} (attempt {run_attempt}) failed"
-        ))
+        .title(title)
+        .body(body)
         .show()
         .map_err(|_| "System notification delivery failed.".to_owned())?;
     delivered.push_back(key);
@@ -99,6 +131,26 @@ mod tests {
         value.github_monitor_org = Some("Team".into());
         value.github_monitor_repositories = vec!["Team/alpha".into()];
         value
+    }
+
+    #[test]
+    fn notification_templates_are_complete_and_preserve_run_identity() {
+        assert_eq!(notification_catalog().len(), 20);
+        for (locale, template) in notification_catalog() {
+            assert!(crate::tray_i18n::is_supported_locale(locale));
+            assert!(!template.title.is_empty() && template.title.contains("RepoTicker"));
+            for placeholder in ["{repository}", "{runId}", "{attempt}"] {
+                assert_eq!(template.body.matches(placeholder).count(), 1);
+            }
+            let (_, text) = notification_text(locale, "Team/repo", 112, 2);
+            assert!(text.contains("Team/repo"));
+            assert!(text.contains("112"));
+            assert!(text.contains('2'));
+            assert!(!text.contains('{'));
+        }
+        let (title, body) = notification_text("unrecognized", "Team/repo", 12, 1);
+        assert_eq!(title, "RepoTicker: CI failure");
+        assert!(body.contains("Team/repo"));
     }
 
     #[test]

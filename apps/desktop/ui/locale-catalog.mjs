@@ -113,7 +113,7 @@ export const CORE_TERMS = Object.freeze({
   "es": {
     "Open card": "Abrir panel",
     "Settings": "Configuración",
-    "Fetch": "Fetch",
+    "Fetch": "Obtener",
     "Sync": "Sincronizar",
     "About RepoTicker": "Acerca de RepoTicker",
     "Quit": "Salir",
@@ -159,7 +159,7 @@ export const CORE_TERMS = Object.freeze({
   "pt": {
     "Open card": "Abrir painel",
     "Settings": "Definições",
-    "Fetch": "Fetch",
+    "Fetch": "Obter",
     "Sync": "Sincronizar",
     "About RepoTicker": "Sobre o RepoTicker",
     "Quit": "Sair",
@@ -205,7 +205,7 @@ export const CORE_TERMS = Object.freeze({
   "de": {
     "Open card": "Karte öffnen",
     "Settings": "Einstellungen",
-    "Fetch": "Fetch",
+    "Fetch": "Abrufen",
     "Sync": "Synchronisieren",
     "About RepoTicker": "Über RepoTicker",
     "Quit": "Beenden",
@@ -251,7 +251,7 @@ export const CORE_TERMS = Object.freeze({
   "fr": {
     "Open card": "Ouvrir la fenêtre",
     "Settings": "Paramètres",
-    "Fetch": "Fetch",
+    "Fetch": "Récupérer",
     "Sync": "Synchroniser",
     "About RepoTicker": "À propos de RepoTicker",
     "Quit": "Quitter",
@@ -297,7 +297,7 @@ export const CORE_TERMS = Object.freeze({
   "it": {
     "Open card": "Apri scheda",
     "Settings": "Impostazioni",
-    "Fetch": "Fetch",
+    "Fetch": "Recupera",
     "Sync": "Sincronizza",
     "About RepoTicker": "Informazioni su RepoTicker",
     "Quit": "Esci",
@@ -343,7 +343,7 @@ export const CORE_TERMS = Object.freeze({
   "pl": {
     "Open card": "Otwórz panel",
     "Settings": "Ustawienia",
-    "Fetch": "Fetch",
+    "Fetch": "Pobierz",
     "Sync": "Synchronizuj",
     "About RepoTicker": "O RepoTicker",
     "Quit": "Zakończ",
@@ -389,7 +389,7 @@ export const CORE_TERMS = Object.freeze({
   "hi": {
     "Open card": "कार्ड खोलें",
     "Settings": "सेटिंग्स",
-    "Fetch": "Fetch",
+    "Fetch": "प्राप्त करें",
     "Sync": "सिंक करें",
     "About RepoTicker": "RepoTicker के बारे में",
     "Quit": "बाहर निकलें",
@@ -435,7 +435,7 @@ export const CORE_TERMS = Object.freeze({
   "zh-Hant": {
     "Open card": "開啟面板",
     "Settings": "設定",
-    "Fetch": "Fetch",
+    "Fetch": "擷取",
     "Sync": "同步",
     "About RepoTicker": "關於 RepoTicker",
     "Quit": "結束",
@@ -481,7 +481,7 @@ export const CORE_TERMS = Object.freeze({
   "ja": {
     "Open card": "カードを開く",
     "Settings": "設定",
-    "Fetch": "Fetch",
+    "Fetch": "取得",
     "Sync": "同期",
     "About RepoTicker": "RepoTicker について",
     "Quit": "終了",
@@ -527,7 +527,7 @@ export const CORE_TERMS = Object.freeze({
   "nl": {
     "Open card": "Kaart openen",
     "Settings": "Instellingen",
-    "Fetch": "Fetch",
+    "Fetch": "Ophalen",
     "Sync": "Synchroniseren",
     "About RepoTicker": "Over RepoTicker",
     "Quit": "Afsluiten",
@@ -573,7 +573,7 @@ export const CORE_TERMS = Object.freeze({
   "sv": {
     "Open card": "Öppna panel",
     "Settings": "Inställningar",
-    "Fetch": "Fetch",
+    "Fetch": "Hämta",
     "Sync": "Synkronisera",
     "About RepoTicker": "Om RepoTicker",
     "Quit": "Avsluta",
@@ -619,7 +619,7 @@ export const CORE_TERMS = Object.freeze({
   "tr": {
     "Open card": "Kartı aç",
     "Settings": "Ayarlar",
-    "Fetch": "Fetch",
+    "Fetch": "Getir",
     "Sync": "Eşitle",
     "About RepoTicker": "RepoTicker hakkında",
     "Quit": "Çıkış",
@@ -665,7 +665,7 @@ export const CORE_TERMS = Object.freeze({
   "ko": {
     "Open card": "카드 열기",
     "Settings": "설정",
-    "Fetch": "Fetch",
+    "Fetch": "가져오기",
     "Sync": "동기화",
     "About RepoTicker": "RepoTicker 정보",
     "Quit": "종료",
@@ -711,7 +711,7 @@ export const CORE_TERMS = Object.freeze({
   "bn": {
     "Open card": "কার্ড খুলুন",
     "Settings": "সেটিংস",
-    "Fetch": "Fetch",
+    "Fetch": "আনুন",
     "Sync": "সিঙ্ক করুন",
     "About RepoTicker": "RepoTicker সম্পর্কে",
     "Quit": "প্রস্থান",
@@ -757,7 +757,7 @@ export const CORE_TERMS = Object.freeze({
   "th": {
     "Open card": "เปิดการ์ด",
     "Settings": "การตั้งค่า",
-    "Fetch": "Fetch",
+    "Fetch": "ดึงข้อมูล",
     "Sync": "ซิงค์",
     "About RepoTicker": "เกี่ยวกับ RepoTicker",
     "Quit": "ออก",
@@ -803,7 +803,7 @@ export const CORE_TERMS = Object.freeze({
   "id": {
     "Open card": "Buka kartu",
     "Settings": "Pengaturan",
-    "Fetch": "Fetch",
+    "Fetch": "Ambil",
     "Sync": "Sinkronkan",
     "About RepoTicker": "Tentang RepoTicker",
     "Quit": "Keluar",
@@ -849,7 +849,7 @@ export const CORE_TERMS = Object.freeze({
   "fil": {
     "Open card": "Buksan ang card",
     "Settings": "Mga setting",
-    "Fetch": "Fetch",
+    "Fetch": "Kunin",
     "Sync": "I-sync",
     "About RepoTicker": "Tungkol sa RepoTicker",
     "Quit": "Lumabas",
@@ -895,7 +895,7 @@ export const CORE_TERMS = Object.freeze({
   "ar": {
     "Open card": "فتح البطاقة",
     "Settings": "الإعدادات",
-    "Fetch": "Fetch",
+    "Fetch": "جلب",
     "Sync": "مزامنة",
     "About RepoTicker": "حول RepoTicker",
     "Quit": "خروج",

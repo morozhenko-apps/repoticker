@@ -9,9 +9,13 @@ use tauri_plugin_notification::NotificationExt;
 type NotificationCatalog = BTreeMap<String, NotificationTemplate>;
 
 #[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct NotificationTemplate {
     title: String,
     body: String,
+    permission_error: String,
+    state_error: String,
+    delivery_error: String,
 }
 
 fn notification_catalog() -> &'static NotificationCatalog {
@@ -20,6 +24,20 @@ fn notification_catalog() -> &'static NotificationCatalog {
         serde_json::from_str(include_str!("../../ui/locales/notifications.json"))
             .expect("Bundled native notification translations must be valid")
     })
+}
+
+fn notification_error(language: &str, kind: &str) -> String {
+    let catalog = notification_catalog();
+    let template = catalog
+        .get(language)
+        .or_else(|| catalog.get("en"))
+        .expect("English notification translations must exist");
+    match kind {
+        "permission" => template.permission_error.clone(),
+        "state" => template.state_error.clone(),
+        "delivery" => template.delivery_error.clone(),
+        _ => "Notification unavailable.".into(),
+    }
 }
 
 fn notification_text(
@@ -95,7 +113,7 @@ pub(crate) fn ci_failure_notify(
         app.notification().permission_state(),
         Ok(PermissionState::Granted)
     ) {
-        return Err("System notification permission unavailable.".into());
+        return Err(notification_error(&config.language, "permission"));
     }
     let key = format!(
         "{}/{}/{}",
@@ -107,7 +125,7 @@ pub(crate) fn ci_failure_notify(
     let mut delivered = state
         .0
         .lock()
-        .map_err(|_| "Notification state unavailable.")?;
+        .map_err(|_| notification_error(&config.language, "state"))?;
     if delivered.contains(&key) {
         return Ok(false);
     }
@@ -117,7 +135,7 @@ pub(crate) fn ci_failure_notify(
         .title(title)
         .body(body)
         .show()
-        .map_err(|_| "System notification delivery failed.".to_owned())?;
+        .map_err(|_| notification_error(&config.language, "delivery"))?;
     delivered.push_back(key);
     if delivered.len() > MAX_DELIVERED {
         delivered.pop_front();
@@ -142,6 +160,9 @@ mod tests {
         for (locale, template) in notification_catalog() {
             assert!(crate::tray_i18n::is_supported_locale(locale));
             assert!(!template.title.is_empty() && template.title.contains("RepoTicker"));
+            for error in [&template.permission_error, &template.state_error, &template.delivery_error] {
+                assert!(!error.trim().is_empty(), "{locale}: empty native error translation");
+            }
             for placeholder in ["{repository}", "{runId}", "{attempt}"] {
                 assert_eq!(template.body.matches(placeholder).count(), 1);
             }

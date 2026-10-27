@@ -1,0 +1,82 @@
+{
+  "en": {
+    "title": "RepoTicker: CI failure",
+    "body": "{repository}: workflow run {runId} (attempt {attempt}) failed."
+  },
+  "ru": {
+    "title": "RepoTicker: сбой CI",
+    "body": "{repository}: запуск workflow {runId} (попытка {attempt}) завершился ошибкой."
+  },
+  "es": {
+    "title": "RepoTicker: fallo de CI",
+    "body": "{repository}: falló la ejecución {runId} del flujo de trabajo (intento {attempt})."
+  },
+  "pt": {
+    "title": "RepoTicker: falha de CI",
+    "body": "{repository}: a execução {runId} do workflow (tentativa {attempt}) falhou."
+  },
+  "de": {
+    "title": "RepoTicker: CI-Fehler",
+    "body": "{repository}: Workflow-Lauf {runId} (Versuch {attempt}) fehlgeschlagen."
+  },
+  "fr": {
+    "title": "RepoTicker : échec CI",
+    "body": "{repository} : échec de l'exécution de workflow {runId} (tentative {attempt})."
+  },
+  "it": {
+    "title": "RepoTicker: errore CI",
+    "body": "{repository}: esecuzione workflow {runId} (tentativo {attempt}) non riuscita."
+  },
+  "pl": {
+    "title": "RepoTicker: błąd CI",
+    "body": "{repository}: przebieg workflow {runId} (próba {attempt}) zakończył się błędem."
+  },
+  "hi": {
+    "title": "RepoTicker: CI विफलता",
+    "body": "{repository}: workflow रन {runId} (प्रयास {attempt}) विफल हुआ।"
+  },
+  "zh-Hant": {
+    "title": "RepoTicker：CI 失敗",
+    "body": "{repository}：workflow 執行 {runId}（第 {attempt} 次嘗試）失敗。"
+  },
+  "ja": {
+    "title": "RepoTicker：CI 失敗",
+    "body": "{repository}：workflow 実行 {runId}（試行 {attempt}）が失敗しました。"
+  },
+  "nl": {
+    "title": "RepoTicker: CI-fout",
+    "body": "{repository}: workflowuitvoering {runId} (poging {attempt}) is mislukt."
+  },
+  "sv": {
+    "title": "RepoTicker: CI-fel",
+    "body": "{repository}: workflow-körning {runId} (försök {attempt}) misslyckades."
+  },
+  "tr": {
+    "title": "RepoTicker: CI hatası",
+    "body": "{repository}: workflow çalıştırması {runId} (deneme {attempt}) başarısız oldu."
+  },
+  "ko": {
+    "title": "RepoTicker: CI 실패",
+    "body": "{repository}: workflow 실행 {runId}(시도 {attempt})이 실패했습니다."
+  },
+  "bn": {
+    "title": "RepoTicker: CI ব্যর্থতা",
+    "body": "{repository}: workflow রান {runId} (চেষ্টা {attempt}) ব্যর্থ হয়েছে।"
+  },
+  "th": {
+    "title": "RepoTicker: CI ล้มเหลว",
+    "body": "{repository}: การรัน workflow {runId} (ครั้งที่ {attempt}) ล้มเหลว"
+  },
+  "id": {
+    "title": "RepoTicker: kegagalan CI",
+    "body": "{repository}: proses workflow {runId} (percobaan {attempt}) gagal."
+  },
+  "fil": {
+    "title": "RepoTicker: pagkabigo ng CI",
+    "body": "{repository}: nabigo ang workflow run {runId} (pagtatangka {attempt})."
+  },
+  "ar": {
+    "title": "RepoTicker: فشل CI",
+    "body": "فشل تشغيل workflow رقم {runId} للمستودع {repository} (المحاولة {attempt})."
+  }
+}

@@ -49,7 +49,7 @@ cutover gates, not properties proven by source tests.
 5. [x] Adapt existing tests to the approved format and add meaningful
    ordering, direct/APT byte identity, tamper, conflict and public-readback
    regressions. Run normal suites only at the final validation gate.
-6. [ ] Final stable release-contract suites and workflow/static checks once;
+6. [x] Final stable release-contract suites and workflow/static checks once;
    record commands, outcomes, known-flaky separation and external limitations.
    Publish through a reviewed dev-targeted PR after refreshing concurrent dev.
 
@@ -119,3 +119,29 @@ publication, malformed signed catalogs, incomplete receipts and foreign GitHub
 artifact provenance are tested without production access. No secret values,
 production signing, R2 mutation, route retirement or release tag was used.
 Hosted CI and final dev integration are the remaining source-delivery gates.
+
+## Hosted source acceptance and integration
+
+PR [#18](https://github.com/morozhenko-apps/repoticker/pull/18) merged into
+`dev` as `89901941cb56c3264af364d6149110d3de411fb5` after exact source
+`1fa4a16c90ed8ebba3613c58255a2d1ba3e617e7` passed
+[Preflight 40602808382](https://github.com/morozhenko-apps/repoticker/actions/runs/40602808382):
+Rust formatting/core tests/Clippy, all 309 Node tests, all 35 Python release
+contracts, Linux desktop compile and aggregate result succeeded. No required
+check was bypassed, skipped, disabled or reclassified as flaky.
+
+Source refactor is accepted. Operational retirement is still pending: the
+read-only Cloudflare inventory confirms `repoticker-download` bound to
+`app-dist`, exact route `https://download.morozhenko.com/dist/RepoTicker/*`,
+route ID `29ce979516aa44b28d59bdda272da957`. The existing Custom Domain is
+active. The current OAuth can inspect Worker/settings/routes but the Builds
+triggers API returns 403 (authentication scope). An unauthenticated in-app
+browser could not perform that fallback. The owner was asked to disconnect
+the Worker Git build integration before scoped route/Worker removal, so an
+old main push cannot restore the retired component. No provider mutation or
+production upload was performed. Preserve existing R2 objects and sibling routes.
+
+Rollback: revert the executable refactor commit and its documentation commits
+if required; old production objects/tags and the recorded Worker deployment
+are unchanged. The completed source milestone is separate from live cutover
+and a future owner-authorized release.

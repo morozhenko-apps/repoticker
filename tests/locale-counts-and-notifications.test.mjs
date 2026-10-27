@@ -122,5 +122,5 @@ test("usage presentation localizes numbers, dates and isolates provider names", 
   assert.match(quota, /if \(providerName\) name\.dir = "auto"/);
   assert.match(quota, /count\.dir = "ltr"/);
   assert.match(quota, /billingState, currentLanguage/);
-  assert.match(hover, /snapshot\?\.monitor_message, null, language/);
+  assert.match(app, /clearBrowserTooltips\(\)/);
 });

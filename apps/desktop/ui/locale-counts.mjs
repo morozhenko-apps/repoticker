@@ -126,6 +126,34 @@ export const REPO_STATUS_MESSAGES = Object.freeze({
   }
 });
 
+const UNAVAILABLE_FORMS = Object.freeze({
+  en: { one: "{count} selected repository is no longer accessible." },
+  ru: {
+    one: "Выбранный репозиторий больше недоступен: {count}.",
+    few: "Выбранных репозитория больше недоступно: {count}.",
+    many: "Выбранных репозиториев больше недоступно: {count}."
+  },
+  pl: {
+    one: "{count} wybrane repozytorium nie jest już dostępne.",
+    few: "{count} wybrane repozytoria nie są już dostępne.",
+    many: "{count} wybranych repozytoriów nie jest już dostępnych."
+  },
+  es: { one: "Ya no se puede acceder a {count} repositorio seleccionado." },
+  pt: { one: "Já não é possível aceder a {count} repositório selecionado." },
+  fr: { one: "{count} dépôt sélectionné n'est plus accessible." },
+  it: { one: "{count} repository selezionato non è più accessibile." },
+  de: { one: "{count} ausgewähltes Repository ist nicht mehr zugänglich." },
+  nl: { one: "{count} geselecteerde repository is niet meer toegankelijk." },
+  sv: { one: "{count} valt kodförråd är inte längre tillgängligt." },
+  ar: {
+    zero: "لا توجد مستودعات مختارة يتعذر الوصول إليها ({count}).",
+    one: "مستودع مختار واحد لم يعد متاحاً ({count}).",
+    two: "مستودعان مختاران لم يعودا متاحين ({count}).",
+    few: "لم يعد الوصول متاحاً إلى {count} مستودعات مختارة.",
+    many: "لم يعد الوصول متاحاً إلى {count} مستودعاً مختاراً."
+  }
+});
+
 function countText(locale, count) {
   if (!Number.isSafeInteger(count) || count < 0)
     throw new RangeError("Expected a non-negative repository count");
@@ -147,8 +175,11 @@ export function repositorySelectionMessage(language, {
     total: countText(locale, total),
     count: countText(locale, unavailable)
   };
+  const unavailableCategory = new Intl.PluralRules(locale).select(unavailable);
+  const unavailablePattern = UNAVAILABLE_FORMS[locale]?.[unavailableCategory] ??
+    messages.unavailable;
   const main = unavailable > 0
-    ? render(messages.unavailable, values)
+    ? render(unavailablePattern, values)
     : render(messages.selected, values);
   return [main, !complete && messages.truncated,
     filterHasMore && messages.more].filter(Boolean).join(" ");

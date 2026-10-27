@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 import shutil
 import subprocess
+import tempfile
 
 TYPES = {
     "linux": [".deb", ".AppImage"],
@@ -64,6 +65,25 @@ def collect(source, target, platform, version):
             deps = subprocess.check_output(["dpkg-deb", "-f", str(file), "Depends"], text=True)
             if "libgtk-layer-shell0" not in deps:
                 raise ValueError("Linux runtime dependency missing from .deb")
+            # Package metadata alone does not prove the desktop launcher
+            # or executable is canonical. Inspect only an untrusted archive
+            # in a fresh temporary directory; never execute its contents.
+            with tempfile.TemporaryDirectory(prefix="repoticker-deb-audit-") as folder:
+                subprocess.run(["dpkg-deb", "--extract", str(file), folder],
+                               check=True, capture_output=True)
+                root = Path(folder)
+                executable = root / "usr/bin/repoticker"
+                launcher = root / "usr/share/applications/repoticker.desktop"
+                if not executable.is_file() or not launcher.is_file():
+                    raise ValueError("DEB is missing canonical executable or launcher")
+                desktop = launcher.read_text(encoding="utf-8").splitlines()
+                if "Name=RepoTicker" not in desktop:
+                    raise ValueError("DEB desktop launcher lost RepoTicker branding")
+                commands = [line.removeprefix("Exec=").strip() for line in desktop
+                            if line.startswith("Exec=")]
+                if len(commands) != 1 or commands[0].split(" ", 1)[0] not in (
+                        "repoticker", "/usr/bin/repoticker"):
+                    raise ValueError("DEB desktop launcher points to wrong executable")
         target.mkdir(parents=True, exist_ok=True)
         dest = target / canonical(version, platform, ext)
         shutil.copyfile(file, dest)

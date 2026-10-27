@@ -4,9 +4,9 @@ import worker, { keyFor } from "../infra/download-worker/src/worker.mjs";
 
 test("allow only release assets and signed apt URLs", () => {
   const base = "https://download.morozhenko.com/dist/RepoTicker/";
-  assert.equal(keyFor(base + "apt/pool/main/r/repo-ticker/repo-ticker_0.1.0_amd64.deb"),
-    "dist/RepoTicker/apt/pool/main/r/repo-ticker/repo-ticker_0.1.0_amd64.deb");
-  assert.equal(keyFor(base + "apt/pool/main/r/repoticker/repoticker_0.1.0_amd64.deb"), null);
+  assert.equal(keyFor(base + "apt/pool/main/r/repoticker/repoticker_0.1.0_amd64.deb"),
+    "dist/RepoTicker/apt/pool/main/r/repoticker/repoticker_0.1.0_amd64.deb");
+  assert.equal(keyFor(base + "apt/pool/main/r/repo-ticker/repo-ticker_0.1.0_amd64.deb"), null);
   assert.equal(keyFor(base + "apt/dists/stable/InRelease"),
     "dist/RepoTicker/apt/dists/stable/InRelease");
   assert.ok(keyFor(base + "releases/v0.1.0/linux/RepoTicker-0.1.0-linux-x64.AppImage"));

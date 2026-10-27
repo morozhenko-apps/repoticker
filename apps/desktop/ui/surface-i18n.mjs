@@ -46,6 +46,7 @@ const ru = Object.freeze({
   "Used min (gross)": "Использовано, мин",
   "Usage not available": "Данные об использовании недоступны",
   "Checked": "Проверено",
+  "Unknown": "Неизвестно",
   "Running": "Выполняется",
   "Queued": "В очереди"
 });
@@ -72,7 +73,11 @@ function translatedMessage(language, message) {
   if (surfaceLocale(language) === "en") return message;
   if (typeof message !== "string") return message;
   const checked = /^Checked: (.+)$/.exec(message);
-  if (checked) return surfaceText(language, "Checked") + ": " + checked[1];
+  if (checked) {
+    const value = checked[1] === "Unknown"
+      ? surfaceText(language, "Unknown") : checked[1];
+    return surfaceText(language, "Checked") + ": " + value;
+  }
   return surfaceText(language, message);
 }
 

@@ -30,6 +30,16 @@ test("native OS login launch uses pinned maintained plugin and scoped IPC only",
     "OS registration must not be duplicated in app config");
 });
 
+test("autostart acceptance warns on legacy executable after package rename", () => {
+  const linux = read("../scripts/accept_autostart_linux.sh");
+  const windows = read("../scripts/accept_autostart_windows.ps1");
+  assert.match(linux, /stale legacy executable/);
+  assert.match(windows, /stale legacy executable/);
+  assert.match(linux, /repoticker-desktop\|repo-ticker/);
+  assert.match(windows, /repoticker-desktop/);
+  assert.match(linux, /Launch at login off\/on/);
+});
+
 test("Settings offers keyboard-accessible EN/RU login launch, default disabled", () => {
   const html = read("../apps/desktop/ui/settings.html");
   const controller = read("../apps/desktop/ui/settings.mjs");

@@ -20,26 +20,26 @@ The 20 locales are the website set, not the larger HandyLog app set.
 
 | Locale | Language variant | Context-specific audit risk | Status |
 | --- | --- | --- | --- |
-| `en` | English | Source string clarity, Git safety verbs | Planned |
-| `ru` | Russian | Git jargon, UI length, actionable messages | Planned |
-| `es` | Spanish | Git verbs, UI register and technical terms | Planned |
-| `pt` | Portuguese (Portugal) | European variety; not Brazilian Portuguese | Planned |
-| `de` | German | Compounds and long button/menu labels | Planned |
-| `fr` | French | Articles, UI register and technical verbs | Planned |
-| `it` | Italian | Git commands and natural status labels | Planned |
-| `pl` | Polish | Case/number inflection, error clarity | Planned |
-| `hi` | Hindi | Devanagari fonts, mixed technical terms | Planned |
-| `zh-Hant` | Traditional Chinese | Traditional characters, CJK font fallback | Planned |
-| `ja` | Japanese | Politeness, concise native UI, CJK glyphs | Planned |
-| `nl` | Dutch | Natural developer-language terminology | Planned |
-| `sv` | Swedish | Idiomatic Git/CI status terminology | Planned |
-| `tr` | Turkish | Casing and UI inflections | Planned |
-| `ko` | Korean | Politeness and Hangul font fallback | Planned |
-| `bn` | Bengali | Bengali fonts/line breaking, inflection | Planned |
-| `th` | Thai | Unspaced line breaking, font fallback | Planned |
-| `id` | Indonesian | Technical tone and natural phrasing | Planned |
-| `fil` | Filipino | Filipino terminology and natural code switching | Planned |
-| `ar` | Arabic | RTL, bidi for code/paths/URLs/numbers | Planned |
+| `en` | English | Source string clarity, Git safety verbs | Source implemented; independent audit pending |
+| `ru` | Russian | Git jargon, UI length, actionable messages | Source implemented; independent audit pending |
+| `es` | Spanish | Git verbs, UI register and technical terms | Source implemented; independent audit pending |
+| `pt` | Portuguese (Portugal) | European variety; not Brazilian Portuguese | Source implemented; independent audit pending |
+| `de` | German | Compounds and long button/menu labels | Source implemented; independent audit pending |
+| `fr` | French | Articles, UI register and technical verbs | Source implemented; independent audit pending |
+| `it` | Italian | Git commands and natural status labels | Source implemented; independent audit pending |
+| `pl` | Polish | Case/number inflection, error clarity | Source implemented; independent audit pending |
+| `hi` | Hindi | Devanagari fonts, mixed technical terms | Source implemented; independent audit pending |
+| `zh-Hant` | Traditional Chinese | Traditional characters, CJK font fallback | Source implemented; independent audit pending |
+| `ja` | Japanese | Politeness, concise native UI, CJK glyphs | Source implemented; independent audit pending |
+| `nl` | Dutch | Natural developer-language terminology | Source implemented; independent audit pending |
+| `sv` | Swedish | Idiomatic Git/CI status terminology | Source implemented; independent audit pending |
+| `tr` | Turkish | Casing and UI inflections | Source implemented; independent audit pending |
+| `ko` | Korean | Politeness and Hangul font fallback | Source implemented; independent audit pending |
+| `bn` | Bengali | Bengali fonts/line breaking, inflection | Source implemented; independent audit pending |
+| `th` | Thai | Unspaced line breaking, font fallback | Source implemented; independent audit pending |
+| `id` | Indonesian | Technical tone and natural phrasing | Source implemented; independent audit pending |
+| `fil` | Filipino | Filipino terminology and natural code switching | Source implemented; independent audit pending |
+| `ar` | Arabic | RTL, bidi for code/paths/URLs/numbers | Source implemented; independent audit pending |
 
 Codes are case-sensitive. The site `pt` means Portugal. Do **not**
 substitute `pt-BR`, `zh-Hans` or `zh` for any of the 20; `fil`

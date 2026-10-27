@@ -129,7 +129,11 @@ test("Given WebView alert data When native delivery runs Then permissions and co
   assert.match(native, /if !config\.ci_failure_notifications/);
   assert.match(native, /github_monitor_repositories/);
   assert.match(native, /permission_state\(\)/);
-  assert.match(native, /\.title\("RepoTicker: CI failure"\)/);
+  const titles = JSON.parse(readFileSync(new URL(
+    "../apps/desktop/ui/locales/notifications.json", import.meta.url), "utf8"));
+  assert.equal(titles.en.title, "RepoTicker: CI failure");
+  assert.match(native, /notification_text\(&config\.language, &repository, run_id, run_attempt\)/);
+  assert.match(native, /\.title\(title\)/);
   assert.match(native, /\.show\(\)/);
   assert.doesNotMatch(native, /bearer_auth|access_token|shell|spawn\(/);
   assert.match(main, /tauri_plugin_notification::init\(\)/);

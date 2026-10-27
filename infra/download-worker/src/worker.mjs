@@ -2,7 +2,7 @@
 const PREFIX = "/dist/RepoTicker/";
 const paths = [
   /^releases\/v(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\/(?:linux|windows)\/[A-Za-z0-9][A-Za-z0-9._-]{0,180}$/,
-  /^apt\/pool\/main\/r\/repo-ticker\/repo-ticker_(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)_amd64\.deb$/,
+  /^apt\/pool\/main\/r\/repoticker\/repoticker_(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)_amd64\.deb$/,
   /^apt\/dists\/stable\/InRelease$/,
   /^apt\/dists\/stable\/main\/binary-amd64\/Packages(?:\.gz)?$/,
   /^apt\/dists\/stable\/main\/binary-amd64\/by-hash\/SHA256\/[a-f0-9]{64}$/,

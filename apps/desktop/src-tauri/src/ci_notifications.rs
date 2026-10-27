@@ -1,5 +1,8 @@
 //! Native-only, opt-in CI failure delivery. Never accepts arbitrary text or URLs.
-use std::{collections::{BTreeMap, VecDeque}, sync::{Mutex, OnceLock}};
+use std::{
+    collections::{BTreeMap, VecDeque},
+    sync::{Mutex, OnceLock},
+};
 use tauri::{plugin::PermissionState, AppHandle, Manager};
 use tauri_plugin_notification::NotificationExt;
 

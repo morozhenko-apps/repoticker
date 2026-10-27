@@ -56,9 +56,9 @@ test("native hover routing recovers from a lost show event", () => {
   assert.match(card, /anchor\.addEventListener\("focusin", enter\)/);
 });
 
-test("WebView2 title fallback stays read-only and uses all three anchors", () => {
-  assert.match(card, /function updateHoverFallbacks\(\)/);
-  assert.match(card, /for \(const \[kind, node\] of Object\.entries\(hoverTargets\)\)/);
-  assert.match(card, /node\.title = hoverFallbackText\(kind, snapshot, cardLanguage\)/);
-  assert.match(card, /updateHoverFallbacks\(\)/);
+test("WebView2 does not paint the unstyled native browser-title tooltip", () => {
+  assert.match(card, /function clearBrowserTooltips\(\)/);
+  assert.match(card, /node\.removeAttribute\("title"\)/);
+  assert.doesNotMatch(card, /node\.title = hoverFallbackText/);
+  assert.match(card, /show_usage_popup/);
 });

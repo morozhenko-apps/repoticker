@@ -80,6 +80,11 @@ test("all CI notifications preserve provider run identity and opt-in scope", () 
   for (const [language, values] of Object.entries(notifications)) {
     assert.ok(values.title.includes("RepoTicker"), language);
     assert.ok(values.body.includes("workflow"), language);
+    for (const name of ["permissionError", "stateError", "deliveryError"]) {
+      assert.equal(typeof values[name], "string", language + "/" + name);
+      assert.ok(values[name].trim(), language + "/" + name);
+      assert.doesNotMatch(values[name], /<script|javascript:/i);
+    }
     for (const key of ["{repository}", "{runId}", "{attempt}"]) {
       assert.equal(values.body.split(key).length - 1, 1, language + "/" + key);
     }
@@ -88,6 +93,9 @@ test("all CI notifications preserve provider run identity and opt-in scope", () 
   assert.match(native, /notification_text\(&config\.language, &repository, run_id, run_attempt\)/);
   assert.match(native, /approved_scope\(&config, &repository, run_id, run_attempt\)/);
   assert.match(native, /MAX_DELIVERED/);
+  assert.match(native, /notification_error\(&config\.language, "permission"\)/);
+  assert.match(native, /notification_error\(&config\.language, "state"\)/);
+  assert.match(native, /notification_error\(&config\.language, "delivery"\)/);
 });
 
 test("usage presentation localizes numbers, dates and isolates provider names", () => {

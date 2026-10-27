@@ -42,11 +42,11 @@ cutover gates, not properties proven by source tests.
    publication contracts and credential names. Use an isolated short-lived
    branch because dev is concurrently active. No shared working tree edits.
 2. [x] Record owner decisions, risks, validation and rollback before code.
-3. [ ] Implement flat signed APT generation/verification and R2 publication;
+3. [x] Implement flat signed APT generation/verification and R2 publication;
    preserve native package validation, explicit dependencies and trust checks.
-4. [ ] Adapt tagged CI, refresh/enrollment and text-only release metadata;
+4. [x] Adapt tagged CI, refresh/enrollment and text-only release metadata;
    remove retired Worker sources/workflows and obsolete snapshot-only logic.
-5. [ ] Adapt existing tests to the approved format and add meaningful
+5. [x] Adapt existing tests to the approved format and add meaningful
    ordering, direct/APT byte identity, tamper, conflict and public-readback
    regressions. Run normal suites only at the final validation gate.
 6. [ ] Final stable release-contract suites and workflow/static checks once;
@@ -74,3 +74,48 @@ actual public byte checks before declaring operational completion.
 Rollback source through the separate atomic documentation and executable
 commits; restore only the product route if an operational cutover is later
 rolled back. Never delete another product's R2 objects or rewrite published tags.
+
+## Implementation checkpoint before final execution
+
+Flat producer, signed-catalog validation, same-object direct/APT mapping,
+public-readback ordering, final manifest and receipt-gated exact CI archive
+cleanup are implemented. Retired Worker deployment sources and Worker-only
+tests/workflows are removed; their historical evidence remains in Git.
+No product code, version, signing key, tag, protected mainline or live provider
+state changed. Python source AST and Git whitespace checks pass. Normal
+stable suites have not yet run; final execution is the next milestone.
+
+Expected validation commands:
+`python3 -m unittest discover -s tests -p 'test_release_*.py' -v`,
+`node --test tests/*.test.mjs`, and pinned actionlint on the release workflow.
+The APT fixture uses real GPG and a synthetic Debian package; publisher tests
+use external S3/HTTP fakes. Hosted Preflight remains independently required.
+All expected apt-release secret/variable names exist; the existing RepoTicker
+R2 publisher already targets app-dist. Actual secret scope and live publishing
+are not established by this source-only refactor.
+
+## Local final validation evidence
+
+Final STABLE gates passed: 35 Python release contracts; 309 Node tests. No failed or skipped tests
+remain in those gates. Pinned actionlint v1.7.7, workflow policy where present,
+and Git whitespace checks exit 0. No separately configured known-FLAKY group
+exists in these affected Python/Node suites; no claim is made about unrelated
+native stress/device behavior. Native source and release acceptance gates remain.
+
+The initial final run exposed two test adaptation defects: a foreign-package
+mutation accidentally replaced the new product name with itself, and a flat
+APT request assertion omitted APT's explicit `/./` segment. Diagnostic review
+considered no-op mutation, missing identity validation, stale signed index,
+compressed-index mismatch, and obsolete URL expectations. The observed fixture
+bytes and actual HTTP request log confirmed the first and last causes.
+The mutation now asserts its input actually changes; the HTTP test requires
+the exact flat InRelease and DEB URLs. Existing signature/byte assertions were
+retained. Only the affected Python stable gates were repeated, both passed;
+already-passing Node/workflow checks were not rerun without a source change.
+
+Real isolated APT update/candidate/download verifies the same DEB bytes and
+wrong-key/tamper rejection. S3/HTTP failures, immutable conflicts, conditional
+publication, malformed signed catalogs, incomplete receipts and foreign GitHub
+artifact provenance are tested without production access. No secret values,
+production signing, R2 mutation, route retirement or release tag was used.
+Hosted CI and final dev integration are the remaining source-delivery gates.

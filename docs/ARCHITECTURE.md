@@ -1,3 +1,8 @@
+> Current distribution contract: [flat R2 distribution](FLAT_DISTRIBUTION.md).
+> Historical Worker, nested archive and full remote snapshot instructions
+> below are superseded. The owner approved a fresh flat channel without
+> a legacy migration; production cutover has not been performed.
+
 # Architecture and trust boundaries
 
 ## Current `dev` CI notification trust boundary (2026-10-24)

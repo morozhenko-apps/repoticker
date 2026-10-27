@@ -76,7 +76,7 @@ def source_map(release, apt, version):
         for name in sorted(required):
             result[f"releases/v{version}/{platform}/{name}"] = base / name
     index = apt / "dists/stable/main/binary-amd64"
-    package = apt / f"pool/main/r/repo-ticker/repo-ticker_{version}_amd64.deb"
+    package = apt / f"pool/main/r/repoticker/repoticker_{version}_amd64.deb"
     keyring = apt / "repoticker-archive-keyring.gpg"
     mutable = apt / "dists/stable/InRelease"
     immutable = [package, keyring]

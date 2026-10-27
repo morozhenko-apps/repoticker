@@ -1,3 +1,8 @@
+> Current distribution contract: [flat R2 distribution](FLAT_DISTRIBUTION.md).
+> The owner-approved flat layout supersedes the historical Worker, nested
+> archive and binary GitHub attachment instructions below. Live cutover and
+> a new release have not been executed by this source refactor.
+
 # RepoTicker release, license and signing
 
 ## Published baseline and release-policy role

@@ -160,8 +160,15 @@ mod tests {
         for (locale, template) in notification_catalog() {
             assert!(crate::tray_i18n::is_supported_locale(locale));
             assert!(!template.title.is_empty() && template.title.contains("RepoTicker"));
-            for error in [&template.permission_error, &template.state_error, &template.delivery_error] {
-                assert!(!error.trim().is_empty(), "{locale}: empty native error translation");
+            for error in [
+                &template.permission_error,
+                &template.state_error,
+                &template.delivery_error,
+            ] {
+                assert!(
+                    !error.trim().is_empty(),
+                    "{locale}: empty native error translation"
+                );
             }
             for placeholder in ["{repository}", "{runId}", "{attempt}"] {
                 assert_eq!(template.body.matches(placeholder).count(), 1);

@@ -21,3 +21,47 @@ Evidence: three operator screenshots show expanded repository drawer, EN card ac
 
 ## Risks/rollback
 Native popup may still be obscured on Windows because both card and popup are always-on-top; observable UI feedback is required. Reverting only the nonnative fallback is easy but would reveal the underlying defect rather than hiding it. Compact height changes affect Linux Wayland surface and Windows anchoring; tests must validate both. Never clear token storage or change the app ID.
+
+
+## Implemented in dev (source-level, not Windows acceptance)
+
+- Localized the **visible Fetch button** across RU and the 18 additional
+  locales, preserving the English Git command and Rust operation ID.
+- Removed WebView2's uncontrollable native `title` balloon entirely.
+  The separate rich `usage` WebView is now the sole presentation,
+  with source model/billing cache intact. Native Windows `show()`
+  reestablishes topmost ordering *after* showing, since the main card
+  is already a topmost window. The Rust positioning algorithm already
+  anchors above the card and clamps to the monitor work area. The
+  screenshot cannot prove this is visible at runtime: this requires
+  a fresh Windows QA build. Do not report all hover findings PASS
+  until Runners/Tasks/Billing each render physically.
+- Reduced Windows-only compact window geometry to 108px:
+  3px top + 25px metrics + 70px actions + 10px bottom.
+  KDE Layer Shell and expanded Repos geometry retain existing sizes.
+- Settings Apply now avoids a **redundant post-save network inventory**
+  read after the native account scope has been committed. Native
+  `repoticker-github-scope-changed` already refreshes monitors.
+  No failures are swallowed and native mutating commands can still
+  reject with visible errors.
+- The card listens for a saved language and reads the config directly
+  before full local Git scanning. Its latest saved locale wins over
+  any in-flight/stale snapshot, preserving prompt updates with an
+  expanded repo drawer.
+- The old WebView2 title fallback is **removed from the bundle**;
+  tests verify a styled popup remains the single presentation path.
+- **Credential boundary unchanged.** Windows Credential Manager
+  retains its service entry through NSIS/AppData removal by design.
+  An explicit Settings Disconnect uses the native delete path.
+  Automatic uninstall credential destruction is **BLOCKED** on
+  architectural choice, because it affects persistent secrets and
+  update/reinstall guarantees. No keychain keys moved or deleted.
+
+## Acceptance state
+
+This document only records **source implementation** and planned
+regression tests. An exact-SHA Preflight, unpublished NSIS/DEB build
+and owner-operated Windows/KDE testing must be recorded separately.
+In particular, Windows panel visibility/billing API permissions and
+Settings close-after-OK in a large expanded drawer remain **pending
+physical verification**, not accepted by source regex assertions.

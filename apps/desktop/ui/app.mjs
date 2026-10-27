@@ -5,7 +5,6 @@ import { compactStatus } from "./status-metrics.mjs";
 import { cardLocale, cardText, metricAccessibleLabel } from "./card-i18n.mjs";
 import { mergeMonitorPresentation, reconcileScanPresentation } from "./monitor-presentation.mjs";
 import { placeRepoMenu } from "./repo-menu.mjs";
-import { hoverFallbackText } from "./hover-fallback.mjs";
 import { localeDirection } from "./locale-catalog.mjs";
 import { createScanRefreshQueue } from "./scan-refresh.mjs";
 
@@ -337,15 +336,11 @@ function monitorRefreshState(kind, active) {
   }
   updateMetricAccessibleNames();
 }
-function updateHoverFallbacks() {
-  // WebView2's built-in title is a reliable minimum when the dedicated
-  // unmanaged Windows balloon is not painted. KDE retains its rich native
-  // detached balloon without duplicate browser tooltips.
-  const windows = navigator.userAgent.includes("Windows");
-  for (const [kind, node] of Object.entries(hoverTargets)) {
-    if (windows) node.title = hoverFallbackText(kind, snapshot, cardLanguage);
-    else node.removeAttribute("title");
-  }
+function clearBrowserTooltips() {
+  // The browser controls native title positioning and paints an unstyled
+  // system balloon. It can also mask the separate rich usage WebView.
+  // The dedicated native usage popup owns Runners, Tasks and Billing.
+  for (const node of Object.values(hoverTargets)) node.removeAttribute("title");
 }
 function updateMetricAccessibleNames() {
   for (const [kind, node] of Object.entries(manualIndicator)) {
@@ -385,13 +380,13 @@ function setCardLanguage(language) {
   byId("hide-card").title = cardText(cardLanguage, "hideCard");
   updateActionState();
   updateMetricAccessibleNames();
-  updateHoverFallbacks();
+  clearBrowserTooltips();
 }
 function renderMonitorMetrics(state) {
   const status = compactStatus(state);
   lastMetricStatus = status;
   updateMetricAccessibleNames();
-  updateHoverFallbacks();
+  clearBrowserTooltips();
   byId("runners-total").textContent = status.total;
   byId("runners-online").textContent = status.online;
   byId("runners-offline").textContent = status.offline;

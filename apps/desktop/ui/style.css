@@ -102,3 +102,7 @@ button:focus-visible, input:focus-visible, .status-hover:focus-visible { outline
 .rows::-webkit-scrollbar-track { background: transparent; }
 .rows::-webkit-scrollbar-thumb { background: #a2adb8; border-radius: 8px; }
 .rows::-webkit-scrollbar-thumb:hover { background: #758390; }
+
+/* WebView2 compact height = 108: 3px top + 25px metrics +
+   70px actions + 10px bottom. Expanded Repos keeps its prior geometry. */
+.windows-platform .card[data-view="compact"] { padding-top: 3px; }

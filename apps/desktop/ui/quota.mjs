@@ -14,10 +14,12 @@ function add(parent, tag, value, cls = "") {
   parent.append(node);
   return node;
 }
-function line(parent, label, value) {
+function line(parent, label, value, providerName = false) {
   const row = add(parent, "div", "", "quota-line");
-  add(row, "span", label, "quota-line-label");
-  add(row, "span", value, "quota-line-value");
+  const name = add(row, "span", label, "quota-line-label");
+  if (providerName) name.dir = "auto";
+  const count = add(row, "span", value, "quota-line-value");
+  count.dir = "ltr";
 }
 let currentLanguage = "en";
 let localeRevision = 0;
@@ -29,7 +31,8 @@ function setLocale(value) {
   document.documentElement.dir = localeDirection(currentLanguage);
   document.querySelector(".usage-bubble").setAttribute("aria-label",
     surfaceText(currentLanguage, "GitHub Actions and usage"));
-  if (lastRawDetails) paint(lastRawDetails, lastRunnerNameRows);
+  if (currentSnapshot) paintSnapshot(currentSnapshot);
+  else if (lastRawDetails) paint(lastRawDetails, lastRunnerNameRows);
 }
 function paint(details, runnerNameRows = 0) {
   lastRawDetails = details;
@@ -46,7 +49,9 @@ function paint(details, runnerNameRows = 0) {
     for (const section of details.sections) {
       const block = add(root, "section", "", "quota-section");
       if (section.title) add(block, "div", section.title, "quota-section-title");
-      for (const [label, value] of section.rows || []) line(block, label, value);
+      for (const [index, [label, value]] of (section.rows || []).entries()) {
+        line(block, label, value, activeKind === "tasks" && index < runnerNameRows);
+      }
       if (section.message) add(block, "span", section.message, "quota-message");
     }
     if (details.message) add(root, "span", details.message, "quota-message");
@@ -115,7 +120,7 @@ function paintSnapshot(snapshot) {
   const runnerNameRows = source?.coverage?.runners === true &&
     Array.isArray(source.runners) ? Math.min(source.runners.length, 4) : 0;
   paint(buildHoverDetails(source, activeKind, snapshot.connected,
-    snapshot.monitor_message, billingState), runnerNameRows);
+    snapshot.monitor_message, billingState, currentLanguage), runnerNameRows);
 }
 function scheduleBilling(snapshot) {
   if (activeKind !== "billing" || snapshot.connected !== true) return;

@@ -838,10 +838,8 @@ byId("apply-settings").addEventListener("click", async () => {
       githubScopeAtOpen = selectedScope || "";
       originalRepoNames = repositories;
       repoChoiceTouched = false;
-      // Selection was already committed natively. A post-commit inventory
-      // refresh is advisory: offline/API failure must never strand Settings
-      // with the OK button disabled or prevent a successful close.
-      void refreshMonitorScopes().catch(() => {});
+      // The native scope-changed event refreshes the monitor/card.
+      // A redundant network inventory fetch must not block closing Settings.
     }
     if (autostartChanged) {
       const actual = await invoke("autostart_set_enabled", {

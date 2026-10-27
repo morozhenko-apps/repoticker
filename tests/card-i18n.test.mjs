@@ -59,7 +59,7 @@ test("initial locale lookup is config-only, guarded against late full-scan outco
   assert.match(card, /if \(firstSnapshotReady \|\| typeof config\?\.language !== "string"\) return/);
   assert.match(card, /setCardLanguage\(config\.language\)/);
   const render = card.match(/function render\(next\) \{[\s\S]*?\n\}/)?.[0] ?? "";
-  assert.match(render, /setCardLanguage\(next\.language\)/);
+  assert.match(render, /setCardLanguage\(authoritativeSavedLocale \?\? next\.language\)/);
   assert.ok(render.indexOf("setCardLanguage") < render.indexOf("renderMonitorMetrics"));
   assert.match(native, /fn get_settings_config\(/);
   assert.match(native, /fn get_snapshot\(/);

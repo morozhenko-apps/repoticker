@@ -1,13 +1,20 @@
 import { shown, compactStatus } from "./status-metrics.mjs";
+import { normalizeLocale } from "./locale-catalog.mjs";
 
+// Canonical IDs remain persisted unchanged; presentation maps only those
+// locale variants whose Intl locale data expects a regional identifier.
+function displayLocale(language) {
+  const code = normalizeLocale(language);
+  return ({ pt: "pt-PT", "zh-Hant": "zh-TW", fil: "fil-PH" })[code] ?? code;
+}
 const safeName = value => typeof value === "string" && value.trim()
   ? value.trim().slice(0, 38) : "Unnamed runner";
-export function localCheckedTime(value, timeZone) {
+export function localCheckedTime(value, timeZone, language = "en") {
   if (typeof value !== "string" || !Number.isFinite(Date.parse(value))) return "Unknown";
   const options = { year: "numeric", month: "2-digit", day: "2-digit",
     hour: "2-digit", minute: "2-digit", hourCycle: "h23" };
   if (timeZone) options.timeZone = timeZone;
-  return new Intl.DateTimeFormat(undefined, options).format(new Date(value));
+  return new Intl.DateTimeFormat(displayLocale(language), options).format(new Date(value));
 }
 const view = (status, sections, message = "") => ({
   connected: true, status, sections, message,
@@ -58,9 +65,9 @@ function tasksDetails(state) {
     [{ title: "", rows }]);
 }
 
-function billingDetails(billing = null) {
+function billingDetails(billing = null, language = "en") {
   const fmt = value => Number.isFinite(value) && value >= 0
-    ? value.toLocaleString("en-US", { maximumFractionDigits: 2 }) : "—";
+    ? new Intl.NumberFormat(displayLocale(language), { maximumFractionDigits: 2 }).format(value) : "—";
   const sections = [
     ["Organization", billing?.organization],
     ["Personal account", billing?.personal],
@@ -83,13 +90,13 @@ function billingDetails(billing = null) {
 /** The pointer-pass-through popup cannot scroll, click links or pin.
  * Only safe projected values and at most six runner rows are displayed.
  */
-export function buildHoverDetails(state, kind = "billing", authorized = false, statusMessage = null, billing = null) {
+export function buildHoverDetails(state, kind = "billing", authorized = false, statusMessage = null, billing = null, language = "en") {
   if (!isHoverKind(kind)) return notReady(authorized, "Status", "Unknown tooltip type.");
   // Distinguish checking the OS keyring / loading data from an actually
   // disconnected account. Neither phase asserts that counts are known.
   if (!state && ["Checking GitHub connection...", "Connecting to GitHub..."].includes(statusMessage))
     return { connected: false, status: "Connecting", message: statusMessage, sections: [] };
-  if (kind === "billing") return authorized ? billingDetails(billing) : notReady(false, "Billing");
+  if (kind === "billing") return authorized ? billingDetails(billing, language) : notReady(false, "Billing");
   if (!state || !state.counts || !state.coverage)
     return notReady(authorized, kind === "runners" ? "Runners" : "Tasks", statusMessage);
   const result = kind === "runners" ? runnerDetails(state) : tasksDetails(state);
@@ -98,7 +105,7 @@ export function buildHoverDetails(state, kind = "billing", authorized = false, s
   const checkedAt = kind === "runners"
     ? (hasSeparateTimes ? state.checkedAtRunners : state.checkedAt)
     : (hasSeparateTimes ? state.checkedAtTasks : state.checkedAt);
-  result.message = "Checked: " + localCheckedTime(checkedAt);
+  result.message = "Checked: " + localCheckedTime(checkedAt, undefined, language);
   return result;
 }
 

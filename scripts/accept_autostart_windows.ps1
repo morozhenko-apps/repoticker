@@ -13,7 +13,12 @@ if (Test-Path $runPath) {
         $_.Name -match "(?i)repoticker|repo.ticker" -or
         [string]$_.Value -match "(?i)repoticker|repo-ticker") }
   Write-Output ("Current-user startup Run values: " + @($values).Count)
-  $values | ForEach-Object { Write-Output ("Startup value name: " + $_.Name) }
+  $values | ForEach-Object {
+    Write-Output ("Startup value name: " + $_.Name)
+    if ([string]$_.Value -match "(?i)repoticker-desktop(\.exe)?") {
+      Write-Output "WARNING: stale legacy executable in login entry; re-register Launch at login"
+    }
+  }
 } else {
   Write-Output "Current-user startup Run values: 0"
 }

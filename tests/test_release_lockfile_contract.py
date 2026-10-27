@@ -23,7 +23,7 @@ class CargoLockfileContract(unittest.TestCase):
         for command in [
             "cargo test --locked -p repoticker-core",
             "cargo clippy --locked -p repoticker-core --all-targets -- -D warnings",
-            "cargo check --locked -p repoticker-desktop",
+            "cargo check --locked -p repoticker",
         ]:
             self.assertIn(command, preflight)
         self.assertIn("cargo test --locked -p repoticker-core", strict)

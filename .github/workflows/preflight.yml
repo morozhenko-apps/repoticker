@@ -93,7 +93,7 @@ jobs:
             libwayland-bin \
             wayland-protocols
       - name: Check desktop shell
-        run: cargo check --locked -p repoticker-desktop
+        run: cargo check --locked -p repoticker
 
   preflight:
     name: Preflight result

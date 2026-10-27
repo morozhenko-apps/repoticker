@@ -1,0 +1,8 @@
+[Desktop Entry]
+Categories={{categories}}
+Exec={{exec}}
+Icon={{icon}}
+Name=RepoTicker
+Comment=Git and GitHub Actions tray companion
+Terminal=false
+Type=Application

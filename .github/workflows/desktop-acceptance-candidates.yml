@@ -12,7 +12,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: repoticker-desktop-acceptance-${{ github.ref }}
+  group: repoticker-acceptance-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:

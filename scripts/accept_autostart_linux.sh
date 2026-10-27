@@ -9,7 +9,7 @@ printf 'Desktop: %s\n' "${XDG_CURRENT_DESKTOP:-unknown}"
 printf 'Session: %s\n' "${XDG_SESSION_TYPE:-unknown}"
 echo "Binary process count (current user):"
 ps -u "$(id -u)" -o comm= | awk '
-  $1 == "repo-ticker" || $1 == "RepoTicker" ||
+  $1 == "repo-ticker" || $1 == "RepoTicker" || $1 == "repoticker" ||
   $1 == "repoticker-des" || $1 == "repoticker-desk" { count++ }
   END { print count+0 }
 '

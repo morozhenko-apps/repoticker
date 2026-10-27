@@ -689,9 +689,16 @@ fn show_usage_popup(app: AppHandle, kind: String) -> Result<(), String> {
             // Geometry failure must not prevent showing the tooltip.
             eprintln!("RepoTicker usage popup positioning unavailable: {error}");
         }
-        // Both options are best-effort OS hints. On some Windows WebView2/
-        // Wry builds these APIs return Unsupported; previously '?' returned
-        // early *before* popup.show(), hiding all three tooltips.
+        // The main card is itself topmost. Two independently-created
+        // topmost windows have no automatic within-app z-order on Windows.
+        // Release the popup's topmost flag while hidden, then put it ABOVE
+        // the card *after* show so its real WebView is visible on hover.
+        // This does not focus, activate, or change provider data.
+        #[cfg(target_os = "windows")]
+        if let Err(error) = popup.set_always_on_top(false) {
+            eprintln!("RepoTicker usage popup z-order reset unavailable: {error}");
+        }
+        // Focus and cursor pass-through are best-effort OS hints.
         #[cfg(target_os = "windows")]
         {
             if let Err(error) = popup.set_focusable(false) {
@@ -707,6 +714,9 @@ fn show_usage_popup(app: AppHandle, kind: String) -> Result<(), String> {
         popup
             .show()
             .map_err(|error| format!("Usage popup show failed: {error}"))?;
+        #[cfg(target_os = "windows")]
+        popup.set_always_on_top(true)
+            .map_err(|error| format!("Usage popup topmost failed: {error}"))?;
         if std::env::var_os("REPOTICKER_UI_DEBUG").is_some() {
             eprintln!("RepoTicker usage popup visible: {kind}");
         }

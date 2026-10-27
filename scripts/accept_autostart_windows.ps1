@@ -3,7 +3,7 @@
 $ErrorActionPreference = "Stop"
 Write-Output "RepoTicker login-launch acceptance (Windows)"
 Write-Output ("UTC: " + (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ"))
-$names = @("repo-ticker", "RepoTicker", "repoticker-desktop")
+$names = @("repo-ticker", "RepoTicker", "repoticker", "repoticker-desktop")
 $processes = @(Get-Process | Where-Object { $names -contains $_.ProcessName })
 Write-Output ("RepoTicker process count: " + $processes.Count)
 $runPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"

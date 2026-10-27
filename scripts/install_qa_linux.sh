@@ -28,9 +28,9 @@ fi
   cd "$OUT"
   sha256sum -c -- *.sha256
 )
-DEB="$OUT/repo-ticker_0.2.0_amd64.deb"
+DEB="$OUT/repoticker_0.2.0_amd64.deb"
 if [[ ! -f "$DEB" ||
-      "$(dpkg-deb -f "$DEB" Package)" != "repo-ticker" ||
+      "$(dpkg-deb -f "$DEB" Package)" != "repoticker" ||
       "$(dpkg-deb -f "$DEB" Version)" != "0.2.0" ]]; then
   echo "Unexpected DEB package; installation refused" >&2
   exit 1
@@ -43,7 +43,7 @@ if pgrep -x repoticker >/dev/null || pgrep -f '[r]epoticker-desktop' >/dev/null;
   exit 1
 fi
 sudo apt install "$DEB"
-BIN="$(dpkg-query -L repo-ticker | grep -E '^/usr/bin/[^/]+$' || true)"
+BIN="$(dpkg-query -L repoticker | grep -E '^/usr/bin/[^/]+$' || true)"
 if [[ -z "$BIN" || "$BIN" == *$'\n'* || ! -x "$BIN" ]]; then
   echo "Cannot identify exactly one installed executable: $BIN" >&2
   exit 1

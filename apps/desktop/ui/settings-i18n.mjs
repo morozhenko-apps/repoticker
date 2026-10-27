@@ -96,6 +96,6 @@ const russian = Object.freeze({
 export const settingsLocale = normalizeLocale;
 export function settingsText(language, english) {
   if (typeof english !== "string") throw Error("Invalid Settings translation key");
-  if (settingsLocale(language) === "ru") return russian[english] ?? english;
+  if (settingsLocale(language) === "ru") return russian[english] ?? coreText(language, english);
   return coreText(language, english);
 }

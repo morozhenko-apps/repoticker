@@ -1,0 +1,10 @@
+{
+  "productName": "repoticker",
+  "bundle": {
+    "linux": {
+      "deb": {
+        "desktopTemplate": "repoticker.desktop"
+      }
+    }
+  }
+}

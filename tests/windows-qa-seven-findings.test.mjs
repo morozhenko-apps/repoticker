@@ -55,8 +55,8 @@ test("billing retains full authoritative data and refuses invented allowances", 
 });
 
 test("compact Windows geometry has no unaccounted top gap", () => {
-  assert.match(native, /"compact" => if cfg!\(target_os = "windows"\) \{ 108\.0 \} else \{ 122\.0 \}/);
-  assert.match(native, /if cfg!\(target_os = "windows"\) \{ 108\.0 \} else \{ 122\.0 \}/);
+  assert.match(native, /"compact" => \{\s*if cfg!\(target_os = "windows"\) \{\s*108\.0\s*\} else \{\s*122\.0/);
+  assert.match(native, /resize_unmanaged_card\(\s*&window,\s*if cfg!\(target_os = "windows"\)/);
   assert.match(card, /classList\.add\("windows-platform"\)/);
   assert.match(css, /\.windows-platform \.card\[data-view="compact"\] \{ padding-top: 3px; \}/);
   // 3px top + 25px metrics + 70px actions + 10px bottom = 108px.

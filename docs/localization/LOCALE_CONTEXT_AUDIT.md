@@ -1,8 +1,16 @@
 # RepoTicker — L10N-20, final feature before Mode B
 
-Status: **PLANNED, NOT IMPLEMENTED OR AUDITED** (2026-10-23).
-Owner decision: all other enabled product/platform features → **L10N-20**
-→ source freeze and complete **v0.9 Mode B** → stable **v1.0.0**.
+Status: **IMPLEMENTATION IN DEV; FULL ACCEPTANCE BLOCKED** (2026-10-27).
+20 locale choices, presentation dictionaries and preliminary structural/
+semantic checks have been implemented. See
+[L10N_20_AUDIT_2026_10_26.md](L10N_20_AUDIT_2026_10_26.md) for exact
+coverage and unresolved checks. Native-speaker and installed UI audits
+remain outstanding.
+Owner decision updated 2026-10-26: move **L10N-20** into the
+current implementation milestone, then finish the remaining platform
+acceptance; source freeze and complete **v0.9 Mode B** still require
+the 20/20 independently reviewed locale evidence. Stable **v1.0.0**
+remains gated.
 Tracking: [issue #16](https://github.com/morozhenko-apps/repoticker/issues/16).
 Canonical sources: [PersonalLanding languageConfig.json](https://github.com/morozhenko-apps/PersonalLanding/blob/main/src/app/i18n/languageConfig.json),
 [language.ts](https://github.com/morozhenko-apps/PersonalLanding/blob/main/src/app/i18n/language.ts).
@@ -71,5 +79,9 @@ is canonical even if alternate `tl` is encountered in OS locale data.
    Then and only then freeze the source for the complete Mode B
    program, which will verify locale × auth × Git status interactions.
 
-**Nothing has been translated or audited in this checkpoint.**
-This file records the mandatory future acceptance contract.
+**Checkpoint 2026-10-27:** The 20-language implementation is in `dev`,
+with catalog completeness checked against its known source keys and
+regression tests added for status grammar and native notifications.
+The completed independent audits count remains **0/20 Passed**.
+Preflight and platform acceptance evidence are tracked in the
+implementation audit receipt.

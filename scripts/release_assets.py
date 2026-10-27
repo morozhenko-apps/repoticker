@@ -30,7 +30,7 @@ def digest(path):
 
 def canonical(version, platform, ext):
     if ext == ".deb":
-        return f"repo-ticker_{version}_amd64.deb"
+        return f"repoticker_{version}_amd64.deb"
     if ext == ".AppImage":
         return f"RepoTicker-{version}-linux-x64.AppImage"
     if ext == ".exe":
@@ -56,7 +56,7 @@ def collect(source, target, platform, version):
         if not 0 < file.stat().st_size < 350 * 1024 * 1024:
             raise ValueError("Invalid artifact size")
         if ext == ".deb":
-            for key, expected in [("Package", "repo-ticker"), ("Version", version),
+            for key, expected in [("Package", "repoticker"), ("Version", version),
                                   ("Architecture", "amd64")]:
                 value = subprocess.check_output(["dpkg-deb", "-f", str(file), key], text=True).strip()
                 if value != expected:

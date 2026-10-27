@@ -603,7 +603,13 @@ async fn set_card_view(
     repository_count: Option<usize>,
 ) -> Result<(), String> {
     let height = match view.as_str() {
-        "compact" => if cfg!(target_os = "windows") { 108.0 } else { 122.0 },
+        "compact" => {
+            if cfg!(target_os = "windows") {
+                108.0
+            } else {
+                122.0
+            }
+        },
         "repos" => {
             let count = repository_count.unwrap_or(0);
             let rows = count.clamp(1, 10);
@@ -715,7 +721,8 @@ fn show_usage_popup(app: AppHandle, kind: String) -> Result<(), String> {
             .show()
             .map_err(|error| format!("Usage popup show failed: {error}"))?;
         #[cfg(target_os = "windows")]
-        popup.set_always_on_top(true)
+        popup
+            .set_always_on_top(true)
             .map_err(|error| format!("Usage popup topmost failed: {error}"))?;
         if std::env::var_os("REPOTICKER_UI_DEBUG").is_some() {
             eprintln!("RepoTicker usage popup visible: {kind}");
@@ -810,7 +817,14 @@ fn show_compact_card(app: &AppHandle) {
 
     // Non-layer-shell platforms retain the existing compact geometry.
     if let Some(window) = app.get_webview_window("main") {
-        if let Err(error) = resize_unmanaged_card(&window, if cfg!(target_os = "windows") { 108.0 } else { 122.0 }) {
+        if let Err(error) = resize_unmanaged_card(
+            &window,
+            if cfg!(target_os = "windows") {
+                108.0
+            } else {
+                122.0
+            },
+        ) {
             eprintln!("RepoTicker compact resize: {error}");
         }
         #[cfg(target_os = "windows")]

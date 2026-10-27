@@ -9,7 +9,7 @@ export function hoverFallbackText(kind, snapshot, language = "en") {
     Array.isArray(state.runners) ? Math.min(state.runners.length, 4) : 0;
   const details = translateHoverDetails(
     buildHoverDetails(state, kind, snapshot?.connected === true,
-      snapshot?.monitor_message, null),
+      snapshot?.monitor_message, null, language),
     language, runnerRows
   );
   const lines = [details.status];

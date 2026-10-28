@@ -96,6 +96,11 @@
           "libgtk-layer-shell0"
         ]
       }
+    },
+    "windows": {
+      "nsis": {
+        "installerHooks": "./windows/credential-cleanup.nsh"
+      }
     }
   },
   "mainBinaryName": "repoticker"

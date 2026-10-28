@@ -745,7 +745,14 @@ fn hide_usage_popup(app: AppHandle) -> Result<(), String> {
     let popup = app
         .get_webview_window("usage")
         .ok_or_else(|| "Usage popup unavailable".to_owned())?;
-    popup.hide().map_err(|error| error.to_string())
+    if std::env::var_os("REPOTICKER_UI_DEBUG").is_some() {
+        eprintln!("RepoTicker usage popup hide requested: visible={:?}", popup.is_visible());
+    }
+    popup.hide().map_err(|error| error.to_string())?;
+    if std::env::var_os("REPOTICKER_UI_DEBUG").is_some() {
+        eprintln!("RepoTicker usage popup hidden: visible={:?}", popup.is_visible());
+    }
+    Ok(())
 }
 
 #[tauri::command]
@@ -766,8 +773,13 @@ async fn resize_usage_popup(app: AppHandle, height: i32) -> Result<(), String> {
         }
     }
     #[cfg(target_os = "windows")]
-    windows_geometry::raise_usage_popup(&popup)
-        .map_err(|error| format!("Usage popup resize ordering failed: {error}"))?;
+    if popup
+        .is_visible()
+        .map_err(|error| format!("Usage popup visibility check failed: {error}"))?
+    {
+        windows_geometry::raise_usage_popup(&popup)
+            .map_err(|error| format!("Usage popup resize ordering failed: {error}"))?;
+    }
     Ok(())
 }
 

@@ -4,6 +4,9 @@ import { usageHeight } from "./quota-size.mjs";
 import { createBillingCache } from "./github-billing.mjs";
 import { surfaceLocale, surfaceText, translateHoverDetails } from "./surface-i18n.mjs";
 import { localeDirection } from "./locale-catalog.mjs";
+import { disableBrowserContextMenu } from "./browser-context-menu.mjs";
+
+disableBrowserContextMenu(document);
 
 const byId = id => document.getElementById(id);
 const invoke = (name, args = {}) => window.__TAURI__.core.invoke(name, args);

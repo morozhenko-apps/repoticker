@@ -2,6 +2,9 @@ import { listAvailableInstallations } from "./github-installations.mjs";
 import { settingsLocale, settingsText } from "./settings-i18n.mjs";
 import { localeName, localeDirection } from "./locale-catalog.mjs";
 import { repositorySelectionMessage } from "./locale-counts.mjs";
+import { disableBrowserContextMenu } from "./browser-context-menu.mjs";
+
+disableBrowserContextMenu(document);
 // Settings are transactional: editing never writes on disk until Apply.
 const byId = id => document.getElementById(id);
 let uiLocale = "en";

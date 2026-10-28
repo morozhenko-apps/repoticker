@@ -1,5 +1,8 @@
 import { surfaceLocale, surfaceText } from "./surface-i18n.mjs";
 import { localeDirection } from "./locale-catalog.mjs";
+import { disableBrowserContextMenu } from "./browser-context-menu.mjs";
+
+disableBrowserContextMenu(document);
 
 const invoke = command => window.__TAURI__?.core?.invoke(command) ??
   Promise.reject(new Error("Open About in RepoTicker."));

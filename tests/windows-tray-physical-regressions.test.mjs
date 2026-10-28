@@ -11,7 +11,8 @@ const windows = read("apps/desktop/src-tauri/src/windows_geometry.rs");
 const workflow = read(".github/workflows/desktop-acceptance-candidates.yml");
 
 test("Given main card, right click cannot expose a WebView browser menu", () => {
-  assert.match(card, /dragSurface\.addEventListener\("contextmenu", event => event\.preventDefault\(\)\)/);
+  assert.match(card, /disableBrowserContextMenu\(document\)/);
+  assert.doesNotMatch(card, /dragSurface\.addEventListener\("contextmenu"/);
   assert.match(card, /const dragSurface = byId\("card"\)/);
   assert.match(card, /\.repo-more/);
   assert.match(card, /showRepoMenu\(button, repo\.path\)/);
@@ -38,10 +39,11 @@ test("Given native Windows usage popup, show and resize enforce topmost without 
   assert.match(windows, /pub\(crate\) fn raise_usage_popup\(popup: &WebviewWindow\)/);
   assert.match(windows, /fn SetWindowPos\(/);
   assert.match(windows, /let topmost = \(-1_isize\)/);
-  for (const flag of ["SWP_NOSIZE", "SWP_NOMOVE", "SWP_NOACTIVATE", "SWP_SHOWWINDOW"])
+  for (const flag of ["SWP_NOSIZE", "SWP_NOMOVE", "SWP_NOACTIVATE"])
     assert.ok(windows.includes(flag), flag);
   assert.match(windows, /if changed == 0\s*\{\s*return Err/);
-  assert.doesNotMatch(windows, /SetForegroundWindow|SWP_NOZORDER/);
+  assert.doesNotMatch(windows, /SetForegroundWindow|SWP_NOZORDER|SWP_SHOWWINDOW/);
+  assert.match(native, /if popup\s*\.is_visible\(\)/);
   const show = native.slice(native.indexOf("fn show_usage_popup("),
     native.indexOf("fn hide_usage_popup("));
   assert.ok(show.indexOf("windows_geometry::raise_usage_popup(&popup)") >

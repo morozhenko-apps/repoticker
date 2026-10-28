@@ -144,14 +144,13 @@ unsafe extern "system" {
     ) -> i32;
 }
 
-/// Establish actual Windows z-order after showing or resizing the detached
-/// non-activating tooltip. This does not move it, resize it, or take focus.
+/// Establish actual Windows z-order after showing the detached tooltip.
+/// A resize must never show a hidden popup, move it or take keyboard focus.
 /// Tauri's high-level always-on-top toggle can retain a stale style state.
 pub(crate) fn raise_usage_popup(popup: &WebviewWindow) -> Result<(), String> {
     const SWP_NOSIZE: u32 = 0x0001;
     const SWP_NOMOVE: u32 = 0x0002;
     const SWP_NOACTIVATE: u32 = 0x0010;
-    const SWP_SHOWWINDOW: u32 = 0x0040;
     let hwnd = popup.hwnd().map_err(|error| error.to_string())?.0 as *mut std::ffi::c_void;
     let topmost = (-1_isize) as *mut std::ffi::c_void; // HWND_TOPMOST
     let changed = unsafe {
@@ -162,7 +161,7 @@ pub(crate) fn raise_usage_popup(popup: &WebviewWindow) -> Result<(), String> {
             0,
             0,
             0,
-            SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE | SWP_SHOWWINDOW,
+            SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE,
         )
     };
     if changed == 0 {

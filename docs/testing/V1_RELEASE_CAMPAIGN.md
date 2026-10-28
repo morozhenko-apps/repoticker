@@ -74,3 +74,29 @@ rewritten. **STOP** before R2 publish if any required gate remains open.
 - [ ] Native KDE/Windows failure-path acceptance.
 - [ ] Mode B final report, exact-SHA stable CI and release admission.
 - [ ] Protected v1.0.0 public publication and verified readback.
+
+
+## Pre-1.0 public readback client identity — 2026-10-28
+
+**Root cause found by cross-project comparison:** CFVigil commit
+`05100dc19748d9c28c1c45e3a49991904a8e9e6b` replaced anonymous
+Python `urlopen(url)` with an explicit GET Request advertising a
+project-specific User-Agent. RepoTicker `scripts/r2_release.py::public_readback`
+has the same anonymous URL call: download-edge integrity checks can reject
+that *public verification request* before R2 serves the body. This is not
+an S3 upload failure, nor proof of an actual RepoTicker production 403.
+
+**Scoped fix before v1.0:** Identify only the public GET verifier as
+`RepoTicker-ReleaseVerifier/1.0 (+https://github.com/morozhenko-apps/repoticker)`.
+Use a `urllib.request.Request` with `method="GET"` and its `User-Agent`
+header, preserving URL, 45-second timeout and existing fail-closed status,
+streaming SHA-256, size, receipt, immutable-object and latest-last checks.
+Do not disable edge controls, spoof browsers, alter R2 credentials,
+write a bucket or retry an unverified publication as a successful one.
+
+**Evidence required:** Offline actual request-capture tests prove method,
+header and intended URL on installer/APT/manifest keys, fail-closed non-200
+including 403, incorrect byte size/checksum and provider challenge HTML.
+A real v1 protected publication must still verify public reads; no source
+test proves the production edge currently accepts the request. Rollback is
+the identified request construction and its tests, not any public artifact.

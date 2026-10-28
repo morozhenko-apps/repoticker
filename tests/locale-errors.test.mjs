@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { LOCALE_ROSTER, coreText } from "../apps/desktop/ui/locale-catalog.mjs";
 import { ERROR_TERMS, localizedKnownError } from "../apps/desktop/ui/locale-errors.mjs";
 import { cardNoticeText, cardText } from "../apps/desktop/ui/card-i18n.mjs";
+import { githubFailureReason, githubFailureMessage } from "../apps/desktop/ui/github-errors.mjs";
 import { settingsText } from "../apps/desktop/ui/settings-i18n.mjs";
 import { surfaceText } from "../apps/desktop/ui/surface-i18n.mjs";
 

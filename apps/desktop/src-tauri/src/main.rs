@@ -723,10 +723,18 @@ fn show_usage_popup(app: AppHandle, kind: String) -> Result<(), String> {
         eprintln!("RepoTicker usage popup IPC received: {kind}");
     }
     USAGE_KIND.store(code, Ordering::Release);
+    // Explicit target-dependent selection: cfg on an if/else would remove
+    // BOTH branches on Windows, silently returning Ok without showing.
     #[cfg(target_os = "linux")]
-    if linux_surface::enabled() {
+    let use_unmanaged_popup = !linux_surface::enabled();
+    #[cfg(not(target_os = "linux"))]
+    let use_unmanaged_popup = true;
+
+    #[cfg(target_os = "linux")]
+    if !use_unmanaged_popup {
         linux_surface::show_usage(&app)?;
-    } else {
+    }
+    if use_unmanaged_popup {
         let card = app
             .get_webview_window("main")
             .ok_or_else(|| "Card unavailable".to_owned())?;

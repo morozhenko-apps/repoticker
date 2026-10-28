@@ -1,4 +1,4 @@
-# Windows seven-item QA retest: canonical exact-source rich native popup candidate (2026-10-27).
+# Windows NSIS explicit full-uninstall keychain cleanup acceptance candidate (2026-10-28).
 name: Desktop acceptance candidates (no publishing)
 
 on:

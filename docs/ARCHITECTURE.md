@@ -20,6 +20,8 @@ The three status indicators share one separate, read-only, pointer-through nativ
 
 None of the four application WebViews (card, Settings, About, usage popup) may show the browser's built-in context menu on right click. The explicit per-repository ellipsis menu and native tray context menu are separate features and must remain available.
 
+The Linux Layer Shell and unmanaged Windows/X11 popup paths must both be present in each target's compiled code. A Rust `#[cfg(target_os = "linux")]` attribute on an `if/else` expression removes the entire expression on Windows, including its `else` branch. Therefore choose the backend with separately compiled platform-specific assignments, and keep the unmanaged show path outside any Linux-only conditional. Source-level cross-platform regression tests must protect this invariant; only installed Windows runtime acceptance can mark tooltip visibility passed.
+
 Window-size recalculation must never reveal an intentionally hidden usage popup. Only an explicit hover-driven show may make the popup visible; any native Windows Z-order operation must remain non-activating. Diagnostic logging must distinguish hover show, hide, resize and actual native visibility.
 
 When no repositories are enrolled, center the empty-state message horizontally without adding height or changing the drawer's bottom anchoring. Native Windows and KDE hover, z-order, layout and uninstall behavior require actual platform acceptance; source tests cannot establish visual correctness.

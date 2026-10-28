@@ -28,9 +28,11 @@ test("Fetch controls are meaningful localized verbs, not 19 English Fetch labels
 });
 
 test("all three Windows metrics use a single styled native usage window", () => {
-  assert.match(native, /popup\.set_always_on_top\(false\)/);
-  assert.match(native, /popup\s*\.set_always_on_top\(true\)/);
-  assert.ok(native.indexOf(".set_always_on_top(true)") > native.indexOf(".show()"));
+  const show = native.slice(native.indexOf("fn show_usage_popup("),
+    native.indexOf("fn hide_usage_popup("));
+  assert.match(show, /windows_geometry::raise_usage_popup\(&popup\)/);
+  assert.ok(show.indexOf("windows_geometry::raise_usage_popup(&popup)") > show.indexOf(".show()"));
+  assert.doesNotMatch(show, /popup\.set_always_on_top\(/);
   assert.match(card, /function clearBrowserTooltips/);
   assert.match(card, /node\.removeAttribute\("title"\)/);
   assert.doesNotMatch(card, /node\.title = hoverFallbackText/);

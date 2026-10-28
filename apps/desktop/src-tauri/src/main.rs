@@ -695,15 +695,9 @@ fn show_usage_popup(app: AppHandle, kind: String) -> Result<(), String> {
             // Geometry failure must not prevent showing the tooltip.
             eprintln!("RepoTicker usage popup positioning unavailable: {error}");
         }
-        // The main card is itself topmost. Two independently-created
-        // topmost windows have no automatic within-app z-order on Windows.
-        // Release the popup's topmost flag while hidden, then put it ABOVE
-        // the card *after* show so its real WebView is visible on hover.
-        // This does not focus, activate, or change provider data.
-        #[cfg(target_os = "windows")]
-        if let Err(error) = popup.set_always_on_top(false) {
-            eprintln!("RepoTicker usage popup z-order reset unavailable: {error}");
-        }
+        // On Windows, native SetWindowPos after show establishes actual
+        // topmost z-order above the card without activating the tooltip.
+        // The high-level always-on-top flag alone does not guarantee ordering.
         // Focus and cursor pass-through are best-effort OS hints.
         #[cfg(target_os = "windows")]
         {
@@ -721,9 +715,8 @@ fn show_usage_popup(app: AppHandle, kind: String) -> Result<(), String> {
             .show()
             .map_err(|error| format!("Usage popup show failed: {error}"))?;
         #[cfg(target_os = "windows")]
-        popup
-            .set_always_on_top(true)
-            .map_err(|error| format!("Usage popup topmost failed: {error}"))?;
+        windows_geometry::raise_usage_popup(&popup)
+            .map_err(|error| format!("Usage popup native ordering failed: {error}"))?;
         if std::env::var_os("REPOTICKER_UI_DEBUG").is_some() {
             eprintln!("RepoTicker usage popup visible: {kind}");
         }
@@ -772,6 +765,9 @@ async fn resize_usage_popup(app: AppHandle, height: i32) -> Result<(), String> {
             eprintln!("RepoTicker usage popup resize placement failed: {error}");
         }
     }
+    #[cfg(target_os = "windows")]
+    windows_geometry::raise_usage_popup(&popup)
+        .map_err(|error| format!("Usage popup resize ordering failed: {error}"))?;
     Ok(())
 }
 

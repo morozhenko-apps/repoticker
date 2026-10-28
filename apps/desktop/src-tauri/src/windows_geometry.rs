@@ -130,3 +130,51 @@ mod tests {
         );
     }
 }
+
+#[link(name = "user32")]
+unsafe extern "system" {
+    fn SetWindowPos(
+        hwnd: *mut std::ffi::c_void,
+        insert_after: *mut std::ffi::c_void,
+        x: i32,
+        y: i32,
+        width: i32,
+        height: i32,
+        flags: u32,
+    ) -> i32;
+}
+
+/// Establish actual Windows z-order after showing or resizing the detached
+/// non-activating tooltip. This does not move it, resize it, or take focus.
+/// Tauri's high-level always-on-top toggle can retain a stale style state.
+pub(crate) fn raise_usage_popup(popup: &WebviewWindow) -> Result<(), String> {
+    const SWP_NOSIZE: u32 = 0x0001;
+    const SWP_NOMOVE: u32 = 0x0002;
+    const SWP_NOACTIVATE: u32 = 0x0010;
+    const SWP_SHOWWINDOW: u32 = 0x0040;
+    let hwnd = popup.hwnd().map_err(|error| error.to_string())?.0 as *mut std::ffi::c_void;
+    let topmost = (-1_isize) as *mut std::ffi::c_void; // HWND_TOPMOST
+    let changed = unsafe {
+        SetWindowPos(
+            hwnd,
+            topmost,
+            0,
+            0,
+            0,
+            0,
+            SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE | SWP_SHOWWINDOW,
+        )
+    };
+    if changed == 0 {
+        return Err(std::io::Error::last_os_error().to_string());
+    }
+    if std::env::var_os("REPOTICKER_UI_DEBUG").is_some() {
+        eprintln!(
+            "RepoTicker usage native ordering applied: visible={:?} position={:?} size={:?}",
+            popup.is_visible(),
+            popup.outer_position(),
+            popup.outer_size()
+        );
+    }
+    Ok(())
+}

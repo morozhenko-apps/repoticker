@@ -642,6 +642,9 @@ triggerMonitorRefresh = startGithubMonitoring({
 /* GTK Layer Shell receives physical Wayland relative-pointer events directly.
    The WebView only owns the gesture start/end, never motion coordinates. */
 const dragSurface = byId("card");
+// The card is an application control surface, not a browser page.
+// This does not affect the native tray menu or explicit repo ellipsis menus.
+dragSurface.addEventListener("contextmenu", event => event.preventDefault());
 const dragGesture = createNativeDragGesture({
   start: () => invoke("start_card_drag"),
   stop: () => invoke("stop_card_drag"),

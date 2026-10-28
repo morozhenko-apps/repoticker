@@ -1,4 +1,4 @@
-# Windows NSIS explicit full-uninstall keychain cleanup acceptance candidate (2026-10-28).
+# Unpublished native Windows/KDE UI and uninstall acceptance candidates.
 name: Desktop acceptance candidates (no publishing)
 
 on:
@@ -7,6 +7,12 @@ on:
     branches: [dev]
     paths:
       - '.github/workflows/desktop-acceptance-candidates.yml'
+      - 'apps/desktop/ui/app.mjs'
+      - 'apps/desktop/ui/style.css'
+      - 'apps/desktop/src-tauri/src/main.rs'
+      - 'apps/desktop/src-tauri/src/windows_geometry.rs'
+      - 'tests/windows-qa-seven-findings.test.mjs'
+      - 'tests/windows-tray-physical-regressions.test.mjs'
 
 permissions:
   contents: read

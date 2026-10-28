@@ -19,5 +19,5 @@ html,body { margin:0; width:100%; height:100%; overflow:hidden; background:trans
   min-width:0; font-size:12px; }
 .quota-line-label { color:#57616d; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .quota-line-value { font-variant-numeric:tabular-nums; text-align:right; flex:0 0 auto; }
-.quota-section > .quota-message { font-size:11px; line-height:1.2; display:-webkit-box;
-  -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; overflow-wrap:anywhere; }
+.quota-section > .quota-message { font-size:11px; line-height:1.25;
+  white-space:normal; overflow-wrap:anywhere; }

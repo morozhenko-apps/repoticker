@@ -94,3 +94,35 @@ test("All-repositories helper text hides without losing selected-mode guidance",
   assert.match(settings, /Repository list unavailable\. Existing selection is preserved/);
   assert.match(settings, /Select at most 100 repositories/);
 });
+
+
+test("L10N-20 Settings layouts accommodate long language names and full footer errors", () => {
+  const language = css.match(/\.language-picker \{([^}]+)\}/)?.[1] ?? "";
+  const trigger = css.match(/#language-trigger \{([^}]+)\}/)?.[1] ?? "";
+  assert.match(html, /data-value="pt"[^>]*>Português \(Portugal\)<\/button>/);
+  assert.match(language, /width: max-content/);
+  assert.match(language, /min-width: 126px/);
+  assert.match(language, /max-width: min\(230px, 55vw\)/);
+  assert.match(trigger, /width: 100%/);
+  assert.match(trigger, /white-space: normal/);
+  assert.match(trigger, /overflow-wrap: anywhere/);
+  assert.doesNotMatch(trigger, /(?:^|;)\s*width: 126px/);
+  assert.match(css, /#language-trigger span \{ flex: 0 0 auto; \}/);
+  assert.match(css, /#message \{[^}]*min-width: 0;[^}]*overflow-wrap: anywhere;/);
+  assert.match(css, /\.footer-buttons \{[^}]*flex: 0 0 auto;/);
+  assert.match(css, /#language-options button \{[^}]*min-height: 34px; height: auto;[^}]*white-space: normal;/);
+});
+
+test("Arabic selectors mirror only translated controls, keeping technical account LTR", () => {
+  const source = css.match(/\[dir="rtl"\] \.github-grid select:not\(\[dir="ltr"\]\),\s*\[dir="rtl"\] \.github-repo-heading select:not\(\[dir="ltr"\]\) \{([^}]+)\}/)?.[1] ?? "";
+  assert.match(source, /padding: 0 12px 0 32px/);
+  assert.match(source, /background-position: left 11px center/);
+  assert.match(source, /text-align: right/);
+  const defaultSelect = css.match(/\.github-grid select,\s*\.github-repo-heading select \{([^}]+)\}/)?.[1] ?? "";
+  assert.match(defaultSelect, /padding: 0 32px 0 12px/);
+  assert.match(defaultSelect, /background-position: right 11px center/);
+  assert.match(settings, /select\.dir = "ltr";/);
+  assert.match(html, /id="github-monitor-scope"/);
+  assert.match(html, /id="github-repo-mode"/);
+  assert.match(css, /\.github-grid \[hidden\] \{ display: none; \}/);
+});

@@ -136,3 +136,16 @@ test("Windows usage tooltip clips the WebView corner pixels on show and resize",
   assert.match(resize, /windows_geometry::clip_usage_popup\(&popup\)/);
   assert.match(resize, /if popup\s*\.is_visible\(\)/);
 });
+
+
+test("localized billing diagnostics are not needlessly clamped before native size limit", () => {
+  const message = css.match(/\.quota-section > \.quota-message \{([^}]+)\}/)?.[1] ?? "";
+  assert.match(message, /white-space:normal/);
+  assert.match(message, /overflow-wrap:anywhere/);
+  assert.doesNotMatch(message, /line-clamp|-webkit-box|overflow:hidden/);
+  assert.match(css, /\.quota-content \{[^}]*min-height:0;[^}]*overflow:hidden/);
+  assert.equal(usageHeight(20, [320]), USAGE_MAX_HEIGHT);
+  assert.match(read("../apps/desktop/ui/quota.mjs"),
+    /probe\.getBoundingClientRect\(\)\.height/);
+  assert.match(css, /clip-path:inset\(0 round 11px\)/);
+});

@@ -35,16 +35,17 @@ label { font-size: 12px; }
 .worker-label { grid-column: 1/-1; }
 .github-grid :disabled { opacity: .58; }
 .settings-footer { position: sticky; bottom: -12px; z-index: 20; background: Canvas; margin-top: auto; padding: 8px 0 4px; display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 48px; flex-shrink: 0; }
-.footer-buttons { display: flex; gap: 8px; }
+.footer-buttons { display: flex; gap: 8px; flex: 0 0 auto; }
 .footer-buttons button { min-width: 80px; }
 .footer-buttons .primary:not(:disabled) { border-color: #529acb; background: #d4eafa; color: #173e56; }
-#message { font-size: 12px; color: #577a9b; }
+#message { flex: 1 1 auto; min-width: 0; font-size: 12px; color: #577a9b; overflow-wrap: anywhere; }
 #message.error { color: #b64040; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 
 /* WebKitGTK's native select menu can be clipped or displaced on Wayland. */
-.language-picker { position: relative; z-index: 10; min-width: 126px; }
-#language-trigger { width: 126px; display: flex; align-items: center; justify-content: space-between; gap: 8px; text-align: left; background: Canvas; }
+.language-picker { position: relative; z-index: 10; width: max-content; min-width: 126px; max-width: min(230px, 55vw); }
+#language-trigger { width: 100%; min-height: 34px; height: auto; display: flex; align-items: center; justify-content: space-between; gap: 8px; text-align: start; white-space: normal; overflow-wrap: anywhere; background: Canvas; }
+#language-trigger span { flex: 0 0 auto; }
 #language-options { position: absolute; top: calc(100% + 3px); left: 0; width: min(260px, 75vw); max-height: min(330px, 52vh); overflow-y: auto; scrollbar-width: thin; padding: 0; background: Canvas; border: 1px solid color-mix(in srgb, CanvasText 32%, Canvas); border-radius: 6px; box-shadow: 0 5px 13px #0003; }
 #language-options button { width: 100%; height: 32px; display: flex; align-items: center; line-height: 1.2; border: 0; text-align: left; background: transparent; }
 #language-options button:hover, #language-options button[aria-selected="true"] { background: color-mix(in srgb, #5aa4d4 19%, Canvas); }
@@ -89,6 +90,16 @@ label { font-size: 12px; }
     appearance: auto;
     background-image: none;
   }
+}
+
+
+/* Localized Arabic controls paint their chevron at the visual inline end.
+ * Monitor account IDs are explicitly dir=ltr and keep the LTR control. */
+[dir="rtl"] .github-grid select:not([dir="ltr"]),
+[dir="rtl"] .github-repo-heading select:not([dir="ltr"]) {
+  padding: 0 12px 0 32px;
+  background-position: left 11px center;
+  text-align: right;
 }
 
 #github-repo-filter { display: block; width: 100%; height: 30px; margin: 6px 0; }

@@ -81,3 +81,7 @@ Windows acceptance pending. Hook is included by `tauri.conf.json` and
 covered by `tests/windows-nsis-credential-cleanup.test.mjs`.
 No real user's token was read, deleted, or exposed during development.
 
+
+## Operator Windows observation
+
+The owner reported that a physical Windows full uninstall with **Delete the application data** checked successfully removed the RepoTicker credential. This is partial operator-reported acceptance of the explicit-delete path, not proof that upgrade and regular-uninstall retention, idempotent repeat removal, unrelated credentials and all error paths have passed. No credentials were inspected or transferred in this report.

@@ -193,11 +193,8 @@ unsafe extern "system" {
 
 #[link(name = "user32")]
 unsafe extern "system" {
-    fn SetWindowRgn(
-        hwnd: *mut std::ffi::c_void,
-        region: *mut std::ffi::c_void,
-        redraw: i32,
-    ) -> i32;
+    fn SetWindowRgn(hwnd: *mut std::ffi::c_void, region: *mut std::ffi::c_void, redraw: i32)
+        -> i32;
 }
 
 /// Clip only the detached usage window to its rounded 11px CSS contour.
@@ -211,8 +208,8 @@ pub(crate) fn clip_usage_popup(popup: &WebviewWindow) -> Result<(), String> {
     if width <= 0 || height <= 0 {
         return Err("Empty usage popup cannot be clipped".into());
     }
-    let diameter = ((2.0 * CORNER_RADIUS_LOGICAL * scale).round() as i32)
-        .clamp(2, width.min(height));
+    let diameter =
+        ((2.0 * CORNER_RADIUS_LOGICAL * scale).round() as i32).clamp(2, width.min(height));
     let hwnd = popup.hwnd().map_err(|error| error.to_string())?.0 as *mut std::ffi::c_void;
     let region = unsafe { CreateRoundRectRgn(0, 0, width, height, diameter, diameter) };
     if region.is_null() {

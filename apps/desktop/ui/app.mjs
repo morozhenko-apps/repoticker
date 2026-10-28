@@ -6,6 +6,7 @@ import { cardLocale, cardText, metricAccessibleLabel } from "./card-i18n.mjs";
 import { mergeMonitorPresentation, reconcileScanPresentation } from "./monitor-presentation.mjs";
 import { placeRepoMenu } from "./repo-menu.mjs";
 import { localeDirection } from "./locale-catalog.mjs";
+import { localizedKnownError } from "./locale-errors.mjs";
 import { createScanRefreshQueue } from "./scan-refresh.mjs";
 import { disableBrowserContextMenu } from "./browser-context-menu.mjs";
 
@@ -77,14 +78,25 @@ document.addEventListener("visibilitychange", () => {
   else armAutoHide();
 });
 
-function showError(message) {
+let lastNoticeRaw = null;
+function paintNotice() {
   const node = byId("notice");
-  node.textContent = String(message);
+  if (lastNoticeRaw === null) {
+    node.hidden = true;
+    node.textContent = "";
+    return;
+  }
+  // Display-only localization. Never rewrite the native error or Git data.
+  node.textContent = localizedKnownError(cardLanguage, lastNoticeRaw);
   node.hidden = false;
 }
+function showError(message) {
+  lastNoticeRaw = String(message);
+  paintNotice();
+}
 function clearError() {
-  byId("notice").hidden = true;
-  byId("notice").textContent = "";
+  lastNoticeRaw = null;
+  paintNotice();
 }
 function addText(parent, tag, value, className = "") {
   const el = document.createElement(tag);
@@ -431,6 +443,7 @@ function setCardLanguage(language) {
   updateActionState();
   updateMetricAccessibleNames();
   clearBrowserTooltips();
+  if (lastNoticeRaw !== null) paintNotice();
 }
 function renderMonitorMetrics(state) {
   const status = compactStatus(state);

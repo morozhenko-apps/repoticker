@@ -484,3 +484,13 @@ export const ERROR_TERMS = Object.freeze({
     "GitHub authorization expired. Reconnect.": "انتهت صلاحية تفويض GitHub. أعد الاتصال."
   }
 });
+
+// Fixed-key presentation boundary: never modify arbitrary native, Git,
+// repository, network, or credential strings. Unknown values are retained.
+export function localizedKnownError(language, value) {
+  const raw = String(value);
+  if (!Object.hasOwn(ERROR_TERMS.en, raw)) return raw;
+  const terms = typeof language === "string" && Object.hasOwn(ERROR_TERMS, language)
+    ? ERROR_TERMS[language] : ERROR_TERMS.en;
+  return terms[raw];
+}

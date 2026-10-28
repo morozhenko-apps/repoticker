@@ -12,6 +12,8 @@ const settings = read("../apps/desktop/ui/settings.mjs");
 const card = read("../apps/desktop/ui/app.mjs");
 const native = read("../apps/desktop/src-tauri/src/main.rs");
 const github = read("../apps/desktop/src-tauri/src/github_session.rs");
+const githubApi = read("../apps/desktop/src-tauri/src/github_api.rs");
+const monitorErrors = read("../apps/desktop/ui/github-errors.mjs");
 const git = read("../crates/repoticker-core/src/git.rs");
 
 const required = [
@@ -41,7 +43,25 @@ const required = [
   "Repository changed during sync; retry manually",
   "Repository changed during Safe sync",
   "Remote upstream moved since Fetch; Safe sync did not push",
-  "Untrusted GitHub Actions URL"
+  "Untrusted GitHub Actions URL",
+  "GitHub API authorization expired or revoked.",
+  "GitHub API permission denied.",
+  "GitHub API resource inaccessible.",
+  "GitHub API rate limited.",
+  "GitHub API request failed.",
+  "GitHub API network error.",
+  "GitHub API stream failed.",
+  "GitHub API response exceeded safe size.",
+  "GitHub API returned invalid JSON.",
+  "GitHub authorization changed. Retry.",
+  "GitHub authorization unavailable. Reconnect in Settings.",
+  "GitHub access denied. Check installation permissions.",
+  "GitHub API rate limited. Monitoring will retry on its normal schedule.",
+  "GitHub resource inaccessible to this installation.",
+  "GitHub network unavailable. Monitoring will retry.",
+  "Some GitHub data is partial or incomplete.",
+  "GitHub Actions data unavailable.",
+  "Runner inventory access denied; authorized Actions jobs remain visible."
 ];
 
 test("all known fixed local/authorization errors have exact 20-locale key parity", () => {
@@ -93,7 +113,7 @@ test("unknown exception payloads, OS paths, repos and tokens pass through withou
 });
 
 test("catalog keys are grounded in native or Settings static error sites", () => {
-  const source = settings + native + github + git;
+  const source = settings + native + github + git + githubApi + monitorErrors;
   for (const key of required) {
     assert.ok(source.includes('"' + key + '"'),
       "Missing native/Settings source for known fixed error: " + key);
@@ -200,5 +220,70 @@ test("exact native Git safety messages and summary localize in all 20 languages"
   for (const invalid of [null, undefined, {}, { kind: "git", count: 0, message: "broken" },
     { kind: "native", message: null }, { kind: "git", count: 1.5, message: "broken" }]) {
     assert.throws(() => cardNoticeText("en", invalid), /Invalid card notice/);
+  }
+});
+
+
+test("all 18 GitHub API/monitor diagnostics have exact locale parity and safe meaning", () => {
+  const nativeKeys = [
+    "GitHub API authorization expired or revoked.",
+    "GitHub API permission denied.",
+    "GitHub API resource inaccessible.",
+    "GitHub API rate limited.",
+    "GitHub API request failed.",
+    "GitHub API network error.",
+    "GitHub API stream failed.",
+    "GitHub API response exceeded safe size.",
+    "GitHub API returned invalid JSON.",
+    "GitHub authorization changed. Retry."
+  ];
+  const policyKeys = [
+    "GitHub authorization unavailable. Reconnect in Settings.",
+    "GitHub access denied. Check installation permissions.",
+    "GitHub API rate limited. Monitoring will retry on its normal schedule.",
+    "GitHub resource inaccessible to this installation.",
+    "GitHub network unavailable. Monitoring will retry.",
+    "Some GitHub data is partial or incomplete.",
+    "GitHub Actions data unavailable.",
+    "Runner inventory access denied; authorized Actions jobs remain visible."
+  ];
+  for (const key of nativeKeys) assert.ok(githubApi.includes('"' + key + '"'), key);
+  for (const key of policyKeys) assert.ok(monitorErrors.includes('"' + key + '"'), key);
+  for (const { code } of LOCALE_ROSTER) {
+    for (const key of [...nativeKeys, ...policyKeys]) {
+      assert.equal(settingsText(code, key), ERROR_TERMS[code][key]);
+      assert.equal(surfaceText(code, key), ERROR_TERMS[code][key]);
+      assert.equal(localizedKnownError(code, key), ERROR_TERMS[code][key]);
+      assert.ok(ERROR_TERMS[code][key].trim());
+    }
+    const rate = surfaceText(code, policyKeys[2]);
+    assert.notEqual(rate, surfaceText(code, policyKeys[1]),
+      "429/rate-limit and 403/permission denied must remain distinct");
+    assert.ok(surfaceText(code, nativeKeys[8]).includes("JSON"));
+    assert.ok(surfaceText(code, nativeKeys[0]).includes("GitHub"));
+  }
+  assert.match(settingsText("pt", policyKeys[2]), /monitorização/);
+  assert.match(settingsText("ru", policyKeys[2]), /расписанию/);
+  assert.match(settingsText("ar", nativeKeys[8]), /JSON/);
+});
+
+test("unknown GitHub error payloads are not translated by exact-key catalog", () => {
+  const raw = [
+    "GitHub API rate limited. token=not-real",
+    "Error: GitHub API rate limited.",
+    "GitHub returned JSON with ghp_example",
+    "/org/repo private-resource",
+    "GitHub API authorization expired or revoked. https://internal.example/"
+  ];
+  for (const { code } of LOCALE_ROSTER)
+    for (const message of raw) {
+      assert.equal(localizedKnownError(code, message), message);
+      assert.equal(surfaceText(code, message), message);
+    }
+  // The policy still redacts raw unknown exceptions in the monitor.
+  for (const message of raw) {
+    assert.equal(githubFailureReason(message), "unavailable");
+    assert.equal(githubFailureMessage(githubFailureReason(message)),
+      "GitHub Actions data unavailable.");
   }
 });

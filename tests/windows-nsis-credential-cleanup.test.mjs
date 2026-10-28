@@ -38,7 +38,7 @@ test("deletion targets precisely the v1 Windows Credential Manager user.service 
   const calls = [...hook.matchAll(/System::Call 'advapi32::CredDeleteW\(w "([^"]+)", i (\d+), i (\d+)\) i \.r0'/g)];
   assert.equal(calls.length, 1, "one exact CredDeleteW call must exist");
   assert.deepEqual(calls[0].slice(1), [credentialTarget, "1", "0"]);
-  assert.doesNotMatch(hook, /CredEnumerate|CredRead|TargetName.*\*|\/delete:|HKLM|DeleteRegKey|RmDir|RmDir \/r/);
+  assert.doesNotMatch(executableHook, /CredEnumerate|CredRead|TargetName.*\*|\/delete:|HKLM|DeleteRegKey|RmDir|RmDir \/r/);
   assert.match(credentialSource, /keyring::Entry::new\(KEYRING_SERVICE, KEYRING_USER\)/);
   assert.match(credentialSource, /entry\.delete_credential\(\)/);
 });

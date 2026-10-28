@@ -100,3 +100,25 @@ including 403, incorrect byte size/checksum and provider challenge HTML.
 A real v1 protected publication must still verify public reads; no source
 test proves the production edge currently accepts the request. Rollback is
 the identified request construction and its tests, not any public artifact.
+
+
+### Implementation checkpoint — identified public verifier
+
+Code/tests: `577bd056284b0f5e0ea559f8b6acea27e7cb77ec`.
+`scripts/r2_release.py` now sends an explicit GET
+`urllib.request.Request` with
+`RepoTicker-ReleaseVerifier/1.0` and the public repository URL in
+its User-Agent. Full streaming SHA-256/size, 200-only acceptance,
+45-second timeout and publication receipt gating remain in place.
+An overlong response fails as soon as it exceeds expected source size.
+Deterministic offline request-capture tests cover Linux, Windows,
+InRelease and latest.json, 403/non-200, overlong/truncated/corrupt
+bytes, HTML edge challenge and a multi-chunk body.
+
+**Evidence:** source-shape and catalog checks were verified before
+commit. The production Python unit tests and real public R2 readback
+have **not** been executed/observed in this turn. The code push
+initiates CI; it has not been polled. This prevents the *known*
+anonymous-client failure class but does not certify that the
+Cloudflare edge will allow the configured identifier in production.
+The publication remains blocked until protected v1 gates close.

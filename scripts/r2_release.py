@@ -19,6 +19,10 @@ import zlib
 BUCKET = "app-dist"
 PREFIX = "dist/RepoTicker/"
 BASE = "https://download.morozhenko.com/" + PREFIX
+PUBLIC_READBACK_USER_AGENT = (
+    "RepoTicker-ReleaseVerifier/1.0 "
+    "(+https://github.com/morozhenko-apps/repoticker)"
+)
 VERSION = re.compile(r"(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\Z")
 COMMIT = re.compile(r"[a-f0-9]{40}\Z")
 MIMES = {
@@ -282,14 +286,22 @@ def public_readback(path, relative, opener=urllib.request.urlopen):
     # cannot demonstrate that visitors can download this exact object.
     expected_size = path.stat().st_size
     expected_sha = digest(path)
-    with opener(BASE + relative, timeout=45) as reply:
+    # Public edge security must be able to distinguish our release verifier
+    # from urllib's generic Python client. No browser impersonation or bypass.
+    request = urllib.request.Request(
+        BASE + relative, headers={"User-Agent": PUBLIC_READBACK_USER_AGENT},
+        method="GET",
+    )
+    with opener(request, timeout=45) as reply:
         if reply.status != 200:
             raise ValueError("Public R2 download returned non-200")
         hasher = hashlib.sha256()
         length = 0
         while chunk := reply.read(1024 * 1024):
-            hasher.update(chunk)
             length += len(chunk)
+            if length > expected_size:
+                raise ValueError("Public R2 download does not match source")
+            hasher.update(chunk)
         if length != expected_size or hasher.hexdigest() != expected_sha:
             raise ValueError("Public R2 download does not match source")
         return {

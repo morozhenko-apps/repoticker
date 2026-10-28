@@ -7,6 +7,8 @@ import sys
 import tempfile
 from types import ModuleType
 import unittest
+from urllib.error import HTTPError
+from urllib.request import Request
 from pathlib import Path
 from unittest.mock import patch
 
@@ -391,6 +393,103 @@ class PublicationFixture(unittest.TestCase):
                             Path(self.temp.name) / "receipt.json",
                             "invalid", "", "")
 
+
+
+
+
+class IdentifiedPublicReadbackTests(unittest.TestCase):
+    """The real publisher must use identified GET, never bypass edge checks."""
+
+    class Reply:
+        def __init__(self, content, status=200):
+            self.status = status
+            self.body = io.BytesIO(content)
+            self.read_sizes = []
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            self.body.close()
+
+        def read(self, size):
+            self.read_sizes.append(size)
+            return self.body.read(size)
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.file = Path(self.temp.name) / "approved-package"
+        self.content = b"RepoTicker release provenance sample"
+        self.file.write_bytes(self.content)
+
+    def assert_request(self, request, timeout, relative):
+        self.assertIsInstance(request, Request)
+        self.assertEqual(request.get_method(), "GET")
+        self.assertIsNone(request.data)
+        self.assertEqual(request.full_url, release.BASE + relative)
+        self.assertEqual(timeout, 45)
+        self.assertEqual(dict(request.header_items()), {
+            "User-agent": "RepoTicker-ReleaseVerifier/1.0 "
+                          "(+https://github.com/morozhenko-apps/repoticker)"
+        })
+
+    def test_given_release_assets_when_public_readback_then_request_identifies_repoticker(self):
+        for relative in (
+            "linux/RepoTicker-0.1.0-linux-x64.AppImage",
+            "windows/RepoTicker-Setup-0.1.0-win-x64.exe",
+            "linux/InRelease",
+            "latest.json",
+        ):
+            with self.subTest(relative=relative):
+                calls = []
+                def opener(request, timeout):
+                    calls.append(request)
+                    self.assert_request(request, timeout, relative)
+                    return self.Reply(self.content)
+                result = release.public_readback(self.file, relative, opener)
+                self.assertEqual(len(calls), 1)
+                self.assertEqual(result["readback_status"], 200)
+                self.assertEqual(result["readback_sha256"], sha(self.content))
+                self.assertEqual(result["readback_size"], len(self.content))
+
+    def test_given_multichunk_response_when_readback_then_complete_sha_and_size_are_verified(self):
+        self.content = b"a" * (1024 * 1024) + b"z"
+        self.file.write_bytes(self.content)
+        reply = self.Reply(self.content)
+        result = release.public_readback(self.file, "linux/large", lambda req, timeout: reply)
+        self.assertEqual(result["readback_sha256"], sha(self.content))
+        self.assertEqual(result["readback_size"], len(self.content))
+        self.assertEqual(reply.read_sizes, [1024 * 1024, 1024 * 1024, 1024 * 1024])
+
+    def test_given_non200_or_edge_rejection_when_readback_then_no_success_receipt(self):
+        for status in (201, 206, 403):
+            with self.subTest(status=status):
+                reply = self.Reply(self.content, status)
+                with self.assertRaisesRegex(ValueError, "non-200"):
+                    release.public_readback(self.file, "latest.json", lambda req, timeout: reply)
+                self.assertEqual(reply.read_sizes, [])
+        error = HTTPError(release.BASE + "latest.json", 403, "Forbidden", {}, None)
+        def blocked(request, timeout):
+            self.assert_request(request, timeout, "latest.json")
+            raise error
+        with self.assertRaises(HTTPError) as raised:
+            release.public_readback(self.file, "latest.json", blocked)
+        self.assertIs(raised.exception, error)
+
+    def test_given_invalid_public_bytes_when_readback_then_checksum_and_size_fail_closed(self):
+        for label, actual in (
+            ("empty", b""),
+            ("truncated", self.content[:-1]),
+            ("extra", self.content + b"x"),
+            ("same-size mismatch", b"x" * len(self.content)),
+            ("edge challenge page", b"<html>Complete a challenge</html>"),
+        ):
+            with self.subTest(label=label), self.assertRaisesRegex(
+                ValueError, "does not match source"
+            ):
+                release.public_readback(self.file, "latest.json",
+                                        lambda req, timeout: self.Reply(actual))
 
 
 class UploadSafetyTests(unittest.TestCase):

@@ -5,6 +5,7 @@ import { readFileSync } from "node:fs";
 const read = file => readFileSync(new URL("../" + file, import.meta.url), "utf8");
 const config = JSON.parse(read("apps/desktop/src-tauri/tauri.conf.json"));
 const hook = read("apps/desktop/src-tauri/windows/credential-cleanup.nsh");
+const executableHook = hook.split("\n").filter(line => !line.trim().startsWith(";")).join("\n");
 const credentialSource = read("apps/desktop/src-tauri/src/github_native.rs");
 const sessionSource = read("apps/desktop/src-tauri/src/github_session.rs");
 
@@ -48,7 +49,7 @@ test("missing credential is idempotent; other failures are visible and nonzero",
   assert.match(hook, /SetErrorLevel 1/);
   assert.match(hook, /MessageBox MB_OK\|MB_ICONEXCLAMATION/);
   assert.match(hook, /\$\{IfNot\} \$\{Silent\}/);
-  assert.doesNotMatch(hook, /CredRead|AccessToken|refresh_token|access_token|CredentialBlob/);
+  assert.doesNotMatch(executableHook, /CredRead|AccessToken|refresh_token|access_token|CredentialBlob/);
 });
 
 test("normal Settings Disconnect remains the native credential deletion path", () => {

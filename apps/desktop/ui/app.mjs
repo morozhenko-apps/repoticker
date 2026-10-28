@@ -130,6 +130,12 @@ function showRepoMenu(button, repoPath) {
   if (alreadyOpen) return;
   menuAnchor = button;
   menuRepoPath = repoPath;
+  // A previous opening may have used another locale or text scale.
+  // Recompute intrinsic content size instead of measuring stale inline width.
+  repoMenu.style.width = "";
+  repoMenu.style.left = "";
+  repoMenu.style.top = "";
+  repoMenu.scrollTop = 0;
   repoMenu.hidden = false;
   const position = placeRepoMenu(
     button.getBoundingClientRect(),

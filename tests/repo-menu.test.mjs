@@ -50,3 +50,39 @@ test("menu contains Fetch, Safe pull and native enrolled GitHub open with dismis
   assert.match(ui, /repoMenu\.contains\(event\.target\)/);
   assert.match(ui, /repoMenu\.querySelector\("button"\)\?\.focus\(\)/);
 });
+
+
+test("long translated repository actions remeasure at every open and stay inside drawer", () => {
+  const show = ui.slice(ui.indexOf("function showRepoMenu("),
+    ui.indexOf("\nfor (const [key, operation] of ["));
+  assert.match(show, /repoMenu\.style\.width = "";/);
+  assert.match(show, /repoMenu\.style\.left = "";/);
+  assert.match(show, /repoMenu\.style\.top = "";/);
+  assert.match(show, /repoMenu\.scrollTop = 0;/);
+  assert.ok(show.indexOf('repoMenu.style.width = "";') <
+    show.indexOf("repoMenu.getBoundingClientRect()"));
+  assert.ok(show.indexOf("repoMenu.getBoundingClientRect()") <
+    show.indexOf("repoMenu.style.width = position.width"));
+  const popupStyle = css.match(/\.drawer > \.repo-menu \{([^}]+)\}/)?.[1] ?? "";
+  assert.match(popupStyle, /max-width: calc\(100% - 12px\)/);
+  assert.match(popupStyle, /max-height: calc\(100% - 12px\)/);
+  assert.match(popupStyle, /overflow-y: auto/);
+  assert.match(popupStyle, /overscroll-behavior: contain/);
+  const buttonStyle = css.match(/\.repo-menu button \{([^}]+)\}/)?.[1] ?? "";
+  assert.match(buttonStyle, /white-space: normal/);
+  assert.match(buttonStyle, /overflow-wrap: anywhere/);
+  assert.match(buttonStyle, /text-align: start/);
+  assert.doesNotMatch(buttonStyle, /white-space: nowrap/);
+  const clipped = placeRepoMenu(
+    { top: 140, bottom: 165, right: 200 },
+    { top: 100, left: 0, width: 220, height: 200 },
+    { width: 600, height: 150 }
+  );
+  assert.deepEqual(clipped, { left: 6, top: 44, width: 208 });
+  // Long translated strings must not change the fixed set of actions,
+  // nor keyboard focus behaviour and the native command mapping.
+  assert.equal((ui.match(/item\.setAttribute\("role", "menuitem"\)/g) ?? []).length, 1);
+  assert.match(ui, /event\.key === "ArrowDown"/);
+  assert.match(ui, /event\.key === "ArrowUp"/);
+  assert.match(ui, /repoMenu\.querySelector\("button"\)\?\.focus\(\)/);
+});

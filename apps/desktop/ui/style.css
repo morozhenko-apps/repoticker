@@ -24,8 +24,8 @@ button:focus-visible, input:focus-visible, .status-hover:focus-visible { outline
 .repo-delta.is-behind { color: #246da0; }
 .repo-more { width: 28px; height: 29px; font-size: 20px; border-radius: 5px; flex-shrink: 0; }
 .repo-more:hover { background: color-mix(in srgb, CanvasText 9%, transparent); }
-.drawer > .repo-menu { position: absolute; z-index: 30; background: #ffffff; color: #242b30; border: 1px solid #aeb8c1; border-radius: 7px; padding: 0; box-shadow: 0 7px 20px #0004; min-width: 155px; display: flex; flex-direction: column; pointer-events: auto; }
-.repo-menu button { display: flex; align-items: center; text-align: left; border-radius: 4px; font-size: 13px; padding: 0 11px; min-height: 35px; line-height: 1.2; white-space: nowrap; }
+.drawer > .repo-menu { position: absolute; z-index: 30; background: #ffffff; color: #242b30; border: 1px solid #aeb8c1; border-radius: 7px; padding: 0; box-shadow: 0 7px 20px #0004; min-width: 155px; display: flex; flex-direction: column; pointer-events: auto; max-width: calc(100% - 12px); max-height: calc(100% - 12px); overflow-y: auto; overscroll-behavior: contain; }
+.repo-menu button { display: flex; align-items: center; text-align: start; border-radius: 4px; font-size: 13px; padding: 6px 11px; min-height: 35px; flex-shrink: 0; min-width: 0; max-width: 100%; line-height: 1.2; white-space: normal; overflow-wrap: anywhere; }
 .repo-menu button:hover { background: color-mix(in srgb, CanvasText 10%, transparent); }
 .empty { margin: 12px 15px; font-size: 13px; color: GrayText; text-align: center; }
 
@@ -64,7 +64,7 @@ button:focus-visible, input:focus-visible, .status-hover:focus-visible { outline
   #show-repos[aria-busy="true"] .repo-spinner { animation:none; }
 }
 
-#notice { position: absolute; left: 11px; right: 11px; bottom: 100px; z-index: 25; padding: 8px 10px; background: Canvas; border: 1px solid #cd664d; border-radius: 6px; box-shadow: 0 4px 10px #0003; font-size: 12px; font-weight: 400; max-height: 82px; overflow-y: auto; }
+#notice { position: absolute; left: 11px; right: 11px; bottom: 100px; z-index: 25; padding: 8px 10px; background: Canvas; border: 1px solid #cd664d; border-radius: 6px; box-shadow: 0 4px 10px #0003; font-size: 12px; font-weight: 400; max-height: 82px; overflow-y: auto; white-space: normal; overflow-wrap: anywhere; }
 
 /* One translucent progress fill per repository row. Active work is indeterminate,
    finished repositories receive a full-width fill briefly. */

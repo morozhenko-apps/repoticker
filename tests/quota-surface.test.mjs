@@ -149,3 +149,25 @@ test("localized billing diagnostics are not needlessly clamped before native siz
     /probe\.getBoundingClientRect\(\)\.height/);
   assert.match(css, /clip-path:inset\(0 round 11px\)/);
 });
+
+
+test("long locale diagnostics wrap within bounded card and tooltip instead of horizontal cropping", () => {
+  const cardCss = read("../apps/desktop/ui/style.css");
+  const cardNotice = cardCss.match(/#notice \{([^}]+)\}/)?.[1] ?? "";
+  assert.match(cardNotice, /overflow-y: auto/);
+  assert.match(cardNotice, /max-height: 82px/);
+  assert.match(cardNotice, /overflow-wrap: anywhere/);
+  assert.match(cardNotice, /white-space: normal/);
+  for (const selector of [
+    /\.quota-title \{([^}]+)\}/,
+    /\.quota-content > \.quota-message \{([^}]+)\}/,
+    /\.quota-section-title \{([^}]+)\}/
+  ]) {
+    const rule = css.match(selector)?.[1] ?? "";
+    assert.match(rule, /min-width:0/);
+    assert.match(rule, /overflow-wrap:anywhere/);
+  }
+  assert.match(css, /pointer-events:none/);
+  assert.equal(usageHeight(30, [600]), USAGE_MAX_HEIGHT);
+  assert.equal(conf.app.windows.find(w => w.label === "usage").width, 340);
+});

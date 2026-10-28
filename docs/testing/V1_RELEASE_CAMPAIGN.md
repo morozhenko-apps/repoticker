@@ -2,7 +2,7 @@
 
 Status: **BLOCKED / NOT A RELEASE**. Source baseline: `dev` at
 `c3bae6af5ae5234cfe8cadd5e3de8f6909694890` (2026-10-28).
-Execution mode: **Mode B — Testing**. Published `v0.2.0` and `main`
+Execution priority: **L10N-20 completion first; Mode B — Testing is the subsequent formal campaign**. The source inventory below is non-gating preparation, not an early Mode B start. Published `v0.2.0` and `main`
 must remain unchanged until all mandatory gates pass.
 
 ## Scope and evidence rules
@@ -37,7 +37,7 @@ account/billing identifiers or internal deployment configuration in this file.
 
 ## Execution stages and rollback
 
-1. **Source rescan (Mode B 1–3):** classify all current production entrypoints,
+1. **Preparatory source rescan (before Mode B):** classify all current production entrypoints,
    the four test stacks, native/platform conditions and release paths. Replace
    obsolete counts in a new inventory artifact; retain historical records.
 2. **Risk maps (Mode B 4–8):** map every executable branch to a test requirement,
@@ -67,7 +67,8 @@ rewritten. **STOP** before R2 publish if any required gate remains open.
 
 - [x] Read `AGENTS.md`, owner Mode B SSOT and release contracts.
 - [x] Established `dev`/public-`main` separation and mandatory gate order.
-- [ ] Current exhaustive artifact/function inventory complete.
+- [x] Preparatory current production/test file register captured (not exhaustive functions).
+- [ ] Current exhaustive artifact/function inventory complete after L10N-20 freeze.
 - [ ] Branch map and Positive/N1–N12 matrix complete.
 - [ ] L10N-20 independent 20/20 acceptance.
 - [ ] Native KDE/Windows failure-path acceptance.

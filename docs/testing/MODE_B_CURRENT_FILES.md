@@ -1,7 +1,7 @@
 # RepoTicker Mode B — current source file register
 
 **Tree baseline:** `dev` @ `fd5cb98c3ea6e2002d4c3d69ab0a92cb110ebaa1`, 2026-10-28. GitHub recursive tree returned `truncated: false`.
-**Coverage of this register:** 72 production executable source/CI files and 64 test source files. **It is not a completed Stage 3 artifact/function inventory, branch map or test-coverage measurement.**
+**Coverage of this register:** 72 production executable source/CI files and 64 test source files. **It is preparatory material only. The full Mode B campaign must not start before the required L10N-20 independent acceptance. It is not a completed Stage 3 artifact/function inventory, branch map or test-coverage measurement.**
 
 ## Inventory interpretation
 
@@ -187,7 +187,7 @@ Risk triage is file-level only: Critical = data integrity, authentication, billi
 
 ## Gaps and next stage
 
-- **Stage 1 (path scan):** complete for the above source families. Include HTML/CSS/JSON/Tauri capabilities as *configuration/UI contracts* in the next artifact-level scan; artwork/DTOs are lower priority, not excluded from packaging integrity.
+- **Preparatory path scan (not formal Mode B Stage 1):** complete for the above source families; repeat or verify at the post-L10N frozen RC SHA. Include HTML/CSS/JSON/Tauri capabilities as *configuration/UI contracts* in the next artifact-level scan; artwork/DTOs are lower priority, not excluded from packaging integrity.
 - **Stage 2 (critical invariants):** local Git FF-only behavior; no unauthorized remote mutation; credential store isolation; truthfulness of unknown remote counters; auth session expiry/revocation; API pagination/rate-limits; native UI focus and popup lifecycle; signed immutable release readback.
 - **Stage 3:** incomplete until *every* source method/branch-bearing callback and shell pipeline is mapped to concrete risk, level, expected case count and Positive/N-family applicability.
 - **Stage 4–8:** do not infer branch coverage from filenames; build 13-cell Positive/N1–N12 matrix with explicit N/A reasoning and interaction/coverage maps before new Mode B tests.

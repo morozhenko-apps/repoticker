@@ -110,3 +110,47 @@ test("desktop routes only full local snapshots through single-flight queue", () 
   assert.equal([...app.matchAll(/invoke\("get_snapshot"\)/g)].length, 1,
     "the UI must not keep alternative bypass paths around scan single-flight");
 });
+
+
+test("busy indicator tracks the entire coalesced local scan, including failure", async () => {
+  const pending = [], states = [], errors = [];
+  const refresh = createScanRefreshQueue({
+    scan: () => {
+      const value = deferred();
+      pending.push(value);
+      return value.promise;
+    },
+    publish: () => {},
+    onError: error => errors.push(error.message),
+    onBusyChange: busy => states.push(busy),
+  });
+  const first = refresh();
+  refresh();
+  assert.deepEqual(states, [true]);
+  pending[0].resolve("stale");
+  await flush();
+  assert.equal(pending.length, 2);
+  assert.deepEqual(states, [true], "cannot turn off between invalidated scans");
+  pending[1].resolve("current");
+  await first;
+  assert.deepEqual(states, [true, false]);
+
+  const failed = refresh();
+  pending[2].reject(Error("unavailable"));
+  await failed;
+  assert.deepEqual(errors, ["unavailable"]);
+  assert.deepEqual(states, [true, false, true, false]);
+});
+
+test("Repos spinner follows source work without disabling repository drawer", () => {
+  const app = readFileSync(new URL("../apps/desktop/ui/app.mjs", import.meta.url), "utf8");
+  const css = readFileSync(new URL("../apps/desktop/ui/style.css", import.meta.url), "utf8");
+  assert.match(app, /onBusyChange: active => \{\s*localScanActive = active;\s*updateReposActivity\(\)/);
+  assert.match(app, /fullMonitorActive = active;\s*updateReposActivity\(\)/);
+  assert.match(app, /const loading = localScanActive \|\| fullMonitorActive/);
+  assert.match(app, /byId\("show-repos"\)\.setAttribute\("aria-busy", String\(loading\)\)/);
+  assert.match(app, /if \(loading\) cancelAutoHide\(\)/);
+  assert.doesNotMatch(app, /byId\("show-repos"\)\.disabled/);
+  assert.match(css, /#show-repos\[aria-busy="true"\] \.action-icon::after/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
+});

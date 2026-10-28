@@ -44,6 +44,15 @@ let view = "compact";
 let progress = null;
 let idleTimer = null;
 let cardVisible = false;
+let localScanActive = false;
+let fullMonitorActive = false;
+function updateReposActivity() {
+  const loading = localScanActive || fullMonitorActive;
+  byId("show-repos").setAttribute("aria-busy", String(loading));
+  // Source reads are independent of Fetch/Safe sync and never block Repos.
+  if (loading) cancelAutoHide();
+  else armAutoHide();
+}
 const IDLE_MS = 15_000;
 const AUTO_HIDE_EVENTS = ["pointermove", "pointerdown", "keydown", "wheel", "touchstart"];
 function cancelAutoHide() {
@@ -53,7 +62,8 @@ function armAutoHide() {
   cancelAutoHide();
   // Only the compact card is transient. An open Repos drawer must never
   // disappear while users inspect repositories or perform operations.
-  if (!cardVisible || view !== "compact" || quotaExpanded) return;
+  if (!cardVisible || view !== "compact" || quotaExpanded ||
+      localScanActive || fullMonitorActive) return;
   idleTimer = setTimeout(async () => {
     try { await invoke("hide_card"); resetView(); }
     catch (error) { showError(error); }
@@ -365,6 +375,8 @@ for (const [kind, node] of Object.entries(manualIndicator)) {
 }
 function monitorRefreshState(kind, active) {
   if (kind === "all") {
+    fullMonitorActive = active;
+    updateReposActivity();
     for (const node of Object.values(manualIndicator))
       node.setAttribute("aria-busy", String(active));
   } else {
@@ -459,6 +471,10 @@ function render(next) {
   if (next.errors?.length) showError(next.errors[0]);
 }
 const refreshSnapshot = createScanRefreshQueue({
+  onBusyChange: active => {
+    localScanActive = active;
+    updateReposActivity();
+  },
   // Capture the monitor revision at the START of each native scan.
   // The projection keeps newer remote-only metrics while local Git is read.
   scan: async () => {

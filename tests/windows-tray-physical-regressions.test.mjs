@@ -63,3 +63,20 @@ test("Given QA code change, Windows and Linux acceptance jobs stay unpublished",
   assert.match(workflow, /--bundles nsis/);
   assert.match(workflow, /NOT_A_RELEASE\.txt/);
 });
+
+
+test("unmanaged tooltip is anchored to fixed footer rather than expanding card top", () => {
+  assert.match(native, /fn footer_anchored_usage_position\(/);
+  assert.match(native, /const RIGHT_INSET_LOGICAL: f64 = 24\.0/);
+  assert.match(native, /const FOOTER_CLEARANCE_LOGICAL: f64 = 125\.0/);
+  assert.match(native, /let scale = card\.scale_factor\(\)/);
+  assert.match(native, /footer_anchored_usage_position\(/);
+  assert.match(native, /let area = monitor\.work_area\(\)/);
+  assert.match(native, /x = x\.clamp\(left, right\)/);
+  assert.match(native, /y = y\.clamp\(top, bottom\)/);
+  const positioning = native.slice(native.indexOf("fn position_unmanaged_usage_popup("),
+    native.indexOf("mod footer_tooltip_geometry_tests"));
+  assert.doesNotMatch(positioning, /i64::from\(position\.y\) - i64::from\(popup_size\.height\)/);
+  assert.match(positioning, /card_size\.height/);
+  assert.match(native, /expanded_drawer_does_not_move_tooltip_away_from_bottom_status_strip/);
+});

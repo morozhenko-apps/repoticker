@@ -6,9 +6,10 @@
  * action/config changes aren't lost and older replies cannot rewind the UI.
  * No timers, polling, caches or hidden automatic Git/network mutations.
  */
-export function createScanRefreshQueue({ scan, publish, onError }) {
+export function createScanRefreshQueue({ scan, publish, onError,
+  onBusyChange = () => {} }) {
   if (typeof scan !== "function" || typeof publish !== "function" ||
-      typeof onError !== "function") {
+      typeof onError !== "function" || typeof onBusyChange !== "function") {
     throw new TypeError("Scan queue requires scan, publish and onError callbacks");
   }
 
@@ -31,7 +32,11 @@ export function createScanRefreshQueue({ scan, publish, onError }) {
       invalidated = true;
       return active;
     }
-    active = drain().finally(() => { active = null; });
+    onBusyChange(true);
+    active = drain().finally(() => {
+      active = null;
+      onBusyChange(false);
+    });
     return active;
   };
 }

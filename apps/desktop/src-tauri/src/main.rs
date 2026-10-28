@@ -682,9 +682,32 @@ fn get_usage_popup_kind() -> &'static str {
     }
 }
 
-// The detached tooltip is anchored in physical monitor coordinates on
-// unmanaged Windows/X11 windows. Recalculate after each content-driven
-// resize to avoid silently placing an expanded balloon off-screen.
+// Position the tooltip relative to the fixed footer, not the moving
+// top edge of the expandable repositories drawer. These are logical
+// pixel dimensions from the existing card layout:
+// bottom padding (10) + actions (70) + status strip (25) + gap (20).
+// On high DPI monitors the caller applies the window scale exactly once.
+fn footer_anchored_usage_position(
+    card_position: (i64, i64),
+    card_size: (i64, i64),
+    popup_size: (i64, i64),
+    scale: f64,
+) -> (i64, i64) {
+    const RIGHT_INSET_LOGICAL: f64 = 24.0;
+    const FOOTER_CLEARANCE_LOGICAL: f64 = 125.0;
+    (
+        card_position.0 + card_size.0
+            - popup_size.0
+            - (RIGHT_INSET_LOGICAL * scale).round() as i64,
+        card_position.1 + card_size.1
+            - popup_size.1
+            - (FOOTER_CLEARANCE_LOGICAL * scale).round() as i64,
+    )
+}
+
+// Unmanaged Windows/X11 popup: preserve bottom anchoring across drawer
+// expansion, and reposition after content-driven resize. Clamp to the
+// active monitor work area so the popup does not escape the screen.
 fn position_unmanaged_usage_popup(
     card: &tauri::WebviewWindow,
     popup: &tauri::WebviewWindow,
@@ -692,9 +715,13 @@ fn position_unmanaged_usage_popup(
     let position = card.outer_position().map_err(|error| error.to_string())?;
     let card_size = card.outer_size().map_err(|error| error.to_string())?;
     let popup_size = popup.outer_size().map_err(|error| error.to_string())?;
-    let mut x =
-        i64::from(position.x) + i64::from(card_size.width) - i64::from(popup_size.width) - 5;
-    let mut y = i64::from(position.y) - i64::from(popup_size.height) + 8;
+    let scale = card.scale_factor().map_err(|error| error.to_string())?;
+    let (mut x, mut y) = footer_anchored_usage_position(
+        (i64::from(position.x), i64::from(position.y)),
+        (i64::from(card_size.width), i64::from(card_size.height)),
+        (i64::from(popup_size.width), i64::from(popup_size.height)),
+        scale,
+    );
     if let Some(monitor) = card.current_monitor().map_err(|error| error.to_string())? {
         let area = monitor.work_area();
         let left = i64::from(area.position.x);
@@ -709,6 +736,31 @@ fn position_unmanaged_usage_popup(
     popup
         .set_position(tauri::PhysicalPosition::new(x, y))
         .map_err(|error| error.to_string())
+}
+
+#[cfg(test)]
+mod footer_tooltip_geometry_tests {
+    use super::footer_anchored_usage_position;
+
+    #[test]
+    fn expanded_drawer_does_not_move_tooltip_away_from_bottom_status_strip() {
+        let popup_size = (340, 180);
+        let compact = footer_anchored_usage_position((250, 600), (390, 108), popup_size, 1.0);
+        let expanded = footer_anchored_usage_position((250, 218), (390, 490), popup_size, 1.0);
+        assert_eq!(compact, (276, 403));
+        assert_eq!(expanded, compact);
+    }
+
+    #[test]
+    fn applies_dpi_scale_once_to_both_logical_insets() {
+        let physical = footer_anchored_usage_position(
+            (100, 100),
+            (585, 162),
+            (510, 270),
+            1.5,
+        );
+        assert_eq!(physical, (139, -196));
+    }
 }
 
 #[tauri::command]

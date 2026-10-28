@@ -47,6 +47,33 @@ button:focus-visible, input:focus-visible, .status-hover:focus-visible { outline
 .hide-chevron svg { display: block; }
 .action-icon.has-commits { font-size: 18px; color: #1f8b4c; font-weight: 500; }
 
+/* Real local snapshot / full GitHub monitor work. Keep the Repos icon's
+   28px slot and the button clickable while showing a standard spinner. */
+#show-repos[aria-busy="true"] .action-icon {
+  font-size: 0;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+}
+#show-repos[aria-busy="true"] .action-icon::after {
+  content: "";
+  display: block;
+  width: 19px;
+  height: 19px;
+  border: 2px solid #9db0bd;
+  border-top-color: #267daf;
+  border-radius: 50%;
+  animation: repos-spinner .85s linear infinite;
+}
+@keyframes repos-spinner { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  #show-repos[aria-busy="true"] .action-icon::after {
+    animation: none;
+    border-top-color: #267daf;
+  }
+}
+
 #notice { position: absolute; left: 11px; right: 11px; bottom: 100px; z-index: 25; padding: 8px 10px; background: Canvas; border: 1px solid #cd664d; border-radius: 6px; box-shadow: 0 4px 10px #0003; font-size: 12px; font-weight: 400; max-height: 82px; overflow-y: auto; }
 
 /* One translucent progress fill per repository row. Active work is indeterminate,

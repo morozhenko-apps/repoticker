@@ -2,11 +2,10 @@ import { nextCardView, syncReadyCommitCount } from "./view.mjs";
 import { createNativeDragGesture } from "./native-drag.mjs";
 import { startGithubMonitoring } from "./github-monitor.mjs";
 import { compactStatus } from "./status-metrics.mjs";
-import { cardLocale, cardText, metricAccessibleLabel } from "./card-i18n.mjs";
+import { cardLocale, cardText, cardNoticeText, metricAccessibleLabel } from "./card-i18n.mjs";
 import { mergeMonitorPresentation, reconcileScanPresentation } from "./monitor-presentation.mjs";
 import { placeRepoMenu } from "./repo-menu.mjs";
 import { localeDirection } from "./locale-catalog.mjs";
-import { localizedKnownError } from "./locale-errors.mjs";
 import { createScanRefreshQueue } from "./scan-refresh.mjs";
 import { disableBrowserContextMenu } from "./browser-context-menu.mjs";
 
@@ -78,24 +77,28 @@ document.addEventListener("visibilitychange", () => {
   else armAutoHide();
 });
 
-let lastNoticeRaw = null;
+let lastNotice = null;
 function paintNotice() {
   const node = byId("notice");
-  if (lastNoticeRaw === null) {
+  if (lastNotice === null) {
     node.hidden = true;
     node.textContent = "";
     return;
   }
-  // Display-only localization. Never rewrite the native error or Git data.
-  node.textContent = localizedKnownError(cardLanguage, lastNoticeRaw);
+  // Presentation-only: display can change locales; native values cannot.
+  node.textContent = cardNoticeText(cardLanguage, lastNotice);
   node.hidden = false;
 }
 function showError(message) {
-  lastNoticeRaw = String(message);
+  lastNotice = { kind: "native", message: String(message) };
+  paintNotice();
+}
+function showGitOperationErrors(count, message) {
+  lastNotice = { kind: "git", count, message: String(message) };
   paintNotice();
 }
 function clearError() {
-  lastNoticeRaw = null;
+  lastNotice = null;
   paintNotice();
 }
 function addText(parent, tag, value, className = "") {
@@ -443,7 +446,7 @@ function setCardLanguage(language) {
   updateActionState();
   updateMetricAccessibleNames();
   clearBrowserTooltips();
-  if (lastNoticeRaw !== null) paintNotice();
+  if (lastNotice !== null) paintNotice();
 }
 function renderMonitorMetrics(state) {
   const status = compactStatus(state);
@@ -532,7 +535,7 @@ function consumeResults(results) {
   // or a duplicate "N fetched" line. Real Git state is the success indicator.
   const errors = results.filter(item => item.status === "error");
   if (errors.length) {
-    showError(cardText(cardLanguage, "gitErrors", errors.length) + errors[0].message);
+    showGitOperationErrors(errors.length, errors[0].message);
   }
 }
 async function cancelActiveFetch() {

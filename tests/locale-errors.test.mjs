@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { LOCALE_ROSTER, coreText } from "../apps/desktop/ui/locale-catalog.mjs";
 import { ERROR_TERMS, localizedKnownError } from "../apps/desktop/ui/locale-errors.mjs";
+import { cardNoticeText, cardText } from "../apps/desktop/ui/card-i18n.mjs";
 import { settingsText } from "../apps/desktop/ui/settings-i18n.mjs";
 import { surfaceText } from "../apps/desktop/ui/surface-i18n.mjs";
 
@@ -11,6 +12,7 @@ const settings = read("../apps/desktop/ui/settings.mjs");
 const card = read("../apps/desktop/ui/app.mjs");
 const native = read("../apps/desktop/src-tauri/src/main.rs");
 const github = read("../apps/desktop/src-tauri/src/github_session.rs");
+const git = read("../crates/repoticker-core/src/git.rs");
 
 const required = [
   "Invalid repository list",
@@ -34,7 +36,12 @@ const required = [
   "System credential store unavailable or locked.",
   "Stored GitHub credentials are invalid. Disconnect and reconnect.",
   "GitHub is not connected.",
-  "GitHub authorization expired. Reconnect."
+  "GitHub authorization expired. Reconnect.",
+  "Repository is not enrolled or no longer valid",
+  "Repository changed during sync; retry manually",
+  "Repository changed during Safe sync",
+  "Remote upstream moved since Fetch; Safe sync did not push",
+  "Untrusted GitHub Actions URL"
 ];
 
 test("all known fixed local/authorization errors have exact 20-locale key parity", () => {
@@ -86,7 +93,7 @@ test("unknown exception payloads, OS paths, repos and tokens pass through withou
 });
 
 test("catalog keys are grounded in native or Settings static error sites", () => {
-  const source = settings + native + github;
+  const source = settings + native + github + git;
   for (const key of required) {
     assert.ok(source.includes('"' + key + '"'),
       "Missing native/Settings source for known fixed error: " + key);
@@ -133,18 +140,65 @@ test("unknown native error and provider data remain exact text, not partial tran
     "Error: Invalid folder name");
 });
 
-test("card preserves raw notice and reprojects it on saved locale changes", () => {
-  assert.match(card, /import \{ localizedKnownError \} from "\.\/locale-errors\.mjs"/);
-  assert.match(card, /let lastNoticeRaw = null/);
+test("card reprojects typed raw and Git-operation notices on locale changes", () => {
+  assert.match(card, /import \{ cardLocale, cardText, cardNoticeText, metricAccessibleLabel \}/);
+  assert.match(card, /let lastNotice = null/);
   const paint = card.slice(card.indexOf("function paintNotice()"),
     card.indexOf("function addText("));
-  assert.match(paint, /node\.textContent = localizedKnownError\(cardLanguage, lastNoticeRaw\)/);
-  assert.match(paint, /lastNoticeRaw = String\(message\);\s*paintNotice\(\)/);
-  assert.match(paint, /lastNoticeRaw = null;\s*paintNotice\(\)/);
-  assert.match(paint, /if \(lastNoticeRaw === null\) \{\s*node\.hidden = true;/);
+  assert.match(paint, /node\.textContent = cardNoticeText\(cardLanguage, lastNotice\)/);
+  assert.match(paint, /lastNotice = \{ kind: "native", message: String\(message\) \}/);
+  assert.match(paint, /lastNotice = \{ kind: "git", count, message: String\(message\) \}/);
+  assert.match(paint, /lastNotice = null;\s*paintNotice\(\)/);
+  assert.match(paint, /if \(lastNotice === null\) \{\s*node\.hidden = true;/);
   const locale = card.slice(card.indexOf("function setCardLanguage("),
     card.indexOf("function renderMonitorMetrics("));
-  assert.match(locale, /if \(lastNoticeRaw !== null\) paintNotice\(\)/);
+  assert.match(locale, /if \(lastNotice !== null\) paintNotice\(\)/);
   assert.ok(locale.indexOf("cardLanguage = next") < locale.indexOf("paintNotice()"));
+  const consume = card.slice(card.indexOf("function consumeResults("),
+    card.indexOf("async function cancelActiveFetch("));
+  assert.match(consume, /showGitOperationErrors\(errors\.length, errors\[0\]\.message\)/);
+  assert.doesNotMatch(consume, /showError\(cardText\(/);
   assert.doesNotMatch(paint, /invoke\(|github_api_get|fetch\(/);
+});
+
+test("exact native Git safety messages and summary localize in all 20 languages", () => {
+  const fixed = [
+    "Repository is not enrolled or no longer valid",
+    "Repository changed during sync; retry manually",
+    "Repository changed during Safe sync",
+    "Remote upstream moved since Fetch; Safe sync did not push",
+    "Untrusted GitHub Actions URL"
+  ];
+  for (const { code } of LOCALE_ROSTER) {
+    for (const message of fixed) {
+      assert.equal(cardNoticeText(code, { kind: "native", message }),
+        ERROR_TERMS[code][message], code + " / " + message);
+      const gitText = cardNoticeText(code, { kind: "git", count: 2, message });
+      assert.equal(gitText,
+        cardText(code, "gitErrors", 2) + ERROR_TERMS[code][message]);
+    }
+    const moved = ERROR_TERMS[code]["Remote upstream moved since Fetch; Safe sync did not push"];
+    assert.match(moved, /Fetch/);
+    assert.match(moved, /push/i, "must explicitly say Safe sync did NOT push");
+    assert.ok(moved.trim());
+  }
+  const raw = "token=canary /private/repo: credential unavailable";
+  for (const { code } of LOCALE_ROSTER) {
+    assert.equal(cardNoticeText(code, { kind: "native", message: raw }), raw);
+    assert.equal(cardNoticeText(code, { kind: "git", count: 3, message: raw }),
+      cardText(code, "gitErrors", 3) + raw);
+    assert.equal(cardNoticeText(code, { kind: "native",
+      message: "Error: Repository changed during Safe sync" }),
+      "Error: Repository changed during Safe sync");
+  }
+  assert.notEqual(
+    cardNoticeText("ru", { kind: "git", count: 2,
+      message: "Repository changed during sync; retry manually" }),
+    cardNoticeText("pt", { kind: "git", count: 2,
+      message: "Repository changed during sync; retry manually" }),
+  );
+  for (const invalid of [null, undefined, {}, { kind: "git", count: 0, message: "broken" },
+    { kind: "native", message: null }, { kind: "git", count: 1.5, message: "broken" }]) {
+    assert.throws(() => cardNoticeText("en", invalid), /Invalid card notice/);
+  }
 });

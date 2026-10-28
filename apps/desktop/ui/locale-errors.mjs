@@ -25,7 +25,12 @@ export const ERROR_TERMS = Object.freeze({
     "System credential store unavailable or locked.": "System credential store unavailable or locked.",
     "Stored GitHub credentials are invalid. Disconnect and reconnect.": "Stored GitHub credentials are invalid. Disconnect and reconnect.",
     "GitHub is not connected.": "GitHub is not connected.",
-    "GitHub authorization expired. Reconnect.": "GitHub authorization expired. Reconnect."
+    "GitHub authorization expired. Reconnect.": "GitHub authorization expired. Reconnect.",
+    "Repository is not enrolled or no longer valid": "Repository is not enrolled or no longer valid",
+    "Repository changed during sync; retry manually": "Repository changed during sync; retry manually",
+    "Repository changed during Safe sync": "Repository changed during Safe sync",
+    "Remote upstream moved since Fetch; Safe sync did not push": "Remote upstream moved since Fetch; Safe sync did not push",
+    "Untrusted GitHub Actions URL": "Untrusted GitHub Actions URL"
   },
   "ru": {
     "Invalid repository list": "Неверный список репозиториев",
@@ -49,7 +54,12 @@ export const ERROR_TERMS = Object.freeze({
     "System credential store unavailable or locked.": "Системное хранилище учётных данных недоступно или заблокировано.",
     "Stored GitHub credentials are invalid. Disconnect and reconnect.": "Сохранённые данные GitHub недействительны. Отключитесь и подключитесь снова.",
     "GitHub is not connected.": "GitHub не подключён.",
-    "GitHub authorization expired. Reconnect.": "Срок действия авторизации GitHub истёк. Подключитесь снова."
+    "GitHub authorization expired. Reconnect.": "Срок действия авторизации GitHub истёк. Подключитесь снова.",
+    "Repository is not enrolled or no longer valid": "Репозиторий не добавлен или больше недействителен",
+    "Repository changed during sync; retry manually": "Репозиторий изменился во время синхронизации. Повторите вручную",
+    "Repository changed during Safe sync": "Репозиторий изменился во время безопасной синхронизации",
+    "Remote upstream moved since Fetch; Safe sync did not push": "Удалённая upstream-ветка изменилась после Fetch; безопасная синхронизация не выполняла push",
+    "Untrusted GitHub Actions URL": "Недоверенная ссылка GitHub Actions"
   },
   "es": {
     "Invalid repository list": "Lista de repositorios no válida",
@@ -73,7 +83,12 @@ export const ERROR_TERMS = Object.freeze({
     "System credential store unavailable or locked.": "El almacén de credenciales del sistema no está disponible o está bloqueado.",
     "Stored GitHub credentials are invalid. Disconnect and reconnect.": "Las credenciales guardadas de GitHub no son válidas. Desconecta y vuelve a conectar.",
     "GitHub is not connected.": "GitHub no está conectado.",
-    "GitHub authorization expired. Reconnect.": "La autorización de GitHub ha caducado. Vuelve a conectar."
+    "GitHub authorization expired. Reconnect.": "La autorización de GitHub ha caducado. Vuelve a conectar.",
+    "Repository is not enrolled or no longer valid": "El repositorio no está añadido o ya no es válido",
+    "Repository changed during sync; retry manually": "El repositorio cambió durante la sincronización. Vuelve a intentarlo manualmente",
+    "Repository changed during Safe sync": "El repositorio cambió durante la sincronización segura",
+    "Remote upstream moved since Fetch; Safe sync did not push": "La rama upstream remota cambió desde Fetch; la sincronización segura no realizó push",
+    "Untrusted GitHub Actions URL": "URL de GitHub Actions no confiable"
   },
   "pt": {
     "Invalid repository list": "Lista de repositórios inválida",
@@ -97,7 +112,12 @@ export const ERROR_TERMS = Object.freeze({
     "System credential store unavailable or locked.": "O armazenamento de credenciais do sistema está indisponível ou bloqueado.",
     "Stored GitHub credentials are invalid. Disconnect and reconnect.": "As credenciais GitHub guardadas são inválidas. Desligue e volte a ligar.",
     "GitHub is not connected.": "O GitHub não está ligado.",
-    "GitHub authorization expired. Reconnect.": "A autorização do GitHub expirou. Volte a ligar."
+    "GitHub authorization expired. Reconnect.": "A autorização do GitHub expirou. Volte a ligar.",
+    "Repository is not enrolled or no longer valid": "O repositório não está adicionado ou deixou de ser válido",
+    "Repository changed during sync; retry manually": "O repositório mudou durante a sincronização. Tente novamente manualmente",
+    "Repository changed during Safe sync": "O repositório mudou durante a sincronização segura",
+    "Remote upstream moved since Fetch; Safe sync did not push": "O ramo upstream remoto mudou desde o Fetch; a sincronização segura não fez push",
+    "Untrusted GitHub Actions URL": "Ligação do GitHub Actions não fidedigna"
   },
   "de": {
     "Invalid repository list": "Ungültige Repositoryliste",
@@ -121,7 +141,12 @@ export const ERROR_TERMS = Object.freeze({
     "System credential store unavailable or locked.": "System-Anmeldedatenspeicher ist nicht verfügbar oder gesperrt.",
     "Stored GitHub credentials are invalid. Disconnect and reconnect.": "Gespeicherte GitHub-Zugangsdaten sind ungültig. Trennen und erneut verbinden.",
     "GitHub is not connected.": "GitHub ist nicht verbunden.",
-    "GitHub authorization expired. Reconnect.": "GitHub-Autorisierung abgelaufen. Erneut verbinden."
+    "GitHub authorization expired. Reconnect.": "GitHub-Autorisierung abgelaufen. Erneut verbinden.",
+    "Repository is not enrolled or no longer valid": "Das Repository ist nicht hinzugefügt oder nicht mehr gültig",
+    "Repository changed during sync; retry manually": "Das Repository wurde während der Synchronisierung geändert. Manuell erneut versuchen",
+    "Repository changed during Safe sync": "Das Repository wurde während der sicheren Synchronisierung geändert",
+    "Remote upstream moved since Fetch; Safe sync did not push": "Der entfernte Upstream-Branch hat sich seit Fetch geändert; Safe Sync hat keinen Push ausgeführt",
+    "Untrusted GitHub Actions URL": "Nicht vertrauenswürdige GitHub-Actions-URL"
   },
   "fr": {
     "Invalid repository list": "Liste de dépôts invalide",
@@ -145,7 +170,12 @@ export const ERROR_TERMS = Object.freeze({
     "System credential store unavailable or locked.": "Le stockage des identifiants système est indisponible ou verrouillé.",
     "Stored GitHub credentials are invalid. Disconnect and reconnect.": "Les identifiants GitHub enregistrés sont invalides. Déconnectez-vous puis reconnectez-vous.",
     "GitHub is not connected.": "GitHub n'est pas connecté.",
-    "GitHub authorization expired. Reconnect.": "L'autorisation GitHub a expiré. Reconnectez-vous."
+    "GitHub authorization expired. Reconnect.": "L'autorisation GitHub a expiré. Reconnectez-vous.",
+    "Repository is not enrolled or no longer valid": "Le dépôt n'est pas enregistré ou n'est plus valide",
+    "Repository changed during sync; retry manually": "Le dépôt a changé pendant la synchronisation. Réessayez manuellement",
+    "Repository changed during Safe sync": "Le dépôt a changé pendant la synchronisation sécurisée",
+    "Remote upstream moved since Fetch; Safe sync did not push": "La branche upstream distante a changé depuis Fetch ; la synchronisation sécurisée n'a effectué aucun push",
+    "Untrusted GitHub Actions URL": "URL GitHub Actions non fiable"
   },
   "it": {
     "Invalid repository list": "Elenco di repository non valido",
@@ -169,7 +199,12 @@ export const ERROR_TERMS = Object.freeze({
     "System credential store unavailable or locked.": "Archivio credenziali di sistema non disponibile o bloccato.",
     "Stored GitHub credentials are invalid. Disconnect and reconnect.": "Le credenziali GitHub salvate non sono valide. Disconnetti e riconnetti.",
     "GitHub is not connected.": "GitHub non è connesso.",
-    "GitHub authorization expired. Reconnect.": "Autorizzazione GitHub scaduta. Riconnettiti."
+    "GitHub authorization expired. Reconnect.": "Autorizzazione GitHub scaduta. Riconnettiti.",
+    "Repository is not enrolled or no longer valid": "Il repository non è registrato o non è più valido",
+    "Repository changed during sync; retry manually": "Il repository è cambiato durante la sincronizzazione. Riprova manualmente",
+    "Repository changed during Safe sync": "Il repository è cambiato durante la sincronizzazione sicura",
+    "Remote upstream moved since Fetch; Safe sync did not push": "Il ramo upstream remoto è cambiato dopo Fetch; la sincronizzazione sicura non ha eseguito push",
+    "Untrusted GitHub Actions URL": "URL GitHub Actions non attendibile"
   },
   "pl": {
     "Invalid repository list": "Nieprawidłowa lista repozytoriów",
@@ -193,7 +228,12 @@ export const ERROR_TERMS = Object.freeze({
     "System credential store unavailable or locked.": "Systemowy magazyn poświadczeń jest niedostępny lub zablokowany.",
     "Stored GitHub credentials are invalid. Disconnect and reconnect.": "Zapisane poświadczenia GitHub są nieprawidłowe. Rozłącz i połącz ponownie.",
     "GitHub is not connected.": "GitHub nie jest połączony.",
-    "GitHub authorization expired. Reconnect.": "Autoryzacja GitHub wygasła. Połącz ponownie."
+    "GitHub authorization expired. Reconnect.": "Autoryzacja GitHub wygasła. Połącz ponownie.",
+    "Repository is not enrolled or no longer valid": "Repozytorium nie zostało dodane lub jest już nieprawidłowe",
+    "Repository changed during sync; retry manually": "Repozytorium zmieniło się podczas synchronizacji. Spróbuj ponownie ręcznie",
+    "Repository changed during Safe sync": "Repozytorium zmieniło się podczas bezpiecznej synchronizacji",
+    "Remote upstream moved since Fetch; Safe sync did not push": "Zdalna gałąź upstream zmieniła się od Fetch; bezpieczna synchronizacja nie wykonała push",
+    "Untrusted GitHub Actions URL": "Niezaufany adres URL GitHub Actions"
   },
   "hi": {
     "Invalid repository list": "अमान्य रिपॉज़िटरी सूची",
@@ -217,7 +257,12 @@ export const ERROR_TERMS = Object.freeze({
     "System credential store unavailable or locked.": "सिस्टम क्रेडेंशियल स्टोर उपलब्ध नहीं या लॉक है।",
     "Stored GitHub credentials are invalid. Disconnect and reconnect.": "सहेजे गए GitHub क्रेडेंशियल अमान्य हैं। डिस्कनेक्ट करके दोबारा जोड़ें।",
     "GitHub is not connected.": "GitHub जुड़ा नहीं है।",
-    "GitHub authorization expired. Reconnect.": "GitHub अनुमति की अवधि समाप्त हो गई। फिर से जोड़ें।"
+    "GitHub authorization expired. Reconnect.": "GitHub अनुमति की अवधि समाप्त हो गई। फिर से जोड़ें।",
+    "Repository is not enrolled or no longer valid": "रिपॉज़िटरी जोड़ी नहीं गई है या अब मान्य नहीं है",
+    "Repository changed during sync; retry manually": "सिंक के दौरान रिपॉज़िटरी बदल गई। मैन्युअल रूप से दोबारा प्रयास करें",
+    "Repository changed during Safe sync": "सुरक्षित सिंक के दौरान रिपॉज़िटरी बदल गई",
+    "Remote upstream moved since Fetch; Safe sync did not push": "Fetch के बाद रिमोट upstream ब्रांच बदल गई; सुरक्षित सिंक ने push नहीं किया",
+    "Untrusted GitHub Actions URL": "अविश्वसनीय GitHub Actions URL"
   },
   "zh-Hant": {
     "Invalid repository list": "無效的儲存庫清單",
@@ -241,7 +286,12 @@ export const ERROR_TERMS = Object.freeze({
     "System credential store unavailable or locked.": "系統憑證儲存區無法使用或已鎖定。",
     "Stored GitHub credentials are invalid. Disconnect and reconnect.": "儲存的 GitHub 憑證無效。請中斷連線後重新連結。",
     "GitHub is not connected.": "GitHub 尚未連結。",
-    "GitHub authorization expired. Reconnect.": "GitHub 授權已過期。請重新連結。"
+    "GitHub authorization expired. Reconnect.": "GitHub 授權已過期。請重新連結。",
+    "Repository is not enrolled or no longer valid": "儲存庫尚未加入或已不再有效",
+    "Repository changed during sync; retry manually": "同步期間儲存庫已變更，請手動重試",
+    "Repository changed during Safe sync": "安全同步期間儲存庫已變更",
+    "Remote upstream moved since Fetch; Safe sync did not push": "Fetch 後遠端 upstream 分支已變動；安全同步未執行 push",
+    "Untrusted GitHub Actions URL": "不受信任的 GitHub Actions 網址"
   },
   "ja": {
     "Invalid repository list": "無効なリポジトリ一覧です",
@@ -265,7 +315,12 @@ export const ERROR_TERMS = Object.freeze({
     "System credential store unavailable or locked.": "システムの資格情報保管庫が利用できないか、ロックされています。",
     "Stored GitHub credentials are invalid. Disconnect and reconnect.": "保存した GitHub の資格情報が無効です。切断して再接続してください。",
     "GitHub is not connected.": "GitHub は未接続です。",
-    "GitHub authorization expired. Reconnect.": "GitHub の認証が期限切れです。再接続してください。"
+    "GitHub authorization expired. Reconnect.": "GitHub の認証が期限切れです。再接続してください。",
+    "Repository is not enrolled or no longer valid": "リポジトリが登録されていないか、無効になっています",
+    "Repository changed during sync; retry manually": "同期中にリポジトリが変更されました。手動で再試行してください",
+    "Repository changed during Safe sync": "安全な同期中にリポジトリが変更されました",
+    "Remote upstream moved since Fetch; Safe sync did not push": "Fetch 後にリモート upstream ブランチが移動しました。安全な同期では push していません",
+    "Untrusted GitHub Actions URL": "信頼できない GitHub Actions URL"
   },
   "nl": {
     "Invalid repository list": "Ongeldige repositorylijst",
@@ -289,7 +344,12 @@ export const ERROR_TERMS = Object.freeze({
     "System credential store unavailable or locked.": "De systeemopslag voor aanmeldgegevens is niet beschikbaar of vergrendeld.",
     "Stored GitHub credentials are invalid. Disconnect and reconnect.": "Opgeslagen GitHub-aanmeldgegevens zijn ongeldig. Ontkoppel en verbind opnieuw.",
     "GitHub is not connected.": "GitHub is niet verbonden.",
-    "GitHub authorization expired. Reconnect.": "GitHub-autorisatie verlopen. Verbind opnieuw."
+    "GitHub authorization expired. Reconnect.": "GitHub-autorisatie verlopen. Verbind opnieuw.",
+    "Repository is not enrolled or no longer valid": "De repository is niet toegevoegd of is niet meer geldig",
+    "Repository changed during sync; retry manually": "De repository is tijdens het synchroniseren gewijzigd. Probeer handmatig opnieuw",
+    "Repository changed during Safe sync": "De repository is tijdens veilige synchronisatie gewijzigd",
+    "Remote upstream moved since Fetch; Safe sync did not push": "De externe upstream-branch is gewijzigd sinds Fetch; veilige synchronisatie heeft geen push uitgevoerd",
+    "Untrusted GitHub Actions URL": "Niet-vertrouwde GitHub Actions-URL"
   },
   "sv": {
     "Invalid repository list": "Ogiltig lista över kodförråd",
@@ -313,7 +373,12 @@ export const ERROR_TERMS = Object.freeze({
     "System credential store unavailable or locked.": "Systemets lagring för inloggningsuppgifter är otillgänglig eller låst.",
     "Stored GitHub credentials are invalid. Disconnect and reconnect.": "Sparade GitHub-uppgifter är ogiltiga. Koppla från och anslut igen.",
     "GitHub is not connected.": "GitHub är inte anslutet.",
-    "GitHub authorization expired. Reconnect.": "GitHub-auktoriseringen har gått ut. Anslut igen."
+    "GitHub authorization expired. Reconnect.": "GitHub-auktoriseringen har gått ut. Anslut igen.",
+    "Repository is not enrolled or no longer valid": "Kodförrådet har inte lagts till eller är inte längre giltigt",
+    "Repository changed during sync; retry manually": "Kodförrådet ändrades under synkroniseringen. Försök igen manuellt",
+    "Repository changed during Safe sync": "Kodförrådet ändrades under säker synkronisering",
+    "Remote upstream moved since Fetch; Safe sync did not push": "Fjärrgrenen upstream ändrades sedan Fetch; säker synkronisering utförde ingen push",
+    "Untrusted GitHub Actions URL": "GitHub Actions-URL som inte är betrodd"
   },
   "tr": {
     "Invalid repository list": "Geçersiz depo listesi",
@@ -337,7 +402,12 @@ export const ERROR_TERMS = Object.freeze({
     "System credential store unavailable or locked.": "Sistem kimlik bilgisi deposu kullanılamıyor veya kilitli.",
     "Stored GitHub credentials are invalid. Disconnect and reconnect.": "Kayıtlı GitHub kimlik bilgileri geçersiz. Bağlantıyı kesip yeniden bağlanın.",
     "GitHub is not connected.": "GitHub bağlı değil.",
-    "GitHub authorization expired. Reconnect.": "GitHub yetkilendirmesinin süresi doldu. Yeniden bağlanın."
+    "GitHub authorization expired. Reconnect.": "GitHub yetkilendirmesinin süresi doldu. Yeniden bağlanın.",
+    "Repository is not enrolled or no longer valid": "Depo eklenmemiş veya artık geçerli değil",
+    "Repository changed during sync; retry manually": "Depo eşitleme sırasında değişti. Elle yeniden deneyin",
+    "Repository changed during Safe sync": "Depo güvenli eşitleme sırasında değişti",
+    "Remote upstream moved since Fetch; Safe sync did not push": "Uzak upstream dalı Fetch işleminden sonra değişti; güvenli eşitleme push yapmadı",
+    "Untrusted GitHub Actions URL": "Güvenilmeyen GitHub Actions URL'si"
   },
   "ko": {
     "Invalid repository list": "잘못된 저장소 목록",
@@ -361,7 +431,12 @@ export const ERROR_TERMS = Object.freeze({
     "System credential store unavailable or locked.": "시스템 자격 증명 저장소를 사용할 수 없거나 잠겨 있습니다.",
     "Stored GitHub credentials are invalid. Disconnect and reconnect.": "저장된 GitHub 자격 증명이 유효하지 않습니다. 연결을 해제한 뒤 다시 연결하세요.",
     "GitHub is not connected.": "GitHub가 연결되지 않았습니다.",
-    "GitHub authorization expired. Reconnect.": "GitHub 인증이 만료되었습니다. 다시 연결하세요."
+    "GitHub authorization expired. Reconnect.": "GitHub 인증이 만료되었습니다. 다시 연결하세요.",
+    "Repository is not enrolled or no longer valid": "저장소가 추가되지 않았거나 더 이상 유효하지 않습니다",
+    "Repository changed during sync; retry manually": "동기화 중 저장소가 변경되었습니다. 수동으로 다시 시도하세요",
+    "Repository changed during Safe sync": "안전 동기화 중 저장소가 변경되었습니다",
+    "Remote upstream moved since Fetch; Safe sync did not push": "Fetch 이후 원격 upstream 브랜치가 변경되었습니다. 안전 동기화에서 push하지 않았습니다",
+    "Untrusted GitHub Actions URL": "신뢰할 수 없는 GitHub Actions URL"
   },
   "bn": {
     "Invalid repository list": "অবৈধ রিপোজিটরি তালিকা",
@@ -385,7 +460,12 @@ export const ERROR_TERMS = Object.freeze({
     "System credential store unavailable or locked.": "সিস্টেমের শংসাপত্র ভাণ্ডার অনুপলব্ধ বা বন্ধ।",
     "Stored GitHub credentials are invalid. Disconnect and reconnect.": "সংরক্ষিত GitHub শংসাপত্র অবৈধ। সংযোগ বিচ্ছিন্ন করে পুনরায় যুক্ত করুন।",
     "GitHub is not connected.": "GitHub সংযুক্ত নয়।",
-    "GitHub authorization expired. Reconnect.": "GitHub অনুমোদনের মেয়াদ শেষ। আবার যুক্ত করুন।"
+    "GitHub authorization expired. Reconnect.": "GitHub অনুমোদনের মেয়াদ শেষ। আবার যুক্ত করুন।",
+    "Repository is not enrolled or no longer valid": "রিপোজিটরি যোগ করা হয়নি বা আর বৈধ নয়",
+    "Repository changed during sync; retry manually": "সিঙ্কের সময় রিপোজিটরি বদলেছে। নিজে আবার চেষ্টা করুন",
+    "Repository changed during Safe sync": "নিরাপদ সিঙ্কের সময় রিপোজিটরি বদলেছে",
+    "Remote upstream moved since Fetch; Safe sync did not push": "Fetch-এর পর রিমোট upstream ব্রাঞ্চ বদলেছে; নিরাপদ সিঙ্ক কোনো push করেনি",
+    "Untrusted GitHub Actions URL": "অবিশ্বস্ত GitHub Actions URL"
   },
   "th": {
     "Invalid repository list": "รายการคลังโค้ดไม่ถูกต้อง",
@@ -409,7 +489,12 @@ export const ERROR_TERMS = Object.freeze({
     "System credential store unavailable or locked.": "ที่เก็บข้อมูลรับรองของระบบไม่พร้อมใช้หรือถูกล็อก",
     "Stored GitHub credentials are invalid. Disconnect and reconnect.": "ข้อมูลรับรอง GitHub ที่บันทึกไว้ไม่ถูกต้อง ตัดการเชื่อมต่อแล้วเชื่อมต่อใหม่",
     "GitHub is not connected.": "ไม่ได้เชื่อมต่อ GitHub",
-    "GitHub authorization expired. Reconnect.": "การอนุญาต GitHub หมดอายุ เชื่อมต่อใหม่"
+    "GitHub authorization expired. Reconnect.": "การอนุญาต GitHub หมดอายุ เชื่อมต่อใหม่",
+    "Repository is not enrolled or no longer valid": "ยังไม่ได้เพิ่มคลังโค้ดหรือคลังโค้ดไม่ถูกต้องอีกต่อไป",
+    "Repository changed during sync; retry manually": "คลังโค้ดเปลี่ยนไประหว่างซิงก์ โปรดลองใหม่ด้วยตนเอง",
+    "Repository changed during Safe sync": "คลังโค้ดเปลี่ยนไประหว่างการซิงก์แบบปลอดภัย",
+    "Remote upstream moved since Fetch; Safe sync did not push": "สาขา upstream ระยะไกลเปลี่ยนไปหลัง Fetch; การซิงก์แบบปลอดภัยไม่ได้ push",
+    "Untrusted GitHub Actions URL": "URL ของ GitHub Actions ที่ไม่น่าเชื่อถือ"
   },
   "id": {
     "Invalid repository list": "Daftar repositori tidak valid",
@@ -433,7 +518,12 @@ export const ERROR_TERMS = Object.freeze({
     "System credential store unavailable or locked.": "Penyimpanan kredensial sistem tidak tersedia atau terkunci.",
     "Stored GitHub credentials are invalid. Disconnect and reconnect.": "Kredensial GitHub yang tersimpan tidak valid. Putuskan koneksi lalu hubungkan lagi.",
     "GitHub is not connected.": "GitHub belum terhubung.",
-    "GitHub authorization expired. Reconnect.": "Otorisasi GitHub kedaluwarsa. Hubungkan kembali."
+    "GitHub authorization expired. Reconnect.": "Otorisasi GitHub kedaluwarsa. Hubungkan kembali.",
+    "Repository is not enrolled or no longer valid": "Repositori belum ditambahkan atau tidak lagi valid",
+    "Repository changed during sync; retry manually": "Repositori berubah saat sinkronisasi. Coba lagi secara manual",
+    "Repository changed during Safe sync": "Repositori berubah saat sinkronisasi aman",
+    "Remote upstream moved since Fetch; Safe sync did not push": "Branch upstream jarak jauh berubah sejak Fetch; sinkronisasi aman tidak melakukan push",
+    "Untrusted GitHub Actions URL": "URL GitHub Actions tidak tepercaya"
   },
   "fil": {
     "Invalid repository list": "Hindi valid ang listahan ng repository",
@@ -457,7 +547,12 @@ export const ERROR_TERMS = Object.freeze({
     "System credential store unavailable or locked.": "Hindi available o naka-lock ang system credential store.",
     "Stored GitHub credentials are invalid. Disconnect and reconnect.": "Hindi valid ang naka-save na GitHub credential. Idiskonekta at kumonekta muli.",
     "GitHub is not connected.": "Hindi konektado ang GitHub.",
-    "GitHub authorization expired. Reconnect.": "Nag-expire ang awtorisasyon sa GitHub. Kumonekta muli."
+    "GitHub authorization expired. Reconnect.": "Nag-expire ang awtorisasyon sa GitHub. Kumonekta muli.",
+    "Repository is not enrolled or no longer valid": "Hindi naidagdag ang repository o hindi na ito valid",
+    "Repository changed during sync; retry manually": "Nagbago ang repository habang nagsi-sync. Subukang muli nang manu-mano",
+    "Repository changed during Safe sync": "Nagbago ang repository habang ligtas na nagsi-sync",
+    "Remote upstream moved since Fetch; Safe sync did not push": "Nagbago ang remote upstream branch mula noong Fetch; walang ginawang push ang ligtas na sync",
+    "Untrusted GitHub Actions URL": "Hindi pinagkakatiwalaang URL ng GitHub Actions"
   },
   "ar": {
     "Invalid repository list": "قائمة المستودعات غير صالحة",
@@ -481,7 +576,12 @@ export const ERROR_TERMS = Object.freeze({
     "System credential store unavailable or locked.": "مخزن بيانات اعتماد النظام غير متاح أو مقفل.",
     "Stored GitHub credentials are invalid. Disconnect and reconnect.": "بيانات اعتماد GitHub المحفوظة غير صالحة. اقطع الاتصال وأعده.",
     "GitHub is not connected.": "GitHub غير متصل.",
-    "GitHub authorization expired. Reconnect.": "انتهت صلاحية تفويض GitHub. أعد الاتصال."
+    "GitHub authorization expired. Reconnect.": "انتهت صلاحية تفويض GitHub. أعد الاتصال.",
+    "Repository is not enrolled or no longer valid": "لم تتم إضافة المستودع أو لم يعد صالحاً",
+    "Repository changed during sync; retry manually": "تغيّر المستودع أثناء المزامنة. أعد المحاولة يدوياً",
+    "Repository changed during Safe sync": "تغيّر المستودع أثناء المزامنة الآمنة",
+    "Remote upstream moved since Fetch; Safe sync did not push": "تغيّر فرع upstream البعيد منذ Fetch؛ لم تُنفّذ المزامنة الآمنة أي push",
+    "Untrusted GitHub Actions URL": "رابط GitHub Actions غير موثوق"
   }
 });
 

@@ -1,6 +1,7 @@
 import { normalizeLocale, coreText } from "./locale-catalog.mjs";
 import { CARD_TERMS } from "./locale-card.mjs";
 import { localizedGitCount } from "./locale-plurals.mjs";
+import { localizedKnownError } from "./locale-errors.mjs";
 /** Card-only i18n foundation. The persisted language setting already
  * supports the canonical twenty locales without translating provider values.
  * Keep stable keys and value-bearing templates for contextual audits.
@@ -136,4 +137,20 @@ export function metricAccessibleLabel(language, kind, counts, busy = false) {
     countText(language, counts?.[name])).join(", ");
   return [cardText(language, kind), metrics,
     cardText(language, busy ? "refreshing" : "refresh")].join(". ");
+}
+
+/** Render saved raw notices at the selected language, never at IPC receipt.
+ * Git summary and details remain distinct so changing the locale updates
+ * both while preserving untrusted Git/process/provider strings exactly. */
+export function cardNoticeText(language, notice) {
+  if (notice?.kind === "native" && typeof notice.message === "string") {
+    return localizedKnownError(language, notice.message);
+  }
+  if (notice?.kind === "git" &&
+      Number.isSafeInteger(notice.count) && notice.count > 0 &&
+      typeof notice.message === "string") {
+    return cardText(language, "gitErrors", notice.count) +
+      localizedKnownError(language, notice.message);
+  }
+  throw Error("Invalid card notice");
 }

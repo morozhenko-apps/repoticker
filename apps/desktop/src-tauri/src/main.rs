@@ -803,6 +803,10 @@ fn show_usage_popup(app: AppHandle, kind: String) -> Result<(), String> {
                 eprintln!("RepoTicker usage popup cursor hint unavailable: {error}");
             }
         }
+        #[cfg(target_os = "windows")]
+        if let Err(error) = windows_geometry::clip_usage_popup(&popup) {
+            eprintln!("RepoTicker usage popup rounded region unavailable: {error}");
+        }
         if std::env::var_os("REPOTICKER_UI_DEBUG").is_some() {
             eprintln!("RepoTicker usage popup show requested: {kind}");
         }
@@ -874,12 +878,18 @@ async fn resize_usage_popup(app: AppHandle, height: i32) -> Result<(), String> {
         }
     }
     #[cfg(target_os = "windows")]
-    if popup
-        .is_visible()
-        .map_err(|error| format!("Usage popup visibility check failed: {error}"))?
     {
-        windows_geometry::raise_usage_popup(&popup)
-            .map_err(|error| format!("Usage popup resize ordering failed: {error}"))?;
+        // Content-driven updates can resize a hidden popup; never show it here.
+        if let Err(error) = windows_geometry::clip_usage_popup(&popup) {
+            eprintln!("RepoTicker usage popup resize clipping unavailable: {error}");
+        }
+        if popup
+            .is_visible()
+            .map_err(|error| format!("Usage popup visibility check failed: {error}"))?
+        {
+            windows_geometry::raise_usage_popup(&popup)
+                .map_err(|error| format!("Usage popup resize ordering failed: {error}"))?;
+        }
     }
     Ok(())
 }

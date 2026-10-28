@@ -151,6 +151,12 @@ test("Repos spinner follows source work without disabling repository drawer", ()
   assert.match(app, /byId\("show-repos"\)\.setAttribute\("aria-busy", String\(loading\)\)/);
   assert.match(app, /if \(loading\) cancelAutoHide\(\)/);
   assert.doesNotMatch(app, /byId\("show-repos"\)\.disabled/);
-  assert.match(css, /#show-repos\[aria-busy="true"\] \.action-icon::after/);
+  assert.match(css, /#show-repos\[aria-busy="true"\] \.repo-spinner/);
+  assert.doesNotMatch(css, /#show-repos\[aria-busy="true"\] \.action-icon::after/);
+  const html = readFileSync(new URL("../apps/desktop/ui/index.html", import.meta.url), "utf8");
+  assert.match(html, /class="action-icon repo-glyph"[^>]*><span class="repo-symbol">▤<\/span><svg class="repo-spinner"/);
+  assert.match(css, /\.repo-glyph \{ display:grid; place-items:center; width:28px; height:28px/);
+  assert.match(css, /\.repo-glyph \.repo-symbol, \.repo-glyph \.repo-spinner \{ grid-area:1\/1; \}/);
+  assert.match(css, /#show-repos\[aria-busy="true"\] \.repo-symbol \{ visibility:hidden; \}/);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
 });

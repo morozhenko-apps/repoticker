@@ -177,3 +177,54 @@ pub(crate) fn raise_usage_popup(popup: &WebviewWindow) -> Result<(), String> {
     }
     Ok(())
 }
+
+#[link(name = "gdi32")]
+unsafe extern "system" {
+    fn CreateRoundRectRgn(
+        left: i32,
+        top: i32,
+        right: i32,
+        bottom: i32,
+        ellipse_width: i32,
+        ellipse_height: i32,
+    ) -> *mut std::ffi::c_void;
+    fn DeleteObject(handle: *mut std::ffi::c_void) -> i32;
+}
+
+#[link(name = "user32")]
+unsafe extern "system" {
+    fn SetWindowRgn(
+        hwnd: *mut std::ffi::c_void,
+        region: *mut std::ffi::c_void,
+        redraw: i32,
+    ) -> i32;
+}
+
+/// Clip only the detached usage window to its rounded 11px CSS contour.
+/// WebView2 compositing alone need not clear the rectangular backing surface.
+pub(crate) fn clip_usage_popup(popup: &WebviewWindow) -> Result<(), String> {
+    const CORNER_RADIUS_LOGICAL: f64 = 11.0;
+    let size = popup.outer_size().map_err(|error| error.to_string())?;
+    let scale = popup.scale_factor().map_err(|error| error.to_string())?;
+    let width = i32::try_from(size.width).map_err(|_| "Invalid usage popup width")?;
+    let height = i32::try_from(size.height).map_err(|_| "Invalid usage popup height")?;
+    if width <= 0 || height <= 0 {
+        return Err("Empty usage popup cannot be clipped".into());
+    }
+    let diameter = ((2.0 * CORNER_RADIUS_LOGICAL * scale).round() as i32)
+        .clamp(2, width.min(height));
+    let hwnd = popup.hwnd().map_err(|error| error.to_string())?.0 as *mut std::ffi::c_void;
+    let region = unsafe { CreateRoundRectRgn(0, 0, width, height, diameter, diameter) };
+    if region.is_null() {
+        return Err(std::io::Error::last_os_error().to_string());
+    }
+    let attached = unsafe { SetWindowRgn(hwnd, region, 1) };
+    if attached == 0 {
+        let error = std::io::Error::last_os_error().to_string();
+        // A failed attachment leaves ownership with us.
+        unsafe { DeleteObject(region) };
+        return Err(error);
+    }
+    // On success Windows owns and frees HRGN: never DeleteObject(region).
+    Ok(())
+}

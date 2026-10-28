@@ -112,3 +112,27 @@ test("GTK exact min/max height updates stay valid while growing and shrinking", 
   assert.match(native, /USAGE_HEIGHT\.load\(Ordering::Acquire\),\s*height,/);
   assert.match(native, /set_exact_viewport_height\(&viewport, CARD_HEIGHT\.load\(Ordering::Acquire\), height\)/);
 });
+
+test("Windows usage tooltip clips the WebView corner pixels on show and resize", () => {
+  const win = read("../apps/desktop/src-tauri/src/windows_geometry.rs");
+  const main = read("../apps/desktop/src-tauri/src/main.rs");
+  const window = conf.app.windows.find(w => w.label === "usage");
+  assert.equal(window.transparent, true);
+  assert.equal(window.shadow, false);
+  assert.match(css, /html,body \{[^}]*background:transparent/);
+  assert.match(css, /border-radius:11px; clip-path:inset\(0 round 11px\)/);
+  assert.doesNotMatch(css, /box-shadow/);
+  assert.match(win, /fn CreateRoundRectRgn\(/);
+  assert.match(win, /fn SetWindowRgn\(/);
+  assert.match(win, /if attached == 0 \{[\s\S]*DeleteObject\(region\)/);
+  assert.match(win, /On success Windows owns and frees HRGN/);
+  const show = main.slice(main.indexOf("fn show_usage_popup("),
+    main.indexOf("fn hide_usage_popup("));
+  assert.match(show, /windows_geometry::clip_usage_popup\(&popup\)/);
+  assert.ok(show.indexOf("windows_geometry::clip_usage_popup(&popup)") <
+    show.indexOf("popup\n            .show()"));
+  const resize = main.slice(main.indexOf("fn resize_usage_popup("),
+    main.indexOf("fn hide_card("));
+  assert.match(resize, /windows_geometry::clip_usage_popup\(&popup\)/);
+  assert.match(resize, /if popup\s*\.is_visible\(\)/);
+});

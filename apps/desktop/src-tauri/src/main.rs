@@ -630,6 +630,45 @@ async fn set_card_view(
     resize_unmanaged_card(&window, height)
 }
 
+// Fixed, explicitly opt-in hover diagnostics. Values are bounded to static
+// labels; callers cannot inject paths, account names or provider payloads.
+#[tauri::command]
+fn ui_hover_debug_enabled() -> bool {
+    std::env::var_os("REPOTICKER_UI_DEBUG").is_some()
+}
+
+#[tauri::command]
+fn trace_ui_hover(kind: String, stage: String, sequence: u32) {
+    if !ui_hover_debug_enabled() {
+        return;
+    }
+    let kind = match kind.as_str() {
+        "runners" => "runners",
+        "tasks" => "tasks",
+        "billing" => "billing",
+        "none" => "none",
+        _ => return,
+    };
+    let stage = match stage.as_str() {
+        "ready" => "ready",
+        "reset" => "reset",
+        "pointer-enter" => "pointer-enter",
+        "enter" => "enter",
+        "leave" => "leave",
+        "requested" => "requested",
+        "queue-visible" => "queue-visible",
+        "queue-hidden" => "queue-hidden",
+        "queue-skip" => "queue-skip",
+        "show-ipc" => "show-ipc",
+        "show-resolved" => "show-resolved",
+        "hide-ipc" => "hide-ipc",
+        "hide-resolved" => "hide-resolved",
+        "ipc-error" => "ipc-error",
+        _ => return,
+    };
+    eprintln!("RepoTicker hover trace: seq={sequence} stage={stage} kind={kind}");
+}
+
 // Authoritative selected view survives missed events while the detached GTK
 // Layer Shell WebView is hidden. No polling or GitHub API call is involved.
 static USAGE_KIND: AtomicU8 = AtomicU8::new(0);
@@ -680,6 +719,9 @@ fn show_usage_popup(app: AppHandle, kind: String) -> Result<(), String> {
         "billing" => 0,
         _ => return Err("Unsupported status tooltip.".into()),
     };
+    if ui_hover_debug_enabled() {
+        eprintln!("RepoTicker usage popup IPC received: {kind}");
+    }
     USAGE_KIND.store(code, Ordering::Release);
     #[cfg(target_os = "linux")]
     if linux_surface::enabled() {
@@ -1678,6 +1720,8 @@ fn main() {
             copy_repository_path,
             show_usage_popup,
             get_usage_popup_kind,
+            ui_hover_debug_enabled,
+            trace_ui_hover,
             hide_usage_popup,
             resize_usage_popup,
             open_project_website,

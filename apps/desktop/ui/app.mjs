@@ -248,6 +248,21 @@ const hoverTargets = {
   tasks: byId("ci-tasks"),
   billing: document.querySelector(".quota-anchor"),
 };
+// This opt-in trace is a one-time environment read, not a monitoring poll.
+// No hover IPC is sent during ordinary app usage. The native side accepts
+// only fixed stage/kind labels and cannot log credentials or repository names.
+let hoverDebugEnabled = false;
+let hoverDebugSequence = 0;
+function traceHover(kind, stage) {
+  if (!hoverDebugEnabled) return;
+  void invoke("trace_ui_hover", {
+    kind: kind ?? "none", stage, sequence: ++hoverDebugSequence
+  }).catch(() => {});
+}
+void invoke("ui_hover_debug_enabled").then(enabled => {
+  hoverDebugEnabled = enabled === true;
+  traceHover(null, "ready");
+}).catch(() => {});
 let quotaExpanded = false;
 let hoveredKind = null;
 let visibleKind = null;
@@ -262,6 +277,7 @@ function setActiveTooltip(kind) {
 }
 
 function resetQuota() {
+  traceHover(hoveredKind, "reset");
   hoveredKind = null;
   visibleKind = null;
   quotaExpanded = false;
@@ -270,12 +286,19 @@ function resetQuota() {
 }
 
 function setQuotaOpen(kind = null) {
+  traceHover(kind, "requested");
   hoveredKind = kind;
   quotaQueue = quotaQueue.then(async () => {
     const wanted = cardVisible ? hoveredKind : null;
-    if (wanted === visibleKind) return;
+    traceHover(wanted, cardVisible ? "queue-visible" : "queue-hidden");
+    if (wanted === visibleKind) {
+      traceHover(wanted, "queue-skip");
+      return;
+    }
     if (wanted) {
+      traceHover(wanted, "show-ipc");
       await invoke("show_usage_popup", { kind: wanted });
+      traceHover(wanted, "show-resolved");
       if (!cardVisible || hoveredKind !== wanted) {
         // The final queued callback will show the newest target.
         if (!hoveredKind || !cardVisible) await invoke("hide_usage_popup");
@@ -289,13 +312,16 @@ function setQuotaOpen(kind = null) {
       setActiveTooltip(wanted);
       cancelAutoHide();
     } else {
+      traceHover(null, "hide-ipc");
       await invoke("hide_usage_popup");
+      traceHover(null, "hide-resolved");
       visibleKind = null;
       quotaExpanded = false;
       setActiveTooltip(null);
       armAutoHide();
     }
   }).catch(error => {
+    traceHover(null, "ipc-error");
     visibleKind = null;
     quotaExpanded = false;
     setActiveTooltip(null);
@@ -308,11 +334,16 @@ function setQuotaOpen(kind = null) {
 // window-shown event was delivered before its listener was registered.
 for (const [kind, anchor] of Object.entries(hoverTargets)) {
   const enter = () => {
+    traceHover(kind, "enter");
     cardVisible = true;
     void setQuotaOpen(kind);
   };
+  // A native pointer may reach the target before WebView2's mouseenter
+  // dispatch. Keep these as diagnostics, not an alternate presentation path.
+  anchor.addEventListener("pointerenter", () => traceHover(kind, "pointer-enter"));
   anchor.addEventListener("mouseenter", enter);
   anchor.addEventListener("mouseleave", () => {
+    traceHover(kind, "leave");
     if (hoveredKind === kind) void setQuotaOpen(null);
   });
   anchor.addEventListener("focusin", enter);

@@ -121,6 +121,7 @@ function renderRepoChoices() {
       renderRepoChoices();
     });
     const title = document.createElement("span");
+    title.dir = "auto"; // GitHub repository names may contain mixed-script text.
     title.textContent = name;
     label.append(checkbox, title);
     list.append(label);
@@ -221,6 +222,7 @@ async function refreshMonitorScopes() {
     if (revision !== monitorScopesRevision || !githubConnected) return;
     traceStartup("settings.installations_ready");
     const select = byId("github-monitor-scope");
+    select.dir = "ltr"; // Account identifiers are not translated UI strings.
     select.replaceChildren();
     const placeholder = document.createElement("option");
     placeholder.value = "";
@@ -231,6 +233,7 @@ async function refreshMonitorScopes() {
     for (const name of accounts) {
       const option = document.createElement("option");
       option.value = name;
+      option.dir = "auto";
       option.textContent = name;
       select.append(option);
     }

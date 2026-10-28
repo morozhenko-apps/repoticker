@@ -17,6 +17,7 @@ button:focus-visible, input:focus-visible, .status-hover:focus-visible { outline
 .repo-row { min-height: 35px; padding: 2px 7px; display: flex; gap: 9px; align-items: center; position: relative; font-size: 14px; border-bottom: 1px solid #d8dce0; }
 .repo-name { flex: 1; min-width: 0; font-weight: 400; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; }
 .repo-branch { max-width: 85px; font-size: 13px; color: GrayText; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.repo-name, .repo-branch { unicode-bidi: isolate; }
 .repo-delta { min-width: 32px; font-size: 15px; font-weight: 500; text-align: center; }
 .repo-delta.is-current { color: #159947; font-size: 21px; font-weight: 700; }
 .repo-delta.is-dirty { color: #bd8726; }

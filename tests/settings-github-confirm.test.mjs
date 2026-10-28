@@ -198,6 +198,8 @@ test("new authorization enables OK, confirms selected Monitor account and refres
     await ui.dispatchAuth();
     assert.equal(ui.node("apply-settings").disabled, false);
     assert.equal(ui.node("github-monitor-scope").value, "");
+    assert.equal(ui.node("github-monitor-scope").dir, "ltr");
+    assert.equal(ui.node("github-monitor-scope").children.find(option => option.value === "two")?.dir, "auto");
     // Explicit selection stays local until confirmation.
     ui.node("github-monitor-scope").value = "two";
     await ui.node("github-monitor-scope").fire("change");
@@ -267,6 +269,8 @@ test("selected GitHub repositories remain drafts until OK and Cancel never write
     const list = ui.node("github-repo-list");
     const choice = list.children.find(item => item.children[1]?.textContent === "one/core");
     assert.ok(choice, "available GitHub repository must be selectable");
+    assert.equal(choice.children[1].dir, "auto");
+    assert.equal(choice.children[1].textContent, "one/core");
     const checkbox = choice.children[0];
     checkbox.checked = true;
     await checkbox.fire("change");
@@ -748,5 +752,28 @@ test("Existing GitHub authorization is revoked only by explicit OK", async () =>
     assert.equal(ui.tokenRemoved, true);
     assert.equal(ui.closed, true);
     assert.equal(ui.calls.filter(([cmd]) => cmd === "github_disconnect").length, 1);
+  } finally { ui.restore(); }
+});
+
+
+test("Arabic Settings keeps provider identifiers isolated and Cancel preserves configuration", async () => {
+  const ui = await fixture("arabic-bidi", true, [], { language: "ar" });
+  try {
+    assert.equal(ui.language, "ar");
+    assert.equal(ui.node("github-monitor-scope").dir, "ltr");
+    const account = ui.node("github-monitor-scope").children.find(option => option.value === "one");
+    assert.ok(account);
+    assert.equal(account.dir, "auto");
+    assert.equal(account.textContent, "one");
+    ui.node("github-repo-mode").value = "selected";
+    await ui.node("github-repo-mode").fire("change");
+    const choice = ui.node("github-repo-list").children.find(item =>
+      item.children[1]?.textContent === "one/core");
+    assert.ok(choice);
+    assert.equal(choice.children[1].dir, "auto");
+    assert.equal(choice.children[1].textContent, "one/core");
+    await ui.node("cancel-settings").fire("click");
+    assert.deepEqual(ui.monitorRepositories, []);
+    assert.equal(ui.monitorOrg, "one");
   } finally { ui.restore(); }
 });

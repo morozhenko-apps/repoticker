@@ -187,8 +187,10 @@ function makeRepoRow(repo) {
   row.className = "repo-row";
   row.title = repo.path;
   row.dataset.repoPath = repo.path;
-  addText(row, "span", repo.name, "repo-name");
-  addText(row, "span", repo.branch, "repo-branch");
+  const name = addText(row, "span", repo.name, "repo-name");
+  name.dir = "auto"; // Preserve native script without inheriting RTL UI direction.
+  const branch = addText(row, "span", repo.branch, "repo-branch");
+  branch.dir = "ltr"; // Git refs are technical identifiers, not localized text.
   const current = !repo.dirty && !repo.ahead && !repo.behind && repo.upstream;
   const symbol = repo.dirty ? "●" :
     repo.ahead && repo.behind ? "⇅" :

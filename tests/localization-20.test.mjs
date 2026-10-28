@@ -166,3 +166,21 @@ test("dynamic Git card templates preserve placeholders and untranslated values",
   assert.equal(cardText("en", "gitOperationsFor", "feature/main"),
     "Git operations for feature/main");
 });
+
+
+test("RTL locale isolates provider names, Git refs and device codes without rewriting data", () => {
+  const card = read("../apps/desktop/ui/app.mjs");
+  const cardCss = read("../apps/desktop/ui/style.css");
+  assert.equal(localeDirection("ar"), "rtl");
+  assert.equal(localeDirection("en"), "ltr");
+  assert.match(card, /const name = addText\(row, "span", repo\.name, "repo-name"\);\s*name\.dir = "auto"/);
+  assert.match(card, /const branch = addText\(row, "span", repo\.branch, "repo-branch"\);\s*branch\.dir = "ltr"/);
+  assert.match(cardCss, /\.repo-name, \.repo-branch \{ unicode-bidi: isolate; \}/);
+  assert.match(settingsController, /title\.dir = "auto";[\s\S]*?title\.textContent = name/);
+  assert.match(settingsController, /select\.dir = "ltr";[\s\S]*?select\.replaceChildren\(\)/);
+  assert.match(settingsController, /option\.value = name;[\s\S]*?option\.dir = "auto";[\s\S]*?option\.textContent = name/);
+  assert.match(settingsHtml, /id="github-user-code" class="github-user-code" dir="ltr"/);
+  assert.match(settingsHtml, /id="github-repo-filter" dir="ltr"/);
+  assert.match(read("../apps/desktop/ui/quota.mjs"), /if \(providerName\) name\.dir = "auto"/);
+  assert.match(read("../apps/desktop/ui/quota.mjs"), /count\.dir = "ltr"/);
+});

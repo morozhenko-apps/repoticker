@@ -48,7 +48,12 @@ export const ERROR_TERMS = Object.freeze({
     "GitHub network unavailable. Monitoring will retry.": "GitHub network unavailable. Monitoring will retry.",
     "Some GitHub data is partial or incomplete.": "Some GitHub data is partial or incomplete.",
     "GitHub Actions data unavailable.": "GitHub Actions data unavailable.",
-    "Runner inventory access denied; authorized Actions jobs remain visible.": "Runner inventory access denied; authorized Actions jobs remain visible."
+    "Runner inventory access denied; authorized Actions jobs remain visible.": "Runner inventory access denied; authorized Actions jobs remain visible.",
+    "System autostart state unavailable.": "System autostart state unavailable.",
+    "System autostart registration failed.": "System autostart registration failed.",
+    "Cannot verify system autostart registration.": "Cannot verify system autostart registration.",
+    "Repository path cannot be copied as UTF-8": "Repository path cannot be copied as UTF-8",
+    "Cannot copy repository path to system clipboard": "Cannot copy repository path to system clipboard"
   },
   "ru": {
     "Invalid repository list": "Неверный список репозиториев",
@@ -95,7 +100,12 @@ export const ERROR_TERMS = Object.freeze({
     "GitHub network unavailable. Monitoring will retry.": "Сеть GitHub недоступна. Мониторинг повторит попытку.",
     "Some GitHub data is partial or incomplete.": "Часть данных GitHub недоступна или неполна.",
     "GitHub Actions data unavailable.": "Данные GitHub Actions недоступны.",
-    "Runner inventory access denied; authorized Actions jobs remain visible.": "Доступ к сведениям о раннерах запрещён; авторизованные задачи Actions остаются видимыми."
+    "Runner inventory access denied; authorized Actions jobs remain visible.": "Доступ к сведениям о раннерах запрещён; авторизованные задачи Actions остаются видимыми.",
+    "System autostart state unavailable.": "Состояние автозапуска в системе недоступно.",
+    "System autostart registration failed.": "Не удалось зарегистрировать автозапуск в системе.",
+    "Cannot verify system autostart registration.": "Не удалось подтвердить регистрацию автозапуска в системе.",
+    "Repository path cannot be copied as UTF-8": "Путь к репозиторию нельзя представить в UTF-8",
+    "Cannot copy repository path to system clipboard": "Не удалось скопировать путь к репозиторию в системный буфер обмена"
   },
   "es": {
     "Invalid repository list": "Lista de repositorios no válida",
@@ -142,7 +152,12 @@ export const ERROR_TERMS = Object.freeze({
     "GitHub network unavailable. Monitoring will retry.": "Red de GitHub no disponible. La supervisión lo intentará de nuevo.",
     "Some GitHub data is partial or incomplete.": "Algunos datos de GitHub son parciales o incompletos.",
     "GitHub Actions data unavailable.": "Datos de GitHub Actions no disponibles.",
-    "Runner inventory access denied; authorized Actions jobs remain visible.": "Acceso al inventario de ejecutores denegado; los trabajos de Actions autorizados siguen visibles."
+    "Runner inventory access denied; authorized Actions jobs remain visible.": "Acceso al inventario de ejecutores denegado; los trabajos de Actions autorizados siguen visibles.",
+    "System autostart state unavailable.": "Estado de inicio automático del sistema no disponible.",
+    "System autostart registration failed.": "No se pudo registrar el inicio automático del sistema.",
+    "Cannot verify system autostart registration.": "No se pudo verificar el registro de inicio automático del sistema.",
+    "Repository path cannot be copied as UTF-8": "La ruta del repositorio no se puede representar en UTF-8",
+    "Cannot copy repository path to system clipboard": "No se pudo copiar la ruta del repositorio al portapapeles del sistema"
   },
   "pt": {
     "Invalid repository list": "Lista de repositórios inválida",
@@ -189,7 +204,12 @@ export const ERROR_TERMS = Object.freeze({
     "GitHub network unavailable. Monitoring will retry.": "Rede do GitHub indisponível. A monitorização tentará novamente.",
     "Some GitHub data is partial or incomplete.": "Alguns dados do GitHub estão parciais ou incompletos.",
     "GitHub Actions data unavailable.": "Dados do GitHub Actions indisponíveis.",
-    "Runner inventory access denied; authorized Actions jobs remain visible.": "Acesso ao inventário de runners recusado; as tarefas autorizadas do Actions continuam visíveis."
+    "Runner inventory access denied; authorized Actions jobs remain visible.": "Acesso ao inventário de runners recusado; as tarefas autorizadas do Actions continuam visíveis.",
+    "System autostart state unavailable.": "Estado do arranque automático do sistema indisponível.",
+    "System autostart registration failed.": "Falha ao registar o arranque automático no sistema.",
+    "Cannot verify system autostart registration.": "Não foi possível confirmar o registo do arranque automático no sistema.",
+    "Repository path cannot be copied as UTF-8": "O caminho do repositório não pode ser representado em UTF-8",
+    "Cannot copy repository path to system clipboard": "Não foi possível copiar o caminho do repositório para a área de transferência do sistema"
   },
   "de": {
     "Invalid repository list": "Ungültige Repositoryliste",
@@ -236,7 +256,12 @@ export const ERROR_TERMS = Object.freeze({
     "GitHub network unavailable. Monitoring will retry.": "GitHub-Netzwerk nicht verfügbar. Die Überwachung versucht es erneut.",
     "Some GitHub data is partial or incomplete.": "Einige GitHub-Daten sind nur teilweise oder unvollständig vorhanden.",
     "GitHub Actions data unavailable.": "GitHub-Actions-Daten nicht verfügbar.",
-    "Runner inventory access denied; authorized Actions jobs remain visible.": "Zugriff auf Runner-Inventar verweigert; autorisierte Actions-Jobs bleiben sichtbar."
+    "Runner inventory access denied; authorized Actions jobs remain visible.": "Zugriff auf Runner-Inventar verweigert; autorisierte Actions-Jobs bleiben sichtbar.",
+    "System autostart state unavailable.": "Systemstatus des Autostarts nicht verfügbar.",
+    "System autostart registration failed.": "Registrierung des Systemautostarts fehlgeschlagen.",
+    "Cannot verify system autostart registration.": "Die Registrierung des Systemautostarts konnte nicht bestätigt werden.",
+    "Repository path cannot be copied as UTF-8": "Der Repository-Pfad kann nicht als UTF-8 dargestellt werden",
+    "Cannot copy repository path to system clipboard": "Der Repository-Pfad konnte nicht in die Systemzwischenablage kopiert werden"
   },
   "fr": {
     "Invalid repository list": "Liste de dépôts invalide",
@@ -283,7 +308,12 @@ export const ERROR_TERMS = Object.freeze({
     "GitHub network unavailable. Monitoring will retry.": "Réseau GitHub indisponible. La surveillance réessaiera.",
     "Some GitHub data is partial or incomplete.": "Certaines données GitHub sont partielles ou incomplètes.",
     "GitHub Actions data unavailable.": "Données GitHub Actions indisponibles.",
-    "Runner inventory access denied; authorized Actions jobs remain visible.": "Accès à l'inventaire des runners refusé ; les tâches Actions autorisées restent visibles."
+    "Runner inventory access denied; authorized Actions jobs remain visible.": "Accès à l'inventaire des runners refusé ; les tâches Actions autorisées restent visibles.",
+    "System autostart state unavailable.": "État du démarrage automatique du système indisponible.",
+    "System autostart registration failed.": "Échec de l'enregistrement du démarrage automatique du système.",
+    "Cannot verify system autostart registration.": "Impossible de vérifier l'enregistrement du démarrage automatique du système.",
+    "Repository path cannot be copied as UTF-8": "Le chemin du dépôt ne peut pas être représenté en UTF-8",
+    "Cannot copy repository path to system clipboard": "Impossible de copier le chemin du dépôt dans le presse-papiers du système"
   },
   "it": {
     "Invalid repository list": "Elenco di repository non valido",
@@ -330,7 +360,12 @@ export const ERROR_TERMS = Object.freeze({
     "GitHub network unavailable. Monitoring will retry.": "Rete GitHub non disponibile. Il monitoraggio riproverà.",
     "Some GitHub data is partial or incomplete.": "Alcuni dati GitHub sono parziali o incompleti.",
     "GitHub Actions data unavailable.": "Dati GitHub Actions non disponibili.",
-    "Runner inventory access denied; authorized Actions jobs remain visible.": "Accesso all'elenco dei runner negato; i job Actions autorizzati rimangono visibili."
+    "Runner inventory access denied; authorized Actions jobs remain visible.": "Accesso all'elenco dei runner negato; i job Actions autorizzati rimangono visibili.",
+    "System autostart state unavailable.": "Stato dell'avvio automatico di sistema non disponibile.",
+    "System autostart registration failed.": "Registrazione dell'avvio automatico di sistema non riuscita.",
+    "Cannot verify system autostart registration.": "Impossibile verificare la registrazione dell'avvio automatico di sistema.",
+    "Repository path cannot be copied as UTF-8": "Il percorso del repository non può essere rappresentato in UTF-8",
+    "Cannot copy repository path to system clipboard": "Impossibile copiare il percorso del repository negli appunti di sistema"
   },
   "pl": {
     "Invalid repository list": "Nieprawidłowa lista repozytoriów",
@@ -377,7 +412,12 @@ export const ERROR_TERMS = Object.freeze({
     "GitHub network unavailable. Monitoring will retry.": "Sieć GitHub jest niedostępna. Monitorowanie ponowi próbę.",
     "Some GitHub data is partial or incomplete.": "Część danych GitHub jest niepełna.",
     "GitHub Actions data unavailable.": "Dane GitHub Actions są niedostępne.",
-    "Runner inventory access denied; authorized Actions jobs remain visible.": "Odmowa dostępu do listy runnerów; autoryzowane zadania Actions pozostają widoczne."
+    "Runner inventory access denied; authorized Actions jobs remain visible.": "Odmowa dostępu do listy runnerów; autoryzowane zadania Actions pozostają widoczne.",
+    "System autostart state unavailable.": "Stan autostartu systemowego jest niedostępny.",
+    "System autostart registration failed.": "Rejestracja autostartu w systemie nie powiodła się.",
+    "Cannot verify system autostart registration.": "Nie można potwierdzić rejestracji autostartu w systemie.",
+    "Repository path cannot be copied as UTF-8": "Ścieżki repozytorium nie można przedstawić w UTF-8",
+    "Cannot copy repository path to system clipboard": "Nie można skopiować ścieżki repozytorium do schowka systemowego"
   },
   "hi": {
     "Invalid repository list": "अमान्य रिपॉज़िटरी सूची",
@@ -424,7 +464,12 @@ export const ERROR_TERMS = Object.freeze({
     "GitHub network unavailable. Monitoring will retry.": "GitHub नेटवर्क उपलब्ध नहीं है। मॉनिटरिंग फिर प्रयास करेगी।",
     "Some GitHub data is partial or incomplete.": "GitHub का कुछ डेटा आंशिक या अधूरा है।",
     "GitHub Actions data unavailable.": "GitHub Actions डेटा उपलब्ध नहीं है।",
-    "Runner inventory access denied; authorized Actions jobs remain visible.": "रनर सूची तक पहुँच अस्वीकृत; अधिकृत Actions जॉब दिखते रहेंगे।"
+    "Runner inventory access denied; authorized Actions jobs remain visible.": "रनर सूची तक पहुँच अस्वीकृत; अधिकृत Actions जॉब दिखते रहेंगे।",
+    "System autostart state unavailable.": "सिस्टम ऑटोस्टार्ट की स्थिति उपलब्ध नहीं है।",
+    "System autostart registration failed.": "सिस्टम ऑटोस्टार्ट पंजीकरण विफल रहा।",
+    "Cannot verify system autostart registration.": "सिस्टम ऑटोस्टार्ट पंजीकरण सत्यापित नहीं हो सका।",
+    "Repository path cannot be copied as UTF-8": "रिपॉज़िटरी पथ UTF-8 में दर्शाया नहीं जा सकता",
+    "Cannot copy repository path to system clipboard": "रिपॉज़िटरी पथ सिस्टम क्लिपबोर्ड पर कॉपी नहीं हो सका"
   },
   "zh-Hant": {
     "Invalid repository list": "無效的儲存庫清單",
@@ -471,7 +516,12 @@ export const ERROR_TERMS = Object.freeze({
     "GitHub network unavailable. Monitoring will retry.": "GitHub 網路無法使用，監控將重試。",
     "Some GitHub data is partial or incomplete.": "部分 GitHub 資料不完整。",
     "GitHub Actions data unavailable.": "GitHub Actions 資料無法使用。",
-    "Runner inventory access denied; authorized Actions jobs remain visible.": "無權存取執行器清單；已授權的 Actions 工作仍會顯示。"
+    "Runner inventory access denied; authorized Actions jobs remain visible.": "無權存取執行器清單；已授權的 Actions 工作仍會顯示。",
+    "System autostart state unavailable.": "系統自動啟動狀態無法使用。",
+    "System autostart registration failed.": "系統自動啟動註冊失敗。",
+    "Cannot verify system autostart registration.": "無法確認系統自動啟動已註冊。",
+    "Repository path cannot be copied as UTF-8": "儲存庫路徑無法以 UTF-8 表示",
+    "Cannot copy repository path to system clipboard": "無法將儲存庫路徑複製到系統剪貼簿"
   },
   "ja": {
     "Invalid repository list": "無効なリポジトリ一覧です",
@@ -518,7 +568,12 @@ export const ERROR_TERMS = Object.freeze({
     "GitHub network unavailable. Monitoring will retry.": "GitHub ネットワークを利用できません。監視は再試行します。",
     "Some GitHub data is partial or incomplete.": "一部の GitHub データが不完全です。",
     "GitHub Actions data unavailable.": "GitHub Actions データを利用できません。",
-    "Runner inventory access denied; authorized Actions jobs remain visible.": "ランナー一覧へのアクセスが拒否されました。許可済みの Actions ジョブは引き続き表示されます。"
+    "Runner inventory access denied; authorized Actions jobs remain visible.": "ランナー一覧へのアクセスが拒否されました。許可済みの Actions ジョブは引き続き表示されます。",
+    "System autostart state unavailable.": "システムの自動起動状態を確認できません。",
+    "System autostart registration failed.": "システムの自動起動登録に失敗しました。",
+    "Cannot verify system autostart registration.": "システムの自動起動登録を確認できません。",
+    "Repository path cannot be copied as UTF-8": "リポジトリのパスを UTF-8 で表現できません",
+    "Cannot copy repository path to system clipboard": "リポジトリのパスをシステムのクリップボードにコピーできません"
   },
   "nl": {
     "Invalid repository list": "Ongeldige repositorylijst",
@@ -565,7 +620,12 @@ export const ERROR_TERMS = Object.freeze({
     "GitHub network unavailable. Monitoring will retry.": "GitHub-netwerk niet beschikbaar. Bewaking probeert opnieuw.",
     "Some GitHub data is partial or incomplete.": "Sommige GitHub-gegevens zijn gedeeltelijk of onvolledig.",
     "GitHub Actions data unavailable.": "GitHub Actions-gegevens niet beschikbaar.",
-    "Runner inventory access denied; authorized Actions jobs remain visible.": "Toegang tot runnerinventaris geweigerd; geautoriseerde Actions-taken blijven zichtbaar."
+    "Runner inventory access denied; authorized Actions jobs remain visible.": "Toegang tot runnerinventaris geweigerd; geautoriseerde Actions-taken blijven zichtbaar.",
+    "System autostart state unavailable.": "Status van automatisch opstarten in het systeem niet beschikbaar.",
+    "System autostart registration failed.": "Registratie van automatisch opstarten in het systeem mislukt.",
+    "Cannot verify system autostart registration.": "Registratie van automatisch opstarten in het systeem kon niet worden bevestigd.",
+    "Repository path cannot be copied as UTF-8": "Het repositorypad kan niet in UTF-8 worden weergegeven",
+    "Cannot copy repository path to system clipboard": "Het repositorypad kon niet naar het systeemklembord worden gekopieerd"
   },
   "sv": {
     "Invalid repository list": "Ogiltig lista över kodförråd",
@@ -612,7 +672,12 @@ export const ERROR_TERMS = Object.freeze({
     "GitHub network unavailable. Monitoring will retry.": "GitHub-nätverket är inte tillgängligt. Övervakningen försöker igen.",
     "Some GitHub data is partial or incomplete.": "Vissa GitHub-data är delvis eller ofullständiga.",
     "GitHub Actions data unavailable.": "GitHub Actions-data är inte tillgängliga.",
-    "Runner inventory access denied; authorized Actions jobs remain visible.": "Åtkomst till runnerinventeringen nekades; godkända Actions-jobb visas fortfarande."
+    "Runner inventory access denied; authorized Actions jobs remain visible.": "Åtkomst till runnerinventeringen nekades; godkända Actions-jobb visas fortfarande.",
+    "System autostart state unavailable.": "Systemets autostartstatus är inte tillgänglig.",
+    "System autostart registration failed.": "Registrering av systemautostart misslyckades.",
+    "Cannot verify system autostart registration.": "Det gick inte att verifiera systemets autostartregistrering.",
+    "Repository path cannot be copied as UTF-8": "Sökvägen till kodförrådet kan inte representeras i UTF-8",
+    "Cannot copy repository path to system clipboard": "Det gick inte att kopiera sökvägen till kodförrådet till systemets urklipp"
   },
   "tr": {
     "Invalid repository list": "Geçersiz depo listesi",
@@ -659,7 +724,12 @@ export const ERROR_TERMS = Object.freeze({
     "GitHub network unavailable. Monitoring will retry.": "GitHub ağı kullanılamıyor. İzleme yeniden deneyecek.",
     "Some GitHub data is partial or incomplete.": "Bazı GitHub verileri kısmi veya eksik.",
     "GitHub Actions data unavailable.": "GitHub Actions verileri kullanılamıyor.",
-    "Runner inventory access denied; authorized Actions jobs remain visible.": "Runner envanterine erişim reddedildi; yetkili Actions işleri görünmeye devam edecek."
+    "Runner inventory access denied; authorized Actions jobs remain visible.": "Runner envanterine erişim reddedildi; yetkili Actions işleri görünmeye devam edecek.",
+    "System autostart state unavailable.": "Sistem otomatik başlatma durumu kullanılamıyor.",
+    "System autostart registration failed.": "Sistem otomatik başlatma kaydı başarısız oldu.",
+    "Cannot verify system autostart registration.": "Sistem otomatik başlatma kaydı doğrulanamadı.",
+    "Repository path cannot be copied as UTF-8": "Depo yolu UTF-8 ile gösterilemiyor",
+    "Cannot copy repository path to system clipboard": "Depo yolu sistem panosuna kopyalanamadı"
   },
   "ko": {
     "Invalid repository list": "잘못된 저장소 목록",
@@ -706,7 +776,12 @@ export const ERROR_TERMS = Object.freeze({
     "GitHub network unavailable. Monitoring will retry.": "GitHub 네트워크를 사용할 수 없습니다. 모니터링이 다시 시도합니다.",
     "Some GitHub data is partial or incomplete.": "일부 GitHub 데이터가 부분적이거나 불완전합니다.",
     "GitHub Actions data unavailable.": "GitHub Actions 데이터를 사용할 수 없습니다.",
-    "Runner inventory access denied; authorized Actions jobs remain visible.": "러너 목록에 접근할 수 없습니다. 승인된 Actions 작업은 계속 표시됩니다."
+    "Runner inventory access denied; authorized Actions jobs remain visible.": "러너 목록에 접근할 수 없습니다. 승인된 Actions 작업은 계속 표시됩니다.",
+    "System autostart state unavailable.": "시스템 자동 시작 상태를 확인할 수 없습니다.",
+    "System autostart registration failed.": "시스템 자동 시작 등록에 실패했습니다.",
+    "Cannot verify system autostart registration.": "시스템 자동 시작 등록을 확인할 수 없습니다.",
+    "Repository path cannot be copied as UTF-8": "저장소 경로를 UTF-8로 표현할 수 없습니다",
+    "Cannot copy repository path to system clipboard": "저장소 경로를 시스템 클립보드에 복사할 수 없습니다"
   },
   "bn": {
     "Invalid repository list": "অবৈধ রিপোজিটরি তালিকা",
@@ -753,7 +828,12 @@ export const ERROR_TERMS = Object.freeze({
     "GitHub network unavailable. Monitoring will retry.": "GitHub নেটওয়ার্ক অনুপলব্ধ। পর্যবেক্ষণ আবার চেষ্টা করবে।",
     "Some GitHub data is partial or incomplete.": "কিছু GitHub ডেটা আংশিক বা অসম্পূর্ণ।",
     "GitHub Actions data unavailable.": "GitHub Actions ডেটা অনুপলব্ধ।",
-    "Runner inventory access denied; authorized Actions jobs remain visible.": "রানার তালিকায় প্রবেশাধিকার নেই; অনুমোদিত Actions কাজ দেখা যাবে।"
+    "Runner inventory access denied; authorized Actions jobs remain visible.": "রানার তালিকায় প্রবেশাধিকার নেই; অনুমোদিত Actions কাজ দেখা যাবে।",
+    "System autostart state unavailable.": "সিস্টেম অটোস্টার্টের অবস্থা অনুপলব্ধ।",
+    "System autostart registration failed.": "সিস্টেম অটোস্টার্ট নিবন্ধন ব্যর্থ হয়েছে।",
+    "Cannot verify system autostart registration.": "সিস্টেম অটোস্টার্ট নিবন্ধন যাচাই করা যায়নি।",
+    "Repository path cannot be copied as UTF-8": "রিপোজিটরির পাথ UTF-8-এ প্রকাশ করা যায় না",
+    "Cannot copy repository path to system clipboard": "রিপোজিটরির পাথ সিস্টেম ক্লিপবোর্ডে কপি করা যায়নি"
   },
   "th": {
     "Invalid repository list": "รายการคลังโค้ดไม่ถูกต้อง",
@@ -800,7 +880,12 @@ export const ERROR_TERMS = Object.freeze({
     "GitHub network unavailable. Monitoring will retry.": "เครือข่าย GitHub ไม่พร้อมใช้ การติดตามจะลองใหม่",
     "Some GitHub data is partial or incomplete.": "ข้อมูล GitHub บางส่วนไม่ครบถ้วน",
     "GitHub Actions data unavailable.": "ข้อมูล GitHub Actions ไม่พร้อมใช้",
-    "Runner inventory access denied; authorized Actions jobs remain visible.": "ถูกปฏิเสธการเข้าถึงรายการรันเนอร์ งาน Actions ที่ได้รับอนุญาตยังแสดงอยู่"
+    "Runner inventory access denied; authorized Actions jobs remain visible.": "ถูกปฏิเสธการเข้าถึงรายการรันเนอร์ งาน Actions ที่ได้รับอนุญาตยังแสดงอยู่",
+    "System autostart state unavailable.": "ไม่สามารถตรวจสอบสถานะการเริ่มอัตโนมัติของระบบได้",
+    "System autostart registration failed.": "ลงทะเบียนการเริ่มอัตโนมัติของระบบไม่สำเร็จ",
+    "Cannot verify system autostart registration.": "ไม่สามารถยืนยันการลงทะเบียนเริ่มอัตโนมัติของระบบได้",
+    "Repository path cannot be copied as UTF-8": "ไม่สามารถแสดงพาธของคลังโค้ดเป็น UTF-8 ได้",
+    "Cannot copy repository path to system clipboard": "ไม่สามารถคัดลอกพาธของคลังโค้ดไปยังคลิปบอร์ดของระบบได้"
   },
   "id": {
     "Invalid repository list": "Daftar repositori tidak valid",
@@ -847,7 +932,12 @@ export const ERROR_TERMS = Object.freeze({
     "GitHub network unavailable. Monitoring will retry.": "Jaringan GitHub tidak tersedia. Pemantauan akan mencoba lagi.",
     "Some GitHub data is partial or incomplete.": "Sebagian data GitHub hanya tersedia sebagian atau tidak lengkap.",
     "GitHub Actions data unavailable.": "Data GitHub Actions tidak tersedia.",
-    "Runner inventory access denied; authorized Actions jobs remain visible.": "Akses ke daftar runner ditolak; tugas Actions yang diotorisasi tetap terlihat."
+    "Runner inventory access denied; authorized Actions jobs remain visible.": "Akses ke daftar runner ditolak; tugas Actions yang diotorisasi tetap terlihat.",
+    "System autostart state unavailable.": "Status mulai otomatis sistem tidak tersedia.",
+    "System autostart registration failed.": "Pendaftaran mulai otomatis sistem gagal.",
+    "Cannot verify system autostart registration.": "Pendaftaran mulai otomatis sistem tidak dapat diverifikasi.",
+    "Repository path cannot be copied as UTF-8": "Jalur repositori tidak dapat direpresentasikan sebagai UTF-8",
+    "Cannot copy repository path to system clipboard": "Jalur repositori tidak dapat disalin ke papan klip sistem"
   },
   "fil": {
     "Invalid repository list": "Hindi valid ang listahan ng repository",
@@ -894,7 +984,12 @@ export const ERROR_TERMS = Object.freeze({
     "GitHub network unavailable. Monitoring will retry.": "Hindi available ang GitHub network. Susubukan muli ng monitoring.",
     "Some GitHub data is partial or incomplete.": "May mga datos ng GitHub na bahagya o hindi kumpleto.",
     "GitHub Actions data unavailable.": "Hindi available ang datos ng GitHub Actions.",
-    "Runner inventory access denied; authorized Actions jobs remain visible.": "Tinanggihan ang access sa listahan ng runners; makikita pa rin ang awtorisadong Actions jobs."
+    "Runner inventory access denied; authorized Actions jobs remain visible.": "Tinanggihan ang access sa listahan ng runners; makikita pa rin ang awtorisadong Actions jobs.",
+    "System autostart state unavailable.": "Hindi available ang estado ng awtomatikong pagsisimula ng system.",
+    "System autostart registration failed.": "Nabigo ang pagpaparehistro ng awtomatikong pagsisimula ng system.",
+    "Cannot verify system autostart registration.": "Hindi makumpirma ang pagpaparehistro ng awtomatikong pagsisimula ng system.",
+    "Repository path cannot be copied as UTF-8": "Hindi maipakita sa UTF-8 ang path ng repository",
+    "Cannot copy repository path to system clipboard": "Hindi makopya ang path ng repository sa clipboard ng system"
   },
   "ar": {
     "Invalid repository list": "قائمة المستودعات غير صالحة",
@@ -941,7 +1036,12 @@ export const ERROR_TERMS = Object.freeze({
     "GitHub network unavailable. Monitoring will retry.": "شبكة GitHub غير متاحة. ستعيد المراقبة المحاولة.",
     "Some GitHub data is partial or incomplete.": "بعض بيانات GitHub جزئية أو غير مكتملة.",
     "GitHub Actions data unavailable.": "بيانات GitHub Actions غير متاحة.",
-    "Runner inventory access denied; authorized Actions jobs remain visible.": "رُفض الوصول إلى قائمة المشغّلات؛ تظل مهام Actions المصرّح بها ظاهرة."
+    "Runner inventory access denied; authorized Actions jobs remain visible.": "رُفض الوصول إلى قائمة المشغّلات؛ تظل مهام Actions المصرّح بها ظاهرة.",
+    "System autostart state unavailable.": "حالة التشغيل التلقائي في النظام غير متاحة.",
+    "System autostart registration failed.": "فشل تسجيل التشغيل التلقائي في النظام.",
+    "Cannot verify system autostart registration.": "تعذّر التحقق من تسجيل التشغيل التلقائي في النظام.",
+    "Repository path cannot be copied as UTF-8": "لا يمكن تمثيل مسار المستودع بترميز UTF-8",
+    "Cannot copy repository path to system clipboard": "تعذّر نسخ مسار المستودع إلى حافظة النظام"
   }
 });
 

@@ -12,6 +12,7 @@ const read = path => readFileSync(new URL(path, import.meta.url), "utf8");
 const settings = read("../apps/desktop/ui/settings.mjs");
 const card = read("../apps/desktop/ui/app.mjs");
 const native = read("../apps/desktop/src-tauri/src/main.rs");
+const autostart = read("../apps/desktop/src-tauri/src/autostart.rs");
 const github = read("../apps/desktop/src-tauri/src/github_session.rs");
 const githubApi = read("../apps/desktop/src-tauri/src/github_api.rs");
 const monitorErrors = read("../apps/desktop/ui/github-errors.mjs");
@@ -62,7 +63,12 @@ const required = [
   "GitHub network unavailable. Monitoring will retry.",
   "Some GitHub data is partial or incomplete.",
   "GitHub Actions data unavailable.",
-  "Runner inventory access denied; authorized Actions jobs remain visible."
+  "Runner inventory access denied; authorized Actions jobs remain visible.",
+  "System autostart state unavailable.",
+  "System autostart registration failed.",
+  "Cannot verify system autostart registration.",
+  "Repository path cannot be copied as UTF-8",
+  "Cannot copy repository path to system clipboard"
 ];
 
 test("all known fixed local/authorization errors have exact 20-locale key parity", () => {
@@ -114,7 +120,7 @@ test("unknown exception payloads, OS paths, repos and tokens pass through withou
 });
 
 test("catalog keys are grounded in native or Settings static error sites", () => {
-  const source = settings + native + github + git + githubApi + monitorErrors;
+  const source = settings + native + github + git + githubApi + monitorErrors + autostart;
   for (const key of required) {
     assert.ok(source.includes('"' + key + '"'),
       "Missing native/Settings source for known fixed error: " + key);
@@ -287,4 +293,54 @@ test("unknown GitHub error payloads are not translated by exact-key catalog", ()
     assert.equal(githubFailureMessage(githubFailureReason(message)),
       "GitHub Actions data unavailable.");
   }
+});
+
+
+test("native autostart/clipboard errors are translated exactly in every locale", () => {
+  const autostartErrors = [
+    "System autostart state unavailable.",
+    "System autostart registration failed.",
+    "Cannot verify system autostart registration."
+  ];
+  const clipboardErrors = [
+    "Repository path cannot be copied as UTF-8",
+    "Cannot copy repository path to system clipboard"
+  ];
+  for (const key of autostartErrors)
+    assert.ok(autostart.includes('"' + key + '"'), key);
+  for (const key of clipboardErrors)
+    assert.ok(native.includes('"' + key + '"'), key);
+  for (const { code } of LOCALE_ROSTER) {
+    for (const key of [...autostartErrors, ...clipboardErrors]) {
+      const translated = ERROR_TERMS[code][key];
+      assert.equal(localizedKnownError(code, key), translated);
+      assert.equal(settingsText(code, key), translated);
+      assert.equal(cardNoticeText(code, { kind: "native", message: key }), translated);
+      assert.ok(translated.trim());
+    }
+    // Failure modes must not collapse into one generic success/unknown state.
+    assert.notEqual(ERROR_TERMS[code][autostartErrors[0]],
+      ERROR_TERMS[code][autostartErrors[1]]);
+    assert.notEqual(ERROR_TERMS[code][autostartErrors[1]],
+      ERROR_TERMS[code][autostartErrors[2]]);
+  }
+  assert.equal(settingsText("pt", clipboardErrors[0]).includes("UTF-8"), true);
+  assert.equal(settingsText("ar", clipboardErrors[0]).includes("UTF-8"), true);
+  assert.equal(settingsText("ja", clipboardErrors[0]).includes("UTF-8"), true);
+});
+
+test("OS errors with dynamic paths and process details are left unchanged", () => {
+  const dynamic = [
+    "Cannot open browser: /private/executable command failed",
+    "Cannot open repository folder: C:\\Users\\name\\private",
+    "Error: System autostart registration failed.",
+    "Cannot copy repository path to system clipboard: external detail"
+  ];
+  for (const { code } of LOCALE_ROSTER)
+    for (const value of dynamic) {
+      assert.equal(localizedKnownError(code, value), value);
+      assert.equal(settingsText(code, value), value);
+    }
+  assert.match(autostart, /if previous \{[\s\S]*manager\.enable\(\)/);
+  assert.match(autostart, /manager\.disable\(\)/);
 });

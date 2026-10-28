@@ -76,4 +76,8 @@ GitHub OAuth grant. Do not automatically trigger unrelated network
 actions during uninstallation. Existing Windows tooltip and localization
 acceptance issues are out of scope.
 
-**State:** owner-approved; source implementation and CI pending.
+**State:** implemented in `dev`; automated validation and physical
+Windows acceptance pending. Hook is included by `tauri.conf.json` and
+covered by `tests/windows-nsis-credential-cleanup.test.mjs`.
+No real user's token was read, deleted, or exposed during development.
+

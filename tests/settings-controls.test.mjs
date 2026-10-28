@@ -6,6 +6,7 @@ import { listAvailableInstallations } from "../apps/desktop/ui/github-installati
 import { settingsLocale, settingsText } from "../apps/desktop/ui/settings-i18n.mjs";
 import { localeName, localeDirection } from "../apps/desktop/ui/locale-catalog.mjs";
 import { repositorySelectionMessage } from "../apps/desktop/ui/locale-counts.mjs";
+import { disableBrowserContextMenu } from "../apps/desktop/ui/browser-context-menu.mjs";
 
 const html = readFileSync(
   new URL("../apps/desktop/ui/settings.html", import.meta.url), "utf8"
@@ -59,11 +60,12 @@ test("Device Flow buttons register and invoke native commands after JS startup",
       default: return undefined;
     }
   };
+  const documentHandlers = new Map();
   const document = {
     documentElement: { lang: "en" },
     getElementById: id => elements.get(id) ?? null,
     createElement: () => createElement("dynamic"),
-    addEventListener() {},
+    addEventListener(type, handler) { documentHandlers.set(type, handler); },
   };
   const window = {
     __TAURI__: {
@@ -79,15 +81,20 @@ test("Device Flow buttons register and invoke native commands after JS startup",
     'import { listAvailableInstallations } from "./github-installations.mjs";\n' +
     'import { settingsLocale, settingsText } from "./settings-i18n.mjs";\n' +
     'import { localeName, localeDirection } from "./locale-catalog.mjs";\n' +
-    'import { repositorySelectionMessage } from "./locale-counts.mjs";\n';
+    'import { repositorySelectionMessage } from "./locale-counts.mjs";\n' +
+    'import { disableBrowserContextMenu } from "./browser-context-menu.mjs";\n';
   assert.equal(js.startsWith(importLine), true,
     "Settings harness must recognize its real ESM dependency");
   runInNewContext(js.slice(importLine.length), {
     document, window, listAvailableInstallations, settingsLocale, settingsText,
-    localeName, localeDirection, repositorySelectionMessage,
+    localeName, localeDirection, repositorySelectionMessage, disableBrowserContextMenu,
     setInterval: () => 1,
     clearInterval() {},
   }, { filename: "settings.mjs" });
+  assert.equal(typeof documentHandlers.get("contextmenu"), "function");
+  const rightClick = { prevented: false, preventDefault() { this.prevented = true; } };
+  documentHandlers.get("contextmenu")(rightClick);
+  assert.equal(rightClick.prevented, true);
   // New startup does not need a full local Git snapshot and checks
   // authorization concurrently with config-only settings retrieval.
   assert.equal(elements.get("github-connection-indicator").textContent,

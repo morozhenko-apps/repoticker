@@ -38,7 +38,10 @@ test("all three Windows metrics use a single styled native usage window", () => 
   assert.doesNotMatch(card, /node\.title = hoverFallbackText/);
   assert.doesNotMatch(html, /title="Click to update (Runners|Tasks)"/);
   assert.match(native, /position_unmanaged_usage_popup\(&card, &popup\)/);
-  assert.match(native, /i64::from\(position\.y\) - i64::from\(popup_size\.height\)/);
+  assert.match(native, /footer_anchored_usage_position\(/);
+  assert.match(native, /card_position\.1 \+ card_size\.1/);
+  assert.match(native, /FOOTER_CLEARANCE_LOGICAL: f64 = 125\.0/);
+  assert.doesNotMatch(native, /i64::from\(position\.y\) - i64::from\(popup_size\.height\)/);
 });
 
 test("billing retains full authoritative data and refuses invented allowances", () => {

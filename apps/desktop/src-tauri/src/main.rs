@@ -696,9 +696,7 @@ fn footer_anchored_usage_position(
     const RIGHT_INSET_LOGICAL: f64 = 24.0;
     const FOOTER_CLEARANCE_LOGICAL: f64 = 125.0;
     (
-        card_position.0 + card_size.0
-            - popup_size.0
-            - (RIGHT_INSET_LOGICAL * scale).round() as i64,
+        card_position.0 + card_size.0 - popup_size.0 - (RIGHT_INSET_LOGICAL * scale).round() as i64,
         card_position.1 + card_size.1
             - popup_size.1
             - (FOOTER_CLEARANCE_LOGICAL * scale).round() as i64,
@@ -753,12 +751,7 @@ mod footer_tooltip_geometry_tests {
 
     #[test]
     fn applies_dpi_scale_once_to_both_logical_insets() {
-        let physical = footer_anchored_usage_position(
-            (100, 100),
-            (585, 162),
-            (510, 270),
-            1.5,
-        );
+        let physical = footer_anchored_usage_position((100, 100), (585, 162), (510, 270), 1.5);
         assert_eq!(physical, (139, -196));
     }
 }
@@ -848,11 +841,17 @@ fn hide_usage_popup(app: AppHandle) -> Result<(), String> {
         .get_webview_window("usage")
         .ok_or_else(|| "Usage popup unavailable".to_owned())?;
     if std::env::var_os("REPOTICKER_UI_DEBUG").is_some() {
-        eprintln!("RepoTicker usage popup hide requested: visible={:?}", popup.is_visible());
+        eprintln!(
+            "RepoTicker usage popup hide requested: visible={:?}",
+            popup.is_visible()
+        );
     }
     popup.hide().map_err(|error| error.to_string())?;
     if std::env::var_os("REPOTICKER_UI_DEBUG").is_some() {
-        eprintln!("RepoTicker usage popup hidden: visible={:?}", popup.is_visible());
+        eprintln!(
+            "RepoTicker usage popup hidden: visible={:?}",
+            popup.is_visible()
+        );
     }
     Ok(())
 }

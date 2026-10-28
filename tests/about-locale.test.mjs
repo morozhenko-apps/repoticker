@@ -29,8 +29,10 @@ test("About obtains saved EN/RU on first open and focus, without changing versio
   let locale = "ru";
   const calls = [];
   const listeners = new Map();
+  const contextMenus = new Map();
   const doc = {
     documentElement: { lang: "en" }, title: "",
+    addEventListener(type, callback) { contextMenus.set(type, callback); },
     querySelectorAll(query) {
       if (query === "[data-i18n]") return [...nodes].filter(([k])=>k.startsWith("txt:")).map(([,v])=>v);
       if (query === "[data-i18n-alt]") return [...nodes].filter(([k])=>k.startsWith("alt:")).map(([,v])=>v);
@@ -56,6 +58,10 @@ test("About obtains saved EN/RU on first open and focus, without changing versio
   globalThis.window=win;
   try {
     await import("../apps/desktop/ui/about.mjs?about-locale-e2e");
+    assert.equal(typeof contextMenus.get("contextmenu"), "function");
+    const rightClick = { prevented: false, preventDefault() { this.prevented = true; } };
+    contextMenus.get("contextmenu")(rightClick);
+    assert.equal(rightClick.prevented, true);
     await new Promise(resolve => setImmediate(resolve));
     assert.equal(doc.documentElement.lang, "ru");
     assert.equal(doc.title, "О RepoTicker");

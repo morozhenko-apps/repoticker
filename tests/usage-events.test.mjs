@@ -38,9 +38,11 @@ test("native-selected tooltip switches reliably and auto-selected organization p
   let savedLanguage = "en";
   const usageBubble = element("main");
   let snapshot = { connected: false, runner_state: null, monitor_message: null };
+  const documentHandlers = new Map();
   const document = {
     body: element("body"),
     documentElement: { lang: "en" },
+    addEventListener(type, handler) { documentHandlers.set(type, handler); },
     getElementById(id) {
       return id === "quota-content" ? root : id === "quota-title" ? title : null;
     },
@@ -86,6 +88,10 @@ test("native-selected tooltip switches reliably and auto-selected organization p
   globalThis.document = document;
   try {
     await import("../apps/desktop/ui/quota.mjs?usage-kind-regression");
+    assert.equal(typeof documentHandlers.get("contextmenu"), "function");
+    const rightClick = { prevented: false, preventDefault() { this.prevented = true; } };
+    documentHandlers.get("contextmenu")(rightClick);
+    assert.equal(rightClick.prevented, true);
     await new Promise(resolve => setImmediate(resolve));
     assert.match(allText(root), /Connect GitHub/);
     assert.ok(listeners.has("repoticker-usage-shown"));

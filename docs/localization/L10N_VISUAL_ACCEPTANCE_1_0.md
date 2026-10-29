@@ -109,8 +109,18 @@ confirm idiomatic safety-critical wording as well.
 - Candidate SHA: **not frozen**.
 - Windows complete: **0/20**, KDE complete: **0/20**.
 - Independent locale reviews: **0/20**.
-- Findings from this scoped source inspection: GitHub runner name
-  preview uses UTF-16 `slice`, which can split a Unicode grapheme;
-  Arabic mixed-script task/runner header counts and checked timestamps
-  are not isolated. Code fix and regression testing are required before
-  using the protocol for final acceptance.
+- Corrective source/test commit: `7140e59cf8e9c2c33187ef9055cd854e428dd405`.
+  Runner preview truncation is now Unicode grapheme-aware when supported,
+  with a code-point-safe compatibility fallback; the source model name
+  remains unchanged. Arabic dynamic runner/task counts, billing period
+  and checked timestamps are isolated in the display projection,
+  preserving raw model data and unknown `—` semantics.
+- **Source/focused validation:** deterministic test cases added and
+  source-shape assertions performed; a standalone Node 22 check of
+  the grapheme-segmentation examples passed. The committed Node tests,
+  full Preflight and installed Windows/KDE behavior **have not been
+  observed** at this checkpoint.
+- This patch does **not** establish any 20/20 reviewer or native
+  font/rendering acceptance. A fallback runtime without
+  `Intl.Segmenter` preserves code points but may not preserve every
+  multi-codepoint grapheme; installed WebView engines require testing.

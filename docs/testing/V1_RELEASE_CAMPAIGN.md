@@ -144,3 +144,13 @@ Its 65 Python test methods are source-count evidence, not a measured branch
 percentage or release acceptance; the repository-wide Stage 3–8 matrix
 remains incomplete. No changes were made to executable source, `main`,
 release tags, R2 objects, or the published v0.2.0.
+
+## Core Rust Mode B Stage 3–8 source-map increment (2026-10-29)
+
+The [current six-file core function and risk/branch matrix](MODE_B_CORE_RUST_API_MATRIX_2026_10_29.md)
+enumerates 78 named declarations (32 public), existing unit/integration
+test candidates, 20 additional branch decision groups, Positive/N1–N12
+applicability by flow, and outstanding race/error/mutation checks.
+This is **partial documentation evidence**, not global Stage 3–8
+completion or observed passing tests. No new CI/build was requested by
+this docs-only increment; G4–G6 and platform/L10N remain blocked.

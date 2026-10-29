@@ -56,8 +56,11 @@ test("Given native Windows usage popup, show and resize enforce topmost without 
 });
 
 test("Given QA code change, Windows and Linux acceptance jobs stay unpublished", () => {
-  assert.match(workflow, /apps\/desktop\/ui\/app\.mjs/);
-  assert.match(workflow, /apps\/desktop\/src-tauri\/src\/windows_geometry\.rs/);
+  // The acceptance filter may use recursive source-family globs rather than
+  // listing each implementation file separately. Both implementations must
+  // remain in its explicitly enumerated source families.
+  assert.match(workflow, /- 'apps\/desktop\/ui\/\*\*'/);
+  assert.match(workflow, /- 'apps\/desktop\/src-tauri\/src\/\*\*'/);
   assert.match(workflow, /tests\/windows-tray-physical-regressions\.test\.mjs/);
   assert.match(workflow, /--bundles deb,appimage/);
   assert.match(workflow, /--bundles nsis/);

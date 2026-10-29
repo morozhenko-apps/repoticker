@@ -410,4 +410,48 @@ mod tests {
         assert_eq!(near_max.decide(u64::MAX - 2, 10), TokenAction::Refresh);
         assert_eq!(near_max.decide(u64::MAX, 10), TokenAction::Reauthorize);
     }
+
+    #[test]
+    fn mode_b_rolled_back_poll_clock_never_bypasses_active_interval() {
+        let mut session = challenge();
+        assert_eq!(session.next_poll(1_005), PollDecision::Ready);
+        assert_eq!(session.next_poll(900), PollDecision::WaitSeconds(110));
+        assert_eq!(
+            session.receive(DeviceResponse::AuthorizationPending, 901),
+            DevicePhase::AwaitingUser
+        );
+        assert_eq!(session.next_poll(1_009), PollDecision::WaitSeconds(1));
+        assert_eq!(session.next_poll(1_010), PollDecision::Ready);
+    }
+
+    #[test]
+    fn mode_b_slow_down_response_while_waiting_extends_not_reduces_deadline() {
+        let mut session = challenge();
+        assert_eq!(session.next_poll(1_001), PollDecision::WaitSeconds(4));
+        assert_eq!(
+            session.receive(DeviceResponse::SlowDown, 1_002),
+            DevicePhase::AwaitingUser
+        );
+        assert_eq!(session.poll_interval, 10);
+        assert_eq!(session.next_poll(1_011), PollDecision::WaitSeconds(1));
+        assert_eq!(session.next_poll(1_012), PollDecision::Ready);
+        assert_eq!(
+            session.receive(DeviceResponse::SlowDown, 1_013),
+            DevicePhase::AwaitingUser
+        );
+        assert_eq!(session.poll_interval, 15);
+        assert_eq!(session.next_poll(1_027), PollDecision::WaitSeconds(1));
+    }
+
+    #[test]
+    fn mode_b_refresh_lifetime_precedes_stale_access_token_lifetime() {
+        let expiration = TokenExpiration {
+            access_expires_at: 10_000,
+            refresh_expires_at: 1_000,
+        };
+        assert_eq!(expiration.decide(999, 0), TokenAction::UseAccessToken);
+        assert_eq!(expiration.decide(1_000, 0), TokenAction::Reauthorize);
+        assert_eq!(expiration.decide(9_000, u64::MAX), TokenAction::Reauthorize);
+    }
+
 }

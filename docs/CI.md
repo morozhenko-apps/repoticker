@@ -9,3 +9,13 @@ Normal development verifies JavaScript contracts, Rust source and Git state test
 Source-only documentation edits must not deliberately start CI. Keep documentation commits separate from executable changes.
 
 A package artifact does not establish real Linux or Windows acceptance. Installer upgrades, autostart, tray focus, credential persistence and removal behavior require separate native verification. Publishing a release requires approval and verified immutable package checksums.
+
+## Manual strict stable gate
+
+The manual `.github/workflows/strict.yml` runs Rust formatting, locked
+core tests and Clippy, Node unit tests, and Python release contracts
+once per explicit dispatch. Repeated 10x runs are not a release gate:
+repeatability diagnostics require evidence of a specific instability.
+Preflight separately checks Linux desktop compilation. Known-flaky
+tests, if identified and registered, require independent execution
+and explicit reporting, never omission from the stable result.

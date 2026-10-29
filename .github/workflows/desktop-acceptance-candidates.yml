@@ -14,10 +14,13 @@ on:
       - 'scripts/release_version.py'
       - 'scripts/release_assets.py'
       - 'tests/test_release_candidate_contract.py'
-      - 'apps/desktop/ui/app.mjs'
-      - 'apps/desktop/ui/style.css'
-      - 'apps/desktop/src-tauri/src/main.rs'
-      - 'apps/desktop/src-tauri/src/windows_geometry.rs'
+      # Every native source change must exercise the Windows-native gate.
+      # Match application WebViews and resources as well as the shell.
+      - 'apps/desktop/src-tauri/src/**'
+      - 'crates/repoticker-core/src/**'
+      - 'apps/desktop/src-tauri/capabilities/**'
+      - 'apps/desktop/src-tauri/icons/**'
+      - 'apps/desktop/ui/**'
       - 'tests/windows-qa-seven-findings.test.mjs'
       - 'tests/windows-tray-physical-regressions.test.mjs'
 

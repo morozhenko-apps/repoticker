@@ -664,6 +664,67 @@ class IdentifiedPublicReadbackTests(unittest.TestCase):
                 self.assertEqual(result["readback_sha256"], sha(self.content))
                 self.assertEqual(result["readback_size"], len(self.content))
 
+    def test_default_readback_rejects_any_redirect_before_accepting_matching_bytes(self):
+        """A mirror with the exact expected hash is not public CDN provenance."""
+        handlers = []
+        calls = []
+
+        class RedirectingTransport:
+            def __init__(self, handler):
+                self.handler = handler
+
+            def open(self, request, timeout):
+                self_assert = testcase.assert_request
+                self_assert(request, timeout, "latest.json")
+                calls.append(request.full_url)
+                # urllib would ordinarily follow this redirect and accept
+                # identical bytes as proof that our CDN served the package.
+                self.handler.redirect_request(
+                    request, None, 302, "Found", {},
+                    "https://unrelated.example/matching-package",
+                )
+                return testcase.Reply(testcase.content)
+
+        testcase = self
+
+        def fake_build_opener(handler):
+            self.assertIsInstance(handler, release._RejectPublicRedirect)
+            handlers.append(handler)
+            return RedirectingTransport(handler)
+
+        with patch.object(release.urllib.request, "build_opener",
+                          side_effect=fake_build_opener):
+            with self.assertRaisesRegex(ValueError, "redirected"):
+                release.public_readback(self.file, "latest.json")
+
+        self.assertEqual(len(handlers), 1)
+        self.assertEqual(calls, [release.BASE + "latest.json"])
+
+    def test_default_readback_installs_no_redirect_policy_for_successful_exact_url(self):
+        handlers = []
+        calls = []
+        testcase = self
+
+        class ExactPublicTransport:
+            def open(self, request, timeout):
+                testcase.assert_request(request, timeout, "latest.json")
+                calls.append(request.full_url)
+                return testcase.Reply(testcase.content)
+
+        def fake_build_opener(handler):
+            self.assertIsInstance(handler, release._RejectPublicRedirect)
+            handlers.append(handler)
+            return ExactPublicTransport()
+
+        with patch.object(release.urllib.request, "build_opener",
+                          side_effect=fake_build_opener):
+            verified = release.public_readback(self.file, "latest.json")
+
+        self.assertEqual(len(handlers), 1)
+        self.assertEqual(calls, [release.BASE + "latest.json"])
+        self.assertEqual(verified["readback_sha256"], sha(self.content))
+        self.assertEqual(verified["readback_size"], len(self.content))
+
     def test_given_multichunk_response_when_readback_then_complete_sha_and_size_are_verified(self):
         self.content = b"a" * (1024 * 1024) + b"z"
         self.file.write_bytes(self.content)

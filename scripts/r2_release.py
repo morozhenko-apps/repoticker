@@ -281,7 +281,23 @@ def content_type(path):
     return MIMES.get(path.suffix, "application/octet-stream")
 
 
-def public_readback(path, relative, opener=urllib.request.urlopen):
+class _RejectPublicRedirect(urllib.request.HTTPRedirectHandler):
+    """The exact public R2 URL, not a redirected mirror, must serve the bytes."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        raise ValueError("Public R2 download redirected; CDN readback not verified")
+
+
+def _verified_public_opener(request, timeout):
+    # urllib.request.urlopen follows 301/302/303/307/308 by default.
+    # A matching SHA256 at a different URL is not proof of availability
+    # at the approved public R2 custom-domain object URL.
+    return urllib.request.build_opener(_RejectPublicRedirect()).open(
+        request, timeout=timeout,
+    )
+
+
+def public_readback(path, relative, opener=_verified_public_opener):
     # Direct R2 custom-domain readback is mandatory; private S3 reads alone
     # cannot demonstrate that visitors can download this exact object.
     expected_size = path.stat().st_size

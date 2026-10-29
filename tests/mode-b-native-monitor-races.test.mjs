@@ -33,7 +33,8 @@ function monitor({
     ci_failure_notifications: false, ...selection
   };
   const invoke = async (name, args) => {
-    if (name === "github_auth_status") return { connected };
+    if (name === "github_auth_status")
+      return { connected: typeof connected === "function" ? connected() : connected };
     if (name === "get_monitor_selection") return scope;
     if (name === "github_api_cooldown_seconds") return cooldownSeconds;
     if (name === "github_monitor_publish") { writes.push(args); return null; }
@@ -100,8 +101,10 @@ test("Mode B06: forced requests while busy coalesce into one final full refresh"
 
 test("Mode B06: a delayed old collector cannot publish after native disconnect", async () => {
   const late = deferred();
-  const h = monitor({ collect: async () => late.promise });
+  let signedIn = true;
+  const h = monitor({ connected: () => signedIn, collect: async () => late.promise });
   await settle();
+  signedIn = false;
   h.listeners.get("repoticker-github-auth")({ payload: { status: "disconnected" } });
   await settle();
   const after = h.writes.length;

@@ -396,6 +396,38 @@ class PublicationFixture(unittest.TestCase):
 
 
 
+    def test_given_prior_publication_receipt_when_republishing_then_no_client_or_remote_write(self):
+        destination = Path(self.temp.name) / "verified-publication-receipt.json"
+        original = b'{"verified": "previous-run"}\n'
+        destination.write_bytes(original)
+        poison = ModuleType("boto3")
+
+        def forbidden_client(*args, **kwargs):
+            self.fail("existing receipt must abort before creating an S3 client")
+        poison.client = forbidden_client
+        with patch.dict(sys.modules, {"boto3": poison}):
+            with self.assertRaisesRegex(ValueError, "Refusing to overwrite any prior publication receipt"):
+                release.publish(self.bundle, self.apt, VERSION, COMMIT, 51,
+                                destination, "a" * 32, "test-key", "test-secret")
+        self.assertEqual(destination.read_bytes(), original)
+
+    def test_given_invalid_run_id_when_publishing_then_validation_precedes_remote_access(self):
+        destination = Path(self.temp.name) / "unwritten-receipt.json"
+        poison = ModuleType("boto3")
+
+        def forbidden_client(*args, **kwargs):
+            self.fail("invalid run ID must abort before creating an S3 client")
+        poison.client = forbidden_client
+        with patch.dict(sys.modules, {"boto3": poison}):
+            for invalid in (0, -1, "0", "-1", "not-a-run-id"):
+                with self.subTest(run_id=invalid):
+                    with self.assertRaisesRegex(ValueError, "Invalid GitHub release run"):
+                        release.publish(self.bundle, self.apt, VERSION, COMMIT, invalid,
+                                        destination, "a" * 32, "test-key", "test-secret")
+        self.assertFalse(destination.exists())
+
+
+
 
 class IdentifiedPublicReadbackTests(unittest.TestCase):
     """The real publisher must use identified GET, never bypass edge checks."""

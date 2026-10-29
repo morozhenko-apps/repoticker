@@ -133,4 +133,43 @@ mod tests {
         gate.defer(Duration::ZERO);
         assert!((3..=4).contains(&gate.remaining_seconds()));
     }
+
+    #[test]
+    fn retry_header_boundaries_preserve_permission_and_rate_semantics() {
+        let now = 1_800_000_000;
+        assert_eq!(backoff_duration(403, Some("1"), None, None, now), None);
+        assert_eq!(
+            backoff_duration(403, None, Some("15"), None, now),
+            Some(Duration::from_secs(15))
+        );
+        assert_eq!(
+            backoff_duration(403, Some("0"), None, Some("1800000000"), now),
+            Some(Duration::from_secs(FALLBACK_SECONDS))
+        );
+        assert_eq!(
+            backoff_duration(403, Some("0"), None, Some("1800000001"), now),
+            Some(Duration::from_secs(1))
+        );
+        assert_eq!(
+            backoff_duration(429, None, Some("not-an-integer"), Some("1800000005"), now),
+            Some(Duration::from_secs(5))
+        );
+        assert_eq!(
+            backoff_duration(429, None, Some(" 15"), None, now),
+            Some(Duration::from_secs(FALLBACK_SECONDS))
+        );
+        assert_eq!(
+            backoff_duration(429, None, Some("-1"), None, now),
+            Some(Duration::from_secs(FALLBACK_SECONDS))
+        );
+        assert_eq!(
+            backoff_duration(429, None, Some("999999999999999999999999"), None, now),
+            Some(Duration::from_secs(FALLBACK_SECONDS))
+        );
+        assert_eq!(
+            backoff_duration(429, None, Some("86401"), None, now),
+            Some(Duration::from_secs(MAX_SECONDS))
+        );
+    }
+
 }

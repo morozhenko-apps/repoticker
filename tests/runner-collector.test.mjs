@@ -366,3 +366,67 @@ test("Mode B: repository selection does not invalidate same-org runners in a tas
   assert.equal(next.coverage.jobs, true);
   assert.equal(next.counts.queued, 2);
 });
+
+
+test("Mode B: invalid collector bounds and unsafe scopes fail before any GitHub request", async () => {
+  const cases = [
+    { org: "" }, { org: ".." }, { org: "x/y" },
+    { repositories: [] }, { repositories: ["org/"] },
+    { repositories: ["org/.."] }, { repositories: ["org/first/second"] },
+    { repositories: ["another/first"] },
+    { repositories: Array.from({ length: 101 }, (_, i) => "org/repo" + i) },
+    { concurrency: 0 }, { concurrency: 9 }, { concurrency: 1.5 },
+    { maxRunnerPages: 0 }, { maxRunPages: 101 },
+    { maxJobPages: -1 }, { maxActiveRunsPerRepo: 0 },
+    { kind: "publish" },
+  ];
+  for (const invalid of cases) {
+    let requests = 0;
+    await assert.rejects(
+      collectRunnerState({
+        ...config, ...invalid,
+        get: async () => { requests++; throw Error("should not reach provider"); },
+      })
+    );
+    assert.equal(requests, 0, JSON.stringify(invalid));
+  }
+});
+
+test("Mode B: oversize or malformed runner pages never authorize a capacity total", async () => {
+  for (const payload of [
+    null, {}, { runners: null },
+    { runners: Array.from({ length: 101 }, (_, i) => ({
+      id: i + 1, name: "r" + i, status: "online",
+      busy: false, labels: ["self-hosted"],
+    })) },
+  ]) {
+    const snapshot = await collectRunnerState({
+      ...config,
+      get: async path => path.startsWith("/orgs/")
+        ? payload : mockGithub(path),
+    });
+    assert.equal(snapshot.coverage.runners, false);
+    assert.equal(snapshot.counts.busy, null);
+    assert.equal(snapshot.coverage.jobs, true);
+    assert.equal(snapshot.counts.queued, 3);
+    assert.ok(snapshot.errors.some(e => e.scope === "runners" && e.reason === "unavailable"));
+  }
+});
+
+test("Mode B: malformed and oversize job pages mark all task totals unknown", async () => {
+  for (const result of [null, {}, { jobs: null },
+    { jobs: Array.from({ length: 101 }, (_, i) => ({
+      id: 9000 + i, status: "queued", labels: ["ubuntu-latest"],
+    })) },
+  ]) {
+    const snapshot = await collectRunnerState({
+      ...config,
+      get: async path => path.includes("/77/jobs") ? result : mockGithub(path),
+    });
+    assert.equal(snapshot.coverage.jobs, false);
+    assert.equal(snapshot.counts.queued, null);
+    assert.equal(snapshot.counts.running, null);
+    assert.equal(snapshot.coverage.runners, true);
+    assert.ok(snapshot.errors.some(e => e.scope === "org/first" && e.reason === "unavailable"));
+  }
+});

@@ -96,7 +96,9 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
               if (options.autostartWriteError) throw Error("OS registration denied");
               osAutostart = args.enabled;
               return osAutostart;
-            case "github_auth_status": return { connected, phase };
+            case "github_auth_status":
+              if (options.authStatusError) throw Error("Credential status unavailable");
+              return { connected, phase };
             case "github_api_get":
               if (args.path.includes("/repositories?")) {
                 if (options.repositoryError) throw Error("Synthetic repository API denial");
@@ -124,17 +126,20 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
                 { id: 2, account: { login: "two" } }
               ] };
             case "github_begin":
+              if (options.beginError) throw Error("Device authorization unavailable");
               phase = "pending";
               return { userCode: "ABCD-1234" };
             case "github_cancel":
               if (!connected) phase = "cancelled";
               return undefined;
             case "github_disconnect":
+              if (options.disconnectError) throw Error("Credential revocation denied");
               connected = false;
               tokenRemoved = true;
               phase = "disconnected";
               return undefined;
             case "github_set_monitor_org":
+              if (options.scopeWriteError) throw Error("Monitor scope update denied");
               monitorOrg = args.org;
               monitorRepositories = args.repositories ?? monitorRepositories;
               return undefined;
@@ -142,7 +147,9 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
               if (options.folderPickerError) throw Error("Folder picker unavailable");
               if (options.folderPickerPromise) return options.folderPickerPromise;
               return options.folderPath ?? null;
-            case "save_settings": return undefined;
+            case "save_settings":
+              if (options.saveSettingsError) throw Error("Settings write denied");
+              return undefined;
             case "close_settings": closed = true; return undefined;
             default: throw Error("Unexpected IPC " + command);
           }
@@ -895,5 +902,139 @@ test("Mode B: malformed installation scope never authorizes a guessed account", 
       false);
     await ui.node("cancel-settings").fire("click");
     assert.equal(ui.monitorOrg, "one");
+  } finally { ui.restore(); }
+});
+
+test("Mode B: unavailable wallet read fails closed without enabling Save or Connect", async () => {
+  const ui = await fixture("mode-b-wallet-unavailable", false, [], {
+    authStatusError: true
+  });
+  try {
+    assert.equal(ui.node("github-connect").hidden, true);
+    assert.equal(ui.node("apply-settings").disabled, true);
+    assert.match(ui.node("message").textContent, /Credential status unavailable/);
+    assert.equal(ui.calls.some(([name]) => [
+      "github_set_monitor_org", "save_settings", "github_disconnect",
+      "autostart_set_enabled"
+    ].includes(name)), false);
+    await ui.node("cancel-settings").fire("click");
+    assert.equal(ui.closed, true);
+    assert.equal(ui.tokenRemoved, false);
+  } finally { ui.restore(); }
+});
+
+test("Mode B: rejected Device Flow challenge never displays a code or pending session", async () => {
+  const ui = await fixture("mode-b-device-challenge-error", false, [], {
+    beginError: true
+  });
+  try {
+    await ui.node("github-connect").fire("click");
+    assert.equal(ui.node("github-connect").disabled, false);
+    assert.equal(ui.node("github-connect").hidden, false);
+    assert.equal(ui.node("github-device-flow").hidden, true);
+    assert.equal(ui.node("github-user-code").textContent, "");
+    assert.match(ui.node("github-auth-message").textContent,
+      /Device authorization unavailable/);
+    assert.equal(ui.node("apply-settings").disabled, true);
+    await ui.node("cancel-settings").fire("click");
+    assert.equal(ui.closed, true);
+    assert.equal(ui.tokenRemoved, false);
+    assert.equal(ui.calls.some(([name]) => name === "github_disconnect"), false);
+  } finally { ui.restore(); }
+});
+
+test("Mode B: denied config write retains draft and never commits unrelated native commands", async () => {
+  const ui = await fixture("mode-b-config-write-error", true, [], {
+    saveSettingsError: true
+  });
+  try {
+    ui.node("ci-failure-notifications").checked = true;
+    await ui.node("ci-failure-notifications").fire("change");
+    assert.equal(ui.node("apply-settings").disabled, false);
+    await ui.node("apply-settings").fire("click");
+    assert.equal(ui.closed, false);
+    assert.equal(ui.node("apply-settings").disabled, false,
+      "rejected save must keep edited draft available for retry");
+    assert.equal(ui.node("ci-failure-notifications").checked, true);
+    assert.match(ui.node("message").textContent, /Settings write denied/);
+    assert.equal(ui.calls.filter(([name]) => name === "save_settings").length, 1);
+    assert.equal(ui.calls.some(([name]) => [
+      "github_set_monitor_org", "autostart_set_enabled", "github_disconnect"
+    ].includes(name)), false);
+    await ui.node("cancel-settings").fire("click");
+    assert.equal(ui.closed, true);
+    assert.equal(ui.monitorOrg, "one");
+  } finally { ui.restore(); }
+});
+
+test("Mode B: denied monitoring-scope write preserves the current account", async () => {
+  const ui = await fixture("mode-b-scope-write-error", true, [], {
+    scopeWriteError: true
+  });
+  try {
+    ui.node("github-monitor-scope").value = "two";
+    await ui.node("github-monitor-scope").fire("change");
+    assert.equal(ui.monitorOrg, "one", "selection must remain a draft");
+    await ui.node("apply-settings").fire("click");
+    assert.equal(ui.monitorOrg, "one", "rejected write cannot change native scope");
+    assert.equal(ui.closed, false);
+    assert.equal(ui.node("apply-settings").disabled, false);
+    assert.match(ui.node("message").textContent, /Monitor scope update denied/);
+    assert.equal(ui.calls.filter(([name]) => name === "github_set_monitor_org").length, 1);
+    assert.equal(ui.calls.some(([name]) => name === "save_settings"), false);
+    await ui.node("cancel-settings").fire("click");
+    assert.equal(ui.tokenRemoved, false);
+    assert.equal(ui.monitorOrg, "one");
+  } finally { ui.restore(); }
+});
+
+test("Mode B: denied wallet revocation cannot claim a completed disconnect", async () => {
+  const ui = await fixture("mode-b-wallet-revoke-error", true, [], {
+    disconnectError: true
+  });
+  try {
+    await ui.node("github-disconnect").fire("click");
+    assert.equal(ui.tokenRemoved, false);
+    assert.equal(ui.node("apply-settings").disabled, false);
+    await ui.node("apply-settings").fire("click");
+    assert.equal(ui.closed, false);
+    assert.equal(ui.tokenRemoved, false);
+    assert.equal(ui.monitorOrg, "one");
+    assert.equal(ui.node("apply-settings").disabled, false);
+    assert.match(ui.node("message").textContent, /Credential revocation denied/);
+    assert.equal(ui.calls.filter(([name]) => name === "github_disconnect").length, 1);
+    await ui.node("cancel-settings").fire("click");
+    assert.equal(ui.tokenRemoved, false, "Cancel must not erase an existing wallet token");
+    assert.equal(ui.closed, true);
+  } finally { ui.restore(); }
+});
+
+test("Mode B: invalid folder basename from native picker never becomes an exclusion", async () => {
+  const ui = await fixture("mode-b-invalid-ignored-picker", false, [], {
+    folderPath: "/tmp/.."
+  });
+  try {
+    await ui.node("browse-ignored-child").fire("click");
+    assert.match(ui.node("message").textContent, /Invalid folder name/);
+    assert.equal(ui.node("apply-settings").disabled, true);
+    assert.equal(ui.calls.some(([name]) => name === "save_settings"), false);
+    await ui.node("cancel-settings").fire("click");
+    assert.equal(ui.closed, true);
+  } finally { ui.restore(); }
+});
+
+test("Mode B: native excluded-folder picker refuses the 101st unique exclusion", async () => {
+  const names = Array.from({ length: 100 }, (_, index) => "Excluded-" + index);
+  const ui = await fixture("mode-b-ignored-cap-picker", false, [], {
+    ignoredChildNames: names, folderPath: "/tmp/Extra"
+  });
+  try {
+    assert.equal(ui.node("ignored-child-list").children.length, 100);
+    await ui.node("browse-ignored-child").fire("click");
+    assert.match(ui.node("message").textContent, /at most 100 child folder names/);
+    assert.equal(ui.node("ignored-child-list").children.length, 100);
+    assert.equal(ui.node("apply-settings").disabled, true);
+    await ui.node("cancel-settings").fire("click");
+    assert.equal(ui.calls.some(([name]) => name === "save_settings"), false);
   } finally { ui.restore(); }
 });

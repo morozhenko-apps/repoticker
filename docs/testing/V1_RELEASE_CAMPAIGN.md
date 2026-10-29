@@ -29,7 +29,7 @@ account/billing identifiers or internal deployment configuration in this file.
 
 | Gate | Required exit evidence | Current status |
 | --- | --- | --- |
-| G0 — release scope and build health | Dev revision recorded; Preflight for exact SHA is green | **Pending**: formatting-only correction submitted after previous failure; no green result recorded for this SHA |
+| G0 — release scope and build health | Dev revision recorded; Preflight for exact SHA is green | **Passed for current dev HEAD 82eba6f6**: [Preflight #40935078253](https://github.com/morozhenko-apps/repoticker/actions/runs/40935078253) SUCCESS (4/4 jobs); **must be re-established** on frozen RC SHA |
 | G1 — L10N-20 | 20 complete locale catalogs and **20/20 independent** contextual/a11y/platform audit receipts | **Blocked**: source catalogs exist; independent sign-off remains unproven |
 | G2 — core platform behavior | Cold/warm startup, account/session failures, truthful scopes and counters, native notifications, autostart, error recovery, safe Git operations | **Pending physical and negative-path checks** (see Gate 2 issue and existing evidence) |
 | G3 — OS/distribution behavior | Installed KDE and Windows: DPI, tray/popup, signed APT upgrade/rollback, NSIS credential lifecycle, persistence/restart/removal | **Partial**: owner accepted selected Windows UI paths; complete platform matrix not signed off |
@@ -126,3 +126,21 @@ initiates CI; it has not been polled. This prevents the *known*
 anonymous-client failure class but does not certify that the
 Cloudflare edge will allow the configured identifier in production.
 The publication remains blocked until protected v1 gates close.
+
+
+## Exact-source CI and R2 test-map checkpoint (2026-10-29)
+
+The formatter repair at `5e1854f7f8e8` was followed by the documentation
+checkpoint `82eba6f6cf8caa8596eecd90b737b00c3d6094b1`. [Preflight
+#40935078253](https://github.com/morozhenko-apps/repoticker/actions/runs/40935078253)
+completed **SUCCESS** for JS/Python release tests, Rust format/core tests/Clippy,
+Linux desktop compile and the aggregate gate. This closes the prior
+formatting-related G0 blocker for that exact source, **not** G4–G6,
+physical OS acceptance or the final frozen RC check.
+
+The R2 publisher's post-CAS Stage 3–8 source/test reconciliation is in
+[MODE_B_R2_POST_CAS_RECONCILIATION_2026_10_29.md](MODE_B_R2_POST_CAS_RECONCILIATION_2026_10_29.md).
+Its 65 Python test methods are source-count evidence, not a measured branch
+percentage or release acceptance; the repository-wide Stage 3–8 matrix
+remains incomplete. No changes were made to executable source, `main`,
+release tags, R2 objects, or the published v0.2.0.

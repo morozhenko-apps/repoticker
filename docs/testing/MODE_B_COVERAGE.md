@@ -7,7 +7,7 @@ Do not turn source test counts into measured function/branch coverage.
 | --- | --- | --- | --- |
 | Desktop JS (.mjs) | Preflight Node 24 test pass with V8 source coverage | Pending exact-SHA CI; no percentages copied or fabricated | Per-file branch/function/line report from CI; non-executed branches and mutation assessment |
 | Rust core | `cargo test --locked -p repoticker-core` | CI pending exact-SHA; no per-module branch coverage instrumentation | Real source coverage and mutation results |
-| Rust native desktop | Preflight Linux desktop `cargo test --locked -p repoticker --bin repoticker` | Newly wired; result unknown | Verify compiler+native tests and Windows-specific conditional code separately |
+| Rust native desktop | Preflight Linux desktop `cargo test --locked -p repoticker --bin repoticker` | Newly wired; result unknown | Verify compiler+native tests and Windows-specific conditional code via the Windows native candidate test job |
 | Python release scripts | `python3 -m unittest discover -s tests -p test_release_*.py -v` | CI pending exact-SHA; no measured Python branch coverage | Real coverage and signed-publication mutation review |
 | Platform installation and localization | Product-owner acceptance attested separately | No reconstructed logs or per-locale reviewer receipts | Retain owner attestation distinct from independent OS/native proof |
 

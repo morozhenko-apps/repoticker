@@ -17,7 +17,7 @@ fails the review instead of counting as a successful kill.
 No HTTP calls, user credentials or real Git operations are used.
 External GitHub responses and a clock are injected at their real
 input boundaries; the subject under test is never replaced by a
-mock. The ten contracts are part of the normal Node test command,
+mock. The eleven contracts are part of the normal Node test command,
 not a separate ten-run stress loop.
 
 | ID | Production branch mutation | Invariant / target |
@@ -32,6 +32,7 @@ not a separate ten-run stress loop.
 | M08 | Allow 501 billing line items | Strict 500-item bound |
 | M09 | Allow unsafe accumulated numeric usage | Overflow is rejected before presenting minutes |
 | M10 | Treat TTL equality as a cache hit | A stale same-scope billing cache must refresh at TTL |
+| M11 | Disable canonical UTC calendar comparison | Normalized impossible date must not create a CI failure alert |
 
 The existing Mode B source-contract tests for installations expecting
 silent filtering were updated because the fail-closed safety contract
@@ -57,3 +58,17 @@ only once on a complete frozen source batch. On success, record
 actual killed/survived mutant counts, per-module measured coverage
 and any excluded known-flaky cases. No CI is required for each
 individual code or documentation commit.
+
+## Native/JS completed-run timestamp boundary
+
+Source hardening is implemented on both sides of the Tauri IPC
+boundary: `github_api.rs` now validates actual Gregorian days and
+24h clock units for exact UTC-second timestamps before projecting
+completed workflow runs; `ci-failure-events.mjs` rejects
+`Date.parse` normalizations by requiring exact canonical round-trip.
+The earlier test that deliberately skipped impossible February 31
+has been replaced with strict rejection. Native Rust cases test leap
+years, month/day bounds and a malformed projected run; JS cases
+add invalid calendar/time tables and a legitimate 2024 leap day.
+The M11 mutant removes JS normalization protection. No test result
+has been observed for this source branch yet.

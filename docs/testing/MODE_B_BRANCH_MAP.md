@@ -151,3 +151,19 @@ in Preflight, Windows same command in the unpublished Windows
 acceptance job. Neither is equivalent to interactive installed OS QA.
 
 - **INS05 — monitor integration:** `collectForAccount` must reject a mixed valid/corrupt installation inventory before invoking repository or task requests. `github-installations-mode-b.test.mjs` tests this with an injected read-only provider.
+
+## Notification date validity — additional branch evidence
+
+- CI01 Native GitHub completed-run `updated_at` accepts exact
+  canonical UTC seconds only: year/day/month/leap/time cases in
+  `github_api.rs` embedded Rust tests.
+- CI02 JS notification tracker rejects normalized impossible dates
+  rather than trusting `Date.parse` alone; test in
+  `tests/ci-failure-events.test.mjs` proves no partially advanced
+  history and valid leap day continues to notify once.
+- CI03 Executable M11 mutation replaces canonical JS date comparison
+  with unconditional acceptance and must be detected by the same
+  notification invariant assertion.
+
+These are source scenarios, not executed CI evidence or a general
+percentage of native API branch coverage.

@@ -58,11 +58,15 @@ test("batch 04: missing installation payload is not a verified empty inventory",
     await assert.rejects(listAvailableInstallations(async () => payload),
       /Invalid installations response/);
 });
-test("batch 04: forbidden dot and non-ASCII account identifiers are filtered", async () => {
-  const result = await listAvailableInstallations(async () => ({
-    installations: [acc("."), acc(".."), acc("bad/name"), acc("😀"), acc("team")]
-  }));
-  assert.deepEqual(result.items, [{ name: "team", id: 12 }]);
+test("batch 04: forbidden account identifiers reject incomplete installation inventory", async () => {
+  for (const invalid of [".", "..", "bad/name", "😀"]) {
+    let calls = 0;
+    await assert.rejects(listAvailableInstallations(async () => {
+      calls++;
+      return { installations: [acc("team", 12), acc(invalid, 13)] };
+    }), /Invalid installations response/);
+    assert.equal(calls, 1, invalid);
+  }
 });
 test("batch 04: oversized repository page is invalid before a second fetch", async () => {
   let n = 0;

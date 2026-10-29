@@ -78,6 +78,8 @@ mod tests {
 
     #[test]
     fn limits_parallelism_and_completes_every_task() {
+        use std::sync::{Condvar, Mutex};
+        let gate = Arc::new((Mutex::new(0usize), Condvar::new()));
         let active = Arc::new(AtomicUsize::new(0));
         let max_active = Arc::new(AtomicUsize::new(0));
         let mut started = 0;
@@ -88,7 +90,18 @@ mod tests {
             |i| {
                 let n = active.fetch_add(1, Ordering::SeqCst) + 1;
                 max_active.fetch_max(n, Ordering::SeqCst);
-                thread::sleep(Duration::from_millis(5));
+                if i < 4 {
+                    // Wait for all four initial workers without a timing sleep.
+                    // A bounded condition wait detects a broken admission cap.
+                    let (lock, signal) = &*gate;
+                    let mut entered = lock.lock().unwrap();
+                    *entered += 1;
+                    signal.notify_all();
+                    let (entered, _) = signal
+                        .wait_timeout_while(entered, Duration::from_secs(10), |n| *n < 4)
+                        .unwrap();
+                    assert_eq!(*entered, 4);
+                }
                 active.fetch_sub(1, Ordering::SeqCst);
                 i * 2
             },
@@ -104,7 +117,7 @@ mod tests {
         assert_eq!(started, 12);
         assert_eq!(finished, (1..=12).collect::<Vec<_>>());
         assert_eq!(results.len(), 12);
-        assert!(max_active.load(Ordering::SeqCst) <= 4);
+        assert_eq!(max_active.load(Ordering::SeqCst), 4);
         assert_eq!(active.load(Ordering::SeqCst), 0);
         let mut ordered = results;
         ordered.sort();

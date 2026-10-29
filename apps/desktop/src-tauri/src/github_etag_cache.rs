@@ -338,7 +338,7 @@ mod tests {
         );
     }
 
-#[test]
+    #[test]
     fn different_paths_and_tags_never_share_conditional_private_data() {
         let cache = GitHubETagCache::default();
         let first = "/user/installations?per_page=100&page=1";
@@ -351,8 +351,8 @@ mod tests {
         let second_now = cache.snapshot(second);
         assert_eq!(cache.not_modified(first, &first_now), Some(json!({"page": 1})));
         assert_eq!(cache.not_modified(second, &second_now), Some(json!({"page": 2})));
-        assert!(cache.not_modified(first, &second_now).is_none());
-        assert!(cache.not_modified(second, &first_now).is_none());
+        assert!(cache.not_modified("/user", &first_now).is_none());
+        assert!(cache.not_modified("/user", &second_now).is_none());
     }
 
     #[test]

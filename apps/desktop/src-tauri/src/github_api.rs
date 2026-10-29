@@ -631,7 +631,7 @@ mod tests {
         );
     }
 
-#[test]
+    #[test]
     fn paths_reject_encoded_traversal_duplicate_queries_and_write_operations() {
         for route in [
             "/repos/team/a/actions/runs?per_page=100&page=1&page=1",

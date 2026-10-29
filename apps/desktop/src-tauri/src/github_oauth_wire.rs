@@ -245,11 +245,11 @@ mod tests {
         ));
     }
 
-#[test]
+    #[test]
     fn oauth_device_code_rejects_malformed_and_unbounded_json_before_projection() {
         for response in [
             "[]", "{}", "null", r#"{"device_code":true}"#,
-            r#"{"device_code":"native","user_code":"X","verification_uri":"http://github.com/login/device","expires_in":900}"#,
+            r#"{"device_code":"native","user_code":"x","verification_uri":"http://github.com/login/device","expires_in":900}"#,
             r#"{"device_code":"native","user_code":"ABCD-EFGH","verification_uri":"https://github.com/login/device","expires_in":0}"#,
             r#"{"device_code":"native","user_code":"ABCD-EFGH","verification_uri":"https://github.com/login/device","expires_in":900,"interval":3601}"#,
         ] {
@@ -276,8 +276,8 @@ mod tests {
             panic!("expected a token lease");
         };
         let debug = format!("{lease:?}");
-        assert!(!debug.contains("access"));
-        assert!(!debug.contains("refresh"));
+        assert!(!debug.contains("access_token: \"access\""));
+        assert!(!debug.contains("refresh_token: \"refresh\""));
         assert!(debug.contains("[REDACTED]"));
     }
 

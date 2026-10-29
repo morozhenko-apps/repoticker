@@ -577,7 +577,7 @@ mod tests {
         assert!(manager.active(next));
     }
 
-#[test]
+    #[test]
     fn competing_native_auth_generations_reject_outdated_completions() {
         use std::sync::{mpsc, Arc};
         use std::thread;

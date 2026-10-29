@@ -85,3 +85,21 @@ regression tests added for status grammar and native notifications.
 The completed independent audits count remains **0/20 Passed**.
 Preflight and platform acceptance evidence are tracked in the
 implementation audit receipt.
+
+## Owner-attested locale acceptance checkpoint — 2026-10-29
+
+The product owner reports that the UI's twenty languages have already
+been checked and explicitly instructs that this manual follow-up be
+closed, instead of demanding another full UI-language pass.
+Issue #16 is closed based on this owner attestation.
+
+A direct source inspection of the current 20-code `LOCALE_ROSTER`
+and `ui/locales/native.json` verified exact roster equality,
+the canonical order and nonempty native translations. This is real
+source-structure evidence, not proof that each independent reviewer
+signed a 20-language contextual check. No external per-language
+screenshots, reviewer identities or installed-OS receipt files were
+provided in this interaction, so the historical **0/20 independently
+archived review receipts** must not be overwritten with invented PASS
+entries. This distinction is a release-quality disclosure, not a
+request that the owner repeat already accepted manual testing.

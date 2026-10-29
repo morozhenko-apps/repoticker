@@ -163,3 +163,43 @@ interleaved test modules, records sixteen source files, sixteen critical
 branch families and Positive/N1–N12 flow applicability. It is **partial
 Stage 3–8 documentation**, not source-test acceptance, a CI test run or
 physical KDE/Windows/L10N sign-off.
+
+## Owner acceptance and frozen v1 candidate checkpoint — 2026-10-29
+
+The owner directly reports that KDE startup/integration, Windows
+installed lifecycle, signed APT physical checks and the 20-language
+UI have already been checked and instructs us not to re-run these
+manual acceptance exercises. The linked physical/manual follow-ups
+#12, #13, #14, #15 and #16 were **closed as owner-attested**.
+This is NOT a fabricated collection of OS transcripts, native-speaker
+review records, screenshots, signer evidence or per-case PASS counts.
+Those external records were not delivered into the agent environment.
+
+**Verified source-level locale evidence:** all 20 canonical locale codes
+appear in the same order in `LOCALE_ROSTER` and match the 20 native
+translation catalog entries, which contain nonempty strings.
+The owner reports visual/context acceptance; previously published
+0/20 independent-review *receipt counts* remain a different evidence
+measure, and must not silently be rewritten as independently reviewed.
+
+**Code candidate prepared in Git ancestry (not published):** Cargo core,
+desktop, Tauri and two local `Cargo.lock` records synchronized to
+`1.0.0`; both OS candidate bundlers derive that version from
+`release_version.py`; the protected tag builds use `--locked`.
+Release-asset collection refuses misleading embedded version
+substrings (such as 11.0.0 or 1.0.0.1 for expected 1.0.0) and
+deterministic Python contract tests cover the candidate/rejection.
+A full source/CI test, measured branch/mutation score and final
+`MODE_B_FINAL_REPORT` are **not yet accepted** by this checkpoint.
+
+**Previous independently supplied green CI:** Preflight
+[#40941012690](https://github.com/morozhenko-apps/repoticker/actions/runs/40941012690)
+for `d522d69ddc75908ed4adc58f13e080c5828205f4`,
+2m34s, as confirmed by the owner. The current R2 redirection fix
+at `78314dc1` and the new `1.0.0` candidate require their
+**own** green exact-SHA source and Linux/Windows bundle results.
+
+The candidate will be advanced to `dev` in one push after the coherent
+implementation batch, not after every individual change.
+**Until its CI and Mode B final outcome are proven, do not promote to
+`main`, create `v1.0.0` or publish signed APT/R2.**

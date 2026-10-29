@@ -499,3 +499,58 @@ test("Mode B GitHub errors: raw response fragments never enter user-facing statu
   assert.equal(githubFailureReason("GitHub API permission denied."), "permission_denied");
   assert.equal(githubFailureReason("GitHub API rate limited."), "rate_limited");
 });
+
+test("Mode B failed task refresh clears all derived coverage without erasing runner state", () => {
+  const previous = {
+    scope: { organization: "team", repositories: ["team/a"] },
+    runners: [{ id: 7, name: "runner7" }],
+    runningJobs: [{ id: 1 }], queuedJobs: [{ id: 2 }], waitingJobs: [{ id: 3 }],
+    runningByLane: { selfHosted: [{ id: 1 }], githubHosted: [], unclassified: [] },
+    queuedByLane: { selfHosted: [], githubHosted: [{ id: 2 }], unclassified: [] },
+    coverage: {
+      runners: true, jobs: true, queue: true, running: true,
+      runningLanes: true, queuedLanes: true,
+      queuedUnclassified: 3, unmatchedSelfHosted: 2
+    },
+    counts: {
+      busy: 1, idle: 0, offline: 0, running: 1, queued: 1,
+      waiting: 1, runningSelfHosted: 1, runningGitHubHosted: 0,
+      runningUnclassified: 0, queuedSelfHosted: 0,
+      queuedGitHubHosted: 1, queuedUnclassified: 0,
+      runningObserved: 1, queuedObserved: 1
+    },
+    checkedAtRunners: "2026-10-28T08:00:00Z",
+    checkedAtTasks: "2026-10-29T11:00:00Z"
+  };
+  const original = structuredClone(previous);
+  const invalid = invalidateMetricGroup(previous, "tasks");
+  assert.equal(invalid.coverage.runners, true);
+  assert.equal(invalid.coverage.jobs, false);
+  assert.equal(invalid.coverage.queue, false);
+  assert.equal(invalid.coverage.running, false);
+  assert.equal(invalid.coverage.runningLanes, false);
+  assert.equal(invalid.coverage.queuedLanes, false);
+  assert.equal(invalid.coverage.queuedUnclassified, null);
+  assert.equal(invalid.coverage.unmatchedSelfHosted, null);
+  for (const key of [
+    "running", "queued", "waiting", "runningSelfHosted",
+    "runningGitHubHosted", "runningUnclassified", "queuedSelfHosted",
+    "queuedGitHubHosted", "queuedUnclassified",
+    "runningObserved", "queuedObserved"
+  ]) {
+    assert.equal(invalid.counts[key], null, "must invalidate " + key);
+  }
+  assert.deepEqual(invalid.runningJobs, []);
+  assert.deepEqual(invalid.queuedJobs, []);
+  assert.deepEqual(invalid.waitingJobs, []);
+  assert.deepEqual(invalid.runningByLane,
+    { selfHosted: [], githubHosted: [], unclassified: [] });
+  assert.deepEqual(invalid.queuedByLane,
+    { selfHosted: [], githubHosted: [], unclassified: [] });
+  assert.deepEqual(invalid.runners, previous.runners);
+  assert.equal(invalid.counts.busy, 1);
+  assert.equal(invalid.counts.idle, 0);
+  assert.equal(invalid.checkedAtRunners, previous.checkedAtRunners);
+  assert.equal(invalid.checkedAtTasks, null);
+  assert.deepEqual(previous, original, "source monitoring state must remain untouched");
+});

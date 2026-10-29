@@ -155,9 +155,16 @@ export function invalidateMetricGroup(previous, kind) {
     clone.coverage.jobs = false;
     clone.coverage.queue = false;
     clone.coverage.running = false;
+    clone.coverage.runningLanes = false;
+    clone.coverage.queuedLanes = false;
+    clone.coverage.queuedUnclassified = null;
+    clone.coverage.unmatchedSelfHosted = null;
+    clone.runningByLane = { selfHosted: [], githubHosted: [], unclassified: [] };
+    clone.queuedByLane = { selfHosted: [], githubHosted: [], unclassified: [] };
     for (const key of ["running", "queued", "waiting", "runningSelfHosted",
       "runningGitHubHosted", "runningUnclassified", "queuedSelfHosted",
-      "queuedGitHubHosted", "queuedUnclassified"]) clone.counts[key] = null;
+      "queuedGitHubHosted", "queuedUnclassified", "runningObserved",
+      "queuedObserved"]) clone.counts[key] = null;
     clone.checkedAtTasks = null;
   }
   return clone;

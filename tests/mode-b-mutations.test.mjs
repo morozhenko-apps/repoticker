@@ -153,3 +153,22 @@ test("mutation M10: billing cache expires exactly at TTL", () =>
       await cache.load("team", true);
       assert.equal(count, 8);
     }));
+
+test("mutation M11: impossible Gregorian UTC dates must not alert as valid runs", () =>
+  mustKill("ci-failure-events.mjs",
+    'new Date(millis).toISOString().slice(0, 19) + "Z" === value',
+    "true",
+    async m => {
+      const tracker = m.createCiFailureTracker();
+      const scope = { account: "team", repositories: ["team/app"] };
+      tracker.observe({
+        ...scope, results: [{ repository: "team/app", runs: [] }]
+      });
+      await assert.rejects(async () => tracker.observe({
+        ...scope,
+        results: [{ repository: "team/app", runs: [{
+          id: 42, run_attempt: 1, conclusion: "failure",
+          updated_at: "2026-02-31T12:00:00Z"
+        }] }]
+      }), /Invalid notification run facts/);
+    }));

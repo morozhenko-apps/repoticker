@@ -75,7 +75,11 @@ let repoMode = "all";
 let repoChoiceTouched = false;
 let monitorScopesRevision = 0;
 
-const REPO_NAME = /^[a-zA-Z0-9_.-]+$/;
+// Match native github_api::valid_name: ASCII-only, 1–100 bytes,
+// with no relative path components.
+const REPO_NAME = /^[a-zA-Z0-9_.-]{1,100}$/;
+const validRepoName = name => REPO_NAME.test(name) &&
+  name !== "." && name !== "..";
 function normalizeRepoDraft() {
   return repoMode === "all" ? [] : [...selectedRepoNames].sort();
 }
@@ -164,7 +168,7 @@ async function refreshRepoInventory() {
         const parts = name.split("/");
         if (parts.length === 2 &&
             parts[0].toLowerCase() === selectedScope.toLowerCase() &&
-            REPO_NAME.test(parts[1])) all.add(name);
+            validRepoName(parts[1])) all.add(name);
       }
       if (payload.repositories.length < 100) {
         complete = true;

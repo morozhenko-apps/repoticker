@@ -60,6 +60,9 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
   let releaseInstallations = null;
   const delayedInstallations = options.deferInstallations
     ? new Promise(resolve => { releaseInstallations = resolve; }) : null;
+  let releaseRepositoryInventory = null;
+  const deferredRepositoryInventory = options.deferRepositoryForAccount
+    ? new Promise(resolve => { releaseRepositoryInventory = resolve; }) : null;
   const document = {
     activeElement: null,
     documentElement: { lang: "en" },
@@ -95,12 +98,22 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
               return osAutostart;
             case "github_auth_status": return { connected, phase };
             case "github_api_get":
-              if (args.path.includes("/repositories?"))
+              if (args.path.includes("/repositories?")) {
+                if (options.repositoryError) throw Error("Synthetic repository API denial");
+                if (deferredRepositoryInventory &&
+                    args.path.includes("/" + (options.deferRepositoryForAccount === "one" ? 1 : 2) +
+                      "/repositories?"))
+                  return deferredRepositoryInventory;
+                if (options.repositoryPages) {
+                  const page = Number(args.path.match(/[?&]page=(\d+)/)?.[1] ?? 1);
+                  return { repositories: options.repositoryPages[page - 1] ?? [] };
+                }
                 return { repositories: [
                   { full_name: "one/core" }, { full_name: "one/docs" },
                   { full_name: "two/api" }, { full_name: "two/web" }
                 ].filter(item => item.full_name.startsWith(
                   monitorOrg === "two" || args.path.includes("/2/") ? "two/" : "one/")) };
+              }
               if (delayedInstallations) return delayedInstallations;
               if (options.installationPages) {
                 const page = Number(args.path.match(/[?&]page=(\d+)/)?.[1] ?? 1);
@@ -172,6 +185,7 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
     get autostartEnabled() { return osAutostart; },
     get monitorRepositories() { return monitorRepositories; },
     releaseInstallations: payload => releaseInstallations?.(payload),
+    releaseRepositoryInventory: payload => releaseRepositoryInventory?.(payload),
     async dispatchAuth() {
       await listeners.get("repoticker-github-auth")?.({});
       await tick();
@@ -774,6 +788,112 @@ test("Arabic Settings keeps provider identifiers isolated and Cancel preserves c
     assert.equal(choice.children[1].textContent, "one/core");
     await ui.node("cancel-settings").fire("click");
     assert.deepEqual(ui.monitorRepositories, []);
+    assert.equal(ui.monitorOrg, "one");
+  } finally { ui.restore(); }
+});
+
+test("Mode B: Settings enumerates ten full repository pages without claiming completeness", async () => {
+  const pages = Array.from({ length: 10 }, (_, page) =>
+    Array.from({ length: 100 }, (_, index) => ({
+      full_name: "one/repo" + (page * 100 + index)
+    })));
+  const ui = await fixture("mode-b-repo-10-pages", true, ["one/repo0"], {
+    repositoryPages: pages
+  });
+  try {
+    const queries = ui.calls.filter(([command, args]) => command === "github_api_get" &&
+      args.path.includes("/repositories?"));
+    assert.equal(queries.length, 10, "bounded pagination cannot request an eleventh page");
+    assert.equal(ui.node("github-repo-mode").value, "selected");
+    assert.equal(ui.node("apply-settings").disabled, true);
+    assert.ok(ui.node("github-repo-list").children.length <= 100,
+      "render at most 100 repository options per filter");
+    assert.ok(ui.node("github-repo-status").textContent.length > 0,
+      "partial inventory must display status, not a fabricated complete count");
+    ui.node("github-repo-filter").value = "repo999";
+    await ui.node("github-repo-filter").fire("input");
+    const last = ui.node("github-repo-list").children.find(row =>
+      row.children[1]?.textContent === "one/repo999");
+    assert.ok(last, "last available page must be selectable");
+    last.children[0].checked = true;
+    await last.children[0].fire("change");
+    assert.equal(ui.node("apply-settings").disabled, false);
+    assert.deepEqual(ui.monitorRepositories, ["one/repo0"],
+      "changing filters and selections must not persist before OK");
+    await ui.node("apply-settings").fire("click");
+    assert.deepEqual(ui.monitorRepositories, ["one/repo0", "one/repo999"]);
+    assert.equal(ui.closed, true);
+  } finally { ui.restore(); }
+});
+
+test("Mode B: denied repository inventory preserves saved subset on Settings Cancel", async () => {
+  const ui = await fixture("mode-b-repo-denied", true, ["one/core"], {
+    repositoryError: true
+  });
+  try {
+    assert.equal(ui.node("github-repo-mode").value, "selected");
+    assert.equal(ui.node("github-repo-list").children.length, 0,
+      "API denial must not invent previously authorized repo rows");
+    assert.match(ui.node("github-repo-status").textContent, /unavailable/i);
+    assert.equal(ui.node("apply-settings").disabled, true);
+    await ui.node("cancel-settings").fire("click");
+    assert.deepEqual(ui.monitorRepositories, ["one/core"]);
+    assert.equal(ui.monitorOrg, "one");
+    assert.equal(ui.closed, true);
+    assert.equal(ui.calls.some(([command]) => command === "github_set_monitor_org"),
+      false);
+  } finally { ui.restore(); }
+});
+
+test("Mode B: late old-owner repository inventory cannot overwrite newly chosen owner", async () => {
+  const ui = await fixture("mode-b-stale-repo-owner", true, ["one/core"], {
+    deferRepositoryForAccount: "one"
+  });
+  try {
+    const first = ui.calls.filter(([command, args]) => command === "github_api_get" &&
+      args.path.includes("/1/repositories?"));
+    assert.equal(first.length, 1, "old account request is in flight");
+    ui.node("github-monitor-scope").value = "two";
+    await ui.node("github-monitor-scope").fire("change");
+    await tick();
+    await tick();
+    ui.node("github-repo-mode").value = "selected";
+    await ui.node("github-repo-mode").fire("change");
+    const before = ui.node("github-repo-list").children.map(row =>
+      row.children[1]?.textContent);
+    assert.ok(before.includes("two/api"));
+    assert.ok(!before.some(name => name?.startsWith("one/")));
+    ui.releaseRepositoryInventory({ repositories: [
+      { full_name: "one/private-old" }
+    ] });
+    await tick();
+    await tick();
+    const after = ui.node("github-repo-list").children.map(row =>
+      row.children[1]?.textContent);
+    assert.deepEqual(after, before, "late old owner cannot resurrect unauthorized rows");
+    assert.equal(ui.node("github-monitor-scope").value, "two");
+    assert.equal(ui.monitorOrg, "one", "draft account must not be persisted");
+    await ui.node("cancel-settings").fire("click");
+    assert.deepEqual(ui.monitorRepositories, ["one/core"]);
+    assert.equal(ui.monitorOrg, "one");
+  } finally { ui.restore(); }
+});
+
+test("Mode B: malformed installation scope never authorizes a guessed account", async () => {
+  const ui = await fixture("mode-b-invalid-installation", true, [], {
+    installationPages: [[
+      { id: 1, account: { login: "one" } },
+      { id: 2, account: { login: "../spoof" } }
+    ]]
+  });
+  try {
+    assert.match(ui.node("github-auth-message").textContent,
+      /cannot list available installations/i);
+    assert.equal(ui.node("apply-settings").disabled, true);
+    assert.equal(ui.node("github-monitor-scope").value, "");
+    assert.equal(ui.calls.some(([command]) => command === "github_set_monitor_org"),
+      false);
+    await ui.node("cancel-settings").fire("click");
     assert.equal(ui.monitorOrg, "one");
   } finally { ui.restore(); }
 });

@@ -171,5 +171,4 @@ mod tests {
             Some(Duration::from_secs(MAX_SECONDS))
         );
     }
-
 }

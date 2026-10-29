@@ -398,5 +398,4 @@ mod tests {
         assert_eq!(near_max.decide(u64::MAX - 2, 10), TokenAction::Refresh);
         assert_eq!(near_max.decide(u64::MAX, 10), TokenAction::Reauthorize);
     }
-
 }

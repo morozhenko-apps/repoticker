@@ -140,5 +140,4 @@ mod tests {
         assert_eq!(classify_sync(clean(u64::MAX, 1)), SyncDecision::Diverged);
         assert_eq!(classify_sync(clean(0, 0)), SyncDecision::UpToDate);
     }
-
 }

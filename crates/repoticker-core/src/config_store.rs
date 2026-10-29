@@ -420,4 +420,71 @@ mod tests {
         assert!(!f.path.exists());
         assert!(!backup_path(&f.path).exists());
     }
+
+    #[test]
+    fn mode_b_valid_primary_ignores_corrupt_backup_without_rewriting_it() {
+        let f = Fixture::new();
+        save_json(&f.path, &Fixture::pref("en")).unwrap();
+        let backup = backup_path(&f.path);
+        let damage = b"{bad backup";
+        fs::write(&backup, damage).unwrap();
+
+        assert_eq!(
+            read_json::<Preferences>(&f.path).unwrap(),
+            Some(Fixture::pref("en"))
+        );
+        assert_eq!(fs::read(&backup).unwrap(), damage);
+    }
+
+    #[test]
+    fn mode_b_validation_rejection_keeps_primary_and_backup_bytes() {
+        let f = Fixture::new();
+        let store = JsonStore::default();
+        save_json(&f.path, &Fixture::pref("en")).unwrap();
+        let original = fs::read(&f.path).unwrap();
+
+        let error = store
+            .update::<Preferences, ()>(
+                &f.path,
+                || Fixture::pref("ru"),
+                |prefs| {
+                    prefs.language = "invalid".to_owned();
+                    Err("Validation denied".to_owned())
+                },
+            )
+            .unwrap_err();
+        assert_eq!(error, "Validation denied");
+        assert_eq!(fs::read(&f.path).unwrap(), original);
+        assert!(!backup_path(&f.path).exists());
+    }
+
+    #[test]
+    fn mode_b_third_successful_save_backs_up_the_latest_valid_primary() {
+        let f = Fixture::new();
+        save_json(&f.path, &Fixture::pref("en")).unwrap();
+        save_json(&f.path, &Fixture::pref("ru")).unwrap();
+        save_json(&f.path, &Fixture::pref("es")).unwrap();
+
+        let current = read_json::<Preferences>(&f.path).unwrap();
+        assert_eq!(current, Some(Fixture::pref("es")));
+        let last_good: Preferences =
+            serde_json::from_slice(&fs::read(backup_path(&f.path)).unwrap()).unwrap();
+        assert_eq!(last_good, Fixture::pref("ru"));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn mode_b_atomic_config_and_backup_are_not_accessible_to_other_users() {
+        use std::os::unix::fs::PermissionsExt;
+        let f = Fixture::new();
+        save_json(&f.path, &Fixture::pref("en")).unwrap();
+        save_json(&f.path, &Fixture::pref("ru")).unwrap();
+
+        let backup = backup_path(&f.path);
+        for path in [&f.path, &backup] {
+            let mode = fs::metadata(path).unwrap().permissions().mode();
+            assert_eq!(mode & 0o077, 0);
+        }
+    }
+
 }

@@ -14,7 +14,7 @@ export function monitorRefreshDelay(repositoryCount) {
   return 60_000 * Math.max(2, Math.ceil(Math.max(1, count) / 15));
 }
 const INSTALL_PAGE_LIMIT = 10;
-const ACCOUNT_NAME = /^[a-zA-Z0-9_.-]+$/;
+const ACCOUNT_NAME = /^[a-zA-Z0-9_.-]{1,100}$/;
 const validAccountName = name => typeof name === "string" &&
   ACCOUNT_NAME.test(name) && name !== "." && name !== "..";
 

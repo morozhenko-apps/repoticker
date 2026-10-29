@@ -5,7 +5,7 @@ import { githubFailureReason } from "./github-errors.mjs";
  * transport get(path); this module never receives a token or makes a fetch.
  */
 const PAGE_SIZE = 100;
-const NAME = /^[a-zA-Z0-9_.-]+$/;
+const NAME = /^[a-zA-Z0-9_.-]{1,100}$/;
 
 async function getPages(get, pathForPage, key, maxPages) {
   const all = [];

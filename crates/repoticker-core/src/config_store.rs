@@ -486,5 +486,4 @@ mod tests {
             assert_eq!(mode & 0o077, 0);
         }
     }
-
 }

@@ -399,7 +399,10 @@ mod tests {
         assert!(cache.save(path, &first, None, &json!({"value": "stale"})));
         let now = cache.snapshot(path);
         assert_eq!(now.etag.as_deref(), Some("\"fresh\""));
-        assert_eq!(cache.not_modified(path, &now), Some(json!({"value": "fresh"})));
+        assert_eq!(
+            cache.not_modified(path, &now),
+            Some(json!({"value": "fresh"}))
+        );
     }
 
     #[test]
@@ -407,17 +410,35 @@ mod tests {
         let cache = GitHubETagCache::default();
         let path = "/user/installations?per_page=100&page=1";
         let before = cache.snapshot(path);
-        assert!(cache.save(path, &before, Some("\"shared-tag\""), &json!({"account": "old"})));
+        assert!(cache.save(
+            path,
+            &before,
+            Some("\"shared-tag\""),
+            &json!({"account": "old"})
+        ));
         let stale = cache.snapshot(path);
 
         cache.invalidate();
         let fresh = cache.snapshot(path);
-        assert!(cache.save(path, &fresh, Some("\"shared-tag\""), &json!({"account": "new"})));
+        assert!(cache.save(
+            path,
+            &fresh,
+            Some("\"shared-tag\""),
+            &json!({"account": "new"})
+        ));
         assert!(cache.not_modified(path, &stale).is_none());
-        assert!(!cache.save(path, &stale, Some("\"shared-tag\""), &json!({"account": "old"})));
+        assert!(!cache.save(
+            path,
+            &stale,
+            Some("\"shared-tag\""),
+            &json!({"account": "old"})
+        ));
         let after = cache.snapshot(path);
         assert_eq!(after.etag.as_deref(), Some("\"shared-tag\""));
-        assert_eq!(cache.not_modified(path, &after), Some(json!({"account": "new"})));
+        assert_eq!(
+            cache.not_modified(path, &after),
+            Some(json!({"account": "new"}))
+        );
         assert!(!cache.unchanged(stale.generation));
     }
 
@@ -425,14 +446,23 @@ mod tests {
     fn mode_b_billing_disallows_etag_even_when_cache_holds_same_tag_elsewhere() {
         let cache = GitHubETagCache::default();
         let other = "/user/installations?per_page=100&page=1";
-        assert!(cache.save(other, &cache.snapshot(other), Some("\"shared\""), &json!({"id": 1})));
+        assert!(cache.save(
+            other,
+            &cache.snapshot(other),
+            Some("\"shared\""),
+            &json!({"id": 1})
+        ));
         let billing = "/organizations/team/settings/billing/usage/summary?year=2026&month=10";
         let previous = cache.snapshot(billing);
-        assert!(cache.save(billing, &previous, Some("\"shared\""), &json!({"usageItems": []})));
+        assert!(cache.save(
+            billing,
+            &previous,
+            Some("\"shared\""),
+            &json!({"usageItems": []})
+        ));
         let current = cache.snapshot(billing);
         assert!(current.etag.is_none());
         assert!(cache.not_modified(billing, &previous).is_none());
         assert_eq!(cache.snapshot(other).etag.as_deref(), Some("\"shared\""));
     }
-
 }

@@ -381,6 +381,7 @@ test("Mode B runner collector: denied jobs do not erase independently known runn
 
 test("Mode B runner collector: targeted tasks preserve prior runner facts and clocks", async () => {
   const previous = {
+    scope: { organization: "team", repositories: ["team/a"] },
     runners: [{ id: 1, name: "old", status: "online", busy: true,
       labels: ["self-hosted", "linux"] }],
     coverage: { runners: true, jobs: false },

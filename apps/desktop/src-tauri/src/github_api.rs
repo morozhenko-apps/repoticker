@@ -64,7 +64,6 @@ pub(crate) fn valid_name(value: &str) -> bool {
             .all(|b| b.is_ascii_alphanumeric() || b"._-".contains(&b))
 }
 
-
 fn valid_utc_second_timestamp(timestamp: &str) -> bool {
     let bytes = timestamp.as_bytes();
     if bytes.len() != 20
@@ -208,14 +207,16 @@ fn project_billing(value: Value) -> Result<Value, String> {
             .get("sku")
             .and_then(Value::as_str)
             .ok_or_else(|| "Incomplete GitHub billing item.".to_owned())?;
-        let quantity = item
+        let original_quantity = item
             .get("grossQuantity")
-            .and_then(Value::as_f64)
+            .ok_or_else(|| "Incomplete GitHub billing quantity.".to_owned())?;
+        let quantity = original_quantity
+            .as_f64()
             .ok_or_else(|| "Incomplete GitHub billing quantity.".to_owned())?;
         if sku.len() > 80 || sku.is_empty() || !quantity.is_finite() || quantity < 0.0 {
             return Err("Invalid GitHub billing quantity.".into());
         }
-        projected.push(json!({ "sku": sku, "grossQuantity": quantity }));
+        projected.push(json!({ "sku": sku, "grossQuantity": original_quantity }));
     }
     Ok(json!({ "usageItems": projected }))
 }
@@ -721,6 +722,22 @@ mod tests {
     }
 
     #[test]
+    fn mode_b_billing_projection_preserves_integer_and_fractional_number_types() {
+        let result = project_billing(json!({"usageItems": [
+            {"product": "Actions", "unitType": "minutes",
+             "sku": "actions_linux", "grossQuantity": 42, "private": "omit"},
+            {"product": "Actions", "unitType": "minutes",
+             "sku": "actions_windows", "grossQuantity": 2.75, "private": "omit"}
+        ]}))
+        .unwrap();
+        assert_eq!(result["usageItems"][0]["grossQuantity"], json!(42));
+        assert_eq!(result["usageItems"][1]["grossQuantity"], json!(2.75));
+        assert!(result["usageItems"][0]["grossQuantity"].is_i64());
+        assert!(result["usageItems"][1]["grossQuantity"].is_f64());
+        assert!(!result.to_string().contains("private"));
+    }
+
+    #[test]
     fn billing_projection_never_exposes_other_products_or_private_metadata() {
         let payload = json!({"usageItems":[
             {"product":"Actions","unitType":"minutes","sku":"actions_linux",
@@ -779,8 +796,10 @@ mod tests {
         for bad in ["2026-02-31T00:00:00Z", "2026-04-31T10:00:00Z"] {
             let mut invalid = run.clone();
             invalid["updated_at"] = json!(bad);
-            assert!(project(path, json!({"workflow_runs": [invalid]})).is_err(), "{bad}");
+            assert!(
+                project(path, json!({"workflow_runs": [invalid]})).is_err(),
+                "{bad}"
+            );
         }
     }
-
 }

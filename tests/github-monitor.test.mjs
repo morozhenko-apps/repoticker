@@ -91,9 +91,14 @@ test("truncated >100 repository scope forces running/queue to unknown", async ()
 });
 
 test("installation pagination preserves truncation evidence", async () => {
-  const get = async () => ({ installations:
-    Array.from({ length: 100 }, (_, i) => installation(i + 1, "org" + i))
-  });
+  const get = async path => {
+    const page = Number(new URLSearchParams(path.split("?")[1]).get("page"));
+    assert.ok(page >= 1 && page <= 10);
+    return { installations: Array.from({ length: 100 }, (_, i) => {
+      const id = (page - 1) * 100 + i + 1;
+      return installation(id, "org" + id);
+    }) };
+  };
   const result = await listAvailableInstallations(get);
   assert.equal(result.complete, false);
   assert.equal(result.items.length, 1000);

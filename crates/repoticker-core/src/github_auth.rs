@@ -453,5 +453,4 @@ mod tests {
         assert_eq!(expiration.decide(1_000, 0), TokenAction::Reauthorize);
         assert_eq!(expiration.decide(9_000, u64::MAX), TokenAction::Reauthorize);
     }
-
 }

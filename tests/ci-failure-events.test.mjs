@@ -114,11 +114,6 @@ test("Given invalid observations When evaluated Then history is not partially ch
     { ...run(1, "failure"), updated_at: "not-a-date" },
     { ...run(1, "failure"), updated_at: "2026-02-31T00:00:00Z" }
   ]) {
-    if (value.updated_at === "2026-02-31T00:00:00Z") {
-      // Date.parse normalizes some impossible calendar dates; the
-      // production protocol requires ISO syntax, not date authority.
-      continue;
-    }
     assert.throws(() => tracker.observe({
       ...scope, results: [snapshot("team/alpha", [value])]
     }), /Invalid notification run facts/);
@@ -193,4 +188,40 @@ test("Given many repositories When reading Then concurrency stays bounded", asyn
   });
   assert.equal(result.length, 20);
   assert.ok(maximum <= 3);
+});
+
+test("Mode B: impossible calendar dates and normalized UTC timestamps never enter CI history", () => {
+  const tracker = createCiFailureTracker();
+  tracker.observe({ ...scope, results: [snapshot("team/alpha", [])] });
+  for (const invalid of [
+    "2026-02-29T00:00:00Z",
+    "2026-02-30T00:00:00Z",
+    "2026-02-31T00:00:00Z",
+    "2026-04-31T12:00:00Z",
+    "2026-12-32T00:00:00Z",
+    "2026-01-00T00:00:00Z",
+    "2026-01-01T24:00:00Z",
+    "2026-01-01T00:60:00Z",
+  ]) {
+    assert.throws(() => tracker.observe({
+      ...scope,
+      results: [snapshot("team/alpha", [{ ...run(42, "failure"), updated_at: invalid }])]
+    }), /Invalid notification run facts/, invalid);
+  }
+  assert.deepEqual(tracker.observe({
+    ...scope, results: [snapshot("team/alpha", [run(42, "failure")])]
+  }).map(entry => entry.id), [42], "invalid timestamps must not mutate history");
+});
+
+test("Mode B: real leap-day UTC timestamp remains accepted without changing notification semantics", () => {
+  const tracker = createCiFailureTracker();
+  const timestamp = "2024-02-29T23:59:59Z";
+  tracker.observe({
+    ...scope, results: [snapshot("team/alpha", [{ ...run(11, "success"), updated_at: timestamp }])]
+  });
+  const alerts = tracker.observe({
+    ...scope, results: [snapshot("team/alpha", [{ ...run(11, "failure"), updated_at: timestamp }])]
+  });
+  assert.equal(alerts.length, 1);
+  assert.equal(alerts[0].updated_at, timestamp);
 });

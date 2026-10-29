@@ -3,6 +3,12 @@
  */
 const NAME = /^[A-Za-z0-9_.-]{1,100}$/;
 const UTC = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/;
+const canonicalUtc = value => {
+  if (typeof value !== "string" || !UTC.test(value)) return false;
+  const millis = Date.parse(value);
+  return Number.isFinite(millis) &&
+    new Date(millis).toISOString().slice(0, 19) + "Z" === value;
+};
 const CONCLUSIONS = new Set([
   "success", "failure", "cancelled", "skipped", "timed_out",
   "action_required", "neutral", "stale", "startup_failure"
@@ -35,8 +41,7 @@ function validRun(run) {
     Number.isInteger(run.run_attempt) && run.run_attempt >= 1 &&
     run.run_attempt <= 1_000_000 &&
     CONCLUSIONS.has(run.conclusion) &&
-    typeof run.updated_at === "string" && UTC.test(run.updated_at) &&
-    !Number.isNaN(Date.parse(run.updated_at));
+    canonicalUtc(run.updated_at);
 }
 
 /** Poll a bounded recent *window*, not every historical workflow run.

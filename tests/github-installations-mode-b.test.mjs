@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { listAvailableInstallations } from "../apps/desktop/ui/github-installations.mjs";
+import { collectForAccount } from "../apps/desktop/ui/github-monitor.mjs";
 
 const entry = (id, login) => ({ id, account: { login } });
 
@@ -65,4 +66,18 @@ test("Mode B: malformed page cardinality and missing collection reject immediate
     await assert.rejects(listAvailableInstallations(async () => response),
       /Invalid installations response/);
   }
+});
+
+test("Mode B: corrupt account inventory prevents any repository query", async () => {
+  const calls = [];
+  let collected = false;
+  await assert.rejects(collectForAccount({
+    get: async path => {
+      calls.push(path);
+      return { installations: [entry(1, "valid"), entry(2, "invalid/path")] };
+    },
+    collect: async () => { collected = true; return null; }
+  }), /Invalid installations response/);
+  assert.equal(calls.length, 1);
+  assert.equal(collected, false);
 });

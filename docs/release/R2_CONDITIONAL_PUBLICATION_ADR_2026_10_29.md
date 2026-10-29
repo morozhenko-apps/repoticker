@@ -104,3 +104,74 @@ offline test can guarantee a public 200.
 any real publication). Never revert a real immutable bucket
 object, mutate main/tag, publish R2 or remove an old receipt
 to make a failed attempt green.
+
+
+## Implementation checkpoint — conditional R2 contract batch
+
+**Staged code+test commit:** `014e4e23b6d5b34ff96cde6c164b96ae56fde8d7`.
+**One production script:** `scripts/r2_release.py`.
+**New offline contract cases:** 11; release R2 test methods 54 → 65.
+
+Implemented:
+- All new immutable objects use streamed single-part
+  `put_object(IfNoneMatch="*")`; reused ones require an
+  exact matching SHA metadata claim AND successful private
+  full-body SHA256/size readback. A competing 412 or unknown
+  network outcome is not converted into an overwrite.
+- Mutable APT and pointer replacements use `IfMatch` of the
+  previously read ETag; absent keys use conditional creation.
+  Missing/malformed mutable ETags fail closed.
+- `latest.json` is compared to a pointer baseline acquired
+  **before any APT index upload**. An intervening remote
+  pointer update blocks final promotion; a same-byte pointer
+  can be verified again on a protected rerun without rewriting
+  it. Public readback failure still emits no receipt and
+  cannot authorize artifact cleanup.
+- Existing public request identity, signed APT verification,
+  immutable cache metadata, no-store index policy and private
+  S3/full public readback assertions are retained.
+
+**Exact fake tests:** conditional creation, 412 race on
+immutable and mutable keys, ETag requirement, valid ETag CAS,
+idempotent same-data recovery, pinned pointer comparison,
+competing publisher injected after APT starts, and presence
+of a privately committed pointer without a public receipt.
+All 54 existing R2 test methods were kept; the offline fake
+was upgraded to model R2's *atomic conditional PutObject*
+rather than the earlier unconditional `upload_file`.
+
+**Executed local checks:** verified the pinned version of boto3
+(`1.43.18`) exposes `IfMatch`, `IfNoneMatch`,
+`ContentLength` and streaming `Body` in its PutObject
+service model. Staged sources were read back and inspected
+for required guards and test declarations.
+
+**Not executed:** complete Python unittest suite (current
+container cannot fetch the full GitHub repository by DNS),
+Node 24, Rust, fmt/Clippy, desktop compile and installed
+KDE/Windows or 20-language independent review.
+No CI run result is claimed; Preflight starts only when the
+final code-containing `dev` ref is advanced and will not
+be polled. Tests require exact-SHA execution to pass.
+
+**Still a release risk, not silently waived:** per-key CAS
+cannot atomically swap three flat APT keys as a group. The
+official GitHub release workflow remains single-publisher
+serialized and requires the protected release environment.
+Anyone with direct independent R2 write access must not
+publish outside that contract. Real custom-domain CDN
+freshness and access/firewall behavior require actual public
+readback; a verified private object alone is never a
+public-release receipt. No live bucket was contacted here.
+
+**Operational recovery:** if an edge error follows a committed
+private latest pointer, the workflow fails without cleanup.
+After diagnosing edge/access state, rerun the *same protected
+release SHA* to verify the original pointer bytes and public
+readback. A divergent pointer must never be force-overwritten
+or rolled back automatically. Before public v1, require
+verified CI and manual live publication evidence.
+
+**Delivery:** plan doc commit, code/test commit and this
+checkpoint are staged in one ancestor chain. One fast-forward
+of `dev` only; no `main`, tag, GitHub Release or R2 write.

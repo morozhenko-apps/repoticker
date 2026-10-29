@@ -149,3 +149,5 @@ Native conditional code now receives platform-specific test execution:
 Linux desktop `cargo test --locked -p repoticker --bin repoticker`
 in Preflight, Windows same command in the unpublished Windows
 acceptance job. Neither is equivalent to interactive installed OS QA.
+
+- **INS05 — monitor integration:** `collectForAccount` must reject a mixed valid/corrupt installation inventory before invoking repository or task requests. `github-installations-mode-b.test.mjs` tests this with an injected read-only provider.

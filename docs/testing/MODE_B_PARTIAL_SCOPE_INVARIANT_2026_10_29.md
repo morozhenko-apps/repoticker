@@ -59,3 +59,16 @@ mark unknown counts zero; retain checkedAt on invalidated data.
 The source/test commit is isolated. Full STABLE suite runs only at the
 final coherent gate. No live GitHub API, published release or
 runner credentials touched.
+
+## Caller trace / severity correction
+
+A later source trace of `github-monitor.mjs::collectForAccount` found
+an existing caller-level exact scope comparison that drops stale
+`previousState` on changed organization/repository lists.
+`mergeMetricGroup` also rejects incompatible previous scopes.
+Thus **no installed-app reproduction of an actual cross-account leak
+was observed**. The confirmed gap was weaker validation inside
+the independently exported `collectRunnerState` boundary, which
+could be misused by a different or refactored caller. The new
+defense-in-depth tests target that boundary. Do not describe this
+as a verified live user data leak.

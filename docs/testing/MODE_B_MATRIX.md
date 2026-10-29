@@ -80,8 +80,8 @@ native refresh and user-visible locale surfaces retain N8.
 
 ## Execution and measurement
 
-The development code commit contains 21 new Node tests (8 collector,
-4 runner-state, 5 installation inventory, 4 billing) and two Python
+The development code commit contains 22 new Node tests (8 collector,
+4 runner-state, 6 installation inventory, 4 billing) and two Python
 native-CI policy tests. The Preflight code change calls
 `cargo test --locked -p repoticker --bin repoticker` in the existing
 Linux desktop job and instruments the existing single Node test pass

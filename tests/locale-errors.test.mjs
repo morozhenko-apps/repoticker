@@ -344,3 +344,43 @@ test("OS errors with dynamic paths and process details are left unchanged", () =
   assert.match(autostart, /if previous \{[\s\S]*manager\.enable\(\)/);
   assert.match(autostart, /manager\.disable\(\)/);
 });
+
+
+test("resize error keeps raw OS data while localizing only the prefix in all 20 locales", () => {
+  const error = "Error: native resize denied for C:\\Users\\Example\\fixture; token=NOT-REAL";
+  const original = Object.freeze({ kind: "resize", message: error });
+  for (const { code } of LOCALE_ROSTER) {
+    const prefix = cardText(code, "cannotResize");
+    assert.ok(prefix && prefix !== "cannotResize", code);
+    assert.equal(cardNoticeText(code, original), prefix + error, code);
+    assert.equal(cardNoticeText(code, original).slice(prefix.length), error);
+  }
+  const first = cardNoticeText("ru", original);
+  const next = cardNoticeText("ar", original);
+  assert.notEqual(first, next);
+  assert.equal(cardNoticeText("ru", original), first);
+  assert.equal(original.message, error, "raw OS error must be immutable");
+  assert.equal(cardNoticeText("pt-BR", original), cardText("en", "cannotResize") + error);
+  assert.equal(cardNoticeText("ru", { kind: "native", message: error }), error);
+  assert.throws(() => cardNoticeText("en", { kind: "resize", message: null }),
+    /Invalid card notice/);
+  assert.throws(() => cardNoticeText("en", { kind: "resize", message: 404 }),
+    /Invalid card notice/);
+});
+
+test("card resize failure is a typed notice and stays translatable on locale changes", () => {
+  const notice = card.slice(card.indexOf("function paintNotice()"),
+    card.indexOf("function addText("));
+  assert.match(notice, /function showResizeError\(message\)/);
+  assert.match(notice, /lastNotice = \{ kind: "resize", message: String\(message\) \}/);
+  assert.match(notice, /node\.textContent = cardNoticeText\(cardLanguage, lastNotice\)/);
+  const view = card.slice(card.indexOf("async function openView("),
+    card.indexOf('byId("show-repos").addEventListener('));
+  assert.match(view, /catch \(error\) \{\s*showResizeError\(error\)/);
+  assert.doesNotMatch(view, /showError\(cardText\(/);
+  const locale = card.slice(card.indexOf("function setCardLanguage("),
+    card.indexOf("function renderMonitorMetrics("));
+  assert.match(locale, /if \(lastNotice !== null\) paintNotice\(\)/);
+  assert.match(read("../apps/desktop/ui/card-i18n.mjs"),
+    /notice\?\.kind === "resize" && typeof notice\.message === "string"/);
+});

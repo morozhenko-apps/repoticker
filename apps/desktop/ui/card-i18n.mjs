@@ -146,6 +146,10 @@ export function cardNoticeText(language, notice) {
   if (notice?.kind === "native" && typeof notice.message === "string") {
     return localizedKnownError(language, notice.message);
   }
+  if (notice?.kind === "resize" && typeof notice.message === "string") {
+    // The system error is opaque; only the card's own prefix is localized.
+    return cardText(language, "cannotResize") + notice.message;
+  }
   if (notice?.kind === "git" &&
       Number.isSafeInteger(notice.count) && notice.count > 0 &&
       typeof notice.message === "string") {

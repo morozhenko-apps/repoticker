@@ -93,6 +93,10 @@ function showError(message) {
   lastNotice = { kind: "native", message: String(message) };
   paintNotice();
 }
+function showResizeError(message) {
+  lastNotice = { kind: "resize", message: String(message) };
+  paintNotice();
+}
 function showGitOperationErrors(count, message) {
   lastNotice = { kind: "git", count, message: String(message) };
   paintNotice();
@@ -603,7 +607,7 @@ async function openView(target) {
       view === "repos" ? "hideRepos" : "showRepos");
     if (view !== "repos") hideRepoMenus();
   } catch (error) {
-    showError(cardText(cardLanguage, "cannotResize") + error);
+    showResizeError(error);
   }
 }
 byId("show-repos").addEventListener("click", () => openView("repos"));

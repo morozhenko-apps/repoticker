@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import {
   cardLocale, cardText, metricAccessibleLabel
 } from "../apps/desktop/ui/card-i18n.mjs";
+import { LOCALE_ROSTER } from "../apps/desktop/ui/locale-catalog.mjs";
 
 const card = readFileSync(new URL("../apps/desktop/ui/app.mjs", import.meta.url), "utf8");
 const markup = readFileSync(new URL("../apps/desktop/ui/index.html", import.meta.url), "utf8");
@@ -79,4 +80,36 @@ test("compact-card accessibility updates current counts and localized controls",
   assert.match(markup, /id="ci-tasks"[^>]*aria-busy="false"/);
   assert.match(markup, /class="actions"/);
   assert.equal((markup.match(/class="action"/g) || []).length, 4);
+});
+
+
+test("compact accessible metrics isolate Arabic numeric values but not unknown", () => {
+  const source = Object.freeze({
+    total: "120", online: "0", offline: "—",
+    running: "4", queued: "—"
+  });
+  const fsi = "\u2068";
+  const pdi = "\u2069";
+  const arabicRunners = metricAccessibleLabel("ar", "runners", source);
+  const arabicTasks = metricAccessibleLabel("ar", "tasks", source, true);
+  assert.ok(arabicRunners.includes(fsi + "120" + pdi));
+  assert.ok(arabicRunners.includes(fsi + "0" + pdi));
+  assert.ok(arabicTasks.includes(fsi + "4" + pdi));
+  assert.equal((arabicRunners.match(/\u2068/g) ?? []).length, 2);
+  assert.equal((arabicTasks.match(/\u2068/g) ?? []).length, 1);
+  assert.ok(arabicRunners.includes(cardText("ar", "unknown")));
+  assert.ok(arabicTasks.includes(cardText("ar", "unknown")));
+  assert.ok(arabicTasks.endsWith(cardText("ar", "refreshing")));
+  assert.doesNotMatch(arabicTasks, /: 0/);
+  for (const { code } of LOCALE_ROSTER) {
+    const label = metricAccessibleLabel(code, "runners", source);
+    assert.ok(label.includes(cardText(code, "runners")));
+    assert.ok(label.includes(cardText(code, "unknown")));
+    if (code !== "ar") {
+      assert.doesNotMatch(label, /\u2068|\u2069/, code);
+      assert.match(label, /: 120/);
+      assert.match(label, /: 0/);
+    }
+  }
+  assert.equal(source.offline, "—");
 });

@@ -122,8 +122,11 @@ export function cardText(language, key, value) {
 }
 
 function countText(language, value) {
-  return typeof value === "string" && value !== "—" && /^\d+$/.test(value)
-    ? value : cardText(language, "unknown");
+  if (typeof value !== "string" || !/^\d+$/.test(value))
+    return cardText(language, "unknown");
+  // Counts in Arabic screen-reader labels must keep their LTR order.
+  return cardLocale(language) === "ar"
+    ? "\u2068" + value + "\u2069" : value;
 }
 
 /** A focused metric button must expose current counts, not just "refresh".

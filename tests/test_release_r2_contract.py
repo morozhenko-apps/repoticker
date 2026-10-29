@@ -325,7 +325,8 @@ class PublicationFixture(unittest.TestCase):
         self.assertEqual(release.BUCKET, "app-dist")
         self.assertNotIn("latest.json", mutable)
 
-    def offline_publication(self, fail_latest=False, fail_at=None, inject_latest=False):
+    def offline_publication(self, fail_latest=False, fail_at=None,
+                            inject_latest=False, compete_pointer=False):
         """Emulate cloud clients while running real upload/publish ordering."""
         client = UploadSafetyTests.FakeS3()
         boto = ModuleType("boto3")
@@ -336,6 +337,13 @@ class PublicationFixture(unittest.TestCase):
         botocore.__path__ = []
         botocore.config = config
         seen = []
+        if compete_pointer:
+            def publish_competing_pointer(fake, key):
+                if key == release.PREFIX + "linux/Packages":
+                    fake.before_put = None
+                    fake.objects[release.PREFIX + "latest.json"] = (
+                        b'{"competing":"release"}', {"sha256": "f" * 64})
+            client.before_put = publish_competing_pointer
 
         def public(file, key):
             seen.append(key)
@@ -361,7 +369,8 @@ class PublicationFixture(unittest.TestCase):
                 release, "public_readback", side_effect=public):
             expected_error = ("last-pointer" if fail_latest else
                               "staged readback" if fail_at else
-                              "existing latest manifest" if inject_latest else None)
+                              "existing latest manifest" if inject_latest else
+                              "Concurrent latest pointer" if compete_pointer else None)
             if expected_error:
                 with self.assertRaisesRegex(ValueError, expected_error):
                     release.publish(self.bundle, self.apt, VERSION, COMMIT, 51,
@@ -394,6 +403,20 @@ class PublicationFixture(unittest.TestCase):
         self.assertEqual(seen[-1], "latest.json")
         self.assertIn(release.PREFIX + "linux/InRelease", client.objects)
         self.assertFalse(destination.exists())
+
+    def test_competing_latest_publisher_after_apt_start_does_not_get_overwritten(self):
+        client, _, receipt = self.offline_publication(compete_pointer=True)
+        self.assertFalse(receipt.exists())
+        pointer = release.PREFIX + "latest.json"
+        self.assertEqual(client.objects[pointer][0], b'{"competing":"release"}')
+        self.assertFalse(any(key == pointer for _, key, _ in client.writes))
+
+    def test_failed_public_readback_has_no_receipt_even_when_private_latest_committed(self):
+        client, _, receipt = self.offline_publication(fail_latest=True)
+        self.assertFalse(receipt.exists())
+        self.assertIn(release.PREFIX + "latest.json", client.objects)
+        self.assertTrue(client.objects[release.PREFIX + "latest.json"][0])
+        self.assertNotIn("verified_publication", str(client.objects))
 
     def test_given_flat_distribution_when_receipt_cannot_be_emitted_with_missing_credentials_then_contract_is_enforced(self):
         with self.assertRaisesRegex(ValueError, "credentials"):
@@ -730,22 +753,55 @@ class UploadSafetyTests(unittest.TestCase):
             for i in range(0, len(self.value), chunk_size):
                 yield self.value[i:i + chunk_size]
 
+    class PreconditionFailed(Exception):
+        response = {"ResponseMetadata": {"HTTPStatusCode": 412}}
+
     class FakeS3:
         def __init__(self):
             self.objects = {}
             self.writes = []
             self.deny_head = False
+            self.before_put = None
+
+        @staticmethod
+        def tag(data):
+            return '"' + hashlib.md5(data).hexdigest() + '"'
+
         def head_object(self, Bucket, Key):
             if self.deny_head:
                 raise UploadSafetyTests.Forbidden()
             if Key not in self.objects:
                 raise UploadSafetyTests.NotFound()
-            return {"Metadata":self.objects[Key][1]}
-        def upload_file(self, filename, Bucket, Key, ExtraArgs):
-            self.writes.append((Bucket, Key, ExtraArgs))
-            self.objects[Key] = (Path(filename).read_bytes(), ExtraArgs["Metadata"])
+            data, metadata = self.objects[Key]
+            return {"Metadata": metadata, "ETag": self.tag(data)}
+
+        def put_object(self, *, Bucket, Key, Body, ContentLength, ContentType,
+                       Metadata, CacheControl, IfNoneMatch=None, IfMatch=None):
+            if self.before_put is not None:
+                self.before_put(self, Key)
+            current = self.objects.get(Key)
+            if IfNoneMatch == "*" and current is not None:
+                raise UploadSafetyTests.PreconditionFailed()
+            if IfMatch is not None and (
+                current is None or self.tag(current[0]) != IfMatch
+            ):
+                raise UploadSafetyTests.PreconditionFailed()
+            if (IfNoneMatch == "*") == (IfMatch is not None):
+                raise AssertionError("Every R2 write must use exactly one condition")
+            data = Body.read()
+            if len(data) != ContentLength:
+                raise AssertionError("Incomplete streamed PutObject body")
+            options = {"ContentType": ContentType, "CacheControl": CacheControl,
+                       "ContentLength": ContentLength, "Metadata": Metadata}
+            if IfNoneMatch is not None:
+                options["IfNoneMatch"] = IfNoneMatch
+            if IfMatch is not None:
+                options["IfMatch"] = IfMatch
+            self.writes.append((Bucket, Key, options))
+            self.objects[Key] = (data, Metadata)
+
         def get_object(self, Bucket, Key):
-            return {"Body":UploadSafetyTests.Body(self.objects[Key][0])}
+            return {"Body": UploadSafetyTests.Body(self.objects[Key][0])}
 
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
@@ -846,6 +902,101 @@ class UploadSafetyTests(unittest.TestCase):
             with self.assertRaisesRegex(OSError, "readback unavailable"):
                 release.upload(self.client, self.key, self.file, True)
         self.assertEqual(self.client.writes, [])
+
+
+
+    def test_immutable_create_is_single_part_atomic_if_none_match(self):
+        release.upload(self.client, self.key, self.file, True)
+        self.assertEqual(self.client.writes[0][2]["IfNoneMatch"], "*")
+        self.assertNotIn("IfMatch", self.client.writes[0][2])
+        self.assertEqual(self.client.writes[0][2]["ContentLength"],
+                         self.file.stat().st_size)
+
+    def test_second_writer_cannot_replace_newly_created_immutable_key(self):
+        def competitor(fake, key):
+            fake.before_put = None
+            fake.objects[key] = (b"competing bytes", {"sha256": "f" * 64})
+        self.client.before_put = competitor
+        with self.assertRaises(self.PreconditionFailed):
+            release.upload(self.client, self.key, self.file, True)
+        self.assertEqual(self.client.objects[self.object_key][0],
+                         b"competing bytes")
+        self.assertEqual(self.client.writes, [])
+
+    def test_mutable_replacement_uses_original_etag_compare_and_swap(self):
+        previous = b"prior signed package index"
+        self.client.objects[self.object_key] = (previous, {"sha256": "f" * 64})
+        release.upload(self.client, self.key, self.file, False)
+        self.assertEqual(self.client.writes[0][2]["IfMatch"],
+                         self.client.tag(previous))
+        self.assertNotIn("IfNoneMatch", self.client.writes[0][2])
+
+    def test_competing_mutable_writer_causes_412_without_clobber(self):
+        self.client.objects[self.object_key] = (b"initial", {"sha256": "f" * 64})
+        def competitor(fake, key):
+            fake.before_put = None
+            fake.objects[key] = (b"writer B", {"sha256": "b" * 64})
+        self.client.before_put = competitor
+        with self.assertRaises(self.PreconditionFailed):
+            release.upload(self.client, self.key, self.file, False)
+        self.assertEqual(self.client.objects[self.object_key][0], b"writer B")
+        self.assertEqual(self.client.writes, [])
+
+    def test_existing_mutable_without_valid_etag_fails_before_write(self):
+        self.client.objects[self.object_key] = (b"older", {"sha256": "f" * 64})
+        with patch.object(self.client, "head_object",
+                          return_value={"Metadata": {"sha256": "f" * 64}}):
+            with self.assertRaisesRegex(ValueError, "ETag"):
+                release.upload(self.client, self.key, self.file, False)
+        self.assertEqual(self.client.writes, [])
+
+    def test_idempotent_mutable_readback_reuses_same_content_without_write(self):
+        approved = self.file.read_bytes()
+        self.client.objects[self.object_key] = (
+            approved, {"sha256": release.digest(self.file)}
+        )
+        release.upload(self.client, self.key, self.file, False)
+        self.assertEqual(self.client.writes, [])
+
+    def test_latest_pointer_compare_and_swap_is_pinned_to_pre_apt_snapshot(self):
+        pointer = "latest.json"
+        pointer_key = release.PREFIX + pointer
+        self.client.objects[pointer_key] = (b"old release", {"sha256": "a" * 64})
+        before = release.object_head(self.client, pointer)
+        self.client.objects[pointer_key] = (b"competing new release",
+                                            {"sha256": "b" * 64})
+        with self.assertRaisesRegex(ValueError, "Concurrent latest pointer"):
+            release.upload(self.client, pointer, self.file, False,
+                           expected_latest=before)
+        self.assertEqual(self.client.writes, [])
+        self.assertEqual(self.client.objects[pointer_key][0],
+                         b"competing new release")
+
+    def test_same_latest_pointer_recovery_does_not_rewrite_r2(self):
+        pointer = "latest.json"
+        pointer_key = release.PREFIX + pointer
+        approved = self.file.read_bytes()
+        self.client.objects[pointer_key] = (
+            approved, {"sha256": release.digest(self.file)}
+        )
+        before = release.object_head(self.client, pointer)
+        release.upload(self.client, pointer, self.file, False,
+                       expected_latest=before)
+        self.assertEqual(self.client.writes, [])
+        self.assertEqual(self.client.objects[pointer_key][0], approved)
+
+    def test_latest_pointer_creation_rejects_competing_new_object(self):
+        pointer_key = release.PREFIX + "latest.json"
+        def competitor(fake, key):
+            fake.before_put = None
+            fake.objects[key] = (b"someone else's latest", {"sha256": "0" * 64})
+        self.client.before_put = competitor
+        with self.assertRaises(self.PreconditionFailed):
+            release.upload(self.client, "latest.json", self.file, False,
+                           expected_latest=None)
+        self.assertEqual(self.client.writes, [])
+        self.assertEqual(self.client.objects[pointer_key][0],
+                         b"someone else's latest")
 
 if __name__ == "__main__":
     unittest.main()

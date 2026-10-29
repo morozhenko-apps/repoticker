@@ -311,33 +311,76 @@ def public_readback(path, relative, opener=urllib.request.urlopen):
         }
 
 
-def upload(client, key, file, immutable):
-    object_key = PREFIX + key
-    sha = digest(file)
+_NO_SNAPSHOT = object()
+
+
+def object_head(client, key):
+    """Strongly consistent S3 snapshot; only an explicit 404 is absent."""
     try:
-        existing = client.head_object(Bucket=BUCKET, Key=object_key)
+        return client.head_object(Bucket=BUCKET, Key=PREFIX + key)
     except Exception as error:
         status = getattr(error, "response", {}).get("ResponseMetadata", {}).get("HTTPStatusCode")
-        if status != 404:
-            raise
-        existing = None
+        if status == 404:
+            return None
+        raise
+
+
+def object_etag(head):
+    """Validate the exact opaque, quoted tag required by S3 IfMatch."""
+    if head is None:
+        return None
+    etag = head.get("ETag")
+    if not isinstance(etag, str) or not re.fullmatch(r'"[^"\r\n]{1,128}"', etag):
+        raise ValueError("Missing or malformed R2 object ETag")
+    return etag
+
+
+def upload(client, key, file, immutable, expected_latest=_NO_SNAPSHOT):
+    """Single-part, per-object conditional write with mandatory private readback."""
+    object_key = PREFIX + key
+    sha = digest(file)
+    size = safe_file(file)
+    existing = object_head(client, key)
+    if expected_latest is not _NO_SNAPSHOT:
+        # Never promote a release based on an ETag observed AFTER
+        # the mutable APT index publication has already begun.
+        if object_etag(existing) != object_etag(expected_latest):
+            raise ValueError("Concurrent latest pointer changed during publication")
+        if existing is not None and existing.get("Metadata", {}).get("sha256") == sha:
+            # Same version/SHA recovery: do not rewrite an already committed
+            # pointer merely because the public CDN verification previously failed.
+            pass
     if existing and immutable:
         if existing.get("Metadata", {}).get("sha256") != sha:
             raise ValueError("Refusing to overwrite immutable RepoTicker R2 object")
-    else:
-        client.upload_file(str(file), BUCKET, object_key, ExtraArgs={
-            "ContentType": content_type(file),
-            "Metadata": {"sha256": sha},
-            "CacheControl": "public,max-age=31536000,immutable" if immutable else "no-store",
-        })
+    elif not (existing and existing.get("Metadata", {}).get("sha256") == sha):
+        conditional = ({"IfNoneMatch": "*"} if existing is None else
+                       {"IfMatch": object_etag(existing)})
+        # boto3 upload_file has no per-object atomic creation contract.
+        # R2 supports single-part streamed PutObject for these bounded files.
+        with file.open("rb") as source:
+            client.put_object(
+                Bucket=BUCKET, Key=object_key, Body=source,
+                ContentLength=size, ContentType=content_type(file),
+                Metadata={"sha256": sha},
+                CacheControl=("public,max-age=31536000,immutable"
+                              if immutable else "no-store"),
+                **conditional,
+            )
+    elif not immutable:
+        # Even idempotent mutable reuse needs a valid ETag for the
+        # next writer's compare-and-swap contract.
+        object_etag(existing)
     obj = client.get_object(Bucket=BUCKET, Key=object_key)
     hasher = hashlib.sha256()
     length = 0
     for piece in obj["Body"].iter_chunks(chunk_size=1024 * 1024):
         if piece:
-            hasher.update(piece)
             length += len(piece)
-    if length != file.stat().st_size or hasher.hexdigest() != sha:
+            if length > size:
+                raise ValueError("Private R2 readback failed")
+            hasher.update(piece)
+    if length != size or hasher.hexdigest() != sha:
         raise ValueError("Private R2 readback failed")
 
 
@@ -363,6 +406,11 @@ def publish(release, apt, version, commit, run_id, output, account, access_key, 
         aws_secret_access_key=secret,
         config=Config(signature_version="s3v4", retries={"total_max_attempts":1,"mode":"standard"})
     )
+    # Pin the pointer before any APT mutation; a later HEAD is not
+    # permission to silently adopt a different release's new ETag.
+    original_latest = object_head(client, "latest.json")
+    if original_latest is not None:
+        object_etag(original_latest)
     verified = {}
     for key, file in sorted(immutable.items()):
         upload(client, key, file, True)
@@ -385,7 +433,8 @@ def publish(release, apt, version, commit, run_id, output, account, access_key, 
     if latest_path.exists() or latest_path.is_symlink():
         raise ValueError("Refusing to overwrite an existing latest manifest")
     latest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
-    upload(client, "latest.json", latest_path, False)
+    upload(client, "latest.json", latest_path, False,
+           expected_latest=original_latest)
     latest_verified = public_readback(latest_path, "latest.json")
     receipt = {
         "schema": 1, "product": "RepoTicker", "base_url": BASE,

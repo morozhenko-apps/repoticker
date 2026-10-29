@@ -61,6 +61,43 @@ command-scoped failure injection and tests for:
 
 - [x] Baseline CI, source contracts and existing fixture reviewed.
 - [x] Risk-based test plan recorded before code changes.
-- [ ] Scoped fixture failure injections and test cases implemented.
-- [ ] Independent diff/commit review and test evidence ledger.
+- [x] Scoped fixture failure injections and seven test cases implemented.
+- [x] Independent source/diff review: all six native command boundaries
+  exist in production `settings.mjs`; no production files modified.
 - [ ] Exact-SHA CI observed (deferred to next user checkpoint).
+
+## Test implementation / review ledger
+
+- **Wallet initial status failure:** assert Connect/Apply stay unavailable,
+  no write IPC is sent, Cancel safely closes.
+- **Device challenge rejected:** assert no fake user code/pending state,
+  no disconnect and the dialog can close.
+- **Config write denied:** assert edited opt-in is still a draft,
+  save error visible, no unrelated scope, autostart or disconnect writes.
+- **GitHub scope write denied:** assert the persisted account remains the
+  previous account, no close, draft can be retried or cancelled.
+- **Wallet revoke denied:** assert token never reports removed, native
+  account persists, dialog stays open and Cancel remains harmless.
+- **Invalid native ignored-child selection:** reject `..` basename,
+  display error and do not persist an exclusion.
+- **Native picker at maximum exclusions:** 100 existing names block
+  the 101st unique name without changing the native configuration.
+
+**Implementation:** one scoped test-only commit in
+`tests/settings-github-confirm.test.mjs`. The existing real-controller
+fixture has five new optional injected native-command errors.
+No production source, Tauri permissions, workflows, release/packaging
+code, public user docs, external services, or main/tag refs changed.
+
+**Review performed:** inspected both old and new test source,
+verified each six native IPC names exists in the production controller,
+and checked the exact GitHub commit diff. This is *static* review.
+The seven new tests and new JS coverage percentages have **not**
+yet been executed or measured at this commit. A successful Preflight
+at the eventual pushed SHA is mandatory before claiming pass.
+
+The previously measured `settings.mjs` V8 fraction decreased after
+four added successful full-controller scenarios in the prior stage;
+do not attribute a coverage change to this batch without inspecting
+the new V8 report's instrumented module population and denominators.
+

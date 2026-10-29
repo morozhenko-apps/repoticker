@@ -245,4 +245,96 @@ mod tests {
             .etag
             .is_none());
     }
+
+
+    #[test]
+    fn invalid_conditional_tag_evicts_old_projection_instead_of_reusing_it() {
+        let cache = GitHubETagCache::default();
+        let path = "/user/installations?per_page=100&page=1";
+        let initial = cache.snapshot(path);
+        assert!(cache.save(path, &initial, Some("\"initial\""), &json!({"id": 1})));
+        let previous = cache.snapshot(path);
+        assert_eq!(
+            cache.not_modified(path, &previous),
+            Some(json!({"id": 1}))
+        );
+
+        for invalid in [
+            "missing-quotes",
+            "\"with\nnewline\"",
+            "W/missing-quoted-value",
+            "\u{00e9}",
+        ] {
+            let lookup = cache.snapshot(path);
+            assert!(cache.save(path, &lookup, Some(invalid), &json!({"id": 2})));
+            assert!(cache.snapshot(path).etag.is_none());
+            assert!(cache.not_modified(path, &previous).is_none());
+        }
+        let fresh = cache.snapshot(path);
+        assert!(cache.save(path, &fresh, None, &json!({"id": 3})));
+        assert!(cache.snapshot(path).etag.is_none());
+    }
+
+    #[test]
+    fn projected_json_at_exact_maximum_is_allowed_but_one_byte_over_is_not() {
+        let cache = GitHubETagCache::default();
+        let path = "/user/installations?per_page=100&page=1";
+        // {"p":"..."} contributes exactly eight JSON framing bytes.
+        let boundary = json!({"p": "x".repeat(MAX_ITEM_BYTES - 8)});
+        assert_eq!(serde_json::to_vec(&boundary).unwrap().len(), MAX_ITEM_BYTES);
+        assert!(cache.save(
+            path,
+            &cache.snapshot(path),
+            Some("\"exact\""),
+            &boundary,
+        ));
+        let accepted = cache.snapshot(path);
+        assert_eq!(accepted.etag.as_deref(), Some("\"exact\""));
+        assert_eq!(cache.not_modified(path, &accepted), Some(boundary));
+
+        let oversized = json!({"p": "x".repeat(MAX_ITEM_BYTES - 7)});
+        assert_eq!(
+            serde_json::to_vec(&oversized).unwrap().len(),
+            MAX_ITEM_BYTES + 1
+        );
+        assert!(cache.save(path, &accepted, Some("\"excess\""), &oversized));
+        assert!(cache.snapshot(path).etag.is_none());
+        assert!(cache.not_modified(path, &accepted).is_none());
+    }
+
+    #[test]
+    fn concurrent_auth_invalidation_rejects_delayed_old_generation_reply() {
+        use std::sync::{mpsc, Arc};
+        use std::thread;
+
+        let cache = Arc::new(GitHubETagCache::default());
+        let path = "/user/installations?per_page=100&page=1";
+        let (started_tx, started_rx) = mpsc::channel();
+        let (resume_tx, resume_rx) = mpsc::channel();
+        let worker_cache = Arc::clone(&cache);
+        let worker = thread::spawn(move || {
+            let old = worker_cache.snapshot(path);
+            started_tx.send(()).expect("old request ready");
+            resume_rx.recv().expect("release delayed HTTP 200");
+            worker_cache.save(path, &old, Some("\"old-account\""), &json!({"id": 1}))
+        });
+
+        started_rx.recv().expect("old request started");
+        cache.invalidate();
+        let current = cache.snapshot(path);
+        assert!(cache.save(
+            path,
+            &current,
+            Some("\"new-account\""),
+            &json!({"id": 2}),
+        ));
+        resume_tx.send(()).expect("release old request");
+        assert!(!worker.join().expect("old request joined"));
+        let current = cache.snapshot(path);
+        assert_eq!(current.etag.as_deref(), Some("\"new-account\""));
+        assert_eq!(
+            cache.not_modified(path, &current),
+            Some(json!({"id": 2}))
+        );
+    }
 }

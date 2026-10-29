@@ -1038,3 +1038,100 @@ test("Mode B: native excluded-folder picker refuses the 101st unique exclusion",
     assert.equal(ui.calls.some(([name]) => name === "save_settings"), false);
   } finally { ui.restore(); }
 });
+
+test("Mode B: Settings filters native-invalid repository identities before selection", async () => {
+  const exact100 = "a".repeat(100);
+  const tooLong = "b".repeat(101);
+  const ui = await fixture("mode-b-native-repo-name-parity", true, [], {
+    repositoryPages: [[
+      { full_name: "one/" + exact100 },
+      { full_name: "one/" + tooLong },
+      { full_name: "one/." },
+      { full_name: "one/.." },
+      { full_name: "one/" },
+      { full_name: "one/valid-repo" },
+      { full_name: "two/foreign" },
+      { full_name: "one/nested/child" },
+      { full_name: "one/invalid name" }
+    ]]
+  });
+  try {
+    ui.node("github-repo-mode").value = "selected";
+    await ui.node("github-repo-mode").fire("change");
+    const offered = ui.node("github-repo-list").children.map(row =>
+      row.children[1]?.textContent).sort();
+    assert.deepEqual(offered, ["one/" + exact100, "one/valid-repo"].sort(),
+      "Settings must never offer names native valid_name would reject");
+    assert.equal(ui.node("apply-settings").disabled, true);
+    const valid = ui.node("github-repo-list").children.find(row =>
+      row.children[1]?.textContent === "one/valid-repo");
+    valid.children[0].checked = true;
+    await valid.children[0].fire("change");
+    assert.equal(ui.node("apply-settings").disabled, false);
+    await ui.node("apply-settings").fire("click");
+    assert.deepEqual(ui.monitorRepositories, ["one/valid-repo"]);
+    assert.equal(ui.closed, true);
+  } finally { ui.restore(); }
+});
+
+test("Mode B: offline saved repository subset survives unrelated Settings persistence", async () => {
+  const ui = await fixture("mode-b-offline-repo-unrelated-save", true,
+    ["one/core"], { repositoryError: true });
+  try {
+    assert.equal(ui.node("github-repo-mode").value, "selected");
+    assert.match(ui.node("github-repo-status").textContent, /unavailable/i);
+    ui.node("ci-failure-notifications").checked = true;
+    await ui.node("ci-failure-notifications").fire("change");
+    assert.equal(ui.node("apply-settings").disabled, false,
+      "unmodified offline selection must not block unrelated settings");
+    await ui.node("apply-settings").fire("click");
+    assert.equal(ui.closed, true);
+    assert.deepEqual(ui.monitorRepositories, ["one/core"]);
+    assert.equal(ui.monitorOrg, "one");
+    assert.deepEqual(ui.calls.filter(([name]) => name === "save_settings")
+      .map(([, args]) => args), [{ ciFailureNotifications: true }]);
+    assert.equal(ui.calls.some(([name]) => name === "github_set_monitor_org"),
+      false, "an offline inventory must not silently rewrite the selected scope");
+  } finally { ui.restore(); }
+});
+
+test("Mode B: Settings blocks 101 selected repositories and accepts exactly 100", async () => {
+  const first = Array.from({ length: 100 }, (_, index) => ({
+    full_name: "one/repo" + String(index).padStart(3, "0")
+  }));
+  const ui = await fixture("mode-b-100-repo-cap", true, [], {
+    repositoryPages: [first, [{ full_name: "one/repo100" }]]
+  });
+  try {
+    ui.node("github-repo-mode").value = "selected";
+    await ui.node("github-repo-mode").fire("change");
+    for (let index = 0; index < 100; index++) {
+      const name = "one/repo" + String(index).padStart(3, "0");
+      const row = ui.node("github-repo-list").children.find(item =>
+        item.children[1]?.textContent === name);
+      assert.ok(row, name);
+      row.children[0].checked = true;
+      await row.children[0].fire("change");
+    }
+    assert.equal(ui.node("apply-settings").disabled, false);
+    assert.deepEqual(ui.monitorRepositories, []);
+    ui.node("github-repo-filter").value = "repo100";
+    await ui.node("github-repo-filter").fire("input");
+    const extra = ui.node("github-repo-list").children[0]?.children[0];
+    assert.ok(extra);
+    extra.checked = true;
+    await extra.fire("change");
+    assert.match(ui.node("github-repo-status").textContent, /at most 100/i);
+    assert.equal(ui.node("apply-settings").disabled, true);
+    assert.equal(ui.calls.some(([name]) => name === "github_set_monitor_org"),
+      false);
+    const excess = ui.node("github-repo-list").children[0]?.children[0];
+    excess.checked = false;
+    await excess.fire("change");
+    assert.equal(ui.node("apply-settings").disabled, false);
+    await ui.node("apply-settings").fire("click");
+    assert.equal(ui.monitorRepositories.length, 100);
+    assert.equal(ui.monitorRepositories.includes("one/repo100"), false);
+    assert.equal(ui.closed, true);
+  } finally { ui.restore(); }
+});

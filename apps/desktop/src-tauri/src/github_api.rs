@@ -64,6 +64,42 @@ pub(crate) fn valid_name(value: &str) -> bool {
             .all(|b| b.is_ascii_alphanumeric() || b"._-".contains(&b))
 }
 
+
+fn valid_utc_second_timestamp(timestamp: &str) -> bool {
+    let bytes = timestamp.as_bytes();
+    if bytes.len() != 20
+        || !bytes.iter().copied().enumerate().all(|(index, byte)| match index {
+            4 | 7 => byte == b'-',
+            10 => byte == b'T',
+            13 | 16 => byte == b':',
+            19 => byte == b'Z',
+            _ => byte.is_ascii_digit(),
+        })
+    {
+        return false;
+    }
+    let number = |start: usize, end: usize| timestamp[start..end].parse::<u32>().ok();
+    let (Some(year), Some(month), Some(day), Some(hour), Some(minute), Some(second)) = (
+        number(0, 4),
+        number(5, 7),
+        number(8, 10),
+        number(11, 13),
+        number(14, 16),
+        number(17, 19),
+    ) else {
+        return false;
+    };
+    let leap = year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
+    let days = match month {
+        1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
+        4 | 6 | 9 | 11 => 30,
+        2 if leap => 29,
+        2 => 28,
+        _ => return false,
+    };
+    year > 0 && (1..=days).contains(&day) && hour < 24 && minute < 60 && second < 60
+}
+
 fn valid_path(requested: &str) -> bool {
     if requested.len() > 300
         || !requested.starts_with('/')
@@ -267,18 +303,7 @@ fn project(path: &str, value: Value) -> Result<Value, String> {
                 let updated_at = item
                     .get("updated_at")
                     .and_then(Value::as_str)
-                    .filter(|timestamp| {
-                        timestamp.len() == 20
-                            && timestamp.as_bytes().get(4) == Some(&b'-')
-                            && timestamp.as_bytes().get(7) == Some(&b'-')
-                            && timestamp.as_bytes().get(10) == Some(&b'T')
-                            && timestamp.as_bytes().get(13) == Some(&b':')
-                            && timestamp.as_bytes().get(16) == Some(&b':')
-                            && timestamp.ends_with('Z')
-                            && timestamp.bytes().enumerate().all(|(i, b)| {
-                                matches!(i, 4 | 7 | 10 | 13 | 16 | 19) || b.is_ascii_digit()
-                            })
-                    })
+                    .filter(|timestamp| valid_utc_second_timestamp(timestamp))
                     .ok_or_else(|| "Invalid completed GitHub run timestamp.".to_owned())?;
                 Ok(json!({
                     "id": id, "run_attempt": attempt,
@@ -709,4 +734,49 @@ mod tests {
             "sku":"actions_linux","grossQuantity":-1}]});
         assert!(project_billing(invalid).is_err());
     }
+
+    #[test]
+    fn mode_b_completed_run_timestamp_enforces_calendar_and_leap_year() {
+        for accepted in [
+            "2024-02-29T23:59:59Z",
+            "2026-01-31T00:00:00Z",
+            "2000-02-29T00:00:00Z",
+        ] {
+            assert!(valid_utc_second_timestamp(accepted), "{accepted}");
+        }
+        for invalid in [
+            "",
+            "2026-02-29T00:00:00Z",
+            "2026-02-30T00:00:00Z",
+            "2026-04-31T00:00:00Z",
+            "2026-01-00T00:00:00Z",
+            "2026-13-01T00:00:00Z",
+            "1900-02-29T00:00:00Z",
+            "2026-12-31T24:00:00Z",
+            "2026-12-31T23:60:00Z",
+            "2026-12-31T23:59:60Z",
+            "2026-12-31T23:59:59+00:00",
+        ] {
+            assert!(!valid_utc_second_timestamp(invalid), "{invalid}");
+        }
+    }
+
+    #[test]
+    fn mode_b_native_completed_run_projection_rejects_impossible_dates() {
+        let path = "/repos/team/app/actions/runs?status=completed&per_page=100&page=1";
+        let run = json!({
+            "id": 8,
+            "run_attempt": 1,
+            "conclusion": "failure",
+            "updated_at": "2024-02-29T23:59:59Z"
+        });
+        let valid = project(path, json!({"workflow_runs": [run.clone()]})).unwrap();
+        assert_eq!(valid["workflow_runs"][0]["id"], 8);
+        for bad in ["2026-02-31T00:00:00Z", "2026-04-31T10:00:00Z"] {
+            let mut invalid = run.clone();
+            invalid["updated_at"] = json!(bad);
+            assert!(project(path, json!({"workflow_runs": [invalid]})).is_err(), "{bad}");
+        }
+    }
+
 }

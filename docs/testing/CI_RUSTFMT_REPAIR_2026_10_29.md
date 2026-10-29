@@ -51,3 +51,50 @@ verification on Ubuntu, run `cargo fmt --all --check`.
 **Release gates:** Mode B and final Windows/KDE/L10N
 acceptance remain open. This incident does not authorize
 `main`, release tag, R2, or runner infrastructure changes.
+
+
+## Repair checkpoint — submitted single CI batch
+
+**Code-only formatting commit:** `5e1854f7f8e8080b4ea8a99784c4a740f717dd15`.
+
+23 of 23 context-verified hunks from the exact GitHub Actions
+run 40933233701 rustfmt output were applied once to:
+- `apps/desktop/src-tauri/src/github_api.rs` — 3 hunks
+- `apps/desktop/src-tauri/src/github_etag_cache.rs` — 8 hunks
+- `apps/desktop/src-tauri/src/github_oauth_wire.rs` — 4 hunks
+- `apps/desktop/src-tauri/src/github_rate_gate.rs` — 3 hunks
+- `apps/desktop/src-tauri/src/github_session.rs` — 2 hunks
+- `crates/repoticker-core/src/github_auth.rs` — 3 hunks
+
+No runtime control flow, tests, GitHub workflow, R2 publisher
+or dependencies were intentionally modified. The source
+contains a fake auth error fixture whose text was redacted
+to `***` by GitHub Actions log sanitization; the exact
+original context was restored for patch matching rather than
+changing this fixture. Original test-function counts were
+preserved across the six files.
+
+**Evidence:** source-backed application of all 23 exact
+logged rustfmt modifications; no cargo/rustfmt binary is
+available in the agent's local container. This is
+not an observed `cargo fmt --all --check` PASS.
+
+**CI gate:** one final `dev` fast-forward submits all
+docs and style-only changes. On the new exact SHA,
+the expected Rust stage ordering is rustfmt, Rust core
+tests and Clippy. No result is claimed for tests/Clippy:
+they were previously blocked by formatting and have
+not yet executed successfully on the new SHA. Do not
+poll after submission unless explicitly asked.
+
+**Manual fallback, if needed on Ubuntu KDE:**
+`cargo fmt --all --check`
+then `cargo test --locked -p repoticker-core`
+and `cargo clippy --locked -p repoticker-core --all-targets -- -D warnings`.
+Run only when requested and provide exact outputs,
+not inferred success.
+
+**Release status:** Mode B and subsequent installed
+Linux/Windows plus 20-locale acceptance remain open.
+No release tag, main merge, R2 object or runner
+configuration was changed.

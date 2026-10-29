@@ -630,4 +630,77 @@ mod tests {
             "GitHub API request failed."
         );
     }
+
+#[test]
+    fn paths_reject_encoded_traversal_duplicate_queries_and_write_operations() {
+        for route in [
+            "/repos/team/a/actions/runs?per_page=100&page=1&page=1",
+            "/repos/team/a/actions/runs?per_page=100&page=1%26token=x",
+            "/repos/team/a/actions/runs?per_page=100&page=11",
+            "/repos/team/a/actions/runs?per_page=100&page=-1",
+            "/repos/team/a/actions/runs/0/jobs?filter=latest&per_page=100&page=1",
+            "/repos/team/a/actions/runs/1/jobs?filter=all&per_page=100&page=1",
+            "/user/installations/0/repositories?per_page=100&page=1",
+            "/repos/team/%2e%2e/actions/runs?per_page=100&page=1",
+            "/repos/team/a/actions/runs?status=completed&per_page=100&page=1&foo=x",
+            "/repos/team/a/actions/runs?status=completed&per_page=100&page=1#x",
+            "/repos/team/a/actions/runs?status=completed&per_page=100&page=1/../user",
+        ] {
+            assert!(!valid_path(route), "unsafe route accepted: {route}");
+        }
+    }
+
+    #[test]
+    fn repository_and_runner_projections_never_forward_arbitrary_provider_fields() {
+        let fixture = json!({
+            "total_count": 1, "repositories": [{
+                "full_name":"team/a","owner":{"login":"team","email":"secret@example.test"},
+                "permissions":{"admin":true},"token":"synthetic-token"
+            }]
+        });
+        let result = project(
+            "/user/installations/1/repositories?per_page=100&page=1", fixture
+        ).unwrap();
+        assert_eq!(result["repositories"][0]["full_name"], "team/a");
+        assert!(!result.to_string().contains("secret"));
+        assert!(!result.to_string().contains("permissions"));
+        let runners = json!({"runners":[{"id":1,"name":"ci",
+            "status":"online","busy":false,"labels":["self-hosted"],
+            "secret":"private","private_ip":"10.0.0.1"}]});
+        let projected = project("/orgs/team/actions/runners?per_page=100&page=1", runners)
+            .unwrap();
+        assert!(!projected.to_string().contains("private_ip"));
+        assert!(!projected.to_string().contains("\"secret\""));
+        assert_eq!(projected["runners"][0]["id"], 1);
+    }
+
+    #[test]
+    fn oversized_or_broken_provider_pages_are_not_treated_as_empty() {
+        let path = "/user/installations?per_page=100&page=1";
+        assert!(project(path, json!({})).is_err());
+        assert!(project(path, json!({"installations":null})).is_err());
+        assert!(project(path, json!({"installations":101})).is_err());
+        assert!(project(path, json!({"installations":vec![json!({});101]})).is_err());
+        assert_eq!(project(path, json!({"installations":[]})).unwrap()
+            ["installations"].as_array().unwrap().len(), 0);
+    }
+
+    #[test]
+    fn billing_projection_never_exposes_other_products_or_private_metadata() {
+        let payload = json!({"usageItems":[
+            {"product":"Actions","unitType":"minutes","sku":"actions_linux",
+             "grossQuantity":0,"netAmount":900,"token":"private"},
+            {"product":"Copilot","unitType":"requests","sku":"copilot",
+             "grossQuantity":55,"private":"different"}
+        ],"user":{"email":"secret@example.test"}});
+        let projected = project_billing(payload).unwrap();
+        assert_eq!(projected["usageItems"].as_array().unwrap().len(), 1);
+        assert_eq!(projected["usageItems"][0]["grossQuantity"], 0);
+        assert!(!projected.to_string().contains("private"));
+        assert!(!projected.to_string().contains("netAmount"));
+        assert!(!projected.to_string().contains("secret"));
+        let invalid = json!({"usageItems":[{"product":"Actions","unitType":"minutes",
+            "sku":"actions_linux","grossQuantity":-1}]});
+        assert!(project_billing(invalid).is_err());
+    }
 }

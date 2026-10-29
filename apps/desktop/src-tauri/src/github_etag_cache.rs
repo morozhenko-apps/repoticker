@@ -337,4 +337,52 @@ mod tests {
             Some(json!({"id": 2}))
         );
     }
+
+#[test]
+    fn different_paths_and_tags_never_share_conditional_private_data() {
+        let cache = GitHubETagCache::default();
+        let first = "/user/installations?per_page=100&page=1";
+        let second = "/user/installations?per_page=100&page=2";
+        let before = cache.snapshot(first);
+        assert!(cache.save(first, &before, Some("\"same\""), &json!({"page": 1})));
+        let other = cache.snapshot(second);
+        assert!(cache.save(second, &other, Some("\"same\""), &json!({"page": 2})));
+        let first_now = cache.snapshot(first);
+        let second_now = cache.snapshot(second);
+        assert_eq!(cache.not_modified(first, &first_now), Some(json!({"page": 1})));
+        assert_eq!(cache.not_modified(second, &second_now), Some(json!({"page": 2})));
+        assert!(cache.not_modified(first, &second_now).is_none());
+        assert!(cache.not_modified(second, &first_now).is_none());
+    }
+
+    #[test]
+    fn multiple_invalidation_generations_reject_every_prior_snapshot() {
+        let cache = GitHubETagCache::default();
+        let path = "/user/installations?per_page=100&page=1";
+        let initial = cache.snapshot(path);
+        cache.invalidate();
+        let intermediate = cache.snapshot(path);
+        cache.invalidate();
+        let current = cache.snapshot(path);
+        for old in [&initial, &intermediate] {
+            assert!(!cache.unchanged(old.generation));
+            assert!(!cache.save(path, old, Some("\"old\""), &json!({"scope": "old"})));
+            assert!(cache.not_modified(path, old).is_none());
+        }
+        assert!(cache.save(path, &current, Some("\"current\""), &json!({"scope": "new"})));
+        assert_eq!(cache.not_modified(path, &cache.snapshot(path)),
+            Some(json!({"scope": "new"})));
+    }
+
+    #[test]
+    fn billing_path_is_never_reused_as_an_etag_even_with_valid_headers() {
+        let cache = GitHubETagCache::default();
+        let billing = "/organizations/org/settings/billing/usage/summary?year=2026&month=10";
+        let lookup = cache.snapshot(billing);
+        assert!(lookup.etag.is_none());
+        assert!(cache.save(billing, &lookup, Some("\"usage\""),
+            &json!({"usageItems":[{"grossQuantity":1}]})));
+        assert!(cache.snapshot(billing).etag.is_none());
+        assert!(cache.not_modified(billing, &lookup).is_none());
+    }
 }

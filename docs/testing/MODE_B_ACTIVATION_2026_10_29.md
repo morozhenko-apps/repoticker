@@ -79,3 +79,9 @@ Do not mark MODE B PASS: local shell lacks cargo and cannot resolve
 github.com; GitHub connector inspections aren't execution, and
 CI was not polled. L10N/physical acceptance explicitly deferred
 but not passed; v1 release remains BLOCKED.
+
+## Batch 04 source-scope validation checkpoint (2026-10-29)
+
+- GitHub API page and scope validation batch submitted: 21 new JS cases, source-only focused execution 21/21, old-code negative control 10 failed as expected.
+- Primary production repair: invalid API page cardinality and malformed scope names fail closed, and incomplete all-repository coverage invalidates the entire dependent task group, never a plausible zero.
+- Exact CI run and stable gate remain unverified; the OS/L10N acceptance sequencing stays unchanged. Stage 3-8 global maps remain incomplete, so Mode B is not complete.

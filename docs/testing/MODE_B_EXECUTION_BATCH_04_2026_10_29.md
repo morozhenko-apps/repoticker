@@ -110,3 +110,51 @@ critical-flow slice with exact branch assertions.
   acceptance.
 
 **At plan creation:** implementation not yet committed or pushed.
+
+
+## Implementation checkpoint — batch 04 submitted
+
+- **Test and correction commit:** `d10a6c57c88d0063b437af6a6c8f6ca08dd02033`.
+- **Code:** `github-installations.mjs` rejects pages exceeding the
+  requested 100 entries, filters `.` / `..` installation accounts;
+  `github-monitor.mjs` enforces exact two-component repository names,
+  bounded repository pages and duplicate-free, dot-free explicit
+  selection; `runner-collector.mjs` rejects oversized runner,
+  workflow-run and job pages. `collectForAccount` reuses
+  `invalidateMetricGroup(state, "tasks")` on incomplete all-repository
+  coverage to preserve the independent runner group while making
+  all dependent task metrics unknown.
+- **Regression suite:** 21 deterministic new JavaScript test cases in
+  `tests/mode-b-api-boundaries.test.mjs` for 100/101 records,
+  incomplete pages, exact names, selected scope, upper bounds,
+  independent runner/job coverage, permission-safe errors and
+  cache/state immutability.
+- **Focused execution:** **21/21 passed** in an isolated V8 harness
+  using the actual staged source functions and test bodies. Compatibility
+  adapters supplied `URLSearchParams` and `structuredClone` for
+  synthetic fixtures because the JS orchestration isolate lacks
+  browser/Node globals. This is **not the full Node 24 STABLE suite**.
+- **Negative-control proof:** the **same 21 tests** were executed
+  against the previous production source at `068690cf5aa04bc5f2912ca36a2e89715d196db3`.
+  **10 of 21 failed** on the known old defects; 11 unaffected
+  positive/compatibility cases passed. The failing cases detect:
+  oversized installation/repository/runner/job pages, invalid
+  dot and multi-slash names, case-insensitive duplicate selection,
+  unsafe partial-scope classification and invalid oversized
+  installation authorization. This is a scoped mutation/old-code
+  test, **not** exhaustive mutation coverage.
+- **Unverified:** full repository Node, Python, Rust stable and
+  desktop build gates; release artifacts; actual Windows/KDE
+  screenshots, assistive technology and the independently reviewed
+  20 locales. These still block public v1 publication.
+- **Known separate architectural release blockers:** cross-writer
+  immutable R2 object creation and already-updated
+  `latest.json` after failed public readback. Neither was
+  modified by this batch.
+
+**Publication policy:** documentation plan, code/tests and this
+checkpoint were constructed before the only `dev` ref update.
+No intermediate runner-triggering push; no release tags, main,
+R2 objects, secrets or GitHub infrastructure changed. Once
+submitted, GitHub Preflight may run; the agent does **not**
+poll workflow status. No PASS is claimed for unexecuted CI.

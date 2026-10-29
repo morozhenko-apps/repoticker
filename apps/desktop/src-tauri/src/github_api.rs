@@ -659,16 +659,17 @@ mod tests {
             }]
         });
         let result = project(
-            "/user/installations/1/repositories?per_page=100&page=1", fixture
-        ).unwrap();
+            "/user/installations/1/repositories?per_page=100&page=1",
+            fixture,
+        )
+        .unwrap();
         assert_eq!(result["repositories"][0]["full_name"], "team/a");
         assert!(!result.to_string().contains("secret"));
         assert!(!result.to_string().contains("permissions"));
         let runners = json!({"runners":[{"id":1,"name":"ci",
             "status":"online","busy":false,"labels":["self-hosted"],
             "secret":"private","private_ip":"10.0.0.1"}]});
-        let projected = project("/orgs/team/actions/runners?per_page=100&page=1", runners)
-            .unwrap();
+        let projected = project("/orgs/team/actions/runners?per_page=100&page=1", runners).unwrap();
         assert!(!projected.to_string().contains("private_ip"));
         assert!(!projected.to_string().contains("\"secret\""));
         assert_eq!(projected["runners"][0]["id"], 1);
@@ -681,8 +682,13 @@ mod tests {
         assert!(project(path, json!({"installations":null})).is_err());
         assert!(project(path, json!({"installations":101})).is_err());
         assert!(project(path, json!({"installations":vec![json!({});101]})).is_err());
-        assert_eq!(project(path, json!({"installations":[]})).unwrap()
-            ["installations"].as_array().unwrap().len(), 0);
+        assert_eq!(
+            project(path, json!({"installations":[]})).unwrap()["installations"]
+                .as_array()
+                .unwrap()
+                .len(),
+            0
+        );
     }
 
     #[test]

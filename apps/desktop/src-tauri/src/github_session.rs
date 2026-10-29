@@ -588,7 +588,9 @@ mod tests {
         let (release_tx, release_rx) = mpsc::channel();
         let stale = Arc::clone(&state);
         let worker = thread::spawn(move || {
-            ready_tx.send(()).expect("first login entered pending state");
+            ready_tx
+                .send(())
+                .expect("first login entered pending state");
             release_rx.recv().expect("second login started");
             stale.active(first)
         });
@@ -602,16 +604,36 @@ mod tests {
     #[test]
     fn normalized_auth_reason_and_message_remain_public_only() {
         let cases = [
-            (NativeAuthError::Network, "network", "GitHub is unreachable."),
-            (NativeAuthError::HttpStatus(429), "rate_limit",
-                "GitHub rate limit exceeded."),
-            (NativeAuthError::HttpStatus(401), "authorization_rejected",
-                "GitHub authorization rejected."),
-            (NativeAuthError::KeychainUnavailable, "credential_store",
-                "System credential store unavailable or locked."),
-            (NativeAuthError::NoCredential, "not_connected", "GitHub is not connected."),
-            (NativeAuthError::Expired, "expired",
-                "GitHub authorization expired. Reconnect."),
+            (
+                NativeAuthError::Network,
+                "network",
+                "GitHub is unreachable.",
+            ),
+            (
+                NativeAuthError::HttpStatus(429),
+                "rate_limit",
+                "GitHub rate limit exceeded.",
+            ),
+            (
+                NativeAuthError::HttpStatus(401),
+                "authorization_rejected",
+                "GitHub authorization rejected.",
+            ),
+            (
+                NativeAuthError::KeychainUnavailable,
+                "credential_store",
+                "System credential store unavailable or locked.",
+            ),
+            (
+                NativeAuthError::NoCredential,
+                "not_connected",
+                "GitHub is not connected.",
+            ),
+            (
+                NativeAuthError::Expired,
+                "expired",
+                "GitHub authorization expired. Reconnect.",
+            ),
         ];
         for (error, reason, message) in cases {
             assert_eq!(reason_category(error), reason);

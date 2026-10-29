@@ -349,8 +349,14 @@ mod tests {
         assert_eq!(session.next_poll(1_029), PollDecision::WaitSeconds(1));
         assert_eq!(session.next_poll(1_030), PollDecision::Ready);
         assert_eq!(session.next_poll(1_031), PollDecision::WaitSeconds(14));
-        assert_eq!(session.next_poll(1_900), PollDecision::Stop(DevicePhase::Expired));
-        assert_eq!(session.receive(DeviceResponse::Authorized, 1_900), DevicePhase::Expired);
+        assert_eq!(
+            session.next_poll(1_900),
+            PollDecision::Stop(DevicePhase::Expired)
+        );
+        assert_eq!(
+            session.receive(DeviceResponse::Authorized, 1_900),
+            DevicePhase::Expired
+        );
     }
 
     #[test]
@@ -372,7 +378,10 @@ mod tests {
         let mut cancelled = challenge();
         cancelled.cancel();
         cancelled.cancel();
-        assert_eq!(cancelled.next_poll(1_010), PollDecision::Stop(DevicePhase::Cancelled));
+        assert_eq!(
+            cancelled.next_poll(1_010),
+            PollDecision::Stop(DevicePhase::Cancelled)
+        );
         assert_eq!(
             cancelled.receive(DeviceResponse::Authorized, 1_010),
             DevicePhase::Cancelled
@@ -394,7 +403,10 @@ mod tests {
             access_expires_at: u64::MAX - 1,
             refresh_expires_at: u64::MAX,
         };
-        assert_eq!(near_max.decide(u64::MAX - 2, 0), TokenAction::UseAccessToken);
+        assert_eq!(
+            near_max.decide(u64::MAX - 2, 0),
+            TokenAction::UseAccessToken
+        );
         assert_eq!(near_max.decide(u64::MAX - 2, 10), TokenAction::Refresh);
         assert_eq!(near_max.decide(u64::MAX, 10), TokenAction::Reauthorize);
     }

@@ -175,31 +175,53 @@ mod tests {
     #[test]
     fn quota_headers_have_explicit_reset_and_retry_boundaries() {
         let now = 1_800_000_000;
-        assert_eq!(backoff_duration(429, None, None, Some("1800000000"), now),
-            Some(Duration::from_secs(FALLBACK_SECONDS)));
-        assert_eq!(backoff_duration(429, None, None, Some("1800000001"), now),
-            Some(Duration::from_secs(1)));
-        assert_eq!(backoff_duration(429, None, None, Some("1800000002"), now),
-            Some(Duration::from_secs(2)));
-        assert_eq!(backoff_duration(429, None, None, Some("18446744073709551615"), now),
-            Some(Duration::from_secs(MAX_SECONDS)));
-        assert_eq!(backoff_duration(429, None, Some("3"), Some("18446744073709551615"), now),
-            Some(Duration::from_secs(3)));
-        assert_eq!(backoff_duration(429, None, Some("broken"), Some("1800000002"), now),
-            Some(Duration::from_secs(2)));
+        assert_eq!(
+            backoff_duration(429, None, None, Some("1800000000"), now),
+            Some(Duration::from_secs(FALLBACK_SECONDS))
+        );
+        assert_eq!(
+            backoff_duration(429, None, None, Some("1800000001"), now),
+            Some(Duration::from_secs(1))
+        );
+        assert_eq!(
+            backoff_duration(429, None, None, Some("1800000002"), now),
+            Some(Duration::from_secs(2))
+        );
+        assert_eq!(
+            backoff_duration(429, None, None, Some("18446744073709551615"), now),
+            Some(Duration::from_secs(MAX_SECONDS))
+        );
+        assert_eq!(
+            backoff_duration(429, None, Some("3"), Some("18446744073709551615"), now),
+            Some(Duration::from_secs(3))
+        );
+        assert_eq!(
+            backoff_duration(429, None, Some("broken"), Some("1800000002"), now),
+            Some(Duration::from_secs(2))
+        );
     }
 
     #[test]
     fn unrelated_status_and_permission_denials_cannot_start_a_rate_gate() {
         for status in [200, 201, 204, 301, 304, 400, 401, 404, 500, 503] {
-            assert_eq!(backoff_duration(status, Some("0"), Some("90"), None, 100), None,
-                "status {status} must not be classified as a quota gate");
+            assert_eq!(
+                backoff_duration(status, Some("0"), Some("90"), None, 100),
+                None,
+                "status {status} must not be classified as a quota gate"
+            );
         }
-        assert_eq!(backoff_duration(403, Some("1"), None, Some("500"), 100), None);
-        assert_eq!(backoff_duration(403, Some("0"), Some("1"), None, 100),
-            Some(Duration::from_secs(1)));
-        assert_eq!(backoff_duration(429, None, None, None, 100),
-            Some(Duration::from_secs(FALLBACK_SECONDS)));
+        assert_eq!(
+            backoff_duration(403, Some("1"), None, Some("500"), 100),
+            None
+        );
+        assert_eq!(
+            backoff_duration(403, Some("0"), Some("1"), None, 100),
+            Some(Duration::from_secs(1))
+        );
+        assert_eq!(
+            backoff_duration(429, None, None, None, 100),
+            Some(Duration::from_secs(FALLBACK_SECONDS))
+        );
     }
 
     #[test]
@@ -209,13 +231,15 @@ mod tests {
         let gate = Arc::new(GitHubRateGate::default());
         // A large margin avoids flaky wall-clock expectations on busy CI hosts.
         gate.defer(Duration::from_secs(MAX_SECONDS));
-        let workers: Vec<_> = (0..12).map(|index| {
-            let gate = Arc::clone(&gate);
-            thread::spawn(move || {
-                let seconds = if index % 2 == 0 { 1 } else { 30 };
-                gate.defer(Duration::from_secs(seconds));
+        let workers: Vec<_> = (0..12)
+            .map(|index| {
+                let gate = Arc::clone(&gate);
+                thread::spawn(move || {
+                    let seconds = if index % 2 == 0 { 1 } else { 30 };
+                    gate.defer(Duration::from_secs(seconds));
+                })
             })
-        }).collect();
+            .collect();
         for worker in workers {
             worker.join().expect("deferred quota update");
         }

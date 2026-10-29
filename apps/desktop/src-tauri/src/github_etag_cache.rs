@@ -246,7 +246,6 @@ mod tests {
             .is_none());
     }
 
-
     #[test]
     fn invalid_conditional_tag_evicts_old_projection_instead_of_reusing_it() {
         let cache = GitHubETagCache::default();
@@ -254,10 +253,7 @@ mod tests {
         let initial = cache.snapshot(path);
         assert!(cache.save(path, &initial, Some("\"initial\""), &json!({"id": 1})));
         let previous = cache.snapshot(path);
-        assert_eq!(
-            cache.not_modified(path, &previous),
-            Some(json!({"id": 1}))
-        );
+        assert_eq!(cache.not_modified(path, &previous), Some(json!({"id": 1})));
 
         for invalid in [
             "missing-quotes",
@@ -282,12 +278,7 @@ mod tests {
         // {"p":"..."} contributes exactly eight JSON framing bytes.
         let boundary = json!({"p": "x".repeat(MAX_ITEM_BYTES - 8)});
         assert_eq!(serde_json::to_vec(&boundary).unwrap().len(), MAX_ITEM_BYTES);
-        assert!(cache.save(
-            path,
-            &cache.snapshot(path),
-            Some("\"exact\""),
-            &boundary,
-        ));
+        assert!(cache.save(path, &cache.snapshot(path), Some("\"exact\""), &boundary,));
         let accepted = cache.snapshot(path);
         assert_eq!(accepted.etag.as_deref(), Some("\"exact\""));
         assert_eq!(cache.not_modified(path, &accepted), Some(boundary));
@@ -322,20 +313,12 @@ mod tests {
         started_rx.recv().expect("old request started");
         cache.invalidate();
         let current = cache.snapshot(path);
-        assert!(cache.save(
-            path,
-            &current,
-            Some("\"new-account\""),
-            &json!({"id": 2}),
-        ));
+        assert!(cache.save(path, &current, Some("\"new-account\""), &json!({"id": 2}),));
         resume_tx.send(()).expect("release old request");
         assert!(!worker.join().expect("old request joined"));
         let current = cache.snapshot(path);
         assert_eq!(current.etag.as_deref(), Some("\"new-account\""));
-        assert_eq!(
-            cache.not_modified(path, &current),
-            Some(json!({"id": 2}))
-        );
+        assert_eq!(cache.not_modified(path, &current), Some(json!({"id": 2})));
     }
 
     #[test]
@@ -349,8 +332,14 @@ mod tests {
         assert!(cache.save(second, &other, Some("\"same\""), &json!({"page": 2})));
         let first_now = cache.snapshot(first);
         let second_now = cache.snapshot(second);
-        assert_eq!(cache.not_modified(first, &first_now), Some(json!({"page": 1})));
-        assert_eq!(cache.not_modified(second, &second_now), Some(json!({"page": 2})));
+        assert_eq!(
+            cache.not_modified(first, &first_now),
+            Some(json!({"page": 1}))
+        );
+        assert_eq!(
+            cache.not_modified(second, &second_now),
+            Some(json!({"page": 2}))
+        );
         assert!(cache.not_modified("/user", &first_now).is_none());
         assert!(cache.not_modified("/user", &second_now).is_none());
     }
@@ -369,9 +358,16 @@ mod tests {
             assert!(!cache.save(path, old, Some("\"old\""), &json!({"scope": "old"})));
             assert!(cache.not_modified(path, old).is_none());
         }
-        assert!(cache.save(path, &current, Some("\"current\""), &json!({"scope": "new"})));
-        assert_eq!(cache.not_modified(path, &cache.snapshot(path)),
-            Some(json!({"scope": "new"})));
+        assert!(cache.save(
+            path,
+            &current,
+            Some("\"current\""),
+            &json!({"scope": "new"})
+        ));
+        assert_eq!(
+            cache.not_modified(path, &cache.snapshot(path)),
+            Some(json!({"scope": "new"}))
+        );
     }
 
     #[test]
@@ -380,8 +376,12 @@ mod tests {
         let billing = "/organizations/org/settings/billing/usage/summary?year=2026&month=10";
         let lookup = cache.snapshot(billing);
         assert!(lookup.etag.is_none());
-        assert!(cache.save(billing, &lookup, Some("\"usage\""),
-            &json!({"usageItems":[{"grossQuantity":1}]})));
+        assert!(cache.save(
+            billing,
+            &lookup,
+            Some("\"usage\""),
+            &json!({"usageItems":[{"grossQuantity":1}]})
+        ));
         assert!(cache.snapshot(billing).etag.is_none());
         assert!(cache.not_modified(billing, &lookup).is_none());
     }

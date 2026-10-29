@@ -85,3 +85,22 @@ regular expression. Source tests cover the exact 100-character limit,
 101-character rejection and absence of provider calls on failure.
 M12 removes that limit in installation discovery; its result remains
 unknown until execution.
+
+## Executed evidence (one actual CI attempt)
+
+The `tests/mode-b-mutations.test.mjs` suite ran in
+[Preflight #40959460474](https://github.com/morozhenko-apps/repoticker/actions/runs/40959460474)
+at exact SHA `c507201398ce18479e54a61c250a6bb7805504b4`.
+Log evidence: **M01 through M12 each reported PASS**. The
+implementation of `mustKill` executes the unchanged production
+invariant first, then imports a uniquely anchored modified source
+module and requires that the same assertion reject that mutant.
+Thus 12 of 12 **selected risk-targeted JS mutants** were caught
+in this executed attempt. This is not a whole-code mutant count.
+
+The overall Node pass was red (492/494), unrelated to these 12
+mutants. Two test fixtures conflicted with the strict installation
+deduplication and prior-snapshot provenance policies and were
+repaired in the next source/test commit. The mutation score recorded
+here refers to the original executed SHA; revalidation is required
+for any new SHA.

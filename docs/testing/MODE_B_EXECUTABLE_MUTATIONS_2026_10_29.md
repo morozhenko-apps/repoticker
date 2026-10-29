@@ -17,7 +17,7 @@ fails the review instead of counting as a successful kill.
 No HTTP calls, user credentials or real Git operations are used.
 External GitHub responses and a clock are injected at their real
 input boundaries; the subject under test is never replaced by a
-mock. The eleven contracts are part of the normal Node test command,
+mock. The twelve contracts are part of the normal Node test command,
 not a separate ten-run stress loop.
 
 | ID | Production branch mutation | Invariant / target |
@@ -33,6 +33,7 @@ not a separate ten-run stress loop.
 | M09 | Allow unsafe accumulated numeric usage | Overflow is rejected before presenting minutes |
 | M10 | Treat TTL equality as a cache hit | A stale same-scope billing cache must refresh at TTL |
 | M11 | Disable canonical UTC calendar comparison | Normalized impossible date must not create a CI failure alert |
+| M12 | Remove maximum account-name length limit | Source 101-character GitHub names cannot enter the monitored account scope |
 
 The existing Mode B source-contract tests for installations expecting
 silent filtering were updated because the fail-closed safety contract
@@ -72,3 +73,15 @@ years, month/day bounds and a malformed projected run; JS cases
 add invalid calendar/time tables and a legitimate 2024 leap day.
 The M11 mutant removes JS normalization protection. No test result
 has been observed for this source branch yet.
+
+## Identity input size alignment
+
+`github-installations.mjs`, `github-monitor.mjs` and
+`runner-collector.mjs` now require 1–100 ASCII characters in
+account/repository segments, matching native
+`github_api.rs::valid_name`. Numeric/non-string organization values
+are rejected before network I/O, rather than coerced through a
+regular expression. Source tests cover the exact 100-character limit,
+101-character rejection and absence of provider calls on failure.
+M12 removes that limit in installation discovery; its result remains
+unknown until execution.

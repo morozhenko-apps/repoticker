@@ -110,3 +110,22 @@ and N5. The other bounded-map tests remain unchanged.
 
 The Linux/Windows native Rust test gates and V8 JavaScript coverage
 are source-configured, not yet observed as passing on this branch.
+
+## Added trust-boundary regressions after initial table
+
+- **N1/N2/N7 identity lengths:** native Rust and the JS
+  installations/monitor/collector layers now share the same 100-character
+  cap. Deterministic tests verify 100 accepted, 101 rejected and no
+  provider request on invalid names/types. This is a source change,
+  not evidence of an OS acceptance rerun.
+- **N6/N8 notification timestamps:** native completed-run API
+  projections now enforce Gregorian month/day/leap/clock ranges and
+  JS notification history verifies canonical UTC round-trip.
+  Tests reject 2026-02-31 and other invalid date/time variants,
+  retain valid leap day and avoid altering history on invalid facts.
+- **Stage 10 mutation implementation:** 12 actual source
+  mutations have exact anchors, original-behavior assertions and
+  mutated-behavior assertions in `mode-b-mutations.test.mjs`.
+  They are **pending execution**, not claimed 12/12 killed.
+- **Auth Rust:** three new timing/lifetime tests are present but
+  not yet observed as passing in the full Rust-core gate.

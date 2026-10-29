@@ -68,13 +68,17 @@ pub(crate) fn valid_name(value: &str) -> bool {
 fn valid_utc_second_timestamp(timestamp: &str) -> bool {
     let bytes = timestamp.as_bytes();
     if bytes.len() != 20
-        || !bytes.iter().copied().enumerate().all(|(index, byte)| match index {
-            4 | 7 => byte == b'-',
-            10 => byte == b'T',
-            13 | 16 => byte == b':',
-            19 => byte == b'Z',
-            _ => byte.is_ascii_digit(),
-        })
+        || !bytes
+            .iter()
+            .copied()
+            .enumerate()
+            .all(|(index, byte)| match index {
+                4 | 7 => byte == b'-',
+                10 => byte == b'T',
+                13 | 16 => byte == b':',
+                19 => byte == b'Z',
+                _ => byte.is_ascii_digit(),
+            })
     {
         return false;
     }

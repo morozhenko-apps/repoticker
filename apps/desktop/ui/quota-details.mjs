@@ -7,8 +7,24 @@ function displayLocale(language) {
   const code = normalizeLocale(language);
   return ({ pt: "pt-PT", "zh-Hant": "zh-TW", fil: "fil-PH" })[code] ?? code;
 }
-const safeName = value => typeof value === "string" && value.trim()
-  ? value.trim().slice(0, 38) : "Unnamed runner";
+// Bound only the displayed runner label, never the GitHub model identity.
+ // Intl.Segmenter keeps emoji ZWJ sequences and combining marks intact;
+ // legacy WebKit engines still retain complete Unicode code points.
+const runnerSegmenter = typeof Intl.Segmenter === "function"
+  ? new Intl.Segmenter(undefined, { granularity: "grapheme" }) : null;
+export function displayRunnerName(value) {
+  if (typeof value !== "string" || !value.trim()) return "Unnamed runner";
+  const raw = value.trim();
+  const units = runnerSegmenter ? runnerSegmenter.segment(raw) : raw;
+  let result = "";
+  let count = 0;
+  for (const unit of units) {
+    if (count === 38) break;
+    result += typeof unit === "string" ? unit : unit.segment;
+    count++;
+  }
+  return result;
+}
 export function localCheckedTime(value, timeZone, language = "en") {
   if (typeof value !== "string" || !Number.isFinite(Date.parse(value))) return "Unknown";
   const options = { year: "numeric", month: "2-digit", day: "2-digit",
@@ -55,7 +71,7 @@ function tasksDetails(state) {
   for (const runner of runners.slice(0, 4)) {
     const running = jobsCovered
       ? active.filter(job => job.runner_id === runner.id).length : null;
-    rows.push([safeName(runner.name), shown(running)]);
+    rows.push([displayRunnerName(runner.name), shown(running)]);
   }
   if (runners.length > 4) rows.push(["More self-hosted", "+" + (runners.length - 4)]);
   if (!runnersCovered) rows.push(["Self-hosted", "—"]);

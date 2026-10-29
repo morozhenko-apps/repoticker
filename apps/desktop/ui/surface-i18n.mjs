@@ -58,14 +58,24 @@ export function surfaceText(language, key) {
   return surfaceLocale(language) === "ru" ? (ru[key] ?? coreText(language, key)) : coreText(language, key);
 }
 
+// Dynamic counts and timestamps are isolated as one visual token in RTL;
+ // neither the source monitor model nor its data values are rewritten.
+function isolatedValue(language, value) {
+  return surfaceLocale(language) === "ar" && value !== "—"
+    ? "\u2068" + value + "\u2069" : value;
+}
 function translatedStatus(language, status) {
   if (surfaceLocale(language) === "en") return status;
   const runners = /^Runners · (.+)$/.exec(status);
-  if (runners) return surfaceText(language, "Runners") + " · " + runners[1];
+  if (runners) return surfaceText(language, "Runners") + " · " +
+    isolatedValue(language, runners[1]);
   const tasks = /^Tasks · Running (.+) \/ Queued (.+)$/.exec(status);
   if (tasks) return surfaceText(language, "Tasks") + " · " +
-    surfaceText(language, "Running") + " " + tasks[1] + " / " +
-    surfaceText(language, "Queued") + " " + tasks[2];
+    surfaceText(language, "Running") + " " + isolatedValue(language, tasks[1]) + " / " +
+    surfaceText(language, "Queued") + " " + isolatedValue(language, tasks[2]);
+  const billing = /^Actions · (\d{4}-(?:0[1-9]|1[0-2])|—)$/.exec(status);
+  if (billing) return surfaceText(language, "Actions") + " · " +
+    isolatedValue(language, billing[1]);
   return surfaceText(language, status);
 }
 
@@ -76,7 +86,8 @@ function translatedMessage(language, message) {
   if (checked) {
     const value = checked[1] === "Unknown"
       ? surfaceText(language, "Unknown") : checked[1];
-    return surfaceText(language, "Checked") + ": " + value;
+    return surfaceText(language, "Checked") + ": " +
+      (checked[1] === "Unknown" ? value : isolatedValue(language, value));
   }
   return surfaceText(language, message);
 }

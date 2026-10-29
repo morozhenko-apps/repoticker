@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildQuotaDetails, buildHoverDetails } from "../apps/desktop/ui/quota-details.mjs";
+import { buildQuotaDetails, buildHoverDetails, displayRunnerName } from "../apps/desktop/ui/quota-details.mjs";
 import { safeActionsJobUrl } from "../apps/desktop/ui/model.mjs";
 
 test("legacy billing-only entrypoint shows only account types and unknown quotas", () => {
@@ -69,4 +69,31 @@ test("initial credential check and data loading say Connecting, not Connect GitH
   const failed = buildHoverDetails(null, "tasks", true, "GitHub API rate limited.");
   assert.equal(failed.status, "Tasks unavailable");
   assert.match(failed.message, /rate limited/);
+});
+
+
+test("runner names truncate by Unicode graphemes, not UTF-16 code units", () => {
+  const complex = "👩‍💻";
+  const combining = "e\u0301";
+  assert.equal(displayRunnerName(""), "Unnamed runner");
+  assert.equal(displayRunnerName(null), "Unnamed runner");
+  assert.equal(displayRunnerName("  runner/東京  "), "runner/東京");
+  assert.equal(displayRunnerName("a".repeat(37) + complex + "overflow"),
+    "a".repeat(37) + complex);
+  assert.equal(displayRunnerName("a".repeat(37) + combining + "overflow"),
+    "a".repeat(37) + combining);
+  assert.equal(displayRunnerName("あ".repeat(39)), "あ".repeat(38));
+  assert.equal(displayRunnerName("b".repeat(45)), "b".repeat(38));
+  const original = "r".repeat(37) + complex + "-private-tail";
+  const state = {
+    coverage: { runners: true, jobs: true },
+    counts: { busy: 1, idle: 0, offline: 0, running: 1,
+      queued: 0, runningGitHubHosted: 0 },
+    runners: [{ id: 7, name: original }],
+    runningJobs: [{ runner_id: 7 }],
+  };
+  const details = buildHoverDetails(state, "tasks", true);
+  assert.equal(details.sections[0].rows[0][0], "r".repeat(37) + complex);
+  assert.equal(details.sections[0].rows[0][1], "1");
+  assert.equal(state.runners[0].name, original, "provider model must remain untouched");
 });

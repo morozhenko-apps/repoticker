@@ -68,3 +68,41 @@ STABLE on CI. Do not mark unrun Rust/Python/desktop gates as pass.
 legacy Mode B matrices or weaken failing stable assertions.
 
 **Status at plan creation:** NOT YET IMPLEMENTED OR SUBMITTED.
+
+
+## Confirmed source defect — task-group invalidation completeness
+
+**Expected:** after a failed or cooled-down task refresh, all task
+coverage, task lane confidence, task lane details, observed counts and
+task timestamps become unknown/empty while independent runner
+capacity and last-successful runner timestamp remain intact.
+The owning `jobs` coverage flag must not contradict stale
+`runningLanes=true` or stale `queuedUnclassified=3`.
+
+**Actual:** `github-monitor.mjs::invalidateMetricGroup(previous, "tasks")`
+currently clears only primary `jobs/queue/running` booleans,
+headline counts and task timestamp; it leaves stale
+`runningLanes`, `queuedLanes`, `queuedUnclassified`,
+`runningObserved/queuedObserved` and lane job arrays.
+
+**Root-cause differential:** state is already cloned and the correct
+task branch is entered, so source revision or missing repaint is not
+responsible. The specific missing keys are in the invalidation
+allowlist while the corresponding merge preservation lists correctly
+include them. The bug is inconsistent invalidation breadth, not
+collector input, API access, token auth, timing or font layout.
+
+**Scoped correction:** extend the same task-only invalidation to
+clear derived task flags, task preview arrays and observed counts;
+leave runner coverage, runner records, capacity counts and
+`checkedAtRunners` unchanged. No schema migration, REST
+requests, permissions or security policy changes. Add a
+source-backed regression asserting all linked fields and prior-state
+immutability. Undo with one production+test commit if necessary.
+This is a repair to the existing unknown-vs-zero invariant,
+not a new public API contract.
+
+**Validation:** run new focused cases against real source-defined
+JS functions once after assembling all changes; standard Node
+STABLE/Preflight is the eventual exact-SHA CI gate, not an
+inferred pass from V8 source execution.

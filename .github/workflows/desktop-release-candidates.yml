@@ -49,7 +49,7 @@ jobs:
         run: cargo install tauri-cli --version '^2' --locked
       - name: Build Linux distributions
         working-directory: apps/desktop/src-tauri
-        run: cargo tauri build --bundles deb,appimage
+        run: cargo tauri build --bundles deb,appimage -- --locked
       - name: Verify Linux artifacts
         env:
           VERSION: ${{ needs.validate.outputs.version }}
@@ -77,7 +77,7 @@ jobs:
         run: cargo install tauri-cli --version '^2' --locked
       - name: Build installer
         working-directory: apps/desktop/src-tauri
-        run: cargo tauri build --bundles nsis
+        run: cargo tauri build --bundles nsis -- --locked
       - name: Verify Windows artifact
         shell: pwsh
         env:

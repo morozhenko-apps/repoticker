@@ -59,6 +59,8 @@ class ReleaseCandidateContract(unittest.TestCase):
         self.assertIn('python3 scripts/release_version.py --check-tag "$RELEASE_TAG"', release)
         self.assertIn("environment: apt-release", release)
         self.assertIn("scripts/r2_release.py", release)
+        self.assertIn("cargo tauri build --bundles deb,appimage -- --locked", release)
+        self.assertIn("cargo tauri build --bundles nsis -- --locked", release)
         self.assertIn("needs: [validate, publish, cleanup]", release)
 
 

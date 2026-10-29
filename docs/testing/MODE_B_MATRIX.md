@@ -93,3 +93,20 @@ executable-branch maps, their Positive/N1–N12 cells and interactions,
 Rust per-module branch coverage, escaped mutation analysis, full
 stable suite and final report on the frozen candidate SHA. Passing a
 subset of tests cannot close Mode B.
+
+## Rust core Stage 9 regression update
+
+**config_store.rs** — four new cases (not yet executed):
+valid primary with damaged backup, rejected transaction without disk
+mutation, three successful saves rotating the latest valid backup,
+and Unix mode excluding group/world access. These exercise Positive,
+N4 (repeat saving), N5 (transaction integrity), N6 (corruption),
+N7 (privacy) and N12 (storage). They do not prove all branch coverage.
+
+**bounded.rs** — replaces the existing timing-based four-worker test
+with a bounded condition-variable rendezvous. It asserts exactly four
+workers concurrently and no leak after completion, targeting N2
+and N5. The other bounded-map tests remain unchanged.
+
+The Linux/Windows native Rust test gates and V8 JavaScript coverage
+are source-configured, not yet observed as passing on this branch.

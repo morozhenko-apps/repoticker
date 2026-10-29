@@ -172,3 +172,13 @@ test("mutation M11: impossible Gregorian UTC dates must not alert as valid runs"
         }] }]
       }), /Invalid notification run facts/);
     }));
+
+test("mutation M12: provider account names above native bound cannot enter UI scope", () =>
+  mustKill("github-installations.mjs",
+    "const ACCOUNT_NAME = /^[a-zA-Z0-9_.-]{1,100}$/;",
+    "const ACCOUNT_NAME = /^[a-zA-Z0-9_.-]+$/;",
+    async m => {
+      await assert.rejects(m.listAvailableInstallations(async () => ({
+        installations: [installation(7, "a".repeat(101))]
+      })), /Invalid installations response/);
+    }));

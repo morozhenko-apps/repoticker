@@ -80,3 +80,65 @@ the on-disk receipt format, S3 keys, signing policy or public API.
 
 **At plan creation:** no executable change submitted, no CI run
 observed.
+
+
+## Batch 07 implementation checkpoint — submitted for exact-SHA CI
+
+**Staged code/test commit:** `d3afba59f870e27a7ab40ef35a51f7ace9c5e840`. The only
+production source change is `scripts/r2_release.py::publish`.
+The existing receipt and `repoticker-latest-publish.json`
+conflict checks now also reject dangling symlinks; both checks
+run **before** source validation and S3 client construction.
+The manifest check is repeated before the final `latest.json`
+upload to reject a conflict arising during previous uploads.
+
+**26 additional offline Python tests** were added to
+`tests/test_release_r2_contract.py` (28 previously existing,
+54 current test methods). Cases cover:
+
+- Existing or dangling local receipt/manifest paths: reject before
+  validating artifacts, opening the cloud client or changing R2.
+- Public readback failure after immutable asset, mutable Packages
+  and signed InRelease; no later pointer or verified receipt.
+- Race where a local manifest file appears while InRelease is
+  being verified: fail closed before writing `latest.json`.
+- S3 HEAD 500/unknown exceptions, missing sha metadata, forged
+  sha metadata with wrong bytes, shorter/longer private readback
+  and S3 GET errors: reject without false verification.
+- Public HTTP 301/302/304/400/401/404/409/429/500/503,
+  missing local file, network exception and multichunk same-size
+  tampering: no successful receipt.
+- Invalid release version/commit, empty or too-large source
+  file, dangling source symlink, duplicate native manifest entry,
+  symlinked platform manifest/apt keyring/apt directory and a
+  signed but non-UTF-8 Packages catalog.
+
+**Validation evidence:** GitHub connector file reads and static
+contract/structure checks of the staged exact source; total
+tests are 54 and all planned paths and guards are present.
+A static comparison against the previous production version
+confirms the new early manifest check had been absent. The
+**Python tests were NOT executed** here, because the local
+container cannot resolve GitHub to obtain this staged repo.
+Do not claim 26/26 PASS; the exact-SHA Python release suite
+and full Node/Rust/desktop Preflight are pending external CI.
+The workflow will be triggered by the final single branch
+update; CI will not be polled.
+
+**Unresolved architectural blockers:** different external R2
+writers still have no atomic conditional immutable creation;
+a failed public readback of an already-uploaded `latest.json`
+still cannot prove the pointer was never mutated. No false
+rollback, overwrite, forced fetch or incomplete release receipt
+is introduced. These require independent architectural review
+and are **not** declared solved by this batch.
+
+**Other gates:** global Mode B branch/mutation evidence, CI stable
+results, installed Linux KDE/Windows and independent L10N-20
+physical acceptance. No release tag, main promotion, R2 object
+mutation, provider key, runner inventory or GitHub configuration
+changed in this batch.
+
+**Delivery policy:** one docs planning commit, one code+tests
+commit and one docs checkpoint commit are sent in a single
+fast-forward to `dev`; no intermediate runner-triggering push.

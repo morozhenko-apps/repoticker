@@ -106,3 +106,33 @@ not a new public API contract.
 JS functions once after assembling all changes; standard Node
 STABLE/Preflight is the eventual exact-SHA CI gate, not an
 inferred pass from V8 source execution.
+
+## Implementation checkpoint — consolidated batch 03
+
+**Main code/test commit:** `dffc6a2d17c531ac66652715b611d7576f76e8c1` (staged before the single `dev` push).
+**New assertions:** 26 independent Node test cases in `tests/mode-b-monitor-edges.test.mjs`.
+**Production fix:** `github-monitor.mjs::invalidateMetricGroup` now clears all derived task coverage, lane preview arrays, observed counts and unmatched-job evidence on task refresh failure. Independent runner inventory, capacity, its original timestamp and source state are preserved.
+
+### Scoped test coverage
+
+- Monitor refresh intervals at 15/30/31/60/100 repositories, invalid counts and conservative fallback.
+- Installation inventory: malformed account facts, page boundary, invalid HTTP payload, truncated 10-page response and explicit selected-repo failure.
+- Scope/account collection: validation before repository API use, exact previous-state reuse and cross-scope refusal, runner-only permission denial while jobs remain authoritative.
+- Targeted refresh: independent runner/task clocks and coverage, failure invalidation, cross-account isolation and preservation of fresh runner data.
+- Runner collector: malformed scope refusal before I/O, authoritative zero versus incomplete inventory, capped runner and job pagination, invalid run IDs, permission error isolation and targeted refresh methods.
+- CI failure monitoring: order-invariant account scope, atomic validation, redacted partial API failures and invalid-scope rejection before REST.
+- Redacted provider errors versus fixed native failure vocabulary.
+
+### Validation evidence
+
+- **26/26 new cases passed** in a focused isolated V8 harness loading the actual staged production function source and test bodies. The harness supplied a compatibility `structuredClone` shim for plain synthetic fixtures; this is not native Node execution.
+- Production source and test module parsed in V8. No network, GitHub API token, credentials, local Git mutations, real R2 calls or native OS operations were performed.
+- **NOT RUN:** `node --test tests/*.test.mjs` under Node 24; Rust core/desktop tests, Clippy/rustfmt; Python release tests; full Preflight; installed Windows/KDE or native 20-locale review. These require exact-SHA evidence from CI/OS acceptance.
+- The confirmed defect was reproduced by inspecting an invalidated task snapshot with `jobs:false` but `runningLanes:true`, `queuedLanes:true` and old observed counts. The fix removes that contradiction and is regression-checked; original runner facts are preserved.
+
+### Submission policy and open gates
+
+- All staged docs and executable changes are published using **one** `update_ref` fast-forward of `dev` after source checks; do not run or poll CI for any intermediate commit.
+- No `main`, release tag, production R2 write or protected branch change.
+- Final Mode B completion is still blocked by unexecuted exact-SHA STABLE and full branch/mutation evidence. Native Windows/KDE and independent L10N-20 acceptance follow Mode B and still block v1 release.
+- R2 external concurrent immutable write and already-updated `latest.json` readback-failure recovery remain separate, unresolved architecture/release blockers.

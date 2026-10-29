@@ -85,6 +85,9 @@ jobs:
       - name: Validate headless Git process startup on Windows
         shell: pwsh
         run: cargo test --locked -p repoticker-core windows_git_process_tests
+      - name: Native Windows desktop unit tests
+        shell: pwsh
+        run: cargo test --locked -p repoticker --bin repoticker
       - name: Build acceptance NSIS (never publish)
         working-directory: apps/desktop/src-tauri
         shell: pwsh

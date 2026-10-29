@@ -13,6 +13,13 @@ class NativeDesktopPreflightContract(unittest.TestCase):
         self.assertIn("libwebkit2gtk-4.1-dev", source)
         self.assertIn("libgtk-layer-shell-dev", source)
 
+    def test_windows_native_unit_gate_is_in_unpublished_candidate_workflow(self):
+        workflow = (ROOT / ".github/workflows/desktop-acceptance-candidates.yml").read_text(encoding="utf8")
+        self.assertIn("cargo test --locked -p repoticker-core windows_git_process_tests", workflow)
+        self.assertEqual(workflow.count("cargo test --locked -p repoticker --bin repoticker"), 1)
+        self.assertIn("runs-on: windows-2025", workflow)
+        self.assertNotIn("environment: apt-release", workflow)
+
     def test_desktop_result_remains_required_and_fail_closed(self):
         source = (ROOT / ".github/workflows/preflight.yml").read_text(encoding="utf8")
         self.assertIn("needs: [format_and_core, ui, desktop]", source)

@@ -60,3 +60,40 @@ behavior is authorized by this testing-only stage.
 
 This is **Mode B** testing/infrastructure. Passing this increment
 does NOT conclude exhaustive all-method/branch/mutation coverage.
+
+## Implementation evidence — prepared after planning
+
+Implemented in isolated commits, not yet verified on CI:
+
+| Checkpoint | Implemented source | Status |
+| --- | --- | --- |
+| Candidate trigger completeness | `.github/workflows/desktop-acceptance-candidates.yml` adds whole Tauri native Rust / Rust core / native capabilities+icons / WebView source patterns; preserves existing exact version and release package paths | Source complete; CI pending |
+| Trigger contract positive/negative | `tests/test_release_native_candidate_paths.py`: representative native source edits must trigger; README/Markdown-only must not; locked Windows/KDE builds must remain unpublished | Test authored; CI pending |
+| Settings repo pagination saturation | `tests/settings-github-confirm.test.mjs`: exactly 10 × 100 unique repo page entries; only 100 rendered concurrently; filter can reach page-10 item; draft not persisted before OK | Test authored; CI pending |
+| Settings repo permission denial | Same test file: saved selected subset survives failing repo inventory and Cancel without changing native scope | Test authored; CI pending |
+| Settings cross-account in-flight race | Same file: late account-A repo list cannot override already loaded account-B rows after scope change; neither choice is committed before OK | Test authored; CI pending |
+| Corrupt installation list | Same file: one valid and one invalid installation must not auto-authorize a guessed account | Test authored; CI pending |
+
+**No product logic or persistence contract was changed.**
+The deterministic Settings fixture was extended with a controlled
+repository-page source, synthetic denial and an unresolved old-account
+reply. It does not make network calls or launch a WebView.
+
+## Exact-source CI evidence policy
+
+The preexisting SHA
+`c5c6f4ec77b33305cd2d05e6cca8d189f68ca990`
+passed [Preflight #40962453233](https://github.com/morozhenko-apps/repoticker/actions/runs/40962453233).
+Its instrumented JS totals were **63.32% line, 58.36% branch and
+49.65% function**; `settings.mjs` was **58.07% line,
+50.00% branch and 48.44% function**. These numbers are baseline
+only. A changed SHA must obtain its own measured V8 results.
+
+Windows native and NSIS acceptance on that SHA was **not scheduled**,
+because the candidate trigger did not include the changed
+`github_api.rs` and `github_etag_cache.rs`. A new exact-SHA
+Windows/KDE candidate run is a required verification of this fix.
+
+Mode B Stage 12 remains open even if these targeted tests pass; the
+remaining unvisited branches of `settings.mjs` and platform-specific
+native code still require evidence or explicit, justified exclusion.

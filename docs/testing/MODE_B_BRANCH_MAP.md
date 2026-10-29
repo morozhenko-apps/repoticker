@@ -167,3 +167,19 @@ acceptance job. Neither is equivalent to interactive installed OS QA.
 
 These are source scenarios, not executed CI evidence or a general
 percentage of native API branch coverage.
+
+## Native credential-bound cache regression checks — 2026-10-29
+
+The `github_etag_cache.rs` embedded Rust test module now includes
+three focused source tests:
+
+| Scenario | Exact behavior under test | Intended escaped mutation |
+| --- | --- | --- |
+| ETAG01 concurrent unconditional 200 responses | Later HTTP response from an older snapshot cannot evict a newer ETag + projection | Remove current ETag equality comparison from `save` |
+| ETAG02 same ETag across consecutive authorized sessions | Prior-generation 304 replay and prior-generation save both rejected after `invalidate` | Remove generation guard from `not_modified` or `save` |
+| ETAG03 billing and unrelated path with same ETag | Live billing is never cached, independent non-billing cached projection preserved | Remove billing `cacheable` restriction |
+
+These checks are deterministic in-process Rust tests with no real bearer
+token, transport or external GitHub calls. Their execution is deferred
+to the single final stable CI run, and **no mutation kill count or
+branch coverage percentage is claimed** at the source-authoring stage.

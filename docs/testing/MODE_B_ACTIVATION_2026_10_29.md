@@ -64,6 +64,18 @@ The final gate requires externally supplied/observed exact-SHA
 execution results or a real executable environment. Do not claim a
 passed suite based on a newly added test source.
 
-**Current Mode B state:** ACTIVATED; Stage 1 initiated; Stages 3–12
-not yet complete. L10N/physical acceptance: explicitly deferred,
-not passed. Release remains BLOCKED.
+**Current Mode B state (2026-10-29):** ACTIVATED. Stage 1 source
+groups fetched: 24 Rust/C implementation files, 33 JS modules,
+12 scripts/Preflight workflows; the three other workflows were
+read independently. Files are registered by the five focused
+Mode B source maps and need **manual callback/branch expansion**.
+Stage 2 risk domains identified and documented.
+Stage 3 remains incomplete until per-function Positive/N1–N12
+applicability and existing test mapping; Stage 4–12 not complete.
+Current checked test file count: 54 Node + 8 Python + 2 Rust
+integration; no runtime test suite executed from this environment.
+
+Do not mark MODE B PASS: local shell lacks cargo and cannot resolve
+github.com; GitHub connector inspections aren't execution, and
+CI was not polled. L10N/physical acceptance explicitly deferred
+but not passed; v1 release remains BLOCKED.

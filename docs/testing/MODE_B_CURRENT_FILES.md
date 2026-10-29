@@ -1,7 +1,16 @@
 # RepoTicker Mode B — current source file register
 
 **Tree baseline:** `dev` @ `fd5cb98c3ea6e2002d4c3d69ab0a92cb110ebaa1`, 2026-10-28. GitHub recursive tree returned `truncated: false`.
-**Coverage of this register:** 72 production executable source/CI files and 64 test source files. **It is preparatory material only. The full Mode B campaign must not start before the required L10N-20 independent acceptance. It is not a completed Stage 3 artifact/function inventory, branch map or test-coverage measurement.**
+**Historical file-level snapshot:** 72 executable/CI source files and
+64 test files on the original date. **Owner update 2026-10-29:**
+Mode B is activated BEFORE final independent L10N and OS
+acceptance; physical acceptance remains mandatory before v1 release.
+The current GitHub tree has 54 Node tests, 8 Python release
+test files and 2 Rust integration test files (64 total), plus
+embedded Rust tests; four workflows were found in the new tree.
+Current source entrypoint maps live under
+[Mode B activation](MODE_B_ACTIVATION_2026_10_29.md).
+This register alone is not complete Stage 3–8 branch/coverage evidence.
 
 ## Inventory interpretation
 

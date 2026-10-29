@@ -2,7 +2,11 @@
 
 Status: **BLOCKED / NOT A RELEASE**. Source baseline: `dev` at
 `c3bae6af5ae5234cfe8cadd5e3de8f6909694890` (2026-10-28).
-Execution priority: **L10N-20 completion first; Mode B — Testing is the subsequent formal campaign**. The source inventory below is non-gating preparation, not an early Mode B start. Published `v0.2.0` and `main`
+**Owner sequencing update (2026-10-29): Mode B starts now; installed
+Windows/KDE and independent L10N-20 acceptance happen after Mode B
+and remain mandatory before release.** This supersedes the previous
+L10N-first start order but does not waive any exit gate.
+See [Mode B activation](MODE_B_ACTIVATION_2026_10_29.md). Published `v0.2.0` and `main`
 must remain unchanged until all mandatory gates pass.
 
 ## Scope and evidence rules

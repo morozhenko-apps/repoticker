@@ -7,6 +7,13 @@ on:
     branches: [dev]
     paths:
       - '.github/workflows/desktop-acceptance-candidates.yml'
+      - 'Cargo.lock'
+      - 'crates/repoticker-core/Cargo.toml'
+      - 'apps/desktop/src-tauri/Cargo.toml'
+      - 'apps/desktop/src-tauri/tauri.conf.json'
+      - 'scripts/release_version.py'
+      - 'scripts/release_assets.py'
+      - 'tests/test_release_candidate_contract.py'
       - 'apps/desktop/ui/app.mjs'
       - 'apps/desktop/ui/style.css'
       - 'apps/desktop/src-tauri/src/main.rs'
@@ -48,10 +55,11 @@ jobs:
           OUT: ${{ runner.temp }}/candidate-linux
         run: |
           set -euo pipefail
-          python3 scripts/release_assets.py collect --source target/release/bundle --target "$OUT" --platform linux --version 0.2.0
+          VERSION="$(python3 scripts/release_version.py)"
+          python3 scripts/release_assets.py collect --source target/release/bundle --target "$OUT" --platform linux --version "$VERSION"
           (cd "$OUT" && sha256sum -c -- *.sha256)
           printf '%s\n' "$GITHUB_SHA" > "$OUT/SOURCE_SHA.txt"
-          printf '%s\n' 'UNRELEASED dev acceptance only: not signed APT, not an official v0.2.0 release.' > "$OUT/NOT_A_RELEASE.txt"
+          printf '%s\n' 'UNRELEASED dev acceptance only: not signed APT, not an official release.' > "$OUT/NOT_A_RELEASE.txt"
       - uses: actions/upload-artifact@v4
         with:
           name: repoticker-acceptance-linux
@@ -86,7 +94,9 @@ jobs:
         env:
           OUT: ${{ runner.temp }}/candidate-windows
         run: |
-          python scripts/release_assets.py collect --source target/release/bundle --target "$env:OUT" --platform windows --version 0.2.0
+          $version = python scripts/release_version.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python scripts/release_assets.py collect --source target/release/bundle --target "$env:OUT" --platform windows --version "$version"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           Get-ChildItem "$env:OUT" -Filter *.sha256 | ForEach-Object {
             $parts = (Get-Content $_.FullName).Trim() -split '\s+', 2
@@ -95,7 +105,7 @@ jobs:
             if ($actual -ne $parts[0].ToLowerInvariant()) { throw "Checksum mismatch: $binary" }
           }
           Set-Content -Path "$env:OUT/SOURCE_SHA.txt" -Value "$env:GITHUB_SHA"
-          Set-Content -Path "$env:OUT/NOT_A_RELEASE.txt" -Value 'UNRELEASED dev acceptance only: unsigned NSIS, not an official v0.2.0 release.'
+          Set-Content -Path "$env:OUT/NOT_A_RELEASE.txt" -Value 'UNRELEASED dev acceptance only: unsigned NSIS, not an official release.'
       - uses: actions/upload-artifact@v4
         with:
           name: repoticker-acceptance-windows

@@ -1,7 +1,9 @@
 import test from "node:test";
+import { LOCALE_ROSTER } from "../apps/desktop/ui/locale-catalog.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { surfaceLocale, surfaceText, translateHoverDetails } from "../apps/desktop/ui/surface-i18n.mjs";
+import { buildHoverDetails } from "../apps/desktop/ui/quota-details.mjs";
 const about = readFileSync(new URL("../apps/desktop/ui/about.html", import.meta.url), "utf8");
 const quota = readFileSync(new URL("../apps/desktop/ui/quota.html", import.meta.url), "utf8");
 const quotaController = readFileSync(new URL("../apps/desktop/ui/quota.mjs", import.meta.url), "utf8");
@@ -170,4 +172,22 @@ test("Arabic task and runner headers isolate counts and dates without inventing 
   const other = translateHoverDetails(model, "pt", 1);
   assert.doesNotMatch(other.status, /\u2068|\u2069/);
   assert.deepEqual(other.sections[0].rows[0], model.sections[0].rows[0]);
+});
+
+
+test("generated runner names translate without rewriting provider names", () => {
+  const state = {
+    coverage: { runners: true, jobs: true },
+    counts: { running: 0, queued: 0, runningGitHubHosted: 0 },
+    runners: [{ id: 1, name: null }, { id: 2, name: "Unnamed runner" },
+      { id: 3, name: "Online" }], runningJobs: []
+  };
+  const model = buildHoverDetails(state, "tasks", true);
+  for (const { code } of LOCALE_ROSTER) {
+    const rows = translateHoverDetails(model, code, 3).sections[0].rows;
+    assert.equal(rows[0][0], surfaceText(code, "Unnamed runner"));
+    assert.equal(rows[1][0], "Unnamed runner");
+    assert.equal(rows[2][0], "Online");
+    assert.equal(rows[0][1], "0");
+  }
 });

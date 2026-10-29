@@ -98,7 +98,8 @@ export function translateHoverDetails(details, language, runnerNameRows = 0) {
   if (surfaceLocale(language) === "en" || !details) return details;
   // GitHub runner names are user-controlled. Preserve the first N
   // actual runner rows even when a name equals a built-in label.
-  const protectedRows = /^Tasks · Running /.test(details.status) &&
+  const isTasks = /^Tasks · Running /.test(details.status);
+  const protectedRows = isTasks &&
     Number.isInteger(runnerNameRows) && runnerNameRows >= 0 && runnerNameRows <= 4
     ? runnerNameRows : 0;
   return {
@@ -109,9 +110,17 @@ export function translateHoverDetails(details, language, runnerNameRows = 0) {
       ...section,
       title: surfaceText(language, section.title),
       message: translatedMessage(language, section.message),
-      rows: (section.rows || []).map(([label, value], index) => [
-        index < protectedRows ? label : surfaceText(language, label), value
-      ]),
+      rows: (section.rows || []).map(([label, value], index) => {
+        // Only our generated fallback is translatable; never infer origin
+        // from provider-controlled text that might equal an English UI key.
+        const kind = isTasks && Array.isArray(section.runnerLabelKinds)
+          ? section.runnerLabelKinds[index] : undefined;
+        const displayed = kind === "fallback"
+          ? surfaceText(language, "Unnamed runner")
+          : kind !== undefined || index < protectedRows
+            ? label : surfaceText(language, label);
+        return [displayed, value];
+      }),
     })),
   };
 }

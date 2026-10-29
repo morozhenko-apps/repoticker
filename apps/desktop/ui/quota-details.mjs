@@ -12,8 +12,9 @@ function displayLocale(language) {
  // legacy WebKit engines still retain complete Unicode code points.
 const runnerSegmenter = typeof Intl.Segmenter === "function"
   ? new Intl.Segmenter(undefined, { granularity: "grapheme" }) : null;
+const hasRunnerName = value => typeof value === "string" && Boolean(value.trim());
 export function displayRunnerName(value) {
-  if (typeof value !== "string" || !value.trim()) return "Unnamed runner";
+  if (!hasRunnerName(value)) return "Unnamed runner";
   const raw = value.trim();
   const units = runnerSegmenter ? runnerSegmenter.segment(raw) : raw;
   let result = "";
@@ -68,9 +69,11 @@ function tasksDetails(state) {
   const runners = runnersCovered && Array.isArray(state.runners) ? state.runners : [];
   const active = jobsCovered && Array.isArray(state.runningJobs) ? state.runningJobs : [];
   const rows = [];
+  const runnerLabelKinds = []; // UI-only origin metadata, never a GitHub model update.
   for (const runner of runners.slice(0, 4)) {
     const running = jobsCovered
       ? active.filter(job => job.runner_id === runner.id).length : null;
+    runnerLabelKinds.push(hasRunnerName(runner.name) ? "provider" : "fallback");
     rows.push([displayRunnerName(runner.name), shown(running)]);
   }
   if (runners.length > 4) rows.push(["More self-hosted", "+" + (runners.length - 4)]);
@@ -78,7 +81,7 @@ function tasksDetails(state) {
   rows.push(["GitHub-hosted", shown(jobsCovered ? counts.runningGitHubHosted : null)]);
   return view("Tasks · Running " + shown(jobsCovered ? counts.running : null) +
     " / Queued " + shown(jobsCovered ? counts.queued : null),
-    [{ title: "", rows }]);
+    [{ title: "", rows, runnerLabelKinds }]);
 }
 
 function billingDetails(billing = null, language = "en") {

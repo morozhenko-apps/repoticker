@@ -71,3 +71,37 @@ application has been fully mapped.
 Preflight and desktop candidate tests can process it.
 Do not mark Mode B completed, but a **submitted test batch**
 is an allowed user-requested stopping boundary.
+
+
+## Implementation checkpoint — submitted test source
+
+Code-and-test commit: `62950e159618dbc27bda06708acd9d9035ece8c0`.
+**Nine additional deterministic test functions** were authored:
+two core Git decision tests, four device-auth/lease tests, one
+native rate-limit test, and two Python R2 publication preflight
+tests. Production code was not changed.
+
+- Git: precedence of no upstream / operation in progress / dirty /
+  diverged, plus directional u64::MAX handling.
+- Device auth: 0/3601 bounds, invalid user codes, timestamp overflow,
+  consecutive slow_down schedules, terminal late authorization,
+  idempotent cancel and saturated refresh margin.
+- Native rate gate: permission 403 vs quota-backed 403, exact reset,
+  retry-after priority, malformed and out-of-bounds headers.
+- R2: preexisting verified receipt is never overwritten or followed
+  by an S3 client, and invalid release run IDs abort before the
+  first cloud operation.
+
+**Validation status:** source inspection after the commit and
+source-only structural review. The full Rust/Python/Node STABLE
+suite, rustfmt and external Preflight outcomes are **not yet
+observed**. The tests are **submitted**, not **passed**.
+Re-check exact final candidate SHA after any formatting fix,
+then perform the required stable execution gate. The separate
+R2 immutable object race and already-updated latest-pointer
+failure window remain **OPEN** architecture/release risks.
+No real R2 publication or secret access occurred.
+
+**Next:** finish the required source-to-test branch matrices and
+mutation review, then get actual exact-SHA test results. This
+checkpoint does not close Mode B or permit a public v1 release.

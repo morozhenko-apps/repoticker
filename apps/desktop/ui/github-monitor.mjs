@@ -15,6 +15,8 @@ export function monitorRefreshDelay(repositoryCount) {
 }
 const INSTALL_PAGE_LIMIT = 10;
 const ACCOUNT_NAME = /^[a-zA-Z0-9_.-]+$/;
+const validAccountName = name => typeof name === "string" &&
+  ACCOUNT_NAME.test(name) && name !== "." && name !== "..";
 
 
 export async function listInstalledRepositories(get, owner, installationId,
@@ -25,11 +27,14 @@ export async function listInstalledRepositories(get, owner, installationId,
   for (let page = 1; page <= INSTALL_PAGE_LIMIT; page++) {
     const payload = await get("/user/installations/" + installationId +
       "/repositories?per_page=100&page=" + page);
-    if (!Array.isArray(payload?.repositories)) throw Error("Invalid repository response");
+    if (!Array.isArray(payload?.repositories) ||
+        payload.repositories.length > 100) throw Error("Invalid repository response");
     for (const repo of payload.repositories) {
-      if (typeof repo?.full_name === "string" &&
-          repo.full_name.split("/")[0].toLowerCase() === owner.toLowerCase() &&
-          ACCOUNT_NAME.test(repo.full_name.split("/")[1] || "") &&
+      const parts = typeof repo?.full_name === "string"
+        ? repo.full_name.split("/") : [];
+      if (parts.length === 2 && validAccountName(parts[0]) &&
+          validAccountName(parts[1]) &&
+          parts[0].toLowerCase() === owner.toLowerCase() &&
           (!requested.size || requested.has(repo.full_name.toLowerCase()))) {
         repositories.push(repo.full_name);
       }
@@ -57,10 +62,14 @@ export async function collectForAccount({
   if (!install) return { state: null, reason: available.items.length
     ? "Select a GitHub account in Settings." : "No accessible GitHub App installation." };
   if (!Array.isArray(selectedRepositories) || selectedRepositories.length > 100 ||
-      selectedRepositories.some(name => typeof name !== "string" ||
-        name.split("/").length !== 2 ||
-        name.split("/")[0].toLowerCase() !== install.name.toLowerCase() ||
-        !ACCOUNT_NAME.test(name.split("/")[1]))) {
+      selectedRepositories.some(name => {
+        const parts = typeof name === "string" ? name.split("/") : [];
+        return parts.length !== 2 || !validAccountName(parts[0]) ||
+          !validAccountName(parts[1]) ||
+          parts[0].toLowerCase() !== install.name.toLowerCase();
+      }) ||
+      new Set(selectedRepositories.map(name => name.toLowerCase())).size !==
+        selectedRepositories.length) {
     throw Error("Invalid selected repositories.");
   }
   const repos = await listInstalledRepositories(
@@ -76,19 +85,18 @@ export async function collectForAccount({
   const previous = previousState?.scope?.organization === install.name &&
     JSON.stringify(previousState?.scope?.repositories) === JSON.stringify(repos.items)
     ? previousState : null;
-  const state = await collect({
+  let state = await collect({
     org: install.name, repositories: repos.items, get,
     maxRunnerPages: 10, maxRunPages: 2, maxJobPages: 2,
     maxActiveRunsPerRepo: 30, concurrency: 4,
     kind, previousState: previous,
   });
   if (!repos.complete && kind !== "runners") {
-    state.coverage.jobs = false;
-    state.coverage.queue = false;
-    state.coverage.running = false;
-    state.counts.running = null;
-    state.counts.queued = null;
-    state.checkedAtTasks = null;
+    // The repository inventory is not exhaustive: the entire task
+    // group is unknown, including lane confidence and observed counts.
+    // Reuse the established task invalidation rather than duplicating
+    // a partial reset. Independent runner capacity stays available.
+    state = invalidateMetricGroup(state, "tasks");
     state.errors.push({ scope: "repositories", reason: "incomplete" });
   }
   const failure = mostImportantGithubFailure(state.errors);

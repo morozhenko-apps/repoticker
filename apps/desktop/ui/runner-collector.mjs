@@ -11,7 +11,8 @@ async function getPages(get, pathForPage, key, maxPages) {
   const all = [];
   for (let page = 1; page <= maxPages; page++) {
     const payload = await get(pathForPage(page));
-    if (!payload || !Array.isArray(payload[key])) throw Error("Unexpected GitHub API response");
+    if (!payload || !Array.isArray(payload[key]) ||
+        payload[key].length > PAGE_SIZE) throw Error("Unexpected GitHub API response");
     all.push(...payload[key]);
     if (payload[key].length < PAGE_SIZE) return { items: all, complete: true };
   }

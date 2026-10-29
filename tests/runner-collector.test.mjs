@@ -274,3 +274,95 @@ test("manual runner errors do not invent fresh successful runner timestamp", asy
   assert.equal(next.checkedAtRunners, null);
   assert.equal(next.checkedAtTasks, prior.checkedAt);
 });
+
+
+test("Mode B: tasks-only refresh cannot display another organization's runner state", async () => {
+  const prior = await collectRunnerState({ ...config, get: async path => mockGithub(path) });
+  const requests = [];
+  const next = await collectRunnerState({
+    org: "neworg", repositories: ["neworg/first"], kind: "tasks",
+    previousState: prior, now: () => "2026-11-01T00:00:00Z",
+    get: async path => {
+      requests.push(path);
+      assert.ok(path.startsWith("/repos/neworg/"));
+      return { workflow_runs: [] };
+    },
+  });
+  assert.deepEqual(next.runners, []);
+  assert.equal(next.coverage.runners, false);
+  assert.equal(next.counts.busy, null);
+  assert.equal(next.counts.idle, null);
+  assert.equal(next.checkedAtRunners, null);
+  assert.equal(next.coverage.jobs, true);
+  assert.equal(next.counts.queued, 0);
+  assert.equal(next.checkedAtTasks, "2026-11-01T00:00:00Z");
+  assert.equal(requests.length, 2);
+});
+
+test("Mode B: changed repository selection cannot inherit previous task counts", async () => {
+  const prior = await collectRunnerState({ ...config, get: async path => mockGithub(path) });
+  assert.equal(prior.counts.queued, 3);
+  const requests = [];
+  const next = await collectRunnerState({
+    ...config, repositories: ["org/first"], kind: "runners",
+    previousState: prior, now: () => "2026-11-01T01:00:00Z",
+    get: async path => { requests.push(path); return mockGithub(path); },
+  });
+  assert.deepEqual(next.queuedJobs, []);
+  assert.deepEqual(next.runningJobs, []);
+  assert.equal(next.coverage.jobs, false);
+  assert.equal(next.counts.queued, null);
+  assert.equal(next.counts.running, null);
+  assert.equal(next.checkedAtTasks, null);
+  assert.equal(next.coverage.runners, true);
+  assert.equal(next.counts.busy, 1);
+  assert.equal(next.checkedAtRunners, "2026-11-01T01:00:00Z");
+  assert.ok(requests.every(path => path.startsWith("/orgs/org/actions/runners")));
+});
+
+test("Mode B: case and order changes preserve same-scope task evidence", async () => {
+  const prior = await collectRunnerState({ ...config, get: async path => mockGithub(path) });
+  const next = await collectRunnerState({
+    org: "ORG", repositories: ["ORG/SECOND", "Org/First"],
+    kind: "runners", previousState: prior,
+    get: async path => mockGithub(path.replace("/orgs/ORG/", "/orgs/org/")),
+  });
+  assert.equal(next.coverage.jobs, true);
+  assert.equal(next.counts.queued, prior.counts.queued);
+  assert.equal(next.counts.running, prior.counts.running);
+  assert.equal(next.checkedAtTasks, prior.checkedAtTasks);
+  assert.equal(next.coverage.runners, true);
+});
+
+test("Mode B: missing or ambiguous previous scope never authorizes a copied job lane", async () => {
+  const prior = await collectRunnerState({ ...config, get: async path => mockGithub(path) });
+  for (const scope of [
+    null, { organization: "org" },
+    { organization: "org", repositories: ["org/first", "org/first"] },
+    { organization: "other", repositories: ["org/first", "org/second"] },
+  ]) {
+    const next = await collectRunnerState({
+      ...config, kind: "runners", previousState: { ...prior, scope },
+      get: async path => mockGithub(path),
+    });
+    assert.equal(next.coverage.jobs, false);
+    assert.equal(next.counts.queued, null);
+    assert.equal(next.checkedAtTasks, null);
+    assert.deepEqual(next.queuedJobs, []);
+  }
+});
+
+test("Mode B: repository selection does not invalidate same-org runners in a tasks refresh", async () => {
+  const prior = await collectRunnerState({ ...config, get: async path => mockGithub(path) });
+  const requests = [];
+  const next = await collectRunnerState({
+    ...config, repositories: ["org/first"], kind: "tasks", previousState: prior,
+    get: async path => { requests.push(path); return mockGithub(path); },
+  });
+  assert.ok(requests.every(path => path.startsWith("/repos/")));
+  assert.equal(next.coverage.runners, true);
+  assert.equal(next.counts.busy, 1);
+  assert.equal(next.checkedAtRunners, prior.checkedAtRunners);
+  assert.equal(next.coverage.jobs, true);
+  assert.equal(next.counts.queued, 2);
+});

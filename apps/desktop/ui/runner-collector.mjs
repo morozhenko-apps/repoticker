@@ -89,12 +89,26 @@ export async function collectRunnerState({
       !NAME.test(components[1]) || components[1] === "." || components[1] === "..";
   })) throw Error("Invalid selected repositories");
 
+  // Scope provenance is required for every retained partial refresh lane.
+  const sameOrg = typeof previousState?.scope?.organization === "string" &&
+    previousState.scope.organization.toLowerCase() === org.toLowerCase();
+  const earlierNames = previousState?.scope?.repositories;
+  const earlier = Array.isArray(earlierNames) &&
+    earlierNames.every(name => typeof name === "string")
+    ? new Set(earlierNames.map(name => name.toLowerCase())) : null;
+  const requested = new Set(selectedRepos.map(name => name.toLowerCase()));
+  const sameRepoSet = sameOrg && earlier &&
+    earlier.size === requested.size && earlierNames.length === selectedRepos.length &&
+    [...requested].every(name => earlier.has(name));
+  const priorRunnerState = sameOrg ? previousState : null;
+  const priorTaskState = sameRepoSet ? previousState : null;
+
   // The cap applies across every repo and nested jobs page, not per worker.
   const limitedGet = limitRequests(get, concurrency);
   const errors = [];
   let runnerPage = {
-    items: Array.isArray(previousState?.runners) ? previousState.runners : [],
-    complete: previousState?.coverage?.runners === true
+    items: Array.isArray(priorRunnerState?.runners) ? priorRunnerState.runners : [],
+    complete: priorRunnerState?.coverage?.runners === true
   };
   if (needRunners) {
     runnerPage = { items: [], complete: false };
@@ -154,19 +168,19 @@ export async function collectRunnerState({
       scope: result.repository, reason: result.reason ?? "incomplete",
     });
   }
-  const previousJobs = previousState
-    ? [...(previousState.runningJobs || []),
-      ...(previousState.queuedJobs || []), ...(previousState.waitingJobs || [])]
+  const previousJobs = priorTaskState
+    ? [...(priorTaskState.runningJobs || []),
+      ...(priorTaskState.queuedJobs || []), ...(priorTaskState.waitingJobs || [])]
     : [];
   const checkedAt = now();
-  const priorClock = field => previousState && Object.hasOwn(previousState, field)
-    ? previousState[field] : previousState?.checkedAt ?? null;
+  const priorClock = (state, field) => state && Object.hasOwn(state, field)
+    ? state[field] : state?.checkedAt ?? null;
   const summary = summarizeRunnerState({
     runners: runnerPage.items,
     jobs: needTasks ? results.flatMap(item => item.jobs) : previousJobs,
     runnerCoverage: runnerPage.complete,
     jobCoverage: needTasks ? results.every(item => item.complete)
-      : previousState?.coverage?.jobs === true,
+      : priorTaskState?.coverage?.jobs === true,
     checkedAt,
   });
   return {
@@ -175,9 +189,9 @@ export async function collectRunnerState({
     errors,
     checkedAtRunners: needRunners
       ? (summary.coverage.runners ? checkedAt : null)
-      : priorClock("checkedAtRunners"),
+      : priorClock(priorRunnerState, "checkedAtRunners"),
     checkedAtTasks: needTasks
       ? (summary.coverage.jobs ? checkedAt : null)
-      : priorClock("checkedAtTasks"),
+      : priorClock(priorTaskState, "checkedAtTasks"),
   };
 }

@@ -61,7 +61,7 @@ jobs:
           node --check apps/desktop/ui/view.mjs
           node --check apps/desktop/ui/app.mjs
       - name: JS unit tests
-        run: node --test tests/*.test.mjs
+        run: node --experimental-test-coverage --test --test-coverage-include='apps/desktop/ui/*.mjs' tests/*.test.mjs
       - name: Install release contract tools
         run: |
           sudo apt-get update
@@ -94,6 +94,8 @@ jobs:
             wayland-protocols
       - name: Check desktop shell
         run: cargo check --locked -p repoticker
+      - name: Native Rust desktop unit tests
+        run: cargo test --locked -p repoticker --bin repoticker
 
   preflight:
     name: Preflight result

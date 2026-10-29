@@ -7,16 +7,29 @@ const validAccountName = name => typeof name === "string" &&
 
 export async function listAvailableInstallations(get) {
   const result = [];
+  const seenIds = new Map();
+  const seenOwners = new Map();
   for (let page = 1; page <= INSTALL_PAGE_LIMIT; page++) {
     const response = await get("/user/installations?per_page=100&page=" + page);
     if (!Array.isArray(response?.installations) ||
         response.installations.length > 100) throw Error("Invalid installations response");
     for (const item of response.installations) {
       const name = item?.account?.login;
-      if (validAccountName(name) &&
-          Number.isSafeInteger(item.id) && item.id > 0) {
-        result.push({ name, id: item.id });
+      if (!validAccountName(name) ||
+          !Number.isSafeInteger(item?.id) || item.id <= 0)
+        throw Error("Invalid installations response");
+      const identity = name.toLowerCase();
+      if (seenIds.has(item.id) || seenOwners.has(identity)) {
+        // Identical page-overlap is safe to deduplicate; conflicting
+        // account identity cannot authorize a shortened inventory.
+        if (seenIds.get(item.id) !== identity ||
+            seenOwners.get(identity) !== item.id)
+          throw Error("Conflicting installations response");
+        continue;
       }
+      seenIds.set(item.id, identity);
+      seenOwners.set(identity, item.id);
+      result.push({ name, id: item.id });
     }
     if (response.installations.length < 100) return { items: result, complete: true };
   }

@@ -81,3 +81,14 @@ test("Mode B: corrupt account inventory prevents any repository query", async ()
   assert.equal(calls.length, 1);
   assert.equal(collected, false);
 });
+
+test("Mode B: installation name at native API limit is accepted; longer is not", async () => {
+  const maxName = "o".repeat(100);
+  const accepted = await listAvailableInstallations(async () => ({
+    installations: [entry(14, maxName)]
+  }));
+  assert.deepEqual(accepted.items, [{ id: 14, name: maxName }]);
+  await assert.rejects(listAvailableInstallations(async () => ({
+    installations: [entry(14, maxName + "z")]
+  })), /Invalid installations response/);
+});

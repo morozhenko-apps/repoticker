@@ -71,7 +71,8 @@ export async function collectRunnerState({
   if (!["all", "runners", "tasks"].includes(kind)) throw Error("Invalid collection kind");
   const needRunners = kind !== "tasks";
   const needTasks = kind !== "runners";
-  if (!NAME.test(org ?? "") || org === "." || org === "..") throw Error("Invalid organization");
+  if (typeof org !== "string" || !NAME.test(org) || org === "." || org === "..")
+    throw Error("Invalid organization");
   if (!Array.isArray(repositories) || !repositories.length) {
     throw Error("Select repositories to monitor");
   }

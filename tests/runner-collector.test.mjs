@@ -430,3 +430,32 @@ test("Mode B: malformed and oversize job pages mark all task totals unknown", as
     assert.ok(snapshot.errors.some(e => e.scope === "org/first" && e.reason === "unavailable"));
   }
 });
+
+test("Mode B: organization and repository name limits align with native GitHub API", async () => {
+  const allowed = "a".repeat(100);
+  let requests = 0;
+  const good = await collectRunnerState({
+    org: allowed, repositories: [allowed + "/" + allowed],
+    get: async path => {
+      requests++;
+      return path.includes("/actions/runners?") ? { runners: [] } :
+        path.includes("/actions/runs?") ? { workflow_runs: [] } :
+        { jobs: [] };
+    },
+    now: config.now
+  });
+  assert.equal(good.coverage.jobs, true);
+  assert.equal(good.counts.queued, 0);
+  assert.equal(requests, 3);
+  for (const invalid of [
+    { org: "a".repeat(101), repositories: ["org/repo"] },
+    { org: 123, repositories: ["123/repo"] },
+    { org: allowed, repositories: [allowed + "/" + "r".repeat(101)] }
+  ]) {
+    let called = 0;
+    await assert.rejects(collectRunnerState({
+      ...invalid, get: async () => { called++; throw Error("unexpected request"); }
+    }), /Invalid organization|Invalid selected repositories/);
+    assert.equal(called, 0);
+  }
+});

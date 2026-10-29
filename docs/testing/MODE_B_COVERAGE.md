@@ -68,3 +68,22 @@ a new exact-SHA CI result until that new push completes.
 is 58.31%; Rust/Python per-branch numbers and whole-product mutation
 scores have not yet been measured. The 12/12 chosen JS source
 mutants cannot be extrapolated into 100% global mutation coverage.
+
+## Subsequent verified UI coverage — SHA a48203b0 (2026-10-29)
+
+[Preflight #40971393236](https://github.com/morozhenko-apps/repoticker/actions/runs/40971393236)
+**passed** all 505 JS tests (previous 498 + 7 Settings
+native-failure injections) as well as Linux native, Rust core,
+formatting and Clippy. Its V8 source report: **60.95% lines,
+56.34% branches, 48.22% functions** across instrumented
+UI source; `settings.mjs`: **47.16% lines, 50.00% branches,
+39.66% functions**. These aggregates are not a proof of
+whole-product branch coverage.
+
+The next targeted Settings/native identity-parity work is described in
+`docs/testing/MODE_B_SETTINGS_REPO_IDENTITY_2026_10_29.md`:
+three controller tests for 100/101-character identity boundaries,
+offline saved-subset persistence and the 100/101 selected-repository
+limit, plus one production validation fix. Its **new exact-SHA
+Preflight evidence remains pending** until CI executes; do not
+copy the baseline numbers into the subsequent SHA.

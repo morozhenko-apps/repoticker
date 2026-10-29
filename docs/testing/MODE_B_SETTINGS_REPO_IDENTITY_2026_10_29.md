@@ -58,6 +58,33 @@ branch protections, credentials or unrelated repositories are excluded.
 
 - [x] Native and Settings identity validators compared at baseline.
 - [x] Exact-SHA Preflight test and V8 evidence recorded.
-- [ ] Identity and offline/cap tests implemented.
-- [ ] Native parity fix implemented and source diff reviewed.
-- [ ] New exact-SHA automated acceptance verified.
+- [x] Identity and offline/cap tests implemented in a separate test commit.
+- [x] Native parity fix implemented in a separate production code commit;
+  compared against Rust `github_api::valid_name` and reviewed changed paths.
+- [ ] New exact-SHA automated acceptance verified (pending CI after one push).
+
+## Implemented change inventory
+
+- `tests/settings-github-confirm.test.mjs`: three tests invoke the real
+  Settings controller through the existing deterministic native mock.
+  They exercise canonical selected-row rendering, persisted subset
+  isolation while the API is unavailable, and a 101-item overflow
+  that must disable Apply until corrected.
+- `apps/desktop/ui/settings.mjs`: narrow `REPO_NAME` to
+  `[a-zA-Z0-9_.-]{1,100}`, reject `.`/`..`, and apply this
+  validation only to the repository component after the existing
+  owner comparison. No broader GitHub API behavior was changed.
+- All changes preserve the original asynchronous revision checks,
+  native persistence validation, owner scoping and private-name
+  handling. No new production dependencies.
+
+**Verification completed before push:** inspected the exact GitHub
+diff and the native validator, matched the three new test declarations
+and source call sites. **No successful new-SHA test run or V8 coverage
+measurement is claimed** until Preflight finishes.
+
+**Remaining Stage 12 coverage:** the ongoing Settings branch and
+function map, native OS-specific Rust branches, Python release
+utilities and whole-product mutation coverage. This is a bounded
+risk-reduction increment rather than Mode B completion.
+

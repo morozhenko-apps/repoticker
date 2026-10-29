@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import tempfile
@@ -41,14 +42,26 @@ def canonical(version, platform, ext):
     raise ValueError("Unexpected suffix")
 
 
+SEMVER = re.compile(r"(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\Z")
+
+
+def source_has_version(filename, version):
+    # A substring match would silently relabel v11.0.0 as v1.0.0,
+    # or v1.0.0.1 as v1.0.0. Require a whole numeric version token.
+    return re.search(r"(?<![0-9.])" + re.escape(version) +
+                     r"(?![0-9.])", filename) is not None
+
+
 def collect(source, target, platform, version):
+    if not SEMVER.fullmatch(version):
+        raise ValueError("Invalid candidate release version")
     if target.exists() and any(target.iterdir()):
         raise ValueError("Refusing non-empty output directory")
     results = []
     for ext in TYPES[platform]:
         choices = [
             p for p in source.rglob("*") if p.is_file() and not p.is_symlink()
-            and p.name.endswith(ext) and version in p.name
+            and p.name.endswith(ext) and source_has_version(p.name, version)
             and "debug" not in p.parts
         ]
         if len(choices) != 1:

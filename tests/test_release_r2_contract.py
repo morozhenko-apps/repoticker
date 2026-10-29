@@ -325,7 +325,7 @@ class PublicationFixture(unittest.TestCase):
         self.assertEqual(release.BUCKET, "app-dist")
         self.assertNotIn("latest.json", mutable)
 
-    def offline_publication(self, fail_latest=False):
+    def offline_publication(self, fail_latest=False, fail_at=None, inject_latest=False):
         """Emulate cloud clients while running real upload/publish ordering."""
         client = UploadSafetyTests.FakeS3()
         boto = ModuleType("boto3")
@@ -341,6 +341,11 @@ class PublicationFixture(unittest.TestCase):
             seen.append(key)
             if key == "latest.json" and fail_latest:
                 raise ValueError("intentional last-pointer readback failure")
+            if key == fail_at:
+                raise ValueError("intentional staged readback failure")
+            if key == "linux/InRelease" and inject_latest:
+                latest = Path(self.temp.name) / "repoticker-latest-publish.json"
+                latest.write_text('{"existing":"other writer"}\n', encoding="utf8")
             size = file.stat().st_size
             checksum = release.digest(file)
             return {
@@ -354,8 +359,11 @@ class PublicationFixture(unittest.TestCase):
             "boto3": boto, "botocore": botocore, "botocore.config": config
         }), patch.object(release.subprocess, "run"), patch.object(
                 release, "public_readback", side_effect=public):
-            if fail_latest:
-                with self.assertRaisesRegex(ValueError, "last-pointer"):
+            expected_error = ("last-pointer" if fail_latest else
+                              "staged readback" if fail_at else
+                              "existing latest manifest" if inject_latest else None)
+            if expected_error:
+                with self.assertRaisesRegex(ValueError, expected_error):
                     release.publish(self.bundle, self.apt, VERSION, COMMIT, 51,
                                     destination, "a" * 32, "test-key", "test-secret")
             else:
@@ -424,6 +432,157 @@ class PublicationFixture(unittest.TestCase):
                         release.publish(self.bundle, self.apt, VERSION, COMMIT, invalid,
                                         destination, "a" * 32, "test-key", "test-secret")
         self.assertFalse(destination.exists())
+
+
+
+
+    def test_existing_latest_manifest_refuses_before_source_map_or_network(self):
+        destination = Path(self.temp.name) / "verified-publication-receipt.json"
+        latest = destination.parent / "repoticker-latest-publish.json"
+        original = b'{"existing":true}\n'
+        latest.write_bytes(original)
+        with patch.object(release, "source_map",
+                          side_effect=AssertionError("must not inspect artifacts")):
+            with self.assertRaisesRegex(ValueError, "existing latest manifest"):
+                release.publish(self.bundle, self.apt, VERSION, COMMIT, 51,
+                                destination, "a" * 32, "fake-key", "fake-secret")
+        self.assertEqual(latest.read_bytes(), original)
+        self.assertFalse(destination.exists())
+
+    def test_dangling_latest_symlink_is_rejected_without_creating_target(self):
+        destination = Path(self.temp.name) / "receipt.json"
+        latest = destination.parent / "repoticker-latest-publish.json"
+        missing = destination.parent / "never-create-latest.json"
+        latest.symlink_to(missing)
+        self.assertFalse(latest.exists())
+        self.assertTrue(latest.is_symlink())
+        with patch.object(release, "source_map",
+                          side_effect=AssertionError("must not inspect artifacts")):
+            with self.assertRaisesRegex(ValueError, "existing latest manifest"):
+                release.publish(self.bundle, self.apt, VERSION, COMMIT, 51,
+                                destination, "a" * 32, "fake-key", "fake-secret")
+        self.assertFalse(missing.exists())
+
+    def test_dangling_receipt_symlink_is_rejected_before_any_artifact_read(self):
+        destination = Path(self.temp.name) / "receipt.json"
+        missing = destination.parent / "do-not-write-here.json"
+        destination.symlink_to(missing)
+        self.assertFalse(destination.exists())
+        self.assertTrue(destination.is_symlink())
+        with patch.object(release, "source_map",
+                          side_effect=AssertionError("must not inspect artifacts")):
+            with self.assertRaisesRegex(ValueError, "prior publication receipt"):
+                release.publish(self.bundle, self.apt, VERSION, COMMIT, 51,
+                                destination, "a" * 32, "fake-key", "fake-secret")
+        self.assertFalse(missing.exists())
+
+    def test_failed_immutable_public_readback_stops_before_mutable_indexes(self):
+        client, seen, receipt = self.offline_publication(
+            fail_at="linux/RepoTicker-0.1.0-linux-x64.AppImage"
+        )
+        self.assertFalse(receipt.exists())
+        self.assertNotIn("latest.json", seen)
+        self.assertFalse(any(key in client.objects for key in
+            [release.PREFIX + "linux/Packages", release.PREFIX + "linux/InRelease",
+             release.PREFIX + "latest.json"]))
+
+    def test_failed_mutable_public_readback_cannot_publish_signed_commit_marker(self):
+        client, seen, receipt = self.offline_publication(fail_at="linux/Packages")
+        self.assertFalse(receipt.exists())
+        self.assertIn("linux/Packages", seen)
+        self.assertNotIn("linux/InRelease", seen)
+        self.assertNotIn("latest.json", seen)
+        self.assertNotIn(release.PREFIX + "linux/InRelease", client.objects)
+
+    def test_failed_inrelease_readback_never_writes_latest_pointer(self):
+        client, seen, receipt = self.offline_publication(fail_at="linux/InRelease")
+        self.assertFalse(receipt.exists())
+        self.assertEqual(seen[-1], "linux/InRelease")
+        self.assertNotIn(release.PREFIX + "latest.json", client.objects)
+
+    def test_late_local_latest_manifest_collision_is_still_rejected(self):
+        client, seen, receipt = self.offline_publication(inject_latest=True)
+        self.assertFalse(receipt.exists())
+        self.assertEqual(seen[-1], "linux/InRelease")
+        self.assertNotIn(release.PREFIX + "latest.json", client.objects)
+        latest = Path(self.temp.name) / "repoticker-latest-publish.json"
+        self.assertEqual(latest.read_text(), '{"existing":"other writer"}\n')
+
+    def test_invalid_source_files_fail_before_opening_a_remote_s3_client(self):
+        destination = Path(self.temp.name) / "verified-publication-receipt.json"
+        target = self.bundle / "linux/repoticker_0.1.0_amd64.deb"
+        target.write_bytes(b"unverified")
+        with self.assertRaisesRegex(ValueError, "sidecar mismatch"):
+            release.publish(self.bundle, self.apt, VERSION, COMMIT, 51,
+                            destination, "a" * 32, "fake-key", "fake-secret")
+        self.assertFalse(destination.exists())
+
+    def test_invalid_source_version_and_commit_are_rejected_before_signing(self):
+        for version, commit in (
+            ("01.2.3", COMMIT), ("v1.2.3", COMMIT), ("1.2", COMMIT),
+            (VERSION, ""), (VERSION, COMMIT.upper()), (VERSION, COMMIT + "x")
+        ):
+            with self.subTest(version=version, commit=commit):
+                with patch.object(release.subprocess, "run",
+                                  side_effect=AssertionError("never sign")):
+                    with self.assertRaisesRegex(ValueError, "Invalid signed-release"):
+                        release.source_map(self.bundle, self.apt, version, commit)
+
+    def test_zero_and_oversized_release_file_are_rejected_without_reading(self):
+        target = Path(self.temp.name) / "test-release-object"
+        target.write_bytes(b"")
+        with self.assertRaisesRegex(ValueError, "Invalid release file size"):
+            release.safe_file(target)
+        with target.open("wb") as output:
+            output.truncate(350 * 1024 * 1024 + 1)
+        with self.assertRaisesRegex(ValueError, "Invalid release file size"):
+            release.safe_file(target)
+
+    def test_release_safe_file_rejects_dangling_symlink_without_following_it(self):
+        target = Path(self.temp.name) / "missing"
+        link = Path(self.temp.name) / "release-link"
+        link.symlink_to(target)
+        with self.assertRaisesRegex(ValueError, "unsafe release file"):
+            release.safe_file(link)
+        self.assertFalse(target.exists())
+
+    def test_manifest_duplicate_file_entry_cannot_become_an_approved_artifact(self):
+        name = self.bundle / "windows" / "part.json"
+        manifest = json.loads(name.read_text(encoding="utf8"))
+        manifest["files"].append(dict(manifest["files"][0]))
+        name.write_text(json.dumps(manifest), encoding="utf8")
+        with self.assertRaisesRegex(ValueError, "Artifact manifest mismatch"):
+            self.planned()
+
+    def test_platform_manifest_symlink_is_not_a_verified_manifest(self):
+        manifest = self.bundle / "windows" / "part.json"
+        real = manifest.with_name("original-part.json")
+        manifest.rename(real)
+        manifest.symlink_to(real)
+        with self.assertRaisesRegex(ValueError, "Missing verified platform artifact"):
+            self.planned()
+
+    def test_signed_apt_keyring_symlink_is_refused_before_running_gpgv(self):
+        keyring = self.apt / "repoticker-archive-keyring.gpg"
+        target = self.apt / "test-gpg-key"
+        keyring.rename(target)
+        keyring.symlink_to(target)
+        with patch.object(release.subprocess, "run",
+                          side_effect=AssertionError("must not run gpgv")):
+            with self.assertRaisesRegex(ValueError, "unsafe release file"):
+                release.source_map(self.bundle, self.apt, VERSION, COMMIT)
+
+    def test_signed_apt_directory_symlink_is_not_a_verified_source(self):
+        real = Path(self.temp.name) / "apt-real"
+        self.apt.rename(real)
+        self.apt.symlink_to(real)
+        with self.assertRaisesRegex(ValueError, "Incomplete signed flat APT"):
+            self.planned()
+
+    def test_signed_non_utf8_packages_catalog_is_rejected_as_corrupt(self):
+        self.rewrite_package_indexes(b"\xff\xfePackage: repoticker\n\n")
+        with self.assertRaisesRegex(ValueError, "APT package catalog"):
+            self.planned()
 
 
 class IdentifiedPublicReadbackTests(unittest.TestCase):
@@ -521,6 +680,40 @@ class IdentifiedPublicReadbackTests(unittest.TestCase):
                                         lambda req, timeout: self.Reply(actual))
 
 
+
+
+    def test_every_non_success_public_status_is_rejected_before_read(self):
+        for status in (301, 302, 304, 400, 401, 404, 409, 429, 500, 503):
+            with self.subTest(status=status):
+                reply = self.Reply(self.content, status=status)
+                with self.assertRaisesRegex(ValueError, "non-200"):
+                    release.public_readback(self.file, "latest.json",
+                                            lambda request, timeout: reply)
+                self.assertEqual(reply.read_sizes, [])
+
+    def test_missing_local_source_aborts_without_issuing_a_public_request(self):
+        self.file.unlink()
+        def forbidden(request, timeout):
+            self.fail("readback must not start without an existing source")
+        with self.assertRaises(FileNotFoundError):
+            release.public_readback(self.file, "latest.json", forbidden)
+
+    def test_network_error_is_propagated_without_a_verified_receipt(self):
+        from urllib.error import URLError
+        def unavailable(request, timeout):
+            self.assert_request(request, timeout, "latest.json")
+            raise URLError("synthetic DNS outage")
+        with self.assertRaises(URLError):
+            release.public_readback(self.file, "latest.json", unavailable)
+
+    def test_same_size_multichunk_corruption_fails_full_digest_check(self):
+        body = b"a" * (1024 * 1024) + b"z"
+        self.file.write_bytes(body)
+        mutated = b"a" * (1024 * 1024) + b"x"
+        with self.assertRaisesRegex(ValueError, "does not match source"):
+            release.public_readback(self.file, "latest.json",
+                                    lambda request, timeout: self.Reply(mutated))
+
 class UploadSafetyTests(unittest.TestCase):
     """Exercise the actual R2 upload logic with offline S3 byte-contract fakes."""
 
@@ -604,6 +797,55 @@ class UploadSafetyTests(unittest.TestCase):
             release.upload(self.client,self.key,self.file,True)
         self.assertEqual(self.client.writes,[])
 
+
+
+
+    def test_500_head_failure_never_becomes_missing_immutable_object(self):
+        class ServiceError(Exception):
+            response = {"ResponseMetadata": {"HTTPStatusCode": 500}}
+        with patch.object(self.client, "head_object", side_effect=ServiceError()):
+            with self.assertRaises(ServiceError):
+                release.upload(self.client, self.key, self.file, True)
+        self.assertEqual(self.client.writes, [])
+
+    def test_missing_head_error_metadata_is_not_equivalent_to_404(self):
+        with patch.object(self.client, "head_object", side_effect=OSError("broken")):
+            with self.assertRaises(OSError):
+                release.upload(self.client, self.key, self.file, True)
+        self.assertEqual(self.client.writes, [])
+
+    def test_existing_immutable_object_without_sha_metadata_is_rejected(self):
+        self.client.objects[self.object_key] = (self.file.read_bytes(), {})
+        with self.assertRaisesRegex(ValueError, "Refusing to overwrite immutable"):
+            release.upload(self.client, self.key, self.file, True)
+        self.assertEqual(self.client.writes, [])
+
+    def test_forged_identical_sha_metadata_does_not_hide_corrupt_stored_bytes(self):
+        self.client.objects[self.object_key] = (b"DIFFERENT CONTENT",
+            {"sha256": release.digest(self.file)})
+        with self.assertRaisesRegex(ValueError, "Private R2 readback failed"):
+            release.upload(self.client, self.key, self.file, True)
+        self.assertEqual(self.client.writes, [])
+
+    def test_private_readback_truncated_and_oversized_are_both_rejected(self):
+        approved = self.file.read_bytes()
+        for payload in (approved[:-1], approved + b"extra"):
+            with self.subTest(length=len(payload)):
+                self.client.objects[self.object_key] = (
+                    payload, {"sha256": release.digest(self.file)})
+                with self.assertRaisesRegex(ValueError, "Private R2 readback failed"):
+                    release.upload(self.client, self.key, self.file, True)
+        self.assertEqual(self.client.writes, [])
+
+    def test_private_s3_get_failure_is_not_treated_as_proof_of_uploaded_bytes(self):
+        approved = self.file.read_bytes()
+        self.client.objects[self.object_key] = (
+            approved, {"sha256": release.digest(self.file)})
+        with patch.object(self.client, "get_object",
+                          side_effect=OSError("readback unavailable")):
+            with self.assertRaisesRegex(OSError, "readback unavailable"):
+                release.upload(self.client, self.key, self.file, True)
+        self.assertEqual(self.client.writes, [])
 
 if __name__ == "__main__":
     unittest.main()

@@ -346,8 +346,14 @@ def publish(release, apt, version, commit, run_id, output, account, access_key, 
         raise ValueError("Missing separately scoped RepoTicker R2 credentials")
     if not str(run_id).isdigit() or int(run_id) < 1:
         raise ValueError("Invalid GitHub release run")
-    if output.exists():
+    if output.exists() or output.is_symlink():
         raise ValueError("Refusing to overwrite any prior publication receipt")
+    # Fail before any remote write if the local final-pointer manifest name
+    # is occupied, even by a dangling symlink. Retain the late check too:
+    # another process may create the file while uploads are in flight.
+    latest_path = output.parent / "repoticker-latest-publish.json"
+    if latest_path.exists() or latest_path.is_symlink():
+        raise ValueError("Refusing to overwrite an existing latest manifest")
     immutable, mutable, platforms = source_map(release, apt, version, commit)
     import boto3
     from botocore.config import Config
@@ -376,8 +382,7 @@ def publish(release, apt, version, commit, run_id, output, account, access_key, 
     # latest.json is the FINAL commit point. No duplicate "latest" binary
     # aliases: the site reads this pointer and links immutable binaries.
     manifest = latest_manifest(immutable, version, commit)
-    latest_path = output.parent / "repoticker-latest-publish.json"
-    if latest_path.exists():
+    if latest_path.exists() or latest_path.is_symlink():
         raise ValueError("Refusing to overwrite an existing latest manifest")
     latest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
     upload(client, "latest.json", latest_path, False)

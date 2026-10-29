@@ -154,3 +154,12 @@ applicability by flow, and outstanding race/error/mutation checks.
 This is **partial documentation evidence**, not global Stage 3–8
 completion or observed passing tests. No new CI/build was requested by
 this docs-only increment; G4–G6 and platform/L10N remain blocked.
+
+## Native source inventory correction (2026-10-29)
+
+The [native source correction](MODE_B_NATIVE_DESKTOP_POST_TEST_SOURCE_MAP_2026_10_29.md)
+identifies production Tauri commands and Win32/monitor functions after
+interleaved test modules, records sixteen source files, sixteen critical
+branch families and Positive/N1–N12 flow applicability. It is **partial
+Stage 3–8 documentation**, not source-test acceptance, a CI test run or
+physical KDE/Windows/L10N sign-off.

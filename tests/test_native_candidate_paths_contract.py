@@ -9,14 +9,18 @@ WORKFLOW = ROOT / ".github/workflows/desktop-acceptance-candidates.yml"
 
 
 def push_patterns(source: str) -> list[str]:
-    match = re.search(
-        r"(?m)^  push:\s*\n    branches: \[dev\]\s*\n"
-        r"    paths:\s*\n((?:      - '[^']+'\s*\n)+)",
-        source,
-    )
-    if not match:
-        raise AssertionError("Expected the native candidate push/paths block")
-    return re.findall(r"(?m)^      - '([^']+)'$", match.group(1))
+    if "  push:\n" not in source:
+        raise AssertionError("Missing native candidate push trigger")
+    push = source.split("  push:\n", 1)[1].split("\npermissions:", 1)[0]
+    if "    branches: [dev]\n" not in push or "    paths:\n" not in push:
+        raise AssertionError("Expected dev-only native candidate path filter")
+    # Comments within YAML paths are legitimate; parse all path entries,
+    # not just the first contiguous sequence of '- ...' lines.
+    paths = push.split("    paths:\n", 1)[1]
+    result = re.findall(r"(?m)^      - '([^']+)'$", paths)
+    if not result:
+        raise AssertionError("Empty native candidate path filter")
+    return result
 
 
 def matches(patterns: list[str], source_path: str) -> bool:

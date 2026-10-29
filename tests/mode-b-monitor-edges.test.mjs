@@ -53,19 +53,22 @@ test("Mode B monitor refresh: exact 15-repository boundaries never overpoll", ()
   }
 });
 
-test("Mode B installations: malformed account facts are filtered before selection", async () => {
-  const result = await listAvailableInstallations(async () => ({
-    installations: [
-      installation("team", 2), installation("other-team", 7),
-      installation("unsafe/name", 3), installation("emoji😀", 4),
-      installation("negative", -1), { account: { login: "missing-id" } },
-      { id: 11 }, null
-    ]
-  }));
-  assert.equal(result.complete, true);
-  assert.deepEqual(result.items, [
-    { name: "team", id: 2 }, { name: "other-team", id: 7 }
-  ]);
+test("Mode B installations: malformed account facts invalidate the entire selection", async () => {
+  const bad = [
+    installation("unsafe/name", 3), installation("emoji😀", 4),
+    installation("negative", -1), { account: { login: "missing-id" } },
+    { id: 11 }, null
+  ];
+  for (const item of bad) {
+    let requests = 0;
+    await assert.rejects(listAvailableInstallations(async () => {
+      requests++;
+      return { installations: [
+        installation("team", 2), installation("other-team", 7), item
+      ] };
+    }), /Invalid installations response/);
+    assert.equal(requests, 1);
+  }
 });
 
 test("Mode B installations: exactly full page plus final partial page is complete", async () => {

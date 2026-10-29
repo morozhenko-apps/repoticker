@@ -82,3 +82,19 @@ this testing-only batch. Final v1 release is not authorized.
 
 **Provisional state:** planned; no code/tests pushed or
 execution results yet. Update the checkpoint once complete.
+
+## Implementation and validation checkpoint — consolidated batch 02
+
+**JavaScript code/test commit:** `acd358df9679801a39cabfc2377919fd78d62c60`.
+**Rust unit-test commit:** `4446bdd23e5b3b4844e57420557939031393e32b`.
+
+- 20 new JavaScript tests in `tests/mode-b-resilience.test.mjs`: billing TTL and UTC month rollover; stale and disconnected account generations; known zero versus unknown; billing SKU boundary; CI failure observation and page limits; 10-page installation truncation and late-page selection; monitor presentation source isolation; 100 overlapping scan invalidations; runner coverage; and provider error redaction.
+- 3 new Rust unit tests in `github_etag_cache.rs`: malformed ETag evicts old projection; exact 64 KiB cached JSON limit versus one excess byte; delayed old-account HTTP 200 rejected after concurrent auth-generation invalidation.
+
+**Final focused evidence:** all 20/20 new JavaScript test bodies passed in an isolated V8 harness using production function source retrieved from the staged GitHub commit. This is NOT `node --test`, NOT the full Node 24 STABLE suite, and NOT Windows WebView2/KDE WebKitGTK. The harness first uncovered a test-fixture error: its TTL assertion crossed a UTC month rollover, which correctly causes a new billing cache key. The fixture was corrected without production changes, a separate month-transition test was added, and focused re-execution passed 20/20.
+
+**Not run here:** the three Rust tests (cargo and rustfmt unavailable), the full Node 24 STABLE suite, Python release suite, desktop compilation and GitHub Preflight. Local git cannot resolve github.com. External workflow status was not polled.
+
+**Release blockers remain open:** exhaustive Mode B branch/mutation evidence, external R2 immutable-writer atomicity, final latest.json failure recovery, and deferred native Windows/KDE plus 20-language independent acceptance.
+
+**Runner policy:** docs plan, JS tests, Rust tests and this checkpoint were chained without publishing intermediate refs, and `dev` is fast-forwarded exactly once at the end. No `main`, tag, release or R2 mutation.

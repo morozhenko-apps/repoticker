@@ -68,3 +68,54 @@ evidence, cross-writer immutable R2 publication atomicity,
 No new architecture or public release is authorized.
 
 **Status at plan creation:** no executable changes submitted.
+
+
+## Implementation checkpoint — batch 06 ready for exact-SHA Preflight
+
+**Code/test commit chain (staged before one branch update):**
+- `737959119f15de6821273fb76004b78250ab5fbd` — 15 native Rust tests.
+- `89550a8fb55d5ef214573d4df0eda08921695915` — focused native fixture correction.
+- `3e4219aea28ad14f61e1312af8dccf83fdeac993` — 12 JS monitor interaction tests.
+- `eea7dccdd4a95825e983a27d2bd35702c15582b2` — align simulated native disconnect status with auth event.
+- `057efe4691af50db0c60ebbc9558cf60fdec1be5` — remove scheduling-sensitive tight-time expectation from the concurrent quota test.
+
+**15 added native Rust tests**: 3 ETag cache generation/path/billing
+boundaries, 3 native rate-limit header/permission/concurrency
+boundaries, 3 OAuth response/token/debug redaction checks,
+4 native GitHub API route/allowlist/projection checks, and
+2 auth manager generation/sanitized reason checks.
+
+**12 new JS tests** in `tests/mode-b-native-monitor-races.test.mjs`:
+initial disconnected versus connected snapshot, invalid refresh kind,
+forced refresh coalescing, delayed result after native logout,
+account scope/config changes while an async response is pending,
+rate cooldown under forced refresh, failed task refresh unknown
+semantics, notification opt-out, observed baseline versus one new
+CI failure notification, and denial of a late notification after logout.
+
+**Focused execution:** **12/12 new JavaScript tests passed** in an
+isolated V8 harness that loads the actual staged production
+functions from GitHub and evaluates the test bodies. The initial
+11/12 check found a fixture mismatch: the fake auth event reported
+a logout without changing the fake `github_auth_status` outcome.
+After correcting both signals to represent actual native logout,
+12/12 passed. The production monitor code was not changed.
+
+**NOT executed here:** the 15 new Rust tests, `cargo fmt --check`,
+`cargo clippy`, native desktop compile, full Node 24 STABLE,
+Python release tests, complete Preflight, installed OS UI/locale
+acceptance and full mutation/branch gates. No `cargo` or
+`rustfmt` is available in the current container. Source review
+and a focused V8 run are not substitutes for Rust execution.
+
+**Scope:** tests only, no production auth, security/persistence
+contract, GitHub App config, Git actions, signed release or R2
+object changes. Full 20-locale and Windows/KDE acceptance remains
+after Mode B but still blocks publication. R2 external
+immutable-writer atomicity and `latest.json` readback
+failure recovery remain separately unresolved release risks.
+
+**Runner discipline:** all code and documentation commits were
+staged before updating the branch. Publish exactly once with
+a fast-forward of `dev` at the end. CI status is deliberately
+not polled after that publication.

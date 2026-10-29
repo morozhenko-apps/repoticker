@@ -72,3 +72,45 @@ repair is display-cache-only and does not change native
 credentials, Git roots, API routes, release state or app data.
 Physical Windows/KDE and independent L10N reviews remain after
 Mode B and before the final v1 release.
+
+
+## Implementation checkpoint — consolidated batch 05
+
+**Code and regression commit:** `bfa238421a70985dff62fb71616bef57238e4d25`.
+The reusable billing cache now has a single active `organization / UTC
+month` ownership key. Switching connected scope or month advances
+generation and clears obsolete results/pending identity; a delayed
+previous request may return to its original caller but can never
+rewrite the new cache. A backwards clock jump no longer counts as a
+fresh TTL hit. Native ETag, GitHub permissions, displayed allowance
+semantics, provider errors and persistent configuration are untouched.
+
+**22 added deterministic JS tests** in
+`tests/mode-b-billing-auth-races.test.mjs` cover out-of-order
+two-account results, a switch back while the first request is
+pending, duplicate same-key requests, explicit clear/disconnect,
+an overlapping UTC billing month, reversed clock and exact TTL,
+admin/personal usage failures, provider malformed and unsafe paths,
+known zero versus unknown, CI notification baseline and run attempt
+deduplication, account switching, invalid observation atomicity,
+temporary API errors and provider-message redaction.
+
+**Focused execution evidence:** **22/22 passed** in an isolated V8
+harness that evaluates the actual staged JS source and test bodies.
+The same 22 test bodies were run against the pre-fix `01adab6c57c6caac46bba569a35e53d2e52ac1f0`
+source: **5 failed as expected**, specifically the three connected
+scope ownership races, month-overlap race and backwards clock TTL
+bug; 17 unrelated compatibility/positive scenarios passed. This is
+scoped old-code/mutation evidence, **not full mutation coverage**.
+
+**Not executed:** full `node --test tests/*.test.mjs` Node 24,
+Rust unit, fmt/Clippy/desktop, Python release tests, platform UI
+acceptance and native 20-locale review. Exact-SHA Preflight result
+must be separately observed/received; agent must not poll.
+Global Stage 3–8 artifacts and R2 concurrent creation /
+`latest.json` failure recovery remain unresolved release gates.
+
+**Submission:** the docs and code/test commits were staged without
+intermediate `dev` updates. A single final fast-forward of `dev`
+submits this whole batch to CI. No `main`, tags, secret access,
+real GitHub/R2 operation or signed publication was modified.

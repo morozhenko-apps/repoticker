@@ -146,7 +146,7 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
                 { id: 2, account: { login: "two" } }
               ] };
             case "github_begin":
-              if (options.beginError) throw Error("Device authorization unavailable");
+              if (options.beginError) throw Error(options.beginErrorText ?? "Device authorization unavailable");
               phase = "pending";
               if (options.beginPromise) return options.beginPromise;
               return { userCode: "ABCD-1234" };
@@ -973,8 +973,8 @@ test("Mode B: rejected Device Flow challenge never displays a code or pending se
     assert.equal(ui.node("github-connect").hidden, false);
     assert.equal(ui.node("github-device-flow").hidden, true);
     assert.equal(ui.node("github-user-code").textContent, "");
-    assert.match(ui.node("github-auth-message").textContent,
-      /Device authorization unavailable/);
+    assert.equal(ui.node("github-auth-message").textContent,
+      "GitHub authorization failed.");
     assert.equal(ui.node("apply-settings").disabled, true);
     await ui.node("cancel-settings").fire("click");
     assert.equal(ui.closed, true);
@@ -1669,5 +1669,76 @@ test("Mode B: auth event cannot rescue untrusted Settings initialization", async
     assert.equal(ui.node("apply-settings").disabled, true);
     await ui.node("cancel-settings").fire("click");
     assert.equal(ui.closed, true);
+  } finally { ui.restore(); }
+});
+
+test("Mode B: Cancel during in-flight device challenge ignores late success", async () => {
+  let finishBegin;
+  const deferred = new Promise(resolve => { finishBegin = resolve; });
+  const ui = await fixture("mode-b-cancel-inflight-begin", false, [], {
+    beginPromise: deferred
+  });
+  try {
+    const begin = ui.node("github-connect").fire("click");
+    assert.equal(ui.node("github-connect").disabled, true);
+    assert.equal(ui.calls.filter(([name]) => name === "github_begin").length, 1);
+    await ui.node("cancel-settings").fire("click");
+    assert.equal(ui.closed, true);
+    assert.equal(ui.calls.filter(([name]) => name === "github_cancel").length, 1);
+    assert.equal(ui.tokenRemoved, false);
+    finishBegin({ userCode: "ABCD-1234" });
+    await begin;
+    await tick();
+    assert.equal(ui.node("github-user-code").textContent, "");
+    assert.equal(ui.node("github-device-flow").hidden, true);
+    assert.equal(ui.calls.filter(([name]) => name === "github_flow_status").length, 0);
+    assert.equal(ui.calls.some(([name]) => name === "github_disconnect"), false);
+  } finally { ui.restore(); }
+});
+
+test("Mode B: reopened Settings invalidates earlier device challenge completion", async () => {
+  let finishBegin;
+  const deferred = new Promise(resolve => { finishBegin = resolve; });
+  const ui = await fixture("mode-b-reopen-inflight-begin", false, [], {
+    beginPromise: deferred
+  });
+  try {
+    const begin = ui.node("github-connect").fire("click");
+    assert.equal(ui.node("github-connect").disabled, true);
+    await ui.dispatchOpened();
+    assert.equal(ui.node("github-connection-indicator").textContent,
+      "Authorization pending");
+    assert.equal(ui.node("github-user-code").textContent, "");
+    finishBegin({ userCode: "ABCD-1234" });
+    await begin;
+    await tick();
+    assert.equal(ui.node("github-connection-indicator").textContent,
+      "Authorization pending");
+    assert.equal(ui.node("github-user-code").textContent, "",
+      "late result from prior window generation must not expose an old challenge");
+    assert.equal(ui.node("github-connect").disabled, false);
+    await ui.node("github-cancel-device").fire("click");
+    await ui.node("cancel-settings").fire("click");
+    assert.equal(ui.closed, true);
+    assert.equal(ui.tokenRemoved, false);
+  } finally { ui.restore(); }
+});
+
+test("Mode B: rejected device code request does not disclose native error body", async () => {
+  const ui = await fixture("mode-b-redacted-begin-error", false, [], {
+    beginError: true, beginErrorText: "PRIVATE_NATIVE_OAUTH_DETAIL_DO_NOT_RENDER"
+  });
+  try {
+    await ui.node("github-connect").fire("click");
+    assert.equal(ui.node("github-auth-message").textContent,
+      "GitHub authorization failed.");
+    assert.doesNotMatch(ui.node("github-auth-message").textContent,
+      /PRIVATE_NATIVE_OAUTH_DETAIL_DO_NOT_RENDER/);
+    assert.equal(ui.node("github-device-flow").hidden, true);
+    assert.equal(ui.node("github-user-code").textContent, "");
+    assert.equal(ui.node("apply-settings").disabled, true);
+    await ui.node("cancel-settings").fire("click");
+    assert.equal(ui.closed, true);
+    assert.equal(ui.tokenRemoved, false);
   } finally { ui.restore(); }
 });

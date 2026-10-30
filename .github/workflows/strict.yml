@@ -14,15 +14,22 @@ jobs:
   stable_core_and_ui:
     name: Stable Rust, JS and release contracts
     runs-on: ubuntu-24.04
-    timeout-minutes: 90
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
       - uses: actions/setup-node@v7
         with:
           node-version: 24
+      - uses: Swatinem/rust-cache@c676846f29d98ff6b0106d3608c7ffd4048af17b # v2.9.0
+        with:
+          workspaces: . -> target
+          shared-key: repoticker-strict
+          save-if: ${{ github.ref == 'refs/heads/dev' && github.event_name != 'pull_request' }}
       - name: Rust format
         run: cargo fmt --all --check
       - name: Rust core tests
@@ -34,6 +41,11 @@ jobs:
       - name: Install release contract tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends apt-utils dpkg-dev gnupg gpgv
+          sudo apt-get install -y --no-install-recommends apt-utils dpkg-dev gnupg gpgv python3-venv
       - name: Python release stable tests
         run: python3 -m unittest discover -s tests -p 'test_release_*.py' -v
+      - name: CI policy and scope contracts
+        run: |
+          python3 -m venv "$RUNNER_TEMP/ci-policy"
+          "$RUNNER_TEMP/ci-policy/bin/python" -m pip install -r scripts/requirements-ci.txt
+          "$RUNNER_TEMP/ci-policy/bin/python" -m unittest discover -s tests -p 'test_ci_policy.py' -v

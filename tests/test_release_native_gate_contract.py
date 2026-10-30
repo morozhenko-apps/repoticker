@@ -22,8 +22,12 @@ class NativeDesktopPreflightContract(unittest.TestCase):
 
     def test_desktop_result_remains_required_and_fail_closed(self):
         source = (ROOT / ".github/workflows/preflight.yml").read_text(encoding="utf8")
-        self.assertIn("needs: [format_and_core, ui, desktop]", source)
-        self.assertIn('test "$RESULTS" = "success,success,success"', source)
+        self.assertIn("needs: [scope, format_and_core, ui, desktop]", source)
+        self.assertIn("DESKTOP_RESULT: ${{ needs.desktop.result }}", source)
+        self.assertIn('for result in "$CORE_RESULT" "$UI_RESULT" "$DESKTOP_RESULT"; do', source)
+        self.assertIn('[[ "$result" == "$expected" ]] || exit 1', source)
+        self.assertIn('true) expected=success', source)
+        self.assertIn('false) expected=skipped', source)
         self.assertNotIn("continue-on-error: true", source)
 
 

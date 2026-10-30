@@ -19,3 +19,20 @@ repeatability diagnostics require evidence of a specific instability.
 Preflight separately checks Linux desktop compilation. Known-flaky
 tests, if identified and registered, require independent execution
 and explicit reporting, never omission from the stable result.
+
+## Bounded ordinary verification
+
+Keep the independent core, UI/contracts and Linux desktop lanes; execute every
+applicable stable suite once. Resolve prose-only PR scope using complete Git
+merge differences, including both rename sides. Packaged Markdown, executable
+fixtures and unknown inputs require checks. Always report the existing
+Preflight result, accepting only exact success or an explicitly justified
+whole-scope skip; failed/canceled/missing evidence must fail.
+
+Use 5-minute scope/result, 10-minute UI and 20-minute Rust/desktop budgets;
+the manual stable gate is bounded to 20 minutes. Dependency caches are scoped
+by configuration and writable only from trusted dev executions. Ordinary
+checkouts must not persist credentials. Retain release signing/mainline gates
+and separate native acceptance, without building installers for CI-only edits.
+Focused CI policy regressions run in the existing contract lane. Implementation
+and validation state are tracked in the private cross-repository rollout record.

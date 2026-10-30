@@ -55,6 +55,9 @@ let githubPending = false;
 let githubConnected = false;
 let githubChecking = true;
 let githubCheckFailed = false;
+let settingsLoading = false;
+let settingsInitFailed = false;
+let settingsRefreshRevision = 0;
 let githubStatusTimer = null;
 let githubStatusBusy = false;
 let selectedScope = null;
@@ -487,7 +490,8 @@ function isDirty() {
 function updateApply() {
   const authNeedsConfirmation = (githubConnected && githubStartedHere) || disconnectPending;
   byId("apply-settings").disabled =
-    saving || githubStarting || githubPending || !repoChoiceValid() ||
+    saving || settingsLoading || settingsInitFailed ||
+    githubStarting || githubPending || !repoChoiceValid() ||
     (githubScopeTouched && !!selectedScope && !availableAccounts.has(selectedScope)) ||
     !(isDirty() || authNeedsConfirmation || githubScopeTouched || repoChoiceTouched);
 }
@@ -582,56 +586,79 @@ byId("ignore-child-form").addEventListener("submit", event => {
   updateApply();
 });
 async function refresh() {
-  githubChecking = true;
-  githubCheckFailed = false;
-  githubButtons();
-  githubMessage("Checking GitHub connection...");
-  // Persistent form settings and native KWallet interrogation run independently.
-  // Neither path triggers local Git discovery/inspection.
-  const [snapshot, authAtOpen, autostartState] = await Promise.all([
-    invoke("get_settings_config"), invoke("github_auth_status"),
-    invoke("autostart_is_enabled").catch(() => null)
-  ]);
-  traceStartup("settings.config_auth_ready");
-  githubWasConnectedAtOpen = authAtOpen.connected === true;
-  githubStartedHere = false;
-  githubStarting = false;
-  disconnectPending = false;
-  githubScopeTouched = false;
-  githubScopeAtOpen = snapshot.github_monitor_org || "";
-  originalRepoNames = [...(snapshot.github_monitor_repositories || [])].sort();
-  selectedRepoNames = new Set(originalRepoNames);
-  repoMode = originalRepoNames.length ? "selected" : "all";
-  repoChoiceTouched = false;
-  selectedScope = null;
-  original = {
-    roots: [...(snapshot.roots || [])],
-    language: snapshot.language || "en",
-    ignoredChildNames: [...(snapshot.ignored_child_names || [])].sort(),
-    ciFailureNotifications: snapshot.ci_failure_notifications === true,
-    autostartEnabled: typeof autostartState === "boolean" ? autostartState : null
-  };
-  draft = {
-    roots: [...original.roots],
-    language: original.language,
-    ignoredChildNames: [...original.ignoredChildNames],
-    ciFailureNotifications: original.ciFailureNotifications,
-    autostartEnabled: original.autostartEnabled
-  };
-  byId("ci-failure-notifications").checked = draft.ciFailureNotifications;
-  byId("autostart-enabled").checked = draft.autostartEnabled === true;
-  byId("autostart-enabled").disabled = draft.autostartEnabled === null;
-  byId("autostart-status").textContent = draft.autostartEnabled === null
-    ? t("Autostart unavailable") : "";
-  applySettingsLanguage(draft.language);
-  byId("root-path").value = "";
-  updateLanguagePicker();
-  renderRoots();
-  renderIgnoredChildren();
-  byId("ignored-child-name").value = "";
-  message("");
-  updateApply();
-  await refreshGithub(authAtOpen);
+  const revision = ++settingsRefreshRevision;
+  settingsLoading = true;
+  try {
+    githubChecking = true;
+    githubCheckFailed = false;
+    githubButtons();
+    githubMessage("Checking GitHub connection...");
+    // Persistent form settings and native KWallet interrogation run independently.
+    // Neither path triggers local Git discovery/inspection.
+    const [snapshot, authAtOpen, autostartState] = await Promise.all([
+      invoke("get_settings_config"), invoke("github_auth_status"),
+      invoke("autostart_is_enabled").catch(() => null)
+    ]);
+    if (revision !== settingsRefreshRevision) return;
+    settingsLoading = false;
+    settingsInitFailed = false;
+    traceStartup("settings.config_auth_ready");
+    githubWasConnectedAtOpen = authAtOpen.connected === true;
+    githubStartedHere = false;
+    githubStarting = false;
+    disconnectPending = false;
+    githubScopeTouched = false;
+    githubScopeAtOpen = snapshot.github_monitor_org || "";
+    originalRepoNames = [...(snapshot.github_monitor_repositories || [])].sort();
+    selectedRepoNames = new Set(originalRepoNames);
+    repoMode = originalRepoNames.length ? "selected" : "all";
+    repoChoiceTouched = false;
+    selectedScope = null;
+    original = {
+      roots: [...(snapshot.roots || [])],
+      language: snapshot.language || "en",
+      ignoredChildNames: [...(snapshot.ignored_child_names || [])].sort(),
+      ciFailureNotifications: snapshot.ci_failure_notifications === true,
+      autostartEnabled: typeof autostartState === "boolean" ? autostartState : null
+    };
+    draft = {
+      roots: [...original.roots],
+      language: original.language,
+      ignoredChildNames: [...original.ignoredChildNames],
+      ciFailureNotifications: original.ciFailureNotifications,
+      autostartEnabled: original.autostartEnabled
+    };
+    byId("ci-failure-notifications").checked = draft.ciFailureNotifications;
+    byId("autostart-enabled").checked = draft.autostartEnabled === true;
+    byId("autostart-enabled").disabled = draft.autostartEnabled === null;
+    byId("autostart-status").textContent = draft.autostartEnabled === null
+      ? t("Autostart unavailable") : "";
+    applySettingsLanguage(draft.language);
+    byId("root-path").value = "";
+    updateLanguagePicker();
+    renderRoots();
+    renderIgnoredChildren();
+    byId("ignored-child-name").value = "";
+    message("");
+    updateApply();
+    await refreshGithub(authAtOpen);
+  } catch {
+    // Only the newest initialization attempt may change the dialog.
+    if (revision !== settingsRefreshRevision) return;
+    settingsLoading = false;
+    settingsInitFailed = true;
+    githubChecking = false;
+    githubCheckFailed = true;
+    githubConnected = false;
+    githubPending = false;
+    stopGithubStatusUpdates();
+    clearMonitorScopes();
+    githubButtons();
+    // Native IPC failures can contain local paths or provider details.
+    // Never echo arbitrary rejection text into the Settings WebView.
+    githubMessage("Cannot initialize settings.", true);
+    message("Cannot initialize settings.", true);
+  }
 }
 byId("autostart-enabled").addEventListener("change", event => {
   if (!draft || saving || original?.autostartEnabled === null) return;
@@ -820,7 +847,8 @@ byId("cancel-settings").addEventListener("click", async () => {
   }
 });
 byId("apply-settings").addEventListener("click", async () => {
-  if (saving || githubPending || githubStarting || !repoChoiceValid() ||
+  if (saving || settingsLoading || settingsInitFailed ||
+      githubPending || githubStarting || !repoChoiceValid() ||
       (githubScopeTouched && !!selectedScope && !availableAccounts.has(selectedScope)) ||
       !(isDirty() || githubScopeTouched || repoChoiceTouched ||
         (githubConnected && githubStartedHere) || disconnectPending)) return;
@@ -878,12 +906,6 @@ byId("apply-settings").addEventListener("click", async () => {
   }
 });
 window.__TAURI__?.event?.listen?.("repoticker-settings-opened", () => {
-  void refresh().catch(error => {
-  githubChecking = false;
-  githubCheckFailed = true;
-  githubButtons();
-  githubMessage("Cannot initialize settings.", true);
-  message(error, true);
+  void refresh();
 });
-});
-void refresh().catch(error => message(error, true));
+void refresh();

@@ -63,6 +63,34 @@ race and billing paths, not global coverage completion.
 
 - [x] Source-based cross-scope risk identified; verified green baseline.
 - [x] Decision and acceptance scenarios recorded before implementation.
-- [ ] Deterministic popup tests implemented.
-- [ ] Production guard and source review.
-- [ ] New exact-SHA CI.
+- [x] Five deterministic detached-popup tests implemented in a dedicated test file.
+- [x] Minimal production guard, exact diff and source review completed.
+- [ ] New exact-SHA CI (pending after fast-forward push).
+
+## Implemented case ledger
+
+| Case | Real-controller test | Trust invariant |
+| --- | --- | --- |
+| Conflicting owners | `popup billing scope fails closed on conflicting owner provenance` | Configured and monitored identities must agree before billing request |
+| Out-of-order monitor | `old initial monitor IPC reply never overwrites newer event metrics` | Monotonic refresh ID supersedes late old counts |
+| Monitor IPC denial | `failed monitor-only IPC reports unavailable, not old confident counts` | Unknown is not zero or previous confident totals |
+| Prior-org billing completion | `prior-account billing arriving late cannot replace newer scope billing` | Old account result cannot repaint new account |
+| Provider diagnostic privacy | `raw billing transport exception never appears in detached popup` | Provider transport errors are not exposed to WebView |
+
+The deterministic `tests/quota-mode-b.test.mjs` WebView fixture uses
+native command overrides, controlled promises and event callbacks,
+not a network connection or GTK shell. The production change is
+restricted to `selectedOrganization`: normalize both optional
+sources to strings; return empty when both are nonempty but disagree,
+matching identities case-insensitively; otherwise prefer explicit
+configuration and retain auto-selected native fallback.
+
+**Static review:** compared the exact source diff (one pure function
+change and one new test file), confirmed five test declarations,
+existing `billingVersion` invalidation, `refreshId` guards and
+absence of expensive `get_snapshot` IPC in the popup.
+
+**Execution boundary:** no new exact-SHA pass counts or coverage
+percentages claimed; those require the post-push Preflight logs.
+Windows/KDE acceptance is unpublished and separately gated.
+

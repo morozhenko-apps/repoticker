@@ -59,3 +59,25 @@ or billing cache changes authorized by this test-only increment.
   Do not create a lasting feature branch, rewrite `main`, release,
   or fabricate post-change coverage.
 - Mode B Stage 12 remains open.
+
+## Prepared implementation / validation boundary
+
+- Docs plan commit: `044777180cfc534bd5b87e9ecd5973f213d8ccb0`.
+- New tests commit: `0ffe5b837cc4b03b83cef9be7b1c0b0730e9c434`;
+  **five** deterministic real-controller test declarations and
+  command-scoped failure controls were added to
+  `tests/quota-mode-b.test.mjs`.
+- Existing production `apps/desktop/ui/quota.mjs` was **not modified**.
+- The new tests exercise startup monitor failure/recovery, invalid
+  configured scope, native kind error/recovery, locale IPC fallback,
+  and stale asynchronous locale completion.
+- Tests have **not been executed**, and no exact-SHA build or coverage
+  result is claimed. Local network access to the public GitHub
+  checkout is unavailable in the current execution environment.
+- The preceding Windows/KDE run was still active at the one permitted
+  status check. This commit chain remains intentionally *unpublished*
+  (Git objects exist, but `dev` has not been moved) so that the
+  running candidate is not cancelled.
+- When there is independent completion evidence for that run:
+  validate the parent chain, move `dev` by one non-forced
+  fast-forward, then stop on the new Preflight without polling.

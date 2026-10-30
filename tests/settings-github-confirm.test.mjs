@@ -83,7 +83,7 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
           calls.push([command, args]);
           switch (command) {
             case "get_settings_config": return {
-              roots: ["/repos"], language: options.language ?? "en", github_monitor_org: monitorOrg,
+              roots: options.roots ?? ["/repos"], language: options.language ?? "en", github_monitor_org: monitorOrg,
               github_monitor_repositories: monitorRepositories,
               ignored_child_names: persistedIgnored,
               ci_failure_notifications: options.ciFailureNotifications === true
@@ -94,6 +94,8 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
               return osAutostart;
             case "autostart_set_enabled":
               if (options.autostartWriteError) throw Error("OS registration denied");
+              // Native OS registration can be refused without throwing.
+              if (options.autostartWriteMismatch) return osAutostart;
               osAutostart = args.enabled;
               return osAutostart;
             case "github_auth_status":
@@ -1245,5 +1247,128 @@ test("Mode B: Settings opened during native pending auth requires explicit cance
     assert.equal(ui.tokenRemoved, false);
     assert.ok(ui.calls.some(([name]) => name === "github_cancel"));
     assert.equal(ui.calls.some(([name]) => name === "github_disconnect"), false);
+  } finally { ui.restore(); }
+});
+
+test("Mode B: blank and duplicate root form submissions keep Settings pristine", async () => {
+  const ui = await fixture("mode-b-root-empty-duplicate", false);
+  try {
+    for (const value of ["", "  ", "/repos"]) {
+      ui.node("root-path").value = value;
+      await ui.node("add-root-form").fire("submit");
+      assert.equal(ui.node("apply-settings").disabled, true,
+        "blank and duplicate roots must not enable Apply");
+      assert.deepEqual(ui.node("roots-list").children.map(row =>
+        row.children[0]?.textContent), ["/repos"]);
+    }
+    assert.equal(ui.calls.some(([name]) => name === "save_settings"), false);
+    await ui.node("cancel-settings").fire("click");
+    assert.equal(ui.closed, true);
+  } finally { ui.restore(); }
+});
+
+test("Mode B: adding then removing a root restores the original draft", async () => {
+  const ui = await fixture("mode-b-root-revert", false);
+  try {
+    ui.node("root-path").value = " /extra ";
+    await ui.node("add-root-form").fire("submit");
+    assert.equal(ui.node("apply-settings").disabled, false);
+    const added = ui.node("roots-list").children.find(row =>
+      row.children[0]?.textContent === "/extra");
+    assert.ok(added);
+    await added.children[1].fire("click");
+    assert.deepEqual(ui.node("roots-list").children.map(row =>
+      row.children[0]?.textContent), ["/repos"]);
+    assert.equal(ui.node("apply-settings").disabled, true);
+    assert.equal(ui.calls.some(([name]) => name === "save_settings"), false);
+    await ui.node("cancel-settings").fire("click");
+    assert.equal(ui.closed, true);
+  } finally { ui.restore(); }
+});
+
+test("Mode B: ignored-child manual form rejects path traversal and invalid lengths", async () => {
+  const ui = await fixture("mode-b-ignored-form-rejections", false);
+  try {
+    const invalid = [
+      "", "   ", ".", "..", "nested/child", "nested\\child",
+      "bad\nname", "bad\u007fname", "x".repeat(256)
+    ];
+    for (const value of invalid) {
+      ui.node("ignored-child-name").value = value;
+      await ui.node("ignore-child-form").fire("submit");
+      assert.equal(ui.node("ignored-child-list").children.length, 1,
+        "invalid input must leave the empty-state hint alone");
+      assert.equal(ui.node("apply-settings").disabled, true);
+    }
+    assert.equal(ui.calls.some(([name]) => name === "save_settings"), false);
+    await ui.node("cancel-settings").fire("click");
+    assert.equal(ui.closed, true);
+  } finally { ui.restore(); }
+});
+
+test("Mode B: ignored child duplicate is idempotent and 255 characters are accepted", async () => {
+  const ui = await fixture("mode-b-ignored-max-bound", false, [], {
+    ignoredChildNames: ["Archive"]
+  });
+  try {
+    ui.node("ignored-child-name").value = " Archive ";
+    await ui.node("ignore-child-form").fire("submit");
+    assert.deepEqual(ui.node("ignored-child-list").children.map(row =>
+      row.children[0]?.textContent), ["Archive"]);
+    assert.equal(ui.node("apply-settings").disabled, true);
+    const longest = "z".repeat(255);
+    ui.node("ignored-child-name").value = longest;
+    await ui.node("ignore-child-form").fire("submit");
+    assert.equal(ui.node("apply-settings").disabled, false);
+    await ui.node("apply-settings").fire("click");
+    const patches = ui.calls.filter(([name]) => name === "save_settings");
+    assert.equal(patches.length, 1);
+    assert.deepEqual(patches[0][1].ignoredChildNames, ["Archive", longest]);
+    assert.equal(ui.closed, true);
+  } finally { ui.restore(); }
+});
+
+test("Mode B: Windows verbatim roots are displayed normally but persisted unchanged", async () => {
+  const slash = String.fromCharCode(92);
+  const drive = slash + slash + "?" + slash + "C:" + slash + "Dev";
+  const unc = slash + slash + "?" + slash + "UNC" + slash +
+    "server" + slash + "share";
+  const ui = await fixture("mode-b-verbatim-root-integrity", false, [], {
+    roots: [drive, unc]
+  });
+  try {
+    assert.deepEqual(ui.node("roots-list").children.map(row =>
+      row.children[0]?.textContent), [
+      "C:" + slash + "Dev",
+      slash + slash + "server" + slash + "share"
+    ]);
+    assert.equal(ui.node("apply-settings").disabled, true);
+    ui.node("root-path").value = "/extra";
+    await ui.node("add-root-form").fire("submit");
+    await ui.node("apply-settings").fire("click");
+    const write = ui.calls.find(([name]) => name === "save_settings");
+    assert.deepEqual(write?.[1].roots, [drive, unc, "/extra"],
+      "display-only path normalization must not mutate persisted canonical roots");
+    assert.equal(ui.closed, true);
+  } finally { ui.restore(); }
+});
+
+test("Mode B: mismatched OS autostart response fails verification without claiming success", async () => {
+  const ui = await fixture("mode-b-autostart-mismatch", false, [], {
+    autostartWriteMismatch: true
+  });
+  try {
+    ui.node("autostart-enabled").checked = true;
+    await ui.node("autostart-enabled").fire("change");
+    assert.equal(ui.node("apply-settings").disabled, false);
+    await ui.node("apply-settings").fire("click");
+    assert.equal(ui.closed, false);
+    assert.equal(ui.autostartEnabled, false);
+    assert.equal(ui.node("autostart-enabled").checked, true,
+      "the requested change remains available for retry");
+    assert.equal(ui.node("apply-settings").disabled, false);
+    assert.match(ui.node("message").textContent, /could not be verified/);
+    assert.equal(ui.calls.filter(([name]) => name === "autostart_set_enabled").length, 1);
+    assert.equal(ui.calls.some(([name]) => name === "save_settings"), false);
   } finally { ui.restore(); }
 });

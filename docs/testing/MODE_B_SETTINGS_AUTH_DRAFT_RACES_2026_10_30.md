@@ -65,6 +65,30 @@ Mode B remains open after this targeted risk reduction.
 
 - [x] Baseline CI and event/draft production behavior reviewed.
 - [x] Risk and test plan captured before implementation.
-- [ ] Deterministic tests and minimal source repair.
-- [ ] Diff and source-contract review.
-- [ ] Exact-SHA Preflight and OS acceptance evidence.
+- [x] Five deterministic tests and minimal source repair committed separately.
+- [x] Diff and source-contract review completed.
+- [ ] Exact-SHA Preflight and OS acceptance evidence (pending).
+
+## Change ledger and verification boundary
+
+- `tests/settings-github-confirm.test.mjs` now models a native
+  `github_copy_user_code` failure, browser opening failure,
+  phase/reason status and a wallet state event after draft disconnect;
+  five new named live-controller tests assert the invariants above.
+- `apps/desktop/ui/settings.mjs::refreshGithub` now returns early
+  when `disconnectPending` is true, leaving the user's explicit
+  pending-disconnect draft authoritative. Existing
+  `monitorScopesRevision` checks still discard requests that were
+  outstanding before the draft. No credential operation, native OAuth
+  flow, data format or public API changed.
+- Static source review confirmed all five test names, preserved
+  `repoticker-github-auth` listener, `monitorScopesRevision` guards,
+  and unchanged existing Settings test cases.
+- New tests have **not** been executed at this new source SHA; no
+  pass counts, branch increases or Windows acceptance evidence are
+  claimed from static inspection alone.
+
+**Next checkpoint:** one normal fast-forward push triggers Preflight
+and unpublished Windows/KDE acceptance on the same SHA. Review the
+result only when the owner asks or another completion event arrives.
+

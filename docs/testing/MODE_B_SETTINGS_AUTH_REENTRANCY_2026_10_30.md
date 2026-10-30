@@ -66,3 +66,33 @@ Plan, tests, code and evidence in distinct commits. Push one safe
 fast-forward to `dev`, then stop on CI. The new exact SHA has no
 verified pass count or platform acceptance until its jobs complete.
 Stage 12 remains open.
+
+## Prepared implementation and evidence checkpoint
+
+- **Plan commit**: `81ba34295e957e4649e6a5d55a63d846c55046a9`.
+- **Tests commit**: `0b15fd8abfa4bcc9c0a7471eebfa8e82d18e38bd`.
+  Added four deterministic real-controller tests with a deferred
+  `github_begin` promise, mutable `github_auth_status` failure,
+  IPC call-count evidence, and a failed-config-reopen event.
+- **Code commit**: `30b6b5c2cb62f0711e46227651ad4953490ea891`.
+  Added a controller-level single-flight gate on Connect;
+  reset `githubStartedHere` after a failed begin; suppressed
+  authorization reconciliation while the current Settings
+  configuration is untrusted/loading; made status-read errors
+  reset pending connection UI and display only a fixed localized
+  `Connection unavailable` label; gated both visible Apply and
+  the actual save handler on `githubCheckFailed`.
+- **Diff inspection:** only `settings.mjs`, its
+  `settings-github-confirm.test.mjs` WebView test fixture, and
+  this Mode B document changed. The native credential manager,
+  API requests, monitor scope and persistence formats were not
+  modified. Existing tests and revision checks remain intact.
+- **Verification limit:** all four new cases are **not yet
+  executed** at the prepared SHA. The prior 537/537 green run
+  and prior platform acceptance apply only to the old SHA.
+  No exact-SHA pass rate or new coverage is asserted here.
+
+The following owner-requested checkpoint must inspect the
+result of the new Preflight and unpublished Windows/KDE acceptance;
+do not poll newly started CI runs in this turn. A release requires
+separate physical-platform acceptance and owner approval.

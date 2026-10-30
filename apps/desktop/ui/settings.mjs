@@ -84,6 +84,12 @@ let monitorScopesRevision = 0;
 const REPO_NAME = /^[a-zA-Z0-9_.-]{1,100}$/;
 const validRepoName = name => REPO_NAME.test(name) &&
   name !== "." && name !== "..";
+// GitHub account and repository identities are ASCII case-insensitive.
+// Keep the original stored spelling until the user edits the selection.
+const sameGithubIdentity = (a, b) => typeof a === "string" &&
+  typeof b === "string" && a.toLowerCase() === b.toLowerCase();
+const containsGithubIdentity = (items, name) =>
+  [...items].some(item => sameGithubIdentity(item, name));
 function normalizeRepoDraft() {
   return repoMode === "all" ? [] : [...selectedRepoNames].sort();
 }
@@ -97,7 +103,7 @@ function repoChoiceValid() {
   if (selectedRepoNames.size === 0 || selectedRepoNames.size > 100) return false;
   if (!repoChoiceTouched) return true; // Preserve existing config if API is offline.
   return repoInventoryReady && [...selectedRepoNames].every(name =>
-    repoInventory.includes(name));
+    containsGithubIdentity(repoInventory, name));
 }
 function renderRepoChoices() {
   byId("github-repo-mode").value = repoMode;
@@ -121,10 +127,16 @@ function renderRepoChoices() {
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
     checkbox.value = name;
-    checkbox.checked = selectedRepoNames.has(name);
+    checkbox.checked = containsGithubIdentity(selectedRepoNames, name);
     checkbox.addEventListener("change", () => {
-      if (checkbox.checked) selectedRepoNames.add(name);
-      else selectedRepoNames.delete(name);
+      if (checkbox.checked) {
+        if (!containsGithubIdentity(selectedRepoNames, name))
+          selectedRepoNames.add(name);
+      } else {
+        for (const selected of selectedRepoNames) {
+          if (sameGithubIdentity(selected, name)) selectedRepoNames.delete(selected);
+        }
+      }
       updateRepoDirty();
       renderRepoChoices();
     });
@@ -135,7 +147,7 @@ function renderRepoChoices() {
     list.append(label);
   }
   const unavailable = [...selectedRepoNames].filter(name =>
-    !repoInventory.includes(name)).length;
+    !containsGithubIdentity(repoInventory, name)).length;
   byId("github-repo-status").textContent = !repoInventoryReady
     ? t("Repository list unavailable. Existing selection is preserved.")
     : selectedRepoNames.size === 0 ? t("Choose at least one repository.")
@@ -251,9 +263,13 @@ async function refreshMonitorScopes() {
     if (githubScopeAtOpen === null) githubScopeAtOpen = config || "";
     const suggestion = config ||
       (inventory.complete && accounts.length === 1 ? accounts[0] : "");
+    // The persisted login may differ only in case from the provider's
+    // canonical spelling. Resolve it before looking up the installation ID.
+    const resolved = accounts.find(name => sameGithubIdentity(name, suggestion)) ??
+      suggestion;
     // An explicit draft selection must never be overwritten by a late
     // refresh; an incomplete listing does not prove a saved account gone.
-    if (!githubScopeTouched) selectedScope = suggestion;
+    if (!githubScopeTouched) selectedScope = resolved;
     select.value = accounts.includes(selectedScope) ? selectedScope : "";
     if (!inventory.complete) githubMessage(
       t("GitHub installation list incomplete. Some accounts may be unavailable."), true);
@@ -267,8 +283,15 @@ async function refreshMonitorScopes() {
 }
 
 byId("github-monitor-scope").addEventListener("change", event => {
+  const previousScope = selectedScope || "";
   selectedScope = event.target.value || "";
-  githubScopeTouched = selectedScope !== (githubScopeAtOpen || "");
+  githubScopeTouched = !sameGithubIdentity(selectedScope, githubScopeAtOpen || "");
+  // A redundant event or capitalization-only choice is not a new
+  // account. Do not erase that account's existing repository subset.
+  if (sameGithubIdentity(previousScope, selectedScope)) {
+    updateApply();
+    return;
+  }
   // One monitored account at a time; changing it never retains the
   // previous account's private repository list.
   repoMode = "all";

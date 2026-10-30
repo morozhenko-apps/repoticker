@@ -54,7 +54,13 @@ async function popupFixture(id, options = {}) {
   let scope = options.scope ?? null;
   let kind = options.kind ?? "tasks";
   let language = "en";
-  let failMonitor = false;
+  let failMonitor = options.failMonitor === true;
+  let failKind = options.failKind === true;
+  let failLocale = false;
+  let localeReads = 0;
+  let releaseDeferredLocale = null;
+  const deferredLocale = options.deferSecondLocale
+    ? new Promise(resolve => { releaseDeferredLocale = resolve; }) : null;
   const snapshotReplies = options.firstSnapshot
     ? [options.firstSnapshot] : [];
   const document = {
@@ -84,8 +90,14 @@ async function popupFixture(id, options = {}) {
               if (failMonitor) throw Error("NATIVE_SNAPSHOT_UNAVAILABLE");
               return snapshot;
             case "get_monitor_scope": return scope;
-            case "get_settings_config": return { language };
-            case "get_usage_popup_kind": return kind;
+            case "get_settings_config":
+              if (failLocale) throw Error("PRIVATE_LOCALE_IPC_ERROR");
+              localeReads++;
+              if (deferredLocale && localeReads === 2) return deferredLocale;
+              return { language };
+            case "get_usage_popup_kind":
+              if (failKind) throw Error("PRIVATE_KIND_IPC_ERROR");
+              return kind;
             case "resize_usage_popup": return undefined;
             case "github_api_get":
               if (options.githubGet) return options.githubGet(args.path);
@@ -112,6 +124,11 @@ async function popupFixture(id, options = {}) {
       setSnapshot(next) { snapshot = next; },
       setKind(next) { kind = next; },
       setFailMonitor(value) { failMonitor = value; },
+      setFailKind(value) { failKind = value; },
+      setFailLocale(value) { failLocale = value; },
+      setLanguage(value) { language = value; },
+      releaseLocale(value) { releaseDeferredLocale?.({ language: value }); },
+      get language() { return document.documentElement.lang; },
       async emit(name) {
         const callback = handlers.get(name);
         assert.equal(typeof callback, "function", "missing subscription " + name);
@@ -245,6 +262,93 @@ test("Mode B: raw billing transport exception never appears in detached popup", 
     assert.match(ui.title.textContent, /Actions/);
     assert.doesNotMatch(ui.text(), /SECRET_PROVIDER_BODY_NOT_FOR_WEBVIEW/);
     assert.match(ui.text(), /unavailable|not available/i);
+    assert.equal(ui.calls.some(([name]) => name === "get_snapshot"), false);
+  } finally { ui.restore(); }
+});
+
+test("Mode B: initial native monitor denial recovers on a later trusted event", async () => {
+  const ui = await popupFixture("startup-monitor-recovery", {
+    kind: "tasks", scope: "team", snapshot: state("team", 4, 2),
+    failMonitor: true
+  });
+  try {
+    assert.equal(ui.title.textContent, "Status unavailable");
+    assert.match(ui.text(), /Cannot read GitHub status/);
+    assert.doesNotMatch(ui.text(), /NATIVE_SNAPSHOT_UNAVAILABLE/);
+    ui.setFailMonitor(false);
+    await ui.emit("repoticker-monitor-updated");
+    assert.equal(ui.title.textContent, "Tasks · Running 4 / Queued 2");
+    assert.equal(ui.calls.some(([name]) => name === "get_snapshot"), false);
+  } finally { ui.restore(); }
+});
+
+test("Mode B: invalid native account scope fails closed until corrected", async () => {
+  const ui = await popupFixture("invalid-scope-recovery", {
+    kind: "billing", scope: 0, snapshot: state("team", 1)
+  });
+  try {
+    assert.equal(ui.title.textContent, "Status unavailable");
+    assert.match(ui.text(), /Cannot read GitHub status/);
+    assert.equal(ui.calls.some(([name]) => name === "github_api_get"), false,
+      "invalid native scope must not start provider billing");
+    ui.setScope("team");
+    await ui.emit("repoticker-github-scope-changed");
+    assert.match(ui.title.textContent, /Actions/);
+    assert.equal(ui.calls.some(([name, args]) =>
+      name === "github_api_get" && args.path === "/orgs/team"), true);
+    assert.equal(ui.calls.some(([name]) => name === "get_snapshot"), false);
+  } finally { ui.restore(); }
+});
+
+test("Mode B: unknown native popup kind cannot invent metrics and later recovers", async () => {
+  const ui = await popupFixture("native-kind-recovery", {
+    kind: "tasks", scope: "team", snapshot: state("team", 2),
+    failKind: true
+  });
+  try {
+    assert.equal(ui.title.textContent, "Status unavailable");
+    assert.doesNotMatch(ui.text(), /PRIVATE_KIND_IPC_ERROR/);
+    ui.setFailKind(false);
+    await ui.emit("repoticker-monitor-updated");
+    assert.equal(ui.title.textContent, "Tasks · Running 2 / Queued 0");
+    assert.equal(ui.calls.some(([name]) => name === "get_snapshot"), false);
+  } finally { ui.restore(); }
+});
+
+test("Mode B: failed locale IPC falls back to English without changing trusted metrics", async () => {
+  const ui = await popupFixture("locale-read-recovery", {
+    kind: "tasks", scope: "team", snapshot: state("team", 4, 1)
+  });
+  try {
+    assert.equal(ui.title.textContent, "Tasks · Running 4 / Queued 1");
+    const providerReads = ui.calls.filter(([name]) => name === "github_api_get").length;
+    ui.setLanguage("ru");
+    ui.setFailLocale(true);
+    await ui.emit("repoticker-config-changed");
+    assert.equal(ui.language, "en");
+    assert.equal(ui.title.textContent, "Tasks · Running 4 / Queued 1");
+    assert.equal(ui.calls.filter(([name]) => name === "github_api_get").length,
+      providerReads);
+    assert.equal(ui.calls.some(([name]) => name === "get_snapshot"), false);
+  } finally { ui.restore(); }
+});
+
+test("Mode B: a delayed old locale reply cannot override the later config event", async () => {
+  const ui = await popupFixture("locale-order", {
+    kind: "tasks", scope: "team", snapshot: state("team", 3),
+    deferSecondLocale: true
+  });
+  try {
+    ui.setLanguage("pt");
+    const oldEvent = ui.emit("repoticker-config-changed");
+    ui.setLanguage("ru");
+    await ui.emit("repoticker-config-changed");
+    assert.equal(ui.language, "ru");
+    assert.match(ui.title.textContent, /Задачи/);
+    ui.releaseLocale("pt");
+    await oldEvent;
+    assert.equal(ui.language, "ru");
+    assert.match(ui.title.textContent, /Задачи/);
     assert.equal(ui.calls.some(([name]) => name === "get_snapshot"), false);
   } finally { ui.restore(); }
 });

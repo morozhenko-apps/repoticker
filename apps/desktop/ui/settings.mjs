@@ -364,6 +364,9 @@ const githubFailureLabels = Object.freeze({
 });
 
 async function refreshGithub(knownAuth = null) {
+  // Auth events cannot establish trust when Settings configuration is
+  // still loading or its most recent initialization has failed.
+  if (settingsLoading || settingsInitFailed) return;
   // Disconnect is an explicit uncommitted Settings draft. The native
   // credential intentionally still exists until OK, so an auth event
   // must not resurrect Authorized controls over the pending choice.
@@ -396,13 +399,20 @@ async function refreshGithub(knownAuth = null) {
     clearMonitorScopes();
     githubChecking = false;
     githubCheckFailed = true;
+    githubConnected = false;
+    githubPending = false;
+    stopGithubStatusUpdates();
+    byId("github-user-code").textContent = "";
     githubButtons();
-    githubMessage(String(error), true);
+    // The IPC rejection is not a trusted display string.
+    githubMessage("Connection unavailable", true);
   }
 }
 
 byId("github-connect").addEventListener("click", async () => {
-  if (githubPending) return;
+  // Defend at the controller boundary, not just through a disabled DOM.
+  if (githubPending || githubStarting || githubConnected || githubChecking ||
+      githubCheckFailed || settingsLoading || settingsInitFailed || saving) return;
   byId("github-connect").disabled = true;
   githubStarting = true;
   githubStartedHere = true;
@@ -417,6 +427,7 @@ byId("github-connect").addEventListener("click", async () => {
     startGithubStatusUpdates();
   } catch (error) {
     githubPending = false;
+    githubStartedHere = false;
     githubMessage(String(error), true);
     githubButtons();
   } finally {
@@ -493,7 +504,7 @@ function isDirty() {
 function updateApply() {
   const authNeedsConfirmation = (githubConnected && githubStartedHere) || disconnectPending;
   byId("apply-settings").disabled =
-    saving || settingsLoading || settingsInitFailed ||
+    saving || settingsLoading || settingsInitFailed || githubCheckFailed ||
     githubStarting || githubPending || !repoChoiceValid() ||
     (githubScopeTouched && !!selectedScope && !availableAccounts.has(selectedScope)) ||
     !(isDirty() || authNeedsConfirmation || githubScopeTouched || repoChoiceTouched);
@@ -850,7 +861,7 @@ byId("cancel-settings").addEventListener("click", async () => {
   }
 });
 byId("apply-settings").addEventListener("click", async () => {
-  if (saving || settingsLoading || settingsInitFailed ||
+  if (saving || settingsLoading || settingsInitFailed || githubCheckFailed ||
       githubPending || githubStarting || !repoChoiceValid() ||
       (githubScopeTouched && !!selectedScope && !availableAccounts.has(selectedScope)) ||
       !(isDirty() || githubScopeTouched || repoChoiceTouched ||

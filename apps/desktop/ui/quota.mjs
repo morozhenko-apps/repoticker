@@ -115,8 +115,16 @@ function statusUnavailable(message) {
 /** Respect explicit Settings selection; auto-selected installation lives
  * in the validated native monitor snapshot, not necessarily in config. */
 export function selectedOrganization(snapshot) {
-  return snapshot?.github_monitor_org ||
-    snapshot?.runner_state?.scope?.organization || "";
+  const configured = typeof snapshot?.github_monitor_org === "string"
+    ? snapshot.github_monitor_org : "";
+  const monitored = typeof snapshot?.runner_state?.scope?.organization === "string"
+    ? snapshot.runner_state.scope.organization : "";
+  // The lightweight monitor event may arrive before its config-change
+  // event. Never bill an old configured owner for a different owner's
+  // newly published runner snapshot. Prefer unknown until they agree.
+  if (configured && monitored &&
+      configured.toLowerCase() !== monitored.toLowerCase()) return "";
+  return configured || monitored;
 }
 function paintSnapshot(snapshot) {
   const source = snapshot.runner_state;

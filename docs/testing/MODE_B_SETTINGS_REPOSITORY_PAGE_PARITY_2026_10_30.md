@@ -61,7 +61,36 @@ verification. Stage 12 remains open.
 
 - [x] Native projection and Settings inventory boundaries inspected.
 - [x] Acceptance requirements planned before edits.
-- [ ] New fault-injection tests prepared.
-- [ ] Production check and source review.
-- [ ] Prior active CI completed; push permitted.
-- [ ] New exact-SHA CI verified.
+- [x] Four deterministic Settings real-controller fault-injection tests prepared.
+- [x] Minimal production validation fix and exact source diff reviewed.
+- [ ] Prior active CI completed; push permitted (not rechecked).
+- [ ] New exact-SHA CI verified (not run).
+
+## Prepared commit and test ledger
+
+- Plan: `691afb882cc4ff71e16ef1c5973d9cf6da9da120`.
+- Test-only commit: `4f1d52a0f845f4faa33a7d5c5256d842f6752d30`,
+  four new tests in `tests/settings-github-confirm.test.mjs`:
+  oversized page, invalid first-page row, malformed second page
+  after a full first page, and independent Settings save preserving
+  existing native repository selection while the API is corrupt.
+- Production fix: `dca76166eb911f126a7a3ef309546a118da3ab9b`.
+  `refreshRepoInventory` rejects arrays above 100 and non-string
+  `full_name` fields rather than publishing a truncated or
+  falsely complete inventory. Invalid *string* names still use
+  existing owner/canonical filtering.
+- Exact source diff reviewed: only `settings.mjs`, its existing
+  test file and this planning/evidence document differ from baseline.
+  No new GitHub requests, permissions, persisted fields, user-visible
+  controls or native API commands.
+- Existing `repoInventoryRevision` race checks, native monitor
+  persistence and saved-selection preservation branches remain.
+- **No new test execution or coverage measurement**: these Git
+  objects are intentionally unreferenced by `dev`, because its
+  independent Preflight and platform candidate were in progress
+  at the owner-requested check. The last confirmed pass count is
+  still 529/529 from the preceding SHA.
+- To resume, obtain a fresh owner-requested completion checkpoint,
+  verify the committed parent SHA chain against current `dev`,
+  then perform one non-forced fast-forward. Stop on new CI.
+

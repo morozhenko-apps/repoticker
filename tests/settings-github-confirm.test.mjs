@@ -50,7 +50,7 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
   const documentHandlers = new Map();
   const calls = [];
   let connected = initiallyConnected;
-  let phase = connected ? "connected" : "idle";
+  let phase = options.authPhase ?? (connected ? "connected" : "idle");
   let monitorOrg = connected ? "one" : null;
   let monitorRepositories = [...initialRepositories];
   const persistedIgnored = [...(options.ignoredChildNames || [])];
@@ -98,7 +98,7 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
               return osAutostart;
             case "github_auth_status":
               if (options.authStatusError) throw Error("Credential status unavailable");
-              return { connected, phase };
+              return { connected, phase, reason: options.authReason ?? null };
             case "github_api_get":
               if (args.path.includes("/repositories?")) {
                 if (options.repositoryError) throw Error("Synthetic repository API denial");
@@ -129,6 +129,12 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
               if (options.beginError) throw Error("Device authorization unavailable");
               phase = "pending";
               return { userCode: "ABCD-1234" };
+            case "github_copy_user_code":
+              if (options.copyCodeError) throw Error("System clipboard denied");
+              return undefined;
+            case "github_open_device_page":
+              if (options.openDeviceError) throw Error("Device page launch denied");
+              return undefined;
             case "github_cancel":
               if (!connected) phase = "cancelled";
               return undefined;
@@ -1133,5 +1139,111 @@ test("Mode B: Settings blocks 101 selected repositories and accepts exactly 100"
     assert.equal(ui.monitorRepositories.length, 100);
     assert.equal(ui.monitorRepositories.includes("one/repo100"), false);
     assert.equal(ui.closed, true);
+  } finally { ui.restore(); }
+});
+
+test("Mode B: auth event cannot undo a draft GitHub disconnect", async () => {
+  const ui = await fixture("mode-b-draft-disconnect-event", true, ["one/core"]);
+  try {
+    await ui.node("github-disconnect").fire("click");
+    assert.equal(ui.node("github-connection-indicator").textContent, "Pending disconnect");
+    assert.equal(ui.node("github-monitor-scope-row").hidden, true);
+    assert.equal(ui.tokenRemoved, false);
+    assert.equal(ui.node("apply-settings").disabled, false);
+    await ui.dispatchAuth();
+    assert.equal(ui.node("github-connection-indicator").textContent,
+      "Pending disconnect", "reconciliation must not silently restore Authorized");
+    assert.equal(ui.node("github-disconnect").hidden, true);
+    assert.equal(ui.node("github-monitor-scope-row").hidden, true);
+    assert.equal(ui.node("apply-settings").disabled, false);
+    assert.equal(ui.monitorOrg, "one");
+    assert.equal(ui.tokenRemoved, false);
+    await ui.node("cancel-settings").fire("click");
+    assert.equal(ui.closed, true);
+    assert.equal(ui.tokenRemoved, false);
+    assert.deepEqual(ui.monitorRepositories, ["one/core"]);
+  } finally { ui.restore(); }
+});
+
+test("Mode B: clipboard denial preserves public user code and allows manual copying", async () => {
+  const ui = await fixture("mode-b-copy-denied", false, [], {
+    copyCodeError: true
+  });
+  try {
+    await ui.node("github-connect").fire("click");
+    assert.equal(ui.node("github-user-code").textContent, "ABCD-1234");
+    await ui.node("github-copy-code").fire("click");
+    assert.equal(ui.node("github-user-code").textContent, "ABCD-1234");
+    assert.equal(ui.node("github-device-flow").hidden, false);
+    assert.equal(ui.node("github-copy-code").textContent, "Copy code");
+    assert.match(ui.node("github-auth-message").textContent, /Ctrl\+C/);
+    assert.equal(ui.node("apply-settings").disabled, true);
+    assert.equal(ui.calls.filter(([name]) => name === "github_copy_user_code").length, 1);
+    await ui.node("github-cancel-device").fire("click");
+    assert.equal(ui.node("github-device-flow").hidden, true);
+    await ui.node("cancel-settings").fire("click");
+    assert.equal(ui.closed, true);
+    assert.equal(ui.tokenRemoved, false);
+  } finally { ui.restore(); }
+});
+
+test("Mode B: browser launch failure does not consume GitHub challenge", async () => {
+  const ui = await fixture("mode-b-browser-launch-denied", false, [], {
+    openDeviceError: true
+  });
+  try {
+    await ui.node("github-connect").fire("click");
+    await ui.node("github-open-device").fire("click");
+    assert.match(ui.node("github-auth-message").textContent,
+      /Device page launch denied/);
+    assert.equal(ui.node("github-device-flow").hidden, false);
+    assert.equal(ui.node("github-user-code").textContent, "ABCD-1234");
+    assert.equal(ui.node("apply-settings").disabled, true);
+    assert.equal(ui.calls.filter(([name]) => name === "github_open_device_page").length, 1);
+    await ui.node("github-cancel-device").fire("click");
+    await ui.node("cancel-settings").fire("click");
+    assert.equal(ui.tokenRemoved, false);
+  } finally { ui.restore(); }
+});
+
+test("Mode B: unknown native GitHub failure reason is never interpolated into WebView", async () => {
+  const untrusted = "PRIVATE_NATIVE_DETAIL_DO_NOT_RENDER";
+  const ui = await fixture("mode-b-unknown-auth-reason", false, [], {
+    authPhase: "failed", authReason: untrusted
+  });
+  try {
+    assert.equal(ui.node("github-auth-message").textContent,
+      "GitHub authorization failed.");
+    assert.doesNotMatch(ui.node("github-auth-message").textContent,
+      /PRIVATE_NATIVE_DETAIL_DO_NOT_RENDER/);
+    assert.equal(ui.node("github-connect").hidden, false);
+    assert.equal(ui.node("apply-settings").disabled, true);
+  } finally { ui.restore(); }
+  const known = await fixture("mode-b-known-auth-reason", false, [], {
+    authPhase: "failed", authReason: "credential_store"
+  });
+  try {
+    assert.match(known.node("github-auth-message").textContent,
+      /system wallet/);
+    assert.doesNotMatch(known.node("github-auth-message").textContent,
+      /credential_store/);
+  } finally { known.restore(); }
+});
+
+test("Mode B: Settings opened during native pending auth requires explicit cancellation", async () => {
+  const ui = await fixture("mode-b-native-auth-pending-open", false, [], {
+    authPhase: "awaiting_approval"
+  });
+  try {
+    assert.equal(ui.node("github-connection-indicator").textContent,
+      "Authorization pending");
+    assert.equal(ui.node("github-connect").hidden, true);
+    assert.equal(ui.node("github-device-flow").hidden, false);
+    assert.equal(ui.node("apply-settings").disabled, true);
+    await ui.node("cancel-settings").fire("click");
+    assert.equal(ui.closed, true);
+    assert.equal(ui.tokenRemoved, false);
+    assert.ok(ui.calls.some(([name]) => name === "github_cancel"));
+    assert.equal(ui.calls.some(([name]) => name === "github_disconnect"), false);
   } finally { ui.restore(); }
 });

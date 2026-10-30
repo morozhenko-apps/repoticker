@@ -63,6 +63,14 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
   let releaseRepositoryInventory = null;
   const deferredRepositoryInventory = options.deferRepositoryForAccount
     ? new Promise(resolve => { releaseRepositoryInventory = resolve; }) : null;
+  let resolveInitialConfig = null;
+  let rejectInitialConfig = null;
+  const deferredInitialConfig = options.deferInitialConfig
+    ? new Promise((resolve, reject) => {
+      resolveInitialConfig = resolve;
+      rejectInitialConfig = reject;
+    }) : null;
+  let configReadCount = 0;
   const document = {
     activeElement: null,
     documentElement: { lang: "en" },
@@ -82,12 +90,20 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
         async invoke(command, args) {
           calls.push([command, args]);
           switch (command) {
-            case "get_settings_config": return {
-              roots: options.roots ?? ["/repos"], language: options.language ?? "en", github_monitor_org: monitorOrg,
-              github_monitor_repositories: monitorRepositories,
-              ignored_child_names: persistedIgnored,
-              ci_failure_notifications: options.ciFailureNotifications === true
-            };
+            case "get_settings_config": {
+              const response = {
+                roots: options.roots ?? ["/repos"], language: options.language ?? "en",
+                github_monitor_org: monitorOrg,
+                github_monitor_repositories: monitorRepositories,
+                ignored_child_names: persistedIgnored,
+                ci_failure_notifications: options.ciFailureNotifications === true
+              };
+              configReadCount++;
+              if (configReadCount === 1 && deferredInitialConfig) return deferredInitialConfig;
+              if (options.configReadError)
+                throw Error("PRIVATE_CONFIG_ERROR_DO_NOT_RENDER");
+              return response;
+            }
             case "get_monitor_scope": return monitorOrg;
             case "autostart_is_enabled":
               if (options.autostartError) throw Error("OS autostart read failed");
@@ -201,6 +217,16 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
     get monitorRepositories() { return monitorRepositories; },
     releaseInstallations: payload => releaseInstallations?.(payload),
     releaseRepositoryInventory: payload => releaseRepositoryInventory?.(payload),
+    releaseInitialConfig: payload => resolveInitialConfig?.(payload),
+    rejectInitialConfig: error => rejectInitialConfig?.(error),
+    setConfigReadError: value => { options.configReadError = value; },
+    setAuthStatusError: value => { options.authStatusError = value; },
+    setLanguage: value => { options.language = value; },
+    async dispatchOpened() {
+      await listeners.get("repoticker-settings-opened")?.({});
+      await tick();
+      await tick();
+    },
     async dispatchAuth() {
       await listeners.get("repoticker-github-auth")?.({});
       await tick();
@@ -920,7 +946,9 @@ test("Mode B: unavailable wallet read fails closed without enabling Save or Conn
   try {
     assert.equal(ui.node("github-connect").hidden, true);
     assert.equal(ui.node("apply-settings").disabled, true);
-    assert.match(ui.node("message").textContent, /Credential status unavailable/);
+    assert.match(ui.node("message").textContent, /Cannot initialize settings/);
+    assert.equal(ui.node("github-connection-indicator").textContent, "Connection unavailable");
+    assert.doesNotMatch(ui.node("message").textContent, /Credential status unavailable/);
     assert.equal(ui.calls.some(([name]) => [
       "github_set_monitor_org", "save_settings", "github_disconnect",
       "autostart_set_enabled"
@@ -1369,6 +1397,96 @@ test("Mode B: mismatched OS autostart response fails verification without claimi
     assert.equal(ui.node("apply-settings").disabled, false);
     assert.match(ui.node("message").textContent, /could not be verified/);
     assert.equal(ui.calls.filter(([name]) => name === "autostart_set_enabled").length, 1);
+    assert.equal(ui.calls.some(([name]) => name === "save_settings"), false);
+  } finally { ui.restore(); }
+});
+
+test("Mode B: initial Settings config failure reports unavailable without revealing IPC detail", async () => {
+  const ui = await fixture("mode-b-config-startup-denied", false, [], {
+    configReadError: true
+  });
+  try {
+    assert.equal(ui.node("github-connection-indicator").textContent,
+      "Connection unavailable");
+    assert.equal(ui.node("github-connect").hidden, true);
+    assert.equal(ui.node("apply-settings").disabled, true);
+    assert.match(ui.node("message").textContent, /Cannot initialize settings/);
+    assert.doesNotMatch(ui.node("message").textContent,
+      /PRIVATE_CONFIG_ERROR_DO_NOT_RENDER/);
+    assert.equal(ui.calls.some(([name]) => [
+      "save_settings", "github_set_monitor_org", "github_disconnect"
+    ].includes(name)), false);
+    await ui.node("cancel-settings").fire("click");
+    assert.equal(ui.closed, true);
+  } finally { ui.restore(); }
+});
+
+test("Mode B: failed Settings reopen blocks stale dirty draft until a successful reload", async () => {
+  const ui = await fixture("mode-b-config-reopen-failure", true);
+  try {
+    ui.node("ci-failure-notifications").checked = true;
+    await ui.node("ci-failure-notifications").fire("change");
+    assert.equal(ui.node("apply-settings").disabled, false);
+    ui.setConfigReadError(true);
+    await ui.dispatchOpened();
+    assert.equal(ui.node("github-connection-indicator").textContent,
+      "Connection unavailable");
+    assert.equal(ui.node("apply-settings").disabled, true);
+    assert.doesNotMatch(ui.node("message").textContent,
+      /PRIVATE_CONFIG_ERROR_DO_NOT_RENDER/);
+    await ui.node("apply-settings").fire("click");
+    assert.equal(ui.calls.some(([name]) => name === "save_settings"), false);
+    ui.setConfigReadError(false);
+    await ui.dispatchOpened();
+    assert.equal(ui.node("github-connection-indicator").textContent, "Authorized");
+    assert.equal(ui.node("ci-failure-notifications").checked, false);
+    assert.equal(ui.node("apply-settings").disabled, true);
+    await ui.node("cancel-settings").fire("click");
+    assert.equal(ui.closed, true);
+    assert.equal(ui.tokenRemoved, false);
+  } finally { ui.restore(); }
+});
+
+test("Mode B: late first config read cannot overwrite the newer reopened Settings form", async () => {
+  const ui = await fixture("mode-b-stale-first-config", false, [], {
+    deferInitialConfig: true, language: "en"
+  });
+  try {
+    assert.equal(ui.node("github-connection-indicator").textContent,
+      "Checking connection...");
+    ui.setLanguage("ru");
+    await ui.dispatchOpened();
+    assert.equal(ui.language, "ru");
+    assert.equal(ui.node("github-connection-indicator").textContent, "Not connected");
+    ui.releaseInitialConfig({
+      roots: ["/stale"], language: "en", github_monitor_org: null,
+      github_monitor_repositories: [], ignored_child_names: [],
+      ci_failure_notifications: true
+    });
+    await tick();
+    await tick();
+    assert.equal(ui.language, "ru");
+    assert.deepEqual(ui.node("roots-list").children.map(row =>
+      row.children[0]?.textContent), ["/repos"]);
+    assert.equal(ui.node("ci-failure-notifications").checked, false);
+    assert.equal(ui.node("apply-settings").disabled, true);
+    assert.equal(ui.calls.some(([name]) => name === "save_settings"), false);
+  } finally { ui.restore(); }
+});
+
+test("Mode B: late failed startup cannot replace a successful reopen with an error", async () => {
+  const ui = await fixture("mode-b-stale-first-config-error", false, [], {
+    deferInitialConfig: true, language: "en"
+  });
+  try {
+    await ui.dispatchOpened();
+    assert.equal(ui.node("github-connection-indicator").textContent, "Not connected");
+    ui.rejectInitialConfig(Error("PRIVATE_STALE_INITIAL_ERROR"));
+    await tick();
+    await tick();
+    assert.equal(ui.node("github-connection-indicator").textContent, "Not connected");
+    assert.doesNotMatch(ui.node("message").textContent, /PRIVATE_STALE_INITIAL_ERROR/);
+    assert.equal(ui.node("apply-settings").disabled, true);
     assert.equal(ui.calls.some(([name]) => name === "save_settings"), false);
   } finally { ui.restore(); }
 });

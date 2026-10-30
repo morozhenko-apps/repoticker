@@ -67,6 +67,7 @@ let githubWasConnectedAtOpen = false;
 let githubStartedHere = false;
 let disconnectPending = false;
 let githubStarting = false;
+let githubBeginRevision = 0;
 let availableAccounts = new Map();
 let repoInventory = [];
 let repoInventoryComplete = false;
@@ -415,25 +416,33 @@ byId("github-connect").addEventListener("click", async () => {
       githubCheckFailed || settingsLoading || settingsInitFailed || saving) return;
   byId("github-connect").disabled = true;
   githubStarting = true;
+  const beginRevision = ++githubBeginRevision;
   githubStartedHere = true;
   updateApply();
   try {
     const challenge = await invoke("github_begin");
+    // A dismissed or reinitialized Settings window cannot consume the
+    // response of an older device-code request.
+    if (beginRevision !== githubBeginRevision) return;
     // Only a public one-time USER code may enter the WebView.
     byId("github-user-code").textContent = challenge.userCode;
     githubPending = true;
     githubMessage("Waiting for approval in GitHub.");
     githubButtons();
     startGithubStatusUpdates();
-  } catch (error) {
+  } catch {
+    if (beginRevision !== githubBeginRevision) return;
     githubPending = false;
     githubStartedHere = false;
-    githubMessage(String(error), true);
+    // Native rejection text is not an authorized WebView diagnostic.
+    githubMessage("GitHub authorization failed.", true);
     githubButtons();
   } finally {
-    githubStarting = false;
-    byId("github-connect").disabled = false;
-    updateApply();
+    if (beginRevision === githubBeginRevision) {
+      githubStarting = false;
+      byId("github-connect").disabled = false;
+      updateApply();
+    }
   }
 });
 
@@ -459,6 +468,8 @@ byId("github-open-device").addEventListener("click", async () => {
   catch (error) { githubMessage(String(error), true); }
 });
 byId("github-cancel-device").addEventListener("click", async () => {
+  ++githubBeginRevision;
+  githubStarting = false;
   await invoke("github_cancel");
   stopGithubStatusUpdates();
   githubPending = false;
@@ -601,6 +612,8 @@ byId("ignore-child-form").addEventListener("submit", event => {
 });
 async function refresh() {
   const revision = ++settingsRefreshRevision;
+  // Reopening the same WebView supersedes an older pending challenge.
+  ++githubBeginRevision;
   settingsLoading = true;
   try {
     githubChecking = true;
@@ -620,6 +633,7 @@ async function refresh() {
     githubWasConnectedAtOpen = authAtOpen.connected === true;
     githubStartedHere = false;
     githubStarting = false;
+    byId("github-connect").disabled = false;
     disconnectPending = false;
     githubScopeTouched = false;
     githubScopeAtOpen = snapshot.github_monitor_org || "";
@@ -835,6 +849,9 @@ document.addEventListener("keydown", event => {
 });
 byId("cancel-settings").addEventListener("click", async () => {
   if (saving) return;
+  // Invalidate pending challenge continuations before the first await.
+  ++githubBeginRevision;
+  githubStarting = false;
   saving = true;
   updateApply();
   try {

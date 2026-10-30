@@ -57,3 +57,35 @@ generation invalidation** and **fixed failure presentation**.
   non-forced `dev` fast-forward; stop on the new exact-SHA CI.
   Neither a local test pass nor new coverage is asserted before CI.
 - Mode B remains open.
+
+## Implementation ledger and evidence boundary
+
+- Plan commit: `12be2db8b19b465d72a0f188b2a291a392504450`.
+- Tests commit: `f048445140818e2ef8e9cd52e8c69771a364d2d9`.
+  Three live-controller tests use the existing deterministic WebView
+  fixture and a controlled deferred native `github_begin` promise.
+  They assert no late code after Settings Cancel, no late code after
+  a new `repoticker-settings-opened` event, and redaction of
+  native challenge rejection details. The original begin-failure
+  regression also now expects the fixed error label.
+- Source commit: `76f070af8446f2e3acb171fbdf19240d6b4c1666`.
+  The JS Settings controller increments a dedicated
+  `githubBeginRevision` on begin, full Settings refresh,
+  Cancel Settings, and Cancel Device Flow. The resolved/rejected
+  promise and its `finally` mutate the UI only when that
+  revision remains active. Reopen also clears the previous
+  button-disabled state. Failed begin uses the fixed translated
+  `GitHub authorization failed.` message.
+- Static diff review confirmed changes limited to `settings.mjs`,
+  `settings-github-confirm.test.mjs` and this document; the
+  existing single-flight test and native OAuth command contracts
+  are untouched.
+- The **new** tests have **not** been executed at the staged SHA.
+  No new pass rate, coverage number, physical acceptance or
+  successful build is asserted. Prior green results apply only
+  to the baseline SHA.
+
+Checkpoint procedure: one safe fast-forward on `dev`, then stop.
+Review the new Preflight and unpublished platform acceptance only
+on a subsequent owner-requested checkpoint; never poll an active
+workflow within this turn.

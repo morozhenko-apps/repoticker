@@ -1490,3 +1490,79 @@ test("Mode B: late failed startup cannot replace a successful reopen with an err
     assert.equal(ui.calls.some(([name]) => name === "save_settings"), false);
   } finally { ui.restore(); }
 });
+
+test("Mode B: oversized repository page is unavailable rather than complete", async () => {
+  const oversized = Array.from({ length: 101 }, (_, i) => ({
+    full_name: "one/repo" + i
+  }));
+  const ui = await fixture("mode-b-repo-page-overflow", true, ["one/core"], {
+    repositoryPages: [oversized]
+  });
+  try {
+    assert.equal(ui.node("github-repo-mode").value, "selected");
+    assert.equal(ui.node("github-repo-list").children.length, 0);
+    assert.match(ui.node("github-repo-status").textContent, /unavailable/i);
+    assert.equal(ui.node("apply-settings").disabled, true);
+    assert.equal(ui.calls.filter(([name, args]) =>
+      name === "github_api_get" && args.path.includes("/repositories?")).length, 1,
+      "reject the oversized page without trusting or fetching further pages");
+    await ui.node("cancel-settings").fire("click");
+    assert.deepEqual(ui.monitorRepositories, ["one/core"]);
+    assert.equal(ui.calls.some(([name]) => name === "github_set_monitor_org"), false);
+  } finally { ui.restore(); }
+});
+
+test("Mode B: malformed repository row fails closed without losing saved selection", async () => {
+  const ui = await fixture("mode-b-repo-bad-fullname", true, ["one/core"], {
+    repositoryPages: [[{ full_name: "one/core" }, { full_name: null }]]
+  });
+  try {
+    assert.equal(ui.node("github-repo-list").children.length, 0,
+      "a structurally broken row must invalidate the entire page");
+    assert.match(ui.node("github-repo-status").textContent, /unavailable/i);
+    assert.equal(ui.node("apply-settings").disabled, true);
+    await ui.node("cancel-settings").fire("click");
+    assert.deepEqual(ui.monitorRepositories, ["one/core"]);
+    assert.equal(ui.monitorOrg, "one");
+  } finally { ui.restore(); }
+});
+
+test("Mode B: malformed second repository page discards earlier tentative rows", async () => {
+  const page1 = Array.from({ length: 100 }, (_, i) => ({
+    full_name: "one/repo" + i
+  }));
+  const ui = await fixture("mode-b-repo-second-page-malformed", true, ["one/core"], {
+    repositoryPages: [page1, [{ full_name: 5 }]]
+  });
+  try {
+    const reads = ui.calls.filter(([name, args]) =>
+      name === "github_api_get" && args.path.includes("/repositories?"));
+    assert.equal(reads.length, 2);
+    assert.equal(ui.node("github-repo-list").children.length, 0,
+      "the first page must never be published as a confident partial success");
+    assert.match(ui.node("github-repo-status").textContent, /unavailable/i);
+    await ui.node("cancel-settings").fire("click");
+    assert.deepEqual(ui.monitorRepositories, ["one/core"]);
+  } finally { ui.restore(); }
+});
+
+test("Mode B: unrelated Settings save preserves scope when repository page is corrupt", async () => {
+  const ui = await fixture("mode-b-repo-bad-save-unrelated", true, ["one/core"], {
+    repositoryPages: [[{ full_name: "one/core" }, {}]]
+  });
+  try {
+    assert.match(ui.node("github-repo-status").textContent, /unavailable/i);
+    ui.node("ci-failure-notifications").checked = true;
+    await ui.node("ci-failure-notifications").fire("change");
+    assert.equal(ui.node("apply-settings").disabled, false,
+      "a corrupt inventory must not block independent preference edits");
+    await ui.node("apply-settings").fire("click");
+    assert.equal(ui.closed, true);
+    assert.deepEqual(ui.monitorRepositories, ["one/core"]);
+    assert.equal(ui.monitorOrg, "one");
+    assert.deepEqual(ui.calls.filter(([name]) => name === "save_settings")
+      .map(([, args]) => args), [{ ciFailureNotifications: true }]);
+    assert.equal(ui.calls.some(([name]) => name === "github_set_monitor_org"),
+      false, "unknown inventory is not a reason to rewrite native scope");
+  } finally { ui.restore(); }
+});

@@ -64,5 +64,35 @@ dialog or claim success.
 
 - [x] Preflight baseline and relevant production control handlers inspected.
 - [x] Test plan and failure boundaries recorded before implementation.
-- [ ] Deterministic form-boundary tests added.
-- [ ] Diff reviewed and new exact-SHA CI completed.
+- [x] Six deterministic real-controller form-boundary tests added.
+- [x] Exact source diff and fixture additions reviewed.
+- [ ] New exact-SHA CI completed; no new passing counts or
+  coverage percentages claimed until the CI result is available.
+
+## Implementation ledger
+
+- `tests/settings-github-confirm.test.mjs` extends its existing
+  in-memory Tauri IPC fixture with configurable initial roots and a
+  simulated OS autostart write that returns the old value without
+  throwing. No production source changed.
+- Six tests now cover (1) blank/duplicate root submissions,
+  (2) add/remove root reversal, (3) rejected invalid child
+  folder names including traversal, separators, controls and
+  256-character overflow, (4) duplicate exclusion idempotency
+  and the 255-character accepted boundary, (5) preserved
+  Windows verbatim/UNC canonical roots during rendered-path
+  normalization, and (6) mismatched autostart registration responses.
+- Static diff review found only the plan document and the test
+  file changed. The existing Settings auth/account, repo inventory,
+  locale, and native picker tests remain in place.
+- **No tests in this new batch were executed in the current
+  environment.** The normal GitHub Preflight gate is still required;
+  past green runs are not evidence for the new commit.
+
+## Follow-up
+
+After a single `dev` fast-forward, inspect the exact SHA's Node
+tests, Rust checks and V8 coverage only when the owner requests
+a new checkpoint. Continue Mode B toward remaining unaccounted
+executable branches and native OS acceptance separately.
+

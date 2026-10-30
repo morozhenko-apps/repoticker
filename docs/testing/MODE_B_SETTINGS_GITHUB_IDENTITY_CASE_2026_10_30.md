@@ -23,3 +23,34 @@ The native installation collector deduplicates GitHub identities by lowercase ac
 Implementation: use a single ASCII-insensitive key for comparisons only, retain provider casing for display, and preserve the original persisted casing unless the user explicitly edits the subset. Do not rewrite GitHub credentials, stored config, native allowlist, REST projection or another agent's CI work.
 
 Test the real Settings controller with a deterministic native-IPC fixture. Separate plan, tests, fix and evidence commits; one non-forced fast-forward on unchanged `dev`. The new exact-SHA CI remains unverified until a later owner checkpoint. Mode B Stage 12 remains open.
+
+## Prepared implementation and evidence limit
+
+- Plan commit `154a8d1406acdb971f58ff62e6c6bb46fd052375`
+  records the native/Settings casing discrepancy and a regression
+  contract before changes.
+- Test commit `de2aaa4337493be1a4f8bdff22a70fd4633cdf7c`
+  adds five real WebView-controller tests to
+  `tests/settings-github-confirm.test.mjs`, reusing existing
+  native-IPC options rather than introducing a new fixture.
+- Source commit `ce4679e6c412018e0ec88bdfeee730a83ecf74c4`
+  adds a case-insensitive equality predicate for already-validated
+  GitHub identities and applies it in Settings scope resolution,
+  selected repository rendering, validity/status checks, checkbox
+  removal, and redundant account-change detection.
+- A saved repository's *original spelling* remains unchanged
+  until the user explicitly edits it; in particular, an unrelated
+  preference Apply does not rewrite the repository selection.
+  Switching to an actually different account still resets its
+  old subset.
+- Exact diff inspection shows only `apps/desktop/ui/settings.mjs`,
+  `tests/settings-github-confirm.test.mjs` and this document.
+  No `.github/` workflow, credentials, native APIs or other
+  agents' CI-policy work changed.
+
+**Verification boundary:** The preceding 544/544 Node result is
+for `d77fdd5a`, not this new commit. This casefold batch has
+**not been executed locally or verified by CI**; no new count,
+coverage or platform result is claimed. After a safe single
+fast-forward to `dev`, stop until the next owner-requested
+exact-SHA CI checkpoint.

@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { settingsText } from "../apps/desktop/ui/settings-i18n.mjs";
 
 function mockNode(id = "") {
   const events = new Map();
@@ -1457,7 +1458,8 @@ test("Mode B: late first config read cannot overwrite the newer reopened Setting
     ui.setLanguage("ru");
     await ui.dispatchOpened();
     assert.equal(ui.language, "ru");
-    assert.equal(ui.node("github-connection-indicator").textContent, "Not connected");
+    assert.equal(ui.node("github-connection-indicator").textContent,
+      settingsText(ui.language, "Not connected"));
     ui.releaseInitialConfig({
       roots: ["/stale"], language: "en", github_monitor_org: null,
       github_monitor_repositories: [], ignored_child_names: [],

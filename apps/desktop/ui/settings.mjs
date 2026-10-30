@@ -164,10 +164,13 @@ async function refreshRepoInventory() {
     for (let page = 1; page <= 10; page++) {
       const payload = await invoke("github_api_get", { path:
         "/user/installations/" + id + "/repositories?per_page=100&page=" + page });
-      if (!Array.isArray(payload?.repositories)) throw Error("Invalid repository list");
+      if (!Array.isArray(payload?.repositories) ||
+          payload.repositories.length > 100) throw Error("Invalid repository list");
       for (const item of payload.repositories) {
         const name = item?.full_name;
-        if (typeof name !== "string") continue;
+        // Native may project a null full_name from malformed provider
+        // data. An incomplete page cannot be presented as exhaustive.
+        if (typeof name !== "string") throw Error("Invalid repository list");
         const parts = name.split("/");
         if (parts.length === 2 &&
             parts[0].toLowerCase() === selectedScope.toLowerCase() &&

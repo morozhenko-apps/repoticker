@@ -116,7 +116,8 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
               osAutostart = args.enabled;
               return osAutostart;
             case "github_auth_status":
-              if (options.authStatusError) throw Error("Credential status unavailable");
+              if (options.authStatusError)
+                throw Error(options.authStatusErrorText ?? "Credential status unavailable");
               return { connected, phase, reason: options.authReason ?? null };
             case "github_api_get":
               if (args.path.includes("/repositories?")) {
@@ -147,6 +148,7 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
             case "github_begin":
               if (options.beginError) throw Error("Device authorization unavailable");
               phase = "pending";
+              if (options.beginPromise) return options.beginPromise;
               return { userCode: "ABCD-1234" };
             case "github_copy_user_code":
               if (options.copyCodeError) throw Error("System clipboard denied");
@@ -222,6 +224,7 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
     rejectInitialConfig: error => rejectInitialConfig?.(error),
     setConfigReadError: value => { options.configReadError = value; },
     setAuthStatusError: value => { options.authStatusError = value; },
+    setAuthStatusErrorText: value => { options.authStatusErrorText = value; },
     setLanguage: value => { options.language = value; },
     async dispatchOpened() {
       await listeners.get("repoticker-settings-opened")?.({});
@@ -1566,5 +1569,105 @@ test("Mode B: unrelated Settings save preserves scope when repository page is co
       .map(([, args]) => args), [{ ciFailureNotifications: true }]);
     assert.equal(ui.calls.some(([name]) => name === "github_set_monitor_org"),
       false, "unknown inventory is not a reason to rewrite native scope");
+  } finally { ui.restore(); }
+});
+
+test("Mode B: concurrent Connect events issue only one native GitHub challenge", async () => {
+  let completeBegin;
+  const firstChallenge = new Promise(resolve => { completeBegin = resolve; });
+  const ui = await fixture("mode-b-device-single-flight", false, [], {
+    beginPromise: firstChallenge
+  });
+  try {
+    const firstClick = ui.node("github-connect").fire("click");
+    assert.equal(ui.node("github-connect").disabled, true);
+    assert.equal(ui.node("apply-settings").disabled, true);
+    await ui.node("github-connect").fire("click");
+    assert.equal(ui.calls.filter(([name]) => name === "github_begin").length, 1,
+      "single-flight must be enforced by the controller as well as disabled DOM");
+    assert.equal(ui.node("github-user-code").textContent, "");
+    completeBegin({ userCode: "ABCD-1234" });
+    await firstClick;
+    assert.equal(ui.node("github-user-code").textContent, "ABCD-1234");
+    assert.equal(ui.node("github-device-flow").hidden, false);
+    assert.equal(ui.calls.filter(([name]) => name === "github_begin").length, 1);
+    await ui.node("github-cancel-device").fire("click");
+    await ui.node("cancel-settings").fire("click");
+    assert.equal(ui.closed, true);
+    assert.equal(ui.tokenRemoved, false);
+  } finally { ui.restore(); }
+});
+
+test("Mode B: failed device challenge requires no wallet cleanup on Cancel", async () => {
+  const ui = await fixture("mode-b-begin-no-unnecessary-vault-read", false, [], {
+    beginError: true
+  });
+  try {
+    await ui.node("github-connect").fire("click");
+    assert.equal(ui.node("github-device-flow").hidden, true);
+    assert.equal(ui.node("github-user-code").textContent, "");
+    const initialStatusReads = ui.calls.filter(([name]) =>
+      name === "github_auth_status").length;
+    await ui.node("cancel-settings").fire("click");
+    assert.equal(ui.closed, true);
+    assert.equal(ui.calls.filter(([name]) =>
+      name === "github_auth_status").length, initialStatusReads);
+    assert.equal(ui.calls.some(([name]) => name === "github_disconnect"), false);
+    assert.equal(ui.calls.some(([name]) => name === "github_cancel"), false);
+  } finally { ui.restore(); }
+});
+
+test("Mode B: native status failure after open is redacted and blocks dirty Apply", async () => {
+  const sensitiveError = "PRIVATE_PROVIDER_BODY_MUST_NOT_RENDER";
+  const ui = await fixture("mode-b-status-event-failure", true);
+  try {
+    ui.node("ci-failure-notifications").checked = true;
+    await ui.node("ci-failure-notifications").fire("change");
+    assert.equal(ui.node("apply-settings").disabled, false);
+    ui.setAuthStatusErrorText(sensitiveError);
+    ui.setAuthStatusError(true);
+    await ui.dispatchAuth();
+    assert.equal(ui.node("github-connection-indicator").textContent,
+      "Connection unavailable");
+    assert.equal(ui.node("github-connect").hidden, true);
+    assert.equal(ui.node("github-disconnect").hidden, true);
+    assert.equal(ui.node("apply-settings").disabled, true);
+    assert.equal(ui.node("github-auth-message").textContent, "Connection unavailable");
+    assert.doesNotMatch(ui.node("github-auth-message").textContent,
+      /PRIVATE_PROVIDER_BODY_MUST_NOT_RENDER/);
+    await ui.node("apply-settings").fire("click");
+    assert.equal(ui.calls.some(([name]) => name === "save_settings"), false,
+      "a failed wallet status must not authorize unrelated persisted changes");
+    ui.setAuthStatusError(false);
+    await ui.dispatchAuth();
+    assert.equal(ui.node("github-connection-indicator").textContent, "Authorized");
+    assert.equal(ui.node("apply-settings").disabled, false,
+      "successful wallet reconciliation permits previously drafted change");
+    await ui.node("cancel-settings").fire("click");
+    assert.equal(ui.closed, true);
+    assert.equal(ui.tokenRemoved, false);
+  } finally { ui.restore(); }
+});
+
+test("Mode B: auth event cannot rescue untrusted Settings initialization", async () => {
+  const ui = await fixture("mode-b-auth-event-after-config-failure", true, [], {
+    configReadError: true
+  });
+  try {
+    const reads = ui.calls.filter(([name]) => name === "github_auth_status").length;
+    assert.equal(ui.node("github-connection-indicator").textContent,
+      "Connection unavailable");
+    await ui.dispatchAuth();
+    assert.equal(ui.node("github-connection-indicator").textContent,
+      "Connection unavailable");
+    assert.equal(ui.calls.filter(([name]) => name === "github_auth_status").length,
+      reads, "failed initialization requires a successful full reload");
+    assert.equal(ui.node("apply-settings").disabled, true);
+    ui.setConfigReadError(false);
+    await ui.dispatchOpened();
+    assert.equal(ui.node("github-connection-indicator").textContent, "Authorized");
+    assert.equal(ui.node("apply-settings").disabled, true);
+    await ui.node("cancel-settings").fire("click");
+    assert.equal(ui.closed, true);
   } finally { ui.restore(); }
 });

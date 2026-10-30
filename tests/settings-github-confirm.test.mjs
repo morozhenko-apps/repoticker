@@ -1742,3 +1742,117 @@ test("Mode B: rejected device code request does not disclose native error body",
     assert.equal(ui.tokenRemoved, false);
   } finally { ui.restore(); }
 });
+
+const mixedCaseInstallations = [[{
+  id: 1, account: { login: "One" }
+}]];
+const mixedCaseRepositories = [[
+  { full_name: "One/core" }, { full_name: "One/docs" }
+]];
+
+test("Mode B: GitHub owner casing preserves configured account and loads inventory", async () => {
+  const ui = await fixture("mode-b-owner-case-reconcile", true, ["one/core"], {
+    installationPages: mixedCaseInstallations,
+    repositoryPages: mixedCaseRepositories
+  });
+  try {
+    assert.equal(ui.monitorOrg, "one");
+    assert.equal(ui.node("github-monitor-scope").value, "One",
+      "provider-cased account must be selected for saved case-equivalent scope");
+    assert.equal(ui.node("github-monitor-scope-row").hidden, false);
+    assert.equal(ui.node("github-repo-controls").hidden, false);
+    assert.equal(ui.node("github-repo-list").children.length, 2);
+    assert.equal(ui.calls.some(([command, args]) =>
+      command === "github_api_get" &&
+      args.path === "/user/installations/1/repositories?per_page=100&page=1"), true);
+    assert.equal(ui.node("apply-settings").disabled, true);
+    assert.equal(ui.calls.some(([command]) => command === "github_set_monitor_org"), false);
+  } finally { ui.restore(); }
+});
+
+test("Mode B: case-equivalent saved repo is visibly selected without fabricated missing entry", async () => {
+  const ui = await fixture("mode-b-saved-repo-case-reconcile", true, ["one/core"], {
+    installationPages: mixedCaseInstallations,
+    repositoryPages: mixedCaseRepositories
+  });
+  try {
+    const row = ui.node("github-repo-list").children.find(item =>
+      item.children[1]?.textContent === "One/core");
+    assert.ok(row, "provider repo must appear");
+    assert.equal(row.children[0].checked, true,
+      "saved case-equivalent repository must display as selected");
+    assert.equal(ui.node("github-repo-mode").value, "selected");
+    assert.doesNotMatch(ui.node("github-repo-status").textContent,
+      /unavailable/i);
+    assert.equal(ui.node("apply-settings").disabled, true);
+    await ui.node("cancel-settings").fire("click");
+    assert.deepEqual(ui.monitorRepositories, ["one/core"]);
+    assert.equal(ui.calls.some(([command]) => command === "save_settings"), false);
+  } finally { ui.restore(); }
+});
+
+test("Mode B: same GitHub account selected twice does not clear saved repository subset", async () => {
+  const ui = await fixture("mode-b-duplicate-account-case", true, ["one/core"], {
+    installationPages: mixedCaseInstallations,
+    repositoryPages: mixedCaseRepositories
+  });
+  try {
+    const scope = ui.node("github-monitor-scope");
+    assert.equal(scope.value, "One");
+    await scope.fire("change");
+    assert.equal(ui.node("github-repo-mode").value, "selected");
+    assert.equal(ui.node("github-repo-list").children.find(row =>
+      row.children[1]?.textContent === "One/core")?.children[0].checked, true);
+    assert.equal(ui.node("apply-settings").disabled, true);
+    await ui.node("cancel-settings").fire("click");
+    assert.deepEqual(ui.monitorRepositories, ["one/core"]);
+    assert.equal(ui.monitorOrg, "one");
+    assert.equal(ui.calls.some(([command]) => command === "github_set_monitor_org"), false);
+  } finally { ui.restore(); }
+});
+
+test("Mode B: unchecking case-variant repo removes the original identity", async () => {
+  const ui = await fixture("mode-b-uncheck-case-variant", true, ["one/core"], {
+    installationPages: mixedCaseInstallations,
+    repositoryPages: mixedCaseRepositories
+  });
+  try {
+    const core = ui.node("github-repo-list").children.find(row =>
+      row.children[1]?.textContent === "One/core");
+    assert.ok(core);
+    assert.equal(core.children[0].checked, true);
+    core.children[0].checked = false;
+    await core.children[0].fire("change");
+    const docs = ui.node("github-repo-list").children.find(row =>
+      row.children[1]?.textContent === "One/docs");
+    assert.ok(docs);
+    docs.children[0].checked = true;
+    await docs.children[0].fire("change");
+    assert.equal(ui.node("apply-settings").disabled, false);
+    await ui.node("apply-settings").fire("click");
+    assert.equal(ui.closed, true);
+    assert.deepEqual(ui.monitorRepositories, ["One/docs"]);
+    assert.equal(ui.monitorOrg, "One");
+    assert.equal(ui.calls.filter(([name]) => name === "github_set_monitor_org").length, 1);
+  } finally { ui.restore(); }
+});
+
+test("Mode B: adding repository preserves case-equivalent saved subset without duplicates", async () => {
+  const ui = await fixture("mode-b-add-repo-saved-case", true, ["one/core"], {
+    installationPages: mixedCaseInstallations,
+    repositoryPages: mixedCaseRepositories
+  });
+  try {
+    const docs = ui.node("github-repo-list").children.find(row =>
+      row.children[1]?.textContent === "One/docs");
+    assert.ok(docs);
+    docs.children[0].checked = true;
+    await docs.children[0].fire("change");
+    assert.equal(ui.node("apply-settings").disabled, false);
+    await ui.node("apply-settings").fire("click");
+    assert.equal(ui.closed, true);
+    assert.deepEqual(ui.monitorRepositories, ["One/docs", "one/core"]);
+    assert.equal(new Set(ui.monitorRepositories.map(x => x.toLowerCase())).size, 2);
+    assert.equal(ui.calls.filter(([name]) => name === "github_set_monitor_org").length, 1);
+  } finally { ui.restore(); }
+});

@@ -71,6 +71,43 @@ Mode B Stage 12 is not completed by this targeted fix.
 - [x] Prior exact-SHA CI checked once.
 - [x] Failure and race mechanisms inspected in actual source.
 - [x] Acceptance plan documented before code change.
-- [ ] Failure-injection controller tests.
-- [ ] Source fix and exact diff review.
-- [ ] Exact-SHA CI.
+- [x] Four new real-controller failure-injection tests added;
+  one existing wallet-failure expectation updated to a safe message.
+- [x] One source fix and exact diff review completed.
+- [ ] Exact-SHA CI: not executed or measured at this commit.
+
+## Implementation ledger
+
+**Test commit** `e89a507219004322b415e1969dc6a78d85177e42`:
+four independent test cases exercise (1) initial config read failure,
+(2) failed reopened Settings with an uncommitted preference edit and
+recovery after a subsequent successful reload, (3) late original
+config read after a newer successful reopen, and (4) a late rejection
+after successful reopen. The fixture captures native `invoke` calls,
+injects deterministic first-request promises and native read errors
+and provides an explicit reopened-window event. No native event was
+invented.
+
+**Code commit** `6cf45c579db3eaa9e10f0f6c494984bce09d0f60`:
+`settings.mjs::refresh` increments a monotonic generation on each
+opening, blocks Apply while reading, ignores stale success/failure,
+and handles the current generation's error in one localized,
+non-disclosing path. Any failed config/auth initialization disables
+Apply until successful reload. The programmatic Apply handler has
+the matching guard. Existing wallet, autostart, folder and monitoring
+transactions remain in their original order.
+
+**Static checks:** exact GitHub diff contains only the controller,
+its test fixture and this doc. All four test declarations are present;
+no accidental `message(error, true)` remains in the startup handler;
+native event listener still opens Settings, and both
+`settingsLoading` and `settingsInitFailed` gate Save.
+
+**Execution limits:** no local full checkout exists; the runtime
+cannot resolve GitHub for an independent Node execution. This is
+a code-level inspection, **not a new test pass**. The exact pushed
+SHA must pass Preflight; it also triggers unpublished platform
+acceptance due to its WebView production change. Do not poll active
+Actions jobs or infer their result. New source coverage remains
+unmeasured.
+

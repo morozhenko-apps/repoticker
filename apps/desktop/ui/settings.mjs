@@ -358,6 +358,11 @@ const githubFailureLabels = Object.freeze({
 });
 
 async function refreshGithub(knownAuth = null) {
+  // Disconnect is an explicit uncommitted Settings draft. The native
+  // credential intentionally still exists until OK, so an auth event
+  // must not resurrect Authorized controls over the pending choice.
+  // clearMonitorScopes already invalidates reads started before the draft.
+  if (disconnectPending) return;
   const authRevision = ++monitorScopesRevision;
   try {
     // The initial auth status is already captured by Settings initialization.

@@ -63,7 +63,9 @@ verification. Stage 12 remains open.
 - [x] Acceptance requirements planned before edits.
 - [x] Four deterministic Settings real-controller fault-injection tests prepared.
 - [x] Minimal production validation fix and exact source diff reviewed.
-- [ ] Prior active CI completed; push permitted (not rechecked).
+- [x] Prior exact-SHA CI completed: Windows/KDE candidate green;
+  Preflight red due to a test-only localized-string expectation.
+- [x] Deterministic test assertion fixed in a separate test-only commit.
 - [ ] New exact-SHA CI verified (not run).
 
 ## Prepared commit and test ledger
@@ -94,3 +96,32 @@ verification. Stage 12 remains open.
   verify the committed parent SHA chain against current `dev`,
   then perform one non-forced fast-forward. Stop on new CI.
 
+
+## Completion checkpoint and preceding red Preflight
+
+The owner-requested checkpoint verified the **previous** `dev`
+SHA `2962b760367f93f5429c0cdb0924bde679f23f18`:
+
+- [Windows/KDE acceptance #41062304972](https://github.com/morozhenko-apps/repoticker/actions/runs/41062304972):
+  **success**, both candidate jobs completed without publication.
+- [Preflight #41062305156](https://github.com/morozhenko-apps/repoticker/actions/runs/41062305156):
+  **failure**, 532 of 533 JS tests passed; Rust format/core,
+  native Linux and Clippy succeeded. Its single failure was
+  `late first config read cannot overwrite the newer reopened Settings form`.
+  The test changed the saved language to `ru` but asserted the English
+  literal `Not connected`, while the actual value was the correct
+  Russian localized string. This was a wrong test oracle, not
+  evidence of a broken Settings refresh lifecycle.
+
+**Test correction** `5e70c098d56188b4f85cda5114191596f1179717`:
+use `settingsText(ui.language, "Not connected")` for the
+localized status expectation, retaining explicit `ui.language === "ru"`
+and all remaining assertions. No product code changed as part of the
+test correction.
+
+**Verification boundary:** the prepared inventory tests and this
+test correction were reviewed statically but have not yet been
+executed together. Their eventual `dev` HEAD must pass one
+Preflight; do not infer a pass or coverage improvement ahead of CI.
+This checkpoint also confirms the prior platform acceptance completed,
+so one non-forced fast-forward is now permitted.

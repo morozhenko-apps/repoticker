@@ -1,25 +1,19 @@
-# RepoTicker product contract
+# RepoTicker product
 
-RepoTicker is a local-first tray companion for developers working with multiple Git repositories and GitHub projects.
+RepoTicker lives in the desktop system tray. It provides a compact overview of local Git repositories and optional GitHub activity.
 
-## Compact view and repository list
+## Local Git
 
-The compact card displays actionable Git and workflow information without duplicating the application name. A searchable repository drawer expands upwards while keeping the card anchored. Each row identifies a repository and its current status, with progress shown without replacing the repository name with transient success messages.
+Users explicitly enroll local folders. RepoTicker shows repository, branch, upstream, local-change and ahead/behind status. Fetch updates remote-tracking references without editing the working tree. Safe synchronization checks Git state and declines operations that would need a merge, rebase, stash, force push or conflict resolution.
 
-## Local Git behavior
-
-Only user-enrolled roots are scanned. RepoTicker reports branch, upstream, tracked and untracked modifications, ahead/behind counts and unfinished operations from Git's actual state. Fetch updates remote-tracking metadata; it doesn't modify checked-out files.
-
-Conservative sync is permitted only where the state is understood and an operation can be completed without discarding work. Never force-push, stash, rebase, reset, create an upstream or resolve a conflict automatically. Dirty, divergent, detached, incomplete and unconfigured repositories must remain visible and require user action.
+The repository list can be expanded and searched. Manual Git actions show progress and an outcome for each repository. The app does not silently schedule unattended repository changes.
 
 ## GitHub monitoring
 
-Where the user has authorized GitHub access, RepoTicker can present workflows, jobs and runner occupancy. Unknown or unavailable information is never fabricated as success or zero use. Notifications must be deduplicated and should not overwhelm the user with repeated status messages.
+An optional GitHub Device Flow connection can show authorized workflow jobs, self-hosted runners, account/repository scopes and usage summaries. Incomplete provider data remains unavailable or unknown rather than a fabricated zero. Users can opt into notifications for new eligible workflow failures.
 
-The app must not turn GitHub read access into repository-write authorization implicitly. Credential handling belongs to the OS credential store, not local logs or the WebView.
+GitHub access requires account permission and a network connection. RepoTicker does not host CI jobs or change GitHub repository permissions.
 
-## Desktop behavior
+## Platforms and preferences
 
-Tray activation, card positioning, hiding/reopening, search, keyboard navigation, status announcements and window focus follow the host operating system. Settings must apply changes transactionally. Notifications are optional and user-controlled.
-
-The current implementation and test suite are authoritative for fine-grained Git state transitions; this document does not enumerate dated test runs or internal machine observations.
+Linux DEB/AppImage and Windows NSIS are supported distribution formats. The Windows installer is unsigned. Preferences are stored locally; GitHub credentials remain in the operating system's credential service. The product is free and open source under Apache 2.0.

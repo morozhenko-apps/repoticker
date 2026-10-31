@@ -1,38 +1,16 @@
-# RepoTicker verification
+# Verification
 
-Source checks, packaging, native machine acceptance and publishing are distinct.
+RepoTicker uses targeted tests during development and a complete stable gate for changes ready to ship. Mode B is a finite, risk-driven test-expansion phase after substantial functionality changes or before a release. It is not an automatically repeated pipeline stage.
 
-Normal development verifies JavaScript contracts, Rust source and Git state tests without treating one successful fixture as evidence for all real repositories. Perform focused checks during implementation and a complete stable gate when the change is ready; expensive/race-sensitive suites are run at their documented final gate rather than after every small edit.
+## Automated checks
 
-**External CI rule:** Once a GitHub Actions run has been triggered, do not poll or repeatedly fetch its status. Provide the workflow URL and the exact work that remains unverified, then stop. Resume only when the owner supplies the result or another supported completion event occurs.
+- JavaScript tests cover UI state, GitHub monitoring, Settings transactions, localization and failure handling.
+- Rust unit/integration tests cover local Git safety, native process behavior, OAuth/credential boundaries and provider response handling.
+- Python release contracts cover versions, installer inputs, signatures, package indexes, immutable publication and readback safety.
+- Preflight verifies formatting, unit/contract tests, Clippy and Linux native compilation. A separate unpublished platform workflow packages Linux and Windows candidates.
 
-Source-only documentation edits must not deliberately start CI. Keep documentation commits separate from executable changes.
+A passing CI build does not prove an installed application's native UI or lifecycle. That requires platform acceptance of the behaviors relevant to the release.
 
-A package artifact does not establish real Linux or Windows acceptance. Installer upgrades, autostart, tray focus, credential persistence and removal behavior require separate native verification. Publishing a release requires approval and verified immutable package checksums.
+## Release evidence
 
-## Manual strict stable gate
-
-The manual `.github/workflows/strict.yml` runs Rust formatting, locked
-core tests and Clippy, Node unit tests, and Python release contracts
-once per explicit dispatch. Repeated 10x runs are not a release gate:
-repeatability diagnostics require evidence of a specific instability.
-Preflight separately checks Linux desktop compilation. Known-flaky
-tests, if identified and registered, require independent execution
-and explicit reporting, never omission from the stable result.
-
-## Bounded ordinary verification
-
-Keep the independent core, UI/contracts and Linux desktop lanes; execute every
-applicable stable suite once. Resolve prose-only PR scope using complete Git
-merge differences, including both rename sides. Packaged Markdown, executable
-fixtures and unknown inputs require checks. Always report the existing
-Preflight result, accepting only exact success or an explicitly justified
-whole-scope skip; failed/canceled/missing evidence must fail.
-
-Use 5-minute scope/result, 10-minute UI and 20-minute Rust/desktop budgets;
-the manual stable gate is bounded to 20 minutes. Dependency caches are scoped
-by configuration and writable only from trusted dev executions. Ordinary
-checkouts must not persist credentials. Retain release signing/mainline gates
-and separate native acceptance, without building installers for CI-only edits.
-Focused CI policy regressions run in the existing contract lane. Implementation
-and validation state are tracked in the private cross-repository rollout record.
+Use the exact checked source revision, real test outcomes and verified package checksums. Never represent skipped, missing, canceled or failed checks as passed. Keep diagnostics free of credentials and private repository information. One stable test pass is the normal gate; repeat tests only to investigate an evidenced failure or instability.

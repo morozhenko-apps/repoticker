@@ -1,9 +1,9 @@
-# RepoTicker release requirements
+# RepoTicker releases
 
-Release artifacts are versioned and immutable. Linux APT is signed; Windows installers are treated according to their actual signing state, not as automatically trusted just because a build passed.
+Release source and packages are immutable. The release workflow accepts a version tag on the exact approved `main` commit, verifies that Cargo and Tauri versions match and builds the Linux and Windows packages.
 
-Release publication requires a reviewed source revision, the appropriate protected signing environment, platform package verification and explicit release authorization. Do not advance protected release branches, create version tags or write public artifacts merely to obtain a passing status.
+Linux users can install the DEB or AppImage. The Linux APT repository uses signed metadata. The Windows installer is distributed as an unsigned NSIS package; users should verify its checksum and follow their operating system's safety prompts.
 
-The release publisher must verify the byte length and SHA-256 of public downloads before a release is considered complete. Temporary CI bundles are not permanent mirrors and may be removed only after verified external publication. A source test or upload acknowledgement alone does not prove download availability.
+[GitHub Releases](https://github.com/morozhenko-apps/repoticker/releases) contains public release notes. The [download manifest](https://download.morozhenko.com/dist/RepoTicker/latest.json) identifies published distribution artifacts and SHA-256 checksums.
 
-Signing credentials, account details, personal key backups, bucket names and operational recovery commands are managed privately. This public document intentionally contains no credential inventory or signing-custody details. The release workflow and signing scripts define executable implementation checks.
+The protected publisher must verify publicly readable files against their expected sizes and hashes before a version is considered published. An upload acknowledgment or a successful build alone is not publication proof. Never replace previously published versioned objects or tags.

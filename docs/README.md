@@ -1,12 +1,12 @@
 # RepoTicker documentation
 
-This directory contains technical contracts and development notes, not an alternative user-facing README.
+RepoTicker is a free, local-first Git and GitHub activity companion for Linux and Windows.
 
-- [Product behavior](PRODUCT.md) describes the tray, repository operations and monitoring semantics.
-- [Architecture](ARCHITECTURE.md) explains Git, GitHub and local credential boundaries.
-- [Security](SECURITY.md) covers the read-only monitoring and conservative Git-operation rules.
-- [Release](RELEASE.md) and [CI](CI.md) describe current technical acceptance requirements.
-- [Test strategy](TEST_STRATEGY.md) distinguishes unit and contract tests from desktop acceptance.
-- [Development roadmap](VERSION_ROADMAP_TO_1_0.md) describes product direction.
+- [Product](PRODUCT.md): user-visible workflows and what the app does.
+- [Architecture](ARCHITECTURE.md): key components and data boundaries.
+- [Security](SECURITY.md): credential handling, safe Git operations and reporting.
+- [Verification](CI.md): tests, build validation and acceptance.
+- [Release](RELEASE.md): published packages and verification.
+- [Direction](ROADMAP.md): general product direction.
 
-Other dated files in this directory are engineering history and should not be used as the latest project status. Individual run IDs, personal machine details, private credentials and CI transcripts belong in their appropriate tools, not in current public guides.
+For installing and using the app, start with the [repository README](../README.md). For active defects or feature requests, use [GitHub Issues](https://github.com/morozhenko-apps/repoticker/issues). Historical test runs and development decisions belong in Git history and GitHub Actions, not in the public documentation tree.

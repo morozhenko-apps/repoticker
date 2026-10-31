@@ -9,9 +9,16 @@ export function nextCardView(current, requested) {
   if (!Object.hasOwn(CARD_HEIGHT, requested)) throw new Error("Unknown view");
   return current === requested ? "compact" : requested;
 }
-export function cardWindowHeight(view) {
+// Keep the list bottom-anchored, with enough room for the actual rows
+// instead of allocating the same 510 px to an empty list and a long one.
+export function cardWindowHeight(view, repositoryCount = 0) {
   if (!Object.hasOwn(CARD_HEIGHT, view)) throw new Error("Unknown view");
-  return CARD_HEIGHT[view];
+  if (view !== "repos") return CARD_HEIGHT[view];
+  if (!Number.isSafeInteger(repositoryCount) || repositoryCount < 0)
+    throw new Error("Invalid repository count");
+  const rows = Math.max(1, Math.min(10, repositoryCount));
+  return Math.min(CARD_HEIGHT.repos, CARD_HEIGHT.compact + 18 + 35 * rows +
+    (repositoryCount === 0 ? 8 : 0));
 }
 
 // A fast-forward cannot start if a repo is modified, ahead, divergent,
@@ -23,4 +30,23 @@ export function pullReadyCommitCount(repositories = []) {
       ? count + (Number.isSafeInteger(repo.behind) && repo.behind > 0 ? repo.behind : 0)
       : count
   ), 0);
+}
+
+
+// The Safe sync button covers exactly one safe direction per clean branch.
+// Diverged, detached, dirty, missing-upstream and unfinished Git states never
+// increase the eligible count. Behind and ahead commits are counted equally.
+export function syncReadyCommitCount(repositories = []) {
+  return repositories.reduce((count, repo) => {
+    if (!repo.upstream || repo.dirty) return count;
+    if (repo.ahead === 0 && /^behind [1-9]\d*$/.test(repo.sync_state || "") &&
+        Number.isSafeInteger(repo.behind) && repo.behind > 0) {
+      return count + repo.behind;
+    }
+    if (repo.behind === 0 && repo.sync_state === "ahead" &&
+        Number.isSafeInteger(repo.ahead) && repo.ahead > 0) {
+      return count + repo.ahead;
+    }
+    return count;
+  }, 0);
 }

@@ -286,4 +286,171 @@ mod tests {
         assert_eq!(lease.decide(20_000, 300), TokenAction::Reauthorize);
         assert_eq!(lease.decide(u64::MAX, 300), TokenAction::Reauthorize);
     }
+
+    #[test]
+    fn device_challenge_rejects_boundary_values_and_untrusted_codes() {
+        for expires in [0, 3_601] {
+            assert_eq!(
+                DeviceSession::new("ABCD-EFGH", VERIFY_URL, 1_000, expires, 5),
+                Err(AuthError::InvalidChallenge)
+            );
+        }
+        for interval in [0, 3_601] {
+            assert_eq!(
+                DeviceSession::new("ABCD-EFGH", VERIFY_URL, 1_000, 900, interval),
+                Err(AuthError::InvalidChallenge)
+            );
+        }
+        for code in ["", "AB cd", "AB_cD", "A/B", "ÄBC", "abcd-1234"] {
+            assert_eq!(
+                DeviceSession::new(code, VERIFY_URL, 1_000, 900, 5),
+                Err(AuthError::InvalidChallenge),
+                "untrusted device user code: {code:?}"
+            );
+        }
+        let too_long = "A".repeat(33);
+        assert_eq!(
+            DeviceSession::new(&too_long, VERIFY_URL, 1_000, 900, 5),
+            Err(AuthError::InvalidChallenge)
+        );
+
+        let minimum = DeviceSession::new("A", VERIFY_URL, 1_000, 1, 1).unwrap();
+        assert_eq!(minimum.poll_interval, MIN_POLL_INTERVAL);
+        assert_eq!(minimum.expires_at, 1_001);
+        assert_eq!(
+            DeviceSession::new("A", VERIFY_URL, 1_000, 3_600, 3_600)
+                .unwrap()
+                .poll_interval,
+            3_600
+        );
+        let near_max = u64::MAX - 5;
+        assert!(DeviceSession::new("A", VERIFY_URL, near_max, 5, 5).is_ok());
+        assert_eq!(
+            DeviceSession::new("A", VERIFY_URL, near_max + 1, 5, 5),
+            Err(AuthError::InvalidChallenge)
+        );
+    }
+
+    #[test]
+    fn consecutive_slow_down_replies_never_enable_early_polling() {
+        let mut session = challenge();
+        assert_eq!(session.next_poll(1_005), PollDecision::Ready);
+        assert_eq!(
+            session.receive(DeviceResponse::SlowDown, 1_005),
+            DevicePhase::AwaitingUser
+        );
+        assert_eq!(session.next_poll(1_014), PollDecision::WaitSeconds(1));
+        assert_eq!(session.next_poll(1_015), PollDecision::Ready);
+        assert_eq!(
+            session.receive(DeviceResponse::SlowDown, 1_015),
+            DevicePhase::AwaitingUser
+        );
+        assert_eq!(session.poll_interval, 15);
+        assert_eq!(session.next_poll(1_029), PollDecision::WaitSeconds(1));
+        assert_eq!(session.next_poll(1_030), PollDecision::Ready);
+        assert_eq!(session.next_poll(1_031), PollDecision::WaitSeconds(14));
+        assert_eq!(
+            session.next_poll(1_900),
+            PollDecision::Stop(DevicePhase::Expired)
+        );
+        assert_eq!(
+            session.receive(DeviceResponse::Authorized, 1_900),
+            DevicePhase::Expired
+        );
+    }
+
+    #[test]
+    fn terminal_device_phases_reject_late_success_and_cancellation() {
+        for (reply, terminal) in [
+            (DeviceResponse::AccessDenied, DevicePhase::Denied),
+            (DeviceResponse::ExpiredToken, DevicePhase::Expired),
+            (DeviceResponse::UnknownFailure, DevicePhase::Failed),
+            (DeviceResponse::Authorized, DevicePhase::Authorized),
+        ] {
+            let mut session = challenge();
+            assert_eq!(session.receive(reply, 1_010), terminal);
+            session.cancel();
+            session.cancel();
+            assert_eq!(session.phase, terminal);
+            assert_eq!(session.receive(DeviceResponse::Authorized, 1_020), terminal);
+            assert_eq!(session.next_poll(1_021), PollDecision::Stop(terminal));
+        }
+        let mut cancelled = challenge();
+        cancelled.cancel();
+        cancelled.cancel();
+        assert_eq!(
+            cancelled.next_poll(1_010),
+            PollDecision::Stop(DevicePhase::Cancelled)
+        );
+        assert_eq!(
+            cancelled.receive(DeviceResponse::Authorized, 1_010),
+            DevicePhase::Cancelled
+        );
+    }
+
+    #[test]
+    fn refresh_policy_handles_exact_margin_and_saturated_time() {
+        let lease = TokenExpiration {
+            access_expires_at: 400,
+            refresh_expires_at: 500,
+        };
+        assert_eq!(lease.decide(398, 1), TokenAction::UseAccessToken);
+        assert_eq!(lease.decide(399, 1), TokenAction::Refresh);
+        assert_eq!(lease.decide(400, 0), TokenAction::Refresh);
+        assert_eq!(lease.decide(500, 0), TokenAction::Reauthorize);
+
+        let near_max = TokenExpiration {
+            access_expires_at: u64::MAX - 1,
+            refresh_expires_at: u64::MAX,
+        };
+        assert_eq!(
+            near_max.decide(u64::MAX - 2, 0),
+            TokenAction::UseAccessToken
+        );
+        assert_eq!(near_max.decide(u64::MAX - 2, 10), TokenAction::Refresh);
+        assert_eq!(near_max.decide(u64::MAX, 10), TokenAction::Reauthorize);
+    }
+
+    #[test]
+    fn mode_b_rolled_back_poll_clock_never_bypasses_active_interval() {
+        let mut session = challenge();
+        assert_eq!(session.next_poll(1_005), PollDecision::Ready);
+        assert_eq!(session.next_poll(900), PollDecision::WaitSeconds(110));
+        assert_eq!(
+            session.receive(DeviceResponse::AuthorizationPending, 901),
+            DevicePhase::AwaitingUser
+        );
+        assert_eq!(session.next_poll(1_009), PollDecision::WaitSeconds(1));
+        assert_eq!(session.next_poll(1_010), PollDecision::Ready);
+    }
+
+    #[test]
+    fn mode_b_slow_down_response_while_waiting_extends_not_reduces_deadline() {
+        let mut session = challenge();
+        assert_eq!(session.next_poll(1_001), PollDecision::WaitSeconds(4));
+        assert_eq!(
+            session.receive(DeviceResponse::SlowDown, 1_002),
+            DevicePhase::AwaitingUser
+        );
+        assert_eq!(session.poll_interval, 10);
+        assert_eq!(session.next_poll(1_011), PollDecision::WaitSeconds(1));
+        assert_eq!(session.next_poll(1_012), PollDecision::Ready);
+        assert_eq!(
+            session.receive(DeviceResponse::SlowDown, 1_013),
+            DevicePhase::AwaitingUser
+        );
+        assert_eq!(session.poll_interval, 15);
+        assert_eq!(session.next_poll(1_027), PollDecision::WaitSeconds(1));
+    }
+
+    #[test]
+    fn mode_b_refresh_lifetime_precedes_stale_access_token_lifetime() {
+        let expiration = TokenExpiration {
+            access_expires_at: 10_000,
+            refresh_expires_at: 1_000,
+        };
+        assert_eq!(expiration.decide(999, 0), TokenAction::UseAccessToken);
+        assert_eq!(expiration.decide(1_000, 0), TokenAction::Reauthorize);
+        assert_eq!(expiration.decide(9_000, u64::MAX), TokenAction::Reauthorize);
+    }
 }

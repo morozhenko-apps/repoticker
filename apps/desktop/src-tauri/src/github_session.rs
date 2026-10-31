@@ -21,6 +21,7 @@ use tauri_plugin_clipboard_manager::ClipboardExt;
 use tokio::sync::{Mutex, Notify};
 
 use crate::{
+    github_etag_cache::{CacheLookup, GitHubETagCache},
     github_native::{CredentialRecord, GithubOAuthHttp, NativeAuthError, NativeCredentialStore},
     github_oauth_wire::PollReply,
 };
@@ -211,9 +212,13 @@ pub fn github_flow_status(app: AppHandle) -> GitHubAuthEvent {
 
 #[tauri::command]
 pub async fn github_auth_status(app: AppHandle) -> Result<GitHubAuthStatus, String> {
+    let _status = crate::startup_diagnostics::Span::new("github.auth_status");
     let state = app.state::<Arc<GitHubAuthManager>>().inner().clone();
     let _guard = state.vault_gate.lock().await;
-    let credential = read_credential().await.map_err(public_error)?;
+    let credential = {
+        let _wallet = crate::startup_diagnostics::Span::new("github.wallet_read");
+        read_credential().await.map_err(public_error)?
+    };
     let valid = credential.filter(|c| c.refresh_expires_at > unix_now());
     let progress = state.progress();
     Ok(GitHubAuthStatus {
@@ -239,6 +244,7 @@ pub async fn github_auth_status(app: AppHandle) -> Result<GitHubAuthStatus, Stri
 pub async fn github_begin(app: AppHandle) -> Result<GitHubAuthChallenge, String> {
     let state = app.state::<Arc<GitHubAuthManager>>().inner().clone();
     let attempt = state.invalidate();
+    app.state::<GitHubETagCache>().invalidate();
     publish(&app, "requesting");
     {
         let _guard = state.vault_gate.lock().await;
@@ -359,7 +365,10 @@ async fn poll_authorization(
                 };
                 if state.active(attempt) {
                     match outcome {
-                        Ok(()) => publish(&app, "connected"),
+                        Ok(()) => {
+                            app.state::<GitHubETagCache>().invalidate();
+                            publish(&app, "connected");
+                        }
                         Err(error) => {
                             publish_with_reason(&app, "failed", Some(reason_category(error)));
                         }
@@ -403,16 +412,24 @@ pub async fn github_disconnect(app: AppHandle) -> Result<(), String> {
     let state = app.state::<Arc<GitHubAuthManager>>().inner().clone();
     state.invalidate();
     let _guard = state.vault_gate.lock().await;
+    // Order cache invalidation with token reads under the SAME vault lock.
+    // A GET using an old credential always carries the old generation.
+    app.state::<GitHubETagCache>().invalidate();
     delete_credential().await.map_err(public_error)?;
     publish(&app, "disconnected");
     Ok(())
 }
 
-/// Native-only accessor for the upcoming Actions/runner REST collector.
-/// Handles both tokens as a single rotated keychain credential generation.
-/// This method is NEVER registered as a Tauri JS command.
-#[allow(dead_code)]
-pub async fn github_access_token(app: &AppHandle) -> Result<String, String> {
+/// Native-only credential and ETag generation snapshot.
+/// Both must be captured under the SAME vault lock, otherwise a disconnect
+/// can occur between token retrieval and the cache lookup, pairing an
+/// older account token with the next account's generation/ETag.
+/// This function is NEVER registered as a Tauri JS command.
+pub async fn github_access_token_with_cache(
+    app: &AppHandle,
+    path: &str,
+) -> Result<(String, CacheLookup), String> {
+    let _token = crate::startup_diagnostics::Span::new("github.token_acquisition");
     let state = app.state::<Arc<GitHubAuthManager>>().inner().clone();
     let _guard = state.vault_gate.lock().await;
     let current = read_credential()
@@ -423,9 +440,9 @@ pub async fn github_access_token(app: &AppHandle) -> Result<String, String> {
         access_expires_at: current.access_expires_at,
         refresh_expires_at: current.refresh_expires_at,
     };
-    match expiration.decide(unix_now(), 300) {
-        TokenAction::UseAccessToken => Ok(current.access_token),
-        TokenAction::Reauthorize => Err(public_error(NativeAuthError::Expired)),
+    let token = match expiration.decide(unix_now(), 300) {
+        TokenAction::UseAccessToken => current.access_token,
+        TokenAction::Reauthorize => return Err(public_error(NativeAuthError::Expired)),
         TokenAction::Refresh => {
             let http = GithubOAuthHttp::new().map_err(public_error)?;
             let lease = http
@@ -433,14 +450,19 @@ pub async fn github_access_token(app: &AppHandle) -> Result<String, String> {
                 .await
                 .map_err(public_error)?;
             let rotated = CredentialRecord::from_lease(lease, unix_now()).map_err(public_error)?;
-            // Replacing the entire token pair in one OS credential entry is
-            // essential: GitHub invalidates the old refresh token on use.
+            // The OS vault contains the entire rotated token pair atomically.
             store_credential(rotated).await.map_err(public_error)?;
+            app.state::<GitHubETagCache>().invalidate();
             let next = read_credential().await.map_err(public_error)?;
             next.map(|record| record.access_token)
-                .ok_or_else(|| public_error(NativeAuthError::KeychainUnavailable))
+                .ok_or_else(|| public_error(NativeAuthError::KeychainUnavailable))?
         }
-    }
+    };
+    // Do not drop the vault guard before capturing this cache generation.
+    // A concurrent disconnect or credential replacement invalidates the
+    // generation only after it acquires this same lock.
+    let lookup = app.state::<GitHubETagCache>().snapshot(path);
+    Ok((token, lookup))
 }
 
 #[tauri::command]
@@ -553,5 +575,69 @@ mod tests {
         let next = manager.invalidate();
         assert!(!manager.active(first));
         assert!(manager.active(next));
+    }
+
+    #[test]
+    fn competing_native_auth_generations_reject_outdated_completions() {
+        use std::sync::{mpsc, Arc};
+        use std::thread;
+
+        let state = Arc::new(GitHubAuthManager::default());
+        let first = state.invalidate();
+        let (ready_tx, ready_rx) = mpsc::channel();
+        let (release_tx, release_rx) = mpsc::channel();
+        let stale = Arc::clone(&state);
+        let worker = thread::spawn(move || {
+            ready_tx
+                .send(())
+                .expect("first login entered pending state");
+            release_rx.recv().expect("second login started");
+            stale.active(first)
+        });
+        ready_rx.recv().expect("first login pending");
+        let second = state.invalidate();
+        assert!(state.active(second));
+        release_tx.send(()).expect("resume old authorization");
+        assert!(!worker.join().expect("old authorization joined"));
+    }
+
+    #[test]
+    fn normalized_auth_reason_and_message_remain_public_only() {
+        let cases = [
+            (
+                NativeAuthError::Network,
+                "network",
+                "GitHub is unreachable.",
+            ),
+            (
+                NativeAuthError::HttpStatus(429),
+                "rate_limit",
+                "GitHub rate limit exceeded.",
+            ),
+            (
+                NativeAuthError::HttpStatus(401),
+                "authorization_rejected",
+                "GitHub authorization rejected.",
+            ),
+            (
+                NativeAuthError::KeychainUnavailable,
+                "credential_store",
+                "System credential store unavailable or locked.",
+            ),
+            (
+                NativeAuthError::NoCredential,
+                "not_connected",
+                "GitHub is not connected.",
+            ),
+            (
+                NativeAuthError::Expired,
+                "expired",
+                "GitHub authorization expired. Reconnect.",
+            ),
+        ];
+        for (error, reason, message) in cases {
+            assert_eq!(reason_category(error), reason);
+            assert_eq!(public_error(error), message);
+        }
     }
 }

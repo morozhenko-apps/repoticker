@@ -1,53 +1,33 @@
 # RepoTicker
 
-**An open-source local Git companion for the system tray, with GitHub CI monitoring on the roadmap.**
+RepoTicker is a free, open-source desktop companion for keeping track of local Git repositories and GitHub activity. It lives in the system tray so you can check your work without opening a separate terminal or browser tab for every repository.
 
-RepoTicker is a lightweight Tauri 2 + Rust desktop app for developers managing multiple Git checkouts. It is local-first: no proprietary account or central service is required for the features available today.
+## Why I built it
 
-## Implemented in v0.1.0 source
+I maintain multiple apps and experiments, often at the same time. Keeping every checkout up to date, remembering which repository has local changes and checking whether jobs are still running can turn into a surprisingly repetitive chore.
 
-- Compact tray card with Fetch, Safe pull, Repos and Hide; independent Settings and About windows. On Linux the tray uses StatusNotifierItem (SNI), and KDE Wayland uses GTK Layer Shell for the anchored popup.
-- Explicit enrollment of local directories, shallow discovery of their direct-child Git repositories, and per-repository inspection of branch, upstream, ahead/behind and dirty state.
-- Manual Fetch of enrolled repositories, with up to four independent fetches in parallel, failure isolation and progress events. Fetch updates remote-tracking refs, not checked-out files.
-- Manual Safe pull, operating **only on previously fetched refs**. Eligible clean upstream-tracking branches are advanced using Git fast-forward only; dirty, detached, ahead/diverged, unfinished or no-upstream branches are skipped. No automatic stash, rebase, reset or force operation.
-- Persistent local settings, including enrolled roots, selected language preference and Linux popup anchor. Choosing a language does not yet translate the full interface.
-- Desktop icon assets, package configurations and signed-APT release automation.
+I wanted a single compact place to answer those questions. RepoTicker helps me see which repositories need attention, fetch updates when I ask it to and keep an eye on GitHub workflows, without turning ordinary Git work into an automated process I can't control.
 
-GitHub Actions runs/jobs, self-hosted runner occupancy, quota/billing data, authenticated polling, notifications and webhook relays **are not connected**. Their UI indicators remain unavailable rather than showing invented values. Automatic background fetch/pull is not implemented.
+## What it does
 
-## Platform and release evidence
+The tray card shows an overview of repository activity, with a searchable list you can expand when you need details. Add your local repository folders to see their branch, upstream relationship, local changes and synchronization status. The card stays small when you don't need the list, and progress is visible while an operation runs.
 
-- **Linux:** local Ubuntu KDE Wayland DEB install/uninstall and AppImage startup were exercised during v0.1.0 acceptance. The popup still jitters when dragged; tracked in [Issue #2](https://github.com/morozhenko-apps/repoticker/issues/2). Other Linux desktop environments are not yet accepted.
-- **Windows:** the Windows x64 NSIS installer was built and published by the tagged release workflow. Physical installation, tray and runtime acceptance on Windows are not yet verified.
-- **macOS:** not currently shipped; notarization and signing prerequisites are outstanding.
-- **Publishing:** the tagged `v0.1.0` pipeline completed successfully, uploaded signed APT metadata and release assets to R2, verified public readback and created a public GitHub Release. Independent end-user APT install/upgrade testing is still pending. See [release instructions](docs/RELEASE.md).
+You can fetch changes across your repositories and use conservative sync actions for eligible clean branches. RepoTicker respects Git's state: it doesn't silently discard changes, force-push, stash, rebase or resolve conflicts behind your back. Repositories that need a decision are left for you to handle.
 
-The first **published** release is [`v0.1.0`](https://github.com/morozhenko-apps/repoticker/releases/tag/v0.1.0), from immutable source commit `21f3b61d9774b931b57a4e3c83f61b2bcf2bb0ee`. [Tagged workflow #39319748009](https://github.com/morozhenko-apps/repoticker/actions/runs/39319748009) completed successfully on attempt 3 (2026-10-19).
+RepoTicker can also connect to GitHub to show workflow jobs, runner activity and relevant failures from one place. Notifications and optional views help you notice something worth checking without keeping the GitHub Actions page open.
 
-## Build and test
+Repository data stays on your computer, and account credentials are handled through the operating system's credential service. The app doesn't require its own hosted account.
 
-Install Rust, Node.js 24, Git and the Tauri 2 native dependencies for your OS. On Ubuntu Linux the Tauri/WebKit development packages and `libgtk-layer-shell-dev` are required.
+## Platforms
 
-~~~sh
-cargo fmt --all --check
-cargo test -p repoticker-core
-cargo clippy -p repoticker-core --all-targets -- -D warnings
-node --test tests/*.test.mjs
-python3 -m unittest discover -s tests -p 'test_release_*.py' -v
-cargo check -p repoticker-desktop
-cargo run -p repoticker-desktop
-~~~
+RepoTicker is a desktop application for Linux and Windows.
 
-The signed-APT integration test requires `apt-utils`, `dpkg-dev`, `gnupg` and `gpgv`. CI installs those tools. `cargo run` does not install an OS package or register autostart.
+## Feedback
 
-On KDE, left-click the SNI tray icon to toggle the card; right-click for Open, Settings, Fetch all, Safe pull all, About or Quit. Enroll a directory such as `~/Documents/GitHub` in Settings and run Fetch before Safe pull.
+If something doesn't work as expected, please [report a bug](https://github.com/morozhenko-apps/repoticker/issues) with your operating system, the behavior you saw and steps to reproduce it. Ideas that would make RepoTicker more useful are also welcome in Issues. Please remove personal paths, repository names, access tokens and private workflow details from shared logs.
 
-## Documentation
+The project is independently maintained. I welcome reports and suggestions, but don't accept outside pull requests or patches. Forks are permitted under the [Apache License 2.0](LICENSE); see [CONTRIBUTING.md](CONTRIBUTING.md).
 
-- [Approved v0.1.0–v1.0.0 roadmap](docs/VERSION_ROADMAP_TO_1_0.md), including mandatory Mode B testing/coverage and the v0.9 release-candidate gate; this is a plan, not a published v1.0 binary.
+## License
 
-- [Product contract](docs/PRODUCT.md) and [architecture](docs/ARCHITECTURE.md)
-- [Current Git behavior](docs/GIT_PROVIDER.md), [roadmap](docs/ROADMAP.md) and [test strategy](docs/TEST_STRATEGY.md)
-- [CI](docs/CI.md), [releases/APT signing](docs/RELEASE.md), [security](docs/SECURITY.md) and [planned webhook relay](docs/RELAY.md)
-
-Apache License 2.0; see [LICENSE](LICENSE), [NOTICE](NOTICE) and [CONTRIBUTING.md](CONTRIBUTING.md). Bug reports: [GitHub Issues](https://github.com/morozhenko-apps/repoticker/issues).
+[Apache License 2.0](LICENSE). See [NOTICE](NOTICE) for attribution.

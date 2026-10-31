@@ -1,6 +1,7 @@
 //! In-memory snapshot shared by the main card and the read-only usage balloon.
 //! This is sanitized presentation data, not an OAuth credential store.
 
+use serde::Serialize;
 use serde_json::Value;
 use std::sync::Mutex;
 use tauri::{AppHandle, Emitter, Manager};
@@ -39,6 +40,52 @@ impl MonitorCache {
             current.runner_state.clone(),
             current.message.clone(),
         )
+    }
+}
+
+/// Non-secret, in-memory status for the compact card. Never scans Git.
+#[derive(Serialize)]
+pub struct MonitorPresentation {
+    connected: bool,
+    runner_state: Option<Value>,
+    monitor_message: Option<String>,
+}
+
+#[tauri::command]
+pub fn github_monitor_snapshot(app: AppHandle) -> MonitorPresentation {
+    let (connected, runner_state, monitor_message) = app.state::<MonitorCache>().read();
+    MonitorPresentation {
+        connected,
+        runner_state,
+        monitor_message,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn default_status_is_unknown_until_wallet_verification() {
+        let (connected, runner_state, message) = MonitorCache::default().read();
+        assert!(!connected);
+        assert!(runner_state.is_none());
+        assert_eq!(message.as_deref(), Some("Checking GitHub connection..."));
+    }
+
+    #[test]
+    fn monitor_projection_uses_only_expected_fields() {
+        let projected = serde_json::to_value(MonitorPresentation {
+            connected: true,
+            runner_state: None,
+            monitor_message: None,
+        })
+        .unwrap();
+        let object = projected.as_object().unwrap();
+        assert_eq!(object.len(), 3);
+        assert_eq!(projected["connected"], true);
+        assert!(projected.get("runner_state").is_some());
+        assert!(projected.get("monitor_message").is_some());
     }
 }
 

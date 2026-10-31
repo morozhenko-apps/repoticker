@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildQuotaDetails, buildHoverDetails } from "../apps/desktop/ui/quota-details.mjs";
+import { buildQuotaDetails, buildHoverDetails, displayRunnerName } from "../apps/desktop/ui/quota-details.mjs";
 import { safeActionsJobUrl } from "../apps/desktop/ui/model.mjs";
 
 test("legacy billing-only entrypoint shows only account types and unknown quotas", () => {
@@ -69,4 +69,63 @@ test("initial credential check and data loading say Connecting, not Connect GitH
   const failed = buildHoverDetails(null, "tasks", true, "GitHub API rate limited.");
   assert.equal(failed.status, "Tasks unavailable");
   assert.match(failed.message, /rate limited/);
+});
+
+
+test("runner names truncate by Unicode graphemes, not UTF-16 code units", () => {
+  const complex = "👩‍💻";
+  const combining = "e\u0301";
+  assert.equal(displayRunnerName(""), "Unnamed runner");
+  assert.equal(displayRunnerName(null), "Unnamed runner");
+  assert.equal(displayRunnerName("  runner/東京  "), "runner/東京");
+  assert.equal(displayRunnerName("a".repeat(37) + complex + "overflow"),
+    "a".repeat(37) + complex);
+  assert.equal(displayRunnerName("a".repeat(37) + combining + "overflow"),
+    "a".repeat(37) + combining);
+  assert.equal(displayRunnerName("あ".repeat(39)), "あ".repeat(38));
+  assert.equal(displayRunnerName("b".repeat(45)), "b".repeat(38));
+  const original = "r".repeat(37) + complex + "-private-tail";
+  const state = {
+    coverage: { runners: true, jobs: true },
+    counts: { busy: 1, idle: 0, offline: 0, running: 1,
+      queued: 0, runningGitHubHosted: 0 },
+    runners: [{ id: 7, name: original }],
+    runningJobs: [{ runner_id: 7 }],
+  };
+  const details = buildHoverDetails(state, "tasks", true);
+  assert.equal(details.sections[0].rows[0][0], "r".repeat(37) + complex);
+  assert.equal(details.sections[0].rows[0][1], "1");
+  assert.equal(state.runners[0].name, original, "provider model must remain untouched");
+});
+
+test("task preview records fallback provenance without altering runner identities", () => {
+  const state = {
+    coverage: { runners: true, jobs: true },
+    counts: { busy: 2, idle: 2, offline: 0, running: 2, queued: 0, runningGitHubHosted: 0 },
+    runners: [
+      { id: 11, name: null }, { id: 12, name: "Unnamed runner" },
+      { id: 13, name: "Online" }, { id: 14, name: "  " },
+      { id: 15, name: "fifth-hidden" }
+    ],
+    runningJobs: [{ runner_id: 11 }, { runner_id: 13 }]
+  };
+  const original = structuredClone(state);
+  const result = buildHoverDetails(state, "tasks", true);
+  const section = result.sections[0];
+  assert.deepEqual(section.runnerLabelKinds, ["fallback", "provider", "provider", "fallback"]);
+  assert.deepEqual(section.rows.slice(0, 4), [
+    ["Unnamed runner", "1"], ["Unnamed runner", "0"],
+    ["Online", "1"], ["Unnamed runner", "0"]
+  ]);
+  assert.deepEqual(section.rows.at(-1), ["GitHub-hosted", "0"]);
+  assert.deepEqual(state, original);
+  assert.equal(section.runnerLabelKinds.length, 4);
+});
+
+test("unavailable runner inventory does not synthesize an unnamed runner", () => {
+  const state = { coverage: { runners: false, jobs: false },
+    counts: {}, runners: [{ id: 1, name: null }], runningJobs: [] };
+  const section = buildHoverDetails(state, "tasks", true).sections[0];
+  assert.deepEqual(section.runnerLabelKinds, []);
+  assert.deepEqual(section.rows, [["Self-hosted", "—"], ["GitHub-hosted", "—"]]);
 });

@@ -244,4 +244,67 @@ mod tests {
             Ok(PollReply::State(DeviceResponse::UnknownFailure))
         ));
     }
+
+    #[test]
+    fn oauth_device_code_rejects_malformed_and_unbounded_json_before_projection() {
+        for response in [
+            "[]",
+            "{}",
+            "null",
+            r#"{"device_code":true}"#,
+            r#"{"device_code":"native","user_code":"x","verification_uri":"http://github.com/login/device","expires_in":900}"#,
+            r#"{"device_code":"native","user_code":"ABCD-EFGH","verification_uri":"https://github.com/login/device","expires_in":0}"#,
+            r#"{"device_code":"native","user_code":"ABCD-EFGH","verification_uri":"https://github.com/login/device","expires_in":900,"interval":3601}"#,
+        ] {
+            assert!(
+                parse_device_challenge(response, 1000).is_err(),
+                "{response}"
+            );
+        }
+        let large = format!(r#"{{"padding":"{}"}}"#, "x".repeat(MAX_JSON_BYTES));
+        assert!(parse_device_challenge(&large, 1000).is_err());
+    }
+
+    #[test]
+    fn oauth_token_reply_rejects_incomplete_or_untrusted_grants() {
+        let valid = r#"{"access_token":"access","refresh_token":"refresh","token_type":"bearer","expires_in":28800,"refresh_token_expires_in":15897600}"#;
+        for invalid in [
+            valid.replace("\"token_type\":\"bearer\"", "\"token_type\":\"Bearer\""),
+            valid.replace("\"refresh_token\":\"refresh\"", "\"refresh_token\":\"\""),
+            valid.replace("\"access_token\":\"access\"", "\"access_token\":\"a b\""),
+            valid.replace("\"expires_in\":28800", "\"expires_in\":604801"),
+            valid.replace(
+                "\"refresh_token_expires_in\":15897600",
+                "\"refresh_token_expires_in\":34560001",
+            ),
+            valid.replace(
+                "\"refresh_token_expires_in\":15897600",
+                "\"refresh_token_expires_in\":0",
+            ),
+        ] {
+            assert!(parse_token_reply(&invalid).is_err());
+        }
+        let PollReply::Granted(lease) = parse_token_reply(valid).unwrap() else {
+            panic!("expected a token lease");
+        };
+        let debug = format!("{lease:?}");
+        assert!(!debug.contains("access_token: \"access\""));
+        assert!(!debug.contains("refresh_token: \"refresh\""));
+        assert!(debug.contains("[REDACTED]"));
+    }
+
+    #[test]
+    fn oauth_unrecognized_provider_descriptions_never_become_wire_errors() {
+        for secret in ["token=private", "ghu_notreal", "Authorization: Bearer fake"] {
+            let wire = format!(r#"{{"error":"unknown","error_description":"{secret}"}}"#);
+            assert!(matches!(
+                parse_token_reply(&wire),
+                Ok(PollReply::State(DeviceResponse::UnknownFailure))
+            ));
+        }
+        assert!(matches!(
+            parse_token_reply(r#"{"error":"slow_down","access_token":"invalid"}"#),
+            Ok(PollReply::State(DeviceResponse::SlowDown))
+        ));
+    }
 }

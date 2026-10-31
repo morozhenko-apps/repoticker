@@ -150,3 +150,312 @@ test("runner permission denial does not erase complete Actions jobs", async () =
   assert.ok(snapshot.errors.some(x =>
     x.scope === "runners" && x.reason === "permission_denied"));
 });
+
+function manyQueuedRuns({ failJob = null } = {}) {
+  const repositories = ["org/one", "org/two", "org/three", "org/four"];
+  const names = repositories.map(repo => repo.split("/")[1]);
+  let active = 0;
+  let maximum = 0;
+  let completed = 0;
+  const get = async path => {
+    active++;
+    maximum = Math.max(maximum, active);
+    // Flush asynchronously without timing sleeps; overlap is deterministic
+    // across nested repo and job workers.
+    await new Promise(resolve => setImmediate(resolve));
+    try {
+      const url = new URL(path, "https://api.github.com");
+      if (url.pathname === "/orgs/org/actions/runners")
+        return { runners: [] };
+      const segments = url.pathname.split("/").filter(Boolean);
+      const index = names.indexOf(segments[2]);
+      if (segments[0] === "repos" && index >= 0 &&
+          segments[3] === "actions" && segments[4] === "runs") {
+        if (segments.length === 5) {
+          return { workflow_runs: url.searchParams.get("status") === "queued"
+            ? Array.from({ length: 4 }, (_, n) => ({ id: (index + 1) * 100 + n + 1 }))
+            : [] };
+        }
+        if (segments.length === 7 && segments[6] === "jobs") {
+          const id = Number(segments[5]);
+          if (id === failJob) throw Error("ghu_PRIVATE must never reach presentation");
+          return { jobs: [{ id: id * 10, status: "queued",
+            runner_id: null, labels: ["ubuntu-latest"] }] };
+        }
+      }
+      throw Error("Unexpected test GitHub request");
+    } finally {
+      active--;
+      completed++;
+    }
+  };
+  return {
+    repositories, get,
+    stats: () => ({ active, maximum, completed })
+  };
+}
+
+test("global cap applies to all nested jobs requests across repositories", async () => {
+  const fake = manyQueuedRuns();
+  const snapshot = await collectRunnerState({
+    org: "org", repositories: fake.repositories, get: fake.get,
+    concurrency: 2, now: config.now, maxRunPages: 1, maxJobPages: 1,
+  });
+  assert.equal(fake.stats().active, 0);
+  assert.equal(fake.stats().maximum, 2);
+  assert.equal(snapshot.counts.queued, 16);
+  assert.equal(snapshot.coverage.jobs, true);
+  assert.equal(snapshot.errors.length, 0);
+});
+
+test("global cap releases failed requests without fabricating complete job counts", async () => {
+  const fake = manyQueuedRuns({ failJob: 101 });
+  const snapshot = await collectRunnerState({
+    org: "org", repositories: fake.repositories, get: fake.get,
+    concurrency: 2, now: config.now, maxRunPages: 1, maxJobPages: 1,
+  });
+  assert.ok(fake.stats().maximum <= 2);
+  assert.equal(snapshot.coverage.runners, true);
+  assert.equal(snapshot.coverage.jobs, false);
+  assert.equal(snapshot.counts.queued, null);
+  assert.ok(snapshot.errors.some(error =>
+    error.scope === "org/one" && error.reason === "unavailable"));
+  assert.doesNotMatch(JSON.stringify(snapshot.errors), /ghu_PRIVATE/);
+  // Concurrent requests accepted before failure may finish afterwards;
+  // the request limiter must release those slots as well.
+  await new Promise(resolve => setImmediate(resolve));
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(fake.stats().active, 0);
+});
+
+
+test("manual runners refresh calls only runner inventory and preserves task timestamp", async () => {
+  const prior = await collectRunnerState({ ...config, get: async path => mockGithub(path) });
+  const paths = [];
+  const next = await collectRunnerState({
+    ...config, kind: "runners", previousState: prior,
+    now: () => "2026-10-20T13:45:00Z",
+    get: async path => { paths.push(path); return mockGithub(path); }
+  });
+  assert.ok(paths.length > 0);
+  assert.ok(paths.every(path => path.startsWith("/orgs/org/actions/runners?")));
+  assert.equal(next.counts.running, prior.counts.running);
+  assert.equal(next.counts.queued, prior.counts.queued);
+  assert.equal(next.checkedAtRunners, "2026-10-20T13:45:00Z");
+  assert.equal(next.checkedAtTasks, prior.checkedAt);
+});
+
+test("manual tasks refresh requests runs/jobs but never runner inventory", async () => {
+  const prior = await collectRunnerState({ ...config, get: async path => mockGithub(path) });
+  const paths = [];
+  const next = await collectRunnerState({
+    ...config, kind: "tasks", previousState: prior,
+    now: () => "2026-10-20T14:20:00Z",
+    get: async path => { paths.push(path); return mockGithub(path); }
+  });
+  assert.ok(paths.some(path => path.includes("/actions/runs?")));
+  assert.ok(paths.every(path => !path.startsWith("/orgs/")));
+  assert.equal(next.coverage.runners, prior.coverage.runners);
+  assert.equal(next.counts.busy, prior.counts.busy);
+  assert.equal(next.checkedAtRunners, prior.checkedAt);
+  assert.equal(next.checkedAtTasks, "2026-10-20T14:20:00Z");
+});
+
+test("manual runner errors do not invent fresh successful runner timestamp", async () => {
+  const prior = await collectRunnerState({ ...config, get: async path => mockGithub(path) });
+  const next = await collectRunnerState({
+    ...config, kind: "runners", previousState: prior,
+    get: async path => {
+      if (path.startsWith("/orgs/")) throw Error("unauthorized");
+      throw Error("Wrong API endpoint for runner-only collection");
+    }
+  });
+  assert.equal(next.counts.busy, null);
+  assert.equal(next.checkedAtRunners, null);
+  assert.equal(next.checkedAtTasks, prior.checkedAt);
+});
+
+
+test("Mode B: tasks-only refresh cannot display another organization's runner state", async () => {
+  const prior = await collectRunnerState({ ...config, get: async path => mockGithub(path) });
+  const requests = [];
+  const next = await collectRunnerState({
+    org: "neworg", repositories: ["neworg/first"], kind: "tasks",
+    previousState: prior, now: () => "2026-11-01T00:00:00Z",
+    get: async path => {
+      requests.push(path);
+      assert.ok(path.startsWith("/repos/neworg/"));
+      return { workflow_runs: [] };
+    },
+  });
+  assert.deepEqual(next.runners, []);
+  assert.equal(next.coverage.runners, false);
+  assert.equal(next.counts.busy, null);
+  assert.equal(next.counts.idle, null);
+  assert.equal(next.checkedAtRunners, null);
+  assert.equal(next.coverage.jobs, true);
+  assert.equal(next.counts.queued, 0);
+  assert.equal(next.checkedAtTasks, "2026-11-01T00:00:00Z");
+  assert.equal(requests.length, 2);
+});
+
+test("Mode B: changed repository selection cannot inherit previous task counts", async () => {
+  const prior = await collectRunnerState({ ...config, get: async path => mockGithub(path) });
+  assert.equal(prior.counts.queued, 3);
+  const requests = [];
+  const next = await collectRunnerState({
+    ...config, repositories: ["org/first"], kind: "runners",
+    previousState: prior, now: () => "2026-11-01T01:00:00Z",
+    get: async path => { requests.push(path); return mockGithub(path); },
+  });
+  assert.deepEqual(next.queuedJobs, []);
+  assert.deepEqual(next.runningJobs, []);
+  assert.equal(next.coverage.jobs, false);
+  assert.equal(next.counts.queued, null);
+  assert.equal(next.counts.running, null);
+  assert.equal(next.checkedAtTasks, null);
+  assert.equal(next.coverage.runners, true);
+  assert.equal(next.counts.busy, 1);
+  assert.equal(next.checkedAtRunners, "2026-11-01T01:00:00Z");
+  assert.ok(requests.every(path => path.startsWith("/orgs/org/actions/runners")));
+});
+
+test("Mode B: case and order changes preserve same-scope task evidence", async () => {
+  const prior = await collectRunnerState({ ...config, get: async path => mockGithub(path) });
+  const next = await collectRunnerState({
+    org: "ORG", repositories: ["ORG/SECOND", "Org/First"],
+    kind: "runners", previousState: prior,
+    get: async path => mockGithub(path.replace("/orgs/ORG/", "/orgs/org/")),
+  });
+  assert.equal(next.coverage.jobs, true);
+  assert.equal(next.counts.queued, prior.counts.queued);
+  assert.equal(next.counts.running, prior.counts.running);
+  assert.equal(next.checkedAtTasks, prior.checkedAtTasks);
+  assert.equal(next.coverage.runners, true);
+});
+
+test("Mode B: missing or ambiguous previous scope never authorizes a copied job lane", async () => {
+  const prior = await collectRunnerState({ ...config, get: async path => mockGithub(path) });
+  for (const scope of [
+    null, { organization: "org" },
+    { organization: "org", repositories: ["org/first", "org/first"] },
+    { organization: "other", repositories: ["org/first", "org/second"] },
+  ]) {
+    const next = await collectRunnerState({
+      ...config, kind: "runners", previousState: { ...prior, scope },
+      get: async path => mockGithub(path),
+    });
+    assert.equal(next.coverage.jobs, false);
+    assert.equal(next.counts.queued, null);
+    assert.equal(next.checkedAtTasks, null);
+    assert.deepEqual(next.queuedJobs, []);
+  }
+});
+
+test("Mode B: repository selection does not invalidate same-org runners in a tasks refresh", async () => {
+  const prior = await collectRunnerState({ ...config, get: async path => mockGithub(path) });
+  const requests = [];
+  const next = await collectRunnerState({
+    ...config, repositories: ["org/first"], kind: "tasks", previousState: prior,
+    get: async path => { requests.push(path); return mockGithub(path); },
+  });
+  assert.ok(requests.every(path => path.startsWith("/repos/")));
+  assert.equal(next.coverage.runners, true);
+  assert.equal(next.counts.busy, 1);
+  assert.equal(next.checkedAtRunners, prior.checkedAtRunners);
+  assert.equal(next.coverage.jobs, true);
+  assert.equal(next.counts.queued, 2);
+});
+
+
+test("Mode B: invalid collector bounds and unsafe scopes fail before any GitHub request", async () => {
+  const cases = [
+    { org: "" }, { org: ".." }, { org: "x/y" },
+    { repositories: [] }, { repositories: ["org/"] },
+    { repositories: ["org/.."] }, { repositories: ["org/first/second"] },
+    { repositories: ["another/first"] },
+    { repositories: Array.from({ length: 101 }, (_, i) => "org/repo" + i) },
+    { concurrency: 0 }, { concurrency: 9 }, { concurrency: 1.5 },
+    { maxRunnerPages: 0 }, { maxRunPages: 101 },
+    { maxJobPages: -1 }, { maxActiveRunsPerRepo: 0 },
+    { kind: "publish" },
+  ];
+  for (const invalid of cases) {
+    let requests = 0;
+    await assert.rejects(
+      collectRunnerState({
+        ...config, ...invalid,
+        get: async () => { requests++; throw Error("should not reach provider"); },
+      })
+    );
+    assert.equal(requests, 0, JSON.stringify(invalid));
+  }
+});
+
+test("Mode B: oversize or malformed runner pages never authorize a capacity total", async () => {
+  for (const payload of [
+    null, {}, { runners: null },
+    { runners: Array.from({ length: 101 }, (_, i) => ({
+      id: i + 1, name: "r" + i, status: "online",
+      busy: false, labels: ["self-hosted"],
+    })) },
+  ]) {
+    const snapshot = await collectRunnerState({
+      ...config,
+      get: async path => path.startsWith("/orgs/")
+        ? payload : mockGithub(path),
+    });
+    assert.equal(snapshot.coverage.runners, false);
+    assert.equal(snapshot.counts.busy, null);
+    assert.equal(snapshot.coverage.jobs, true);
+    assert.equal(snapshot.counts.queued, 3);
+    assert.ok(snapshot.errors.some(e => e.scope === "runners" && e.reason === "unavailable"));
+  }
+});
+
+test("Mode B: malformed and oversize job pages mark all task totals unknown", async () => {
+  for (const result of [null, {}, { jobs: null },
+    { jobs: Array.from({ length: 101 }, (_, i) => ({
+      id: 9000 + i, status: "queued", labels: ["ubuntu-latest"],
+    })) },
+  ]) {
+    const snapshot = await collectRunnerState({
+      ...config,
+      get: async path => path.includes("/77/jobs") ? result : mockGithub(path),
+    });
+    assert.equal(snapshot.coverage.jobs, false);
+    assert.equal(snapshot.counts.queued, null);
+    assert.equal(snapshot.counts.running, null);
+    assert.equal(snapshot.coverage.runners, true);
+    assert.ok(snapshot.errors.some(e => e.scope === "org/first" && e.reason === "unavailable"));
+  }
+});
+
+test("Mode B: organization and repository name limits align with native GitHub API", async () => {
+  const allowed = "a".repeat(100);
+  let requests = 0;
+  const good = await collectRunnerState({
+    org: allowed, repositories: [allowed + "/" + allowed],
+    get: async path => {
+      requests++;
+      return path.includes("/actions/runners?") ? { runners: [] } :
+        path.includes("/actions/runs?") ? { workflow_runs: [] } :
+        { jobs: [] };
+    },
+    now: config.now
+  });
+  assert.equal(good.coverage.jobs, true);
+  assert.equal(good.counts.queued, 0);
+  assert.equal(requests, 3);
+  for (const invalid of [
+    { org: "a".repeat(101), repositories: ["org/repo"] },
+    { org: 123, repositories: ["123/repo"] },
+    { org: allowed, repositories: [allowed + "/" + "r".repeat(101)] }
+  ]) {
+    let called = 0;
+    await assert.rejects(collectRunnerState({
+      ...invalid, get: async () => { called++; throw Error("unexpected request"); }
+    }), /Invalid organization|Invalid selected repositories/);
+    assert.equal(called, 0);
+  }
+});

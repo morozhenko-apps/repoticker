@@ -10,8 +10,58 @@ import release_assets as a
 
 class ReleaseAssetsTest(unittest.TestCase):
     def test_artifact_names(self):
-        self.assertEqual(a.canonical("1.2.3", "linux", ".deb"), "repo-ticker_1.2.3_amd64.deb")
+        self.assertEqual(a.canonical("1.2.3", "linux", ".deb"), "repoticker_1.2.3_amd64.deb")
         self.assertEqual(a.canonical("1.2.3", "windows", ".exe"), "RepoTicker-Setup-1.2.3-win-x64.exe")
+
+    def test_windows_collection_requires_whole_semver_source_token(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            sources = root / "sources"
+            sources.mkdir()
+            for wrong in (
+                "RepoTicker_11.0.0_x64-setup.exe",
+                "RepoTicker_1.0.0.1_x64-setup.exe",
+                "RepoTicker_01.0.0_x64-setup.exe",
+            ):
+                with self.subTest(source=wrong):
+                    p = sources / wrong
+                    p.write_bytes(b"unrelated Windows build")
+                    with self.assertRaisesRegex(ValueError, "Expected one windows"):
+                        a.collect(sources, root / "out", "windows", "1.0.0")
+                    p.unlink()
+            expected = sources / "RepoTicker_1.0.0_x64-setup.exe"
+            expected.write_bytes(b"exact accepted Windows 1.0.0 installer")
+            a.collect(sources, root / "accepted", "windows", "1.0.0")
+            output = root / "accepted" / a.canonical("1.0.0", "windows", ".exe")
+            self.assertEqual(output.read_bytes(), expected.read_bytes())
+            self.assertEqual(
+                (output.parent / (output.name + ".sha256")).read_text().strip(),
+                a.digest(output) + "  " + output.name,
+            )
+            self.assertEqual(
+                json.loads((root / "accepted" / "part.json").read_text())["version"],
+                "1.0.0",
+            )
+
+    def test_windows_collection_rejects_ambiguous_exact_source_versions(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            sources = root / "sources"
+            sources.mkdir()
+            (sources / "RepoTicker_1.0.0_x64-setup.exe").write_bytes(b"a")
+            (sources / "RepoTicker-1.0.0-win-x64.exe").write_bytes(b"b")
+            with self.assertRaisesRegex(ValueError, "found 2"):
+                a.collect(sources, root / "out", "windows", "1.0.0")
+            self.assertFalse((root / "out").exists())
+
+    def test_candidate_collection_rejects_noncanonical_requested_versions(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            for invalid in ("", "v1.0.0", "01.0.0", "1.0.0.1", "1.0.0-rc1"):
+                with self.subTest(version=invalid):
+                    with self.assertRaisesRegex(ValueError, "Invalid candidate release version"):
+                        a.collect(root, root / "out", "windows", invalid)
+            self.assertFalse((root / "out").exists())
 
     def test_merge_validates_all_platforms_and_bytes(self):
         with tempfile.TemporaryDirectory() as dir:

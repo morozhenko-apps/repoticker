@@ -1,8 +1,10 @@
 //! RepoTicker domain rules and Git provider.
 
 pub mod bounded;
+pub mod config_store;
 pub mod git;
 pub mod github_auth;
+pub mod shutdown;
 
 /// Remote comparison is meaningful only after a successful fetch.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -102,5 +104,40 @@ mod tests {
         let mut state = clean(0, 4);
         state.has_upstream = false;
         assert_eq!(classify_sync(state), SyncDecision::NoUpstream);
+    }
+
+    #[test]
+    fn simultaneous_unsafe_states_respect_fail_closed_priority() {
+        let mut state = clean(2, 3);
+        assert_eq!(classify_sync(state), SyncDecision::Diverged);
+
+        state.worktree_clean = false;
+        assert_eq!(classify_sync(state), SyncDecision::LocalChanges);
+
+        state.git_operation_in_progress = true;
+        assert_eq!(classify_sync(state), SyncDecision::GitOperationInProgress);
+
+        state.has_upstream = false;
+        assert_eq!(classify_sync(state), SyncDecision::NoUpstream);
+
+        // Removing one blocker must not skip another active blocker.
+        state.has_upstream = true;
+        assert_eq!(classify_sync(state), SyncDecision::GitOperationInProgress);
+        state.git_operation_in_progress = false;
+        assert_eq!(classify_sync(state), SyncDecision::LocalChanges);
+        state.worktree_clean = true;
+        assert_eq!(classify_sync(state), SyncDecision::Diverged);
+    }
+
+    #[test]
+    fn very_large_commit_counts_preserve_direction_without_overflow() {
+        assert_eq!(
+            classify_sync(clean(0, u64::MAX)),
+            SyncDecision::FastForward { commits: u64::MAX }
+        );
+        assert_eq!(classify_sync(clean(u64::MAX, 0)), SyncDecision::LocalAhead);
+        assert_eq!(classify_sync(clean(1, u64::MAX)), SyncDecision::Diverged);
+        assert_eq!(classify_sync(clean(u64::MAX, 1)), SyncDecision::Diverged);
+        assert_eq!(classify_sync(clean(0, 0)), SyncDecision::UpToDate);
     }
 }

@@ -93,7 +93,7 @@ test("settings has a separate entrypoint and card can be dragged", () => {
 
 test("repository drawer disables idle dismissal and drag never survives hiding", () => {
   assert.match(ui, /view !== "compact"/);
-  assert.match(ui, /if \(!cardVisible \|\| view !== "compact" \|\| quotaExpanded\) return/);
+  assert.match(ui, /if \(!cardVisible \|\| view !== "compact" \|\| quotaExpanded \|\|\s*localScanActive \|\| fullMonitorActive\) return/);
   assert.match(ui, /"repoticker-card-hidden"/);
   assert.match(ui, /stopDragging\(\)/);
   assert.match(ui, /dragSurface\.setPointerCapture\(event\.pointerId\)/);
@@ -193,7 +193,7 @@ test("GitHub Device Flow Settings never expose bearer tokens to JavaScript", () 
   assert.match(js, /githubFailureLabels/);
   assert.doesNotMatch(js, /accessToken|refreshToken|deviceCode|localStorage/);
   assert.equal(cfg.app.windows.find(w=>w.label==="main").height, 122);
-  assert.equal(cfg.app.windows.find(w=>w.label==="settings").height, 552);
+  assert.equal(cfg.app.windows.find(w=>w.label==="settings").height, 720);
 });
 
 test("read-only monitor flow shares native state and allows installation selection", () => {

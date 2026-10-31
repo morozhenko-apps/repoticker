@@ -1,55 +1,33 @@
-# Architecture and trust boundaries
+# RepoTicker architecture
 
-## Runtime components and status
+RepoTicker combines local Git inspection, an optional GitHub read-only monitoring provider and a compact native desktop presentation.
 
-| Component | v0.1.0 status | Role |
-| --- | --- | --- |
-| `repoticker-core` | Implemented and covered by Rust integration tests | Git root normalization/discovery, status, eligibility and native Git fetch/ff-only operations; bounded independent work |
-| Tauri desktop | Implemented; Linux local smoke | Tray and UI, state projection, transactional settings, action IPC and per-user config |
-| Linux SNI + GTK Layer Shell | Implemented; acceptance incomplete | Native tray left-click/context menu and anchored KDE Wayland card |
-| GitHub REST provider | Planned | Auth, Actions runs/jobs, self-hosted runners, rate limits and usage data |
-| Event/cache/notification engine | Planned | Poll scheduling, reconnect, state transitions and optional safe sync |
-| Hybrid webhook relay | Planned | User-operated Cloudflare DO or Docker/VPS relay and authenticated event delivery |
-| R2 download Worker | Implemented as separate deployment component | Read-only public distribution of installer and signed-APT objects; **not** a GitHub events relay |
+The local Git provider operates on explicitly enrolled paths, performs bounded inspection and serializes mutations against the current state. A fetch is not a pull. A safe sync must remain conditional and must never force or hide a conflict.
 
-## Current data flow
+The GitHub provider separates authorization, resource discovery, workflows, jobs and usage information. Unavailable permissions and rate limits are shown as unknown rather than guessed. Native secrets remain outside local configuration and web presentation.
 
-1. The user adds an absolute repository root through Settings; config is stored under the OS application config directory. On Linux the app identifier is `com.morozhenko.repoticker`; the default file is `~/.config/com.morozhenko.repoticker/config.json`.
-2. The Rust core discovers only the enrolled root and valid direct-child checkouts, asks installed Git for local/upstream information and returns a snapshot. No GitHub CI network requests are performed.
-3. A manual Fetch calls configured Git remotes without an interpolated shell command. Parallelism is bounded at four independent checkouts; one failure does not cancel others.
-4. A manual Safe pull uses **already-fetched refs** and a fresh eligibility check, then sequentially invokes native Git fast-forward only. It does not contact the network.
-5. Progress events are delivered to the UI; total completion refers to repositories completed, not Git network transfer bytes. Only errors become user-visible transient results.
+A single logical operation should have one owner, stable progress reporting and a bounded lifetime. Never duplicate background polling merely because two presentation views need the same data.
 
-Config persistence currently uses JSON writes without atomic rename/migration; crash recovery is future hardening. RepoTicker relies on the user's existing Git authentication/helpers and does not read Git secrets into its JS layer.
+Any relay or other network-facing extension must be explicitly opt-in and establish its own security and access boundaries. The ordinary local application does not require a proprietary remote service.
 
-## Presentation boundaries
+Linux and Windows use one logical product identity. Native user interface and installation behavior need platform-specific testing; a successful source compile does not establish end-user installation quality.
 
-Linux uses `ksni` StatusNotifierItem because the relevant Tauri tray click callback does not satisfy the desired Linux activation semantics. On KDE Wayland, GTK Layer Shell supplies bottom/right anchors, while generic unsupported environments fall back to a frameless Tauri surface. The published v0.1.0 Wayland drag path visibly jitters. After KDE acceptance rejected the WebView-local correction, dev now uses a GTK3 Wayland native bridge bound to GDK's own `wl_pointer` and `zwp_relative_pointer_v1`. Device-relative deltas reach GTK's main thread directly and change Layer Shell margins without JS motion IPC. JS handles pointer-capture start/stop only; it never supplies screen/client movement coordinates. KDE Wayland acceptance was confirmed in the current `dev` build on 2026-10-20, and [Issue #2](https://github.com/morozhenko-apps/repoticker/issues/2) is closed. The older published `v0.1.0` remains unchanged. No macOS UI/installer acceptance is implied by icon assets or source compatibility.
+## Tray card presentation contracts
 
-The app must display `unknown` instead of zero or success when GitHub CI/runners/quota data are not available. Direct Actions URLs may be opened only following a user action and validated according to the security contract.
+The borderless main card provides dragging only from noninteractive surfaces, with primary-button pointer input. Repository rows, the action buttons, and Runners/Tasks/Billing hover targets remain interactive and must not initiate dragging.
 
-## Future operating modes
+The three status indicators share one separate, read-only, pointer-through native usage window. On Windows the popup must appear ahead of the always-on-top card without stealing focus; use operating-system window ordering rather than relying on the browser's unstyled `title` tooltips. Failed show or positioning operations must be observable without exposing account, repository or credential details. Only opt-in diagnostic logs may include nonsecret window geometry.
 
-**Simple:** authenticated desktop-to-GitHub REST polling with conditional requests, per-resource scheduling, bounded cache, rate-limit handling and startup/reconnect reconciliation. This is a planned connection mode, **not currently active background polling**.
+None of the four application WebViews (card, Settings, About, usage popup) may show the browser's built-in context menu on right click. The explicit per-repository ellipsis menu and native tray context menu are separate features and must remain available.
 
-**Hybrid (opt-in):** GitHub signed webhook -> user-controlled HTTPS relay -> authenticated WebSocket client -> event hint -> authoritative GitHub REST reconciliation. Cloudflare Worker + Durable Objects and a generic Docker/VPS relay must share a versioned, tested envelope. This feature is not implemented.
+The Linux Layer Shell and unmanaged Windows/X11 popup paths must both be present in each target's compiled code. A Rust `#[cfg(target_os = "linux")]` attribute on an `if/else` expression removes the entire expression on Windows, including its `else` branch. Therefore choose the backend with separately compiled platform-specific assignments, and keep the unmanaged show path outside any Linux-only conditional. Source-level cross-platform regression tests must protect this invariant; only installed Windows runtime acceptance can mark tooltip visibility passed.
 
-## Security boundaries
+Unmanaged Windows/X11 status tooltips are anchored to the **bottom status strip**, never the top of the growing repository drawer: their bottom/right offsets are in logical pixels scaled once for DPI. A roughly 20px clear gap above the strip and a modest left inset keep the hover target unobstructed. The same anchor is recomputed after content-driven popup resize, clamped to the current monitor's work area; it must not steal focus or pointer events. The KDE Layer Shell positioning contract remains independent.
 
-- Git metadata, remote URLs, API payloads and webhook hints are untrusted. Never construct shell commands from network data or run arbitrary git mutation on webhook receipt.
-- Auto pull, if added later, must fail closed for dirty/untracked changes, unfinished operations, local ahead/divergence, missing upstream or stale authorization.
-- Webhook ingest must verify raw-body HMAC-SHA256, payload size and replay/delivery ID; relay must enforce client authentication, TLS, isolation, bounded retention and resume.
-- GitHub credentials must be least-privilege and held in native secret storage rather than JS or relay persistence.
-- Cloudflare release signing authority stays in a protected GitHub environment; only the signing subkey is exported to CI, not the local certification key.
+The Repos busy affordance uses a fixed-size 24px vector arc in the **same icon grid cell** as the idle repository glyph (as in CFVigil), not a ::after border spinner that can overlap the localized label. Keep the label stationary and the button interactive. The Runners/Tasks/Billing popup has a rounded 11px viewport with genuinely clipped/transparent outside corners on Windows; neither CSS shadows nor the rectangular WebView background should draw outside the rounded edge. Windows can apply a native rounded window region on show/resize while maintaining pointer-through behavior and the existing footer position.
 
-## Release and support boundaries
+The Repos button has a nonblocking busy affordance during actual local snapshot reads and full GitHub monitor collections, including initial enrollment and Settings-driven refresh. It reflects ongoing work, not Fetch/Safe sync, never claims completed repository discovery before a fresh snapshot and never blocks opening the drawer. A visual spinner disappears on success or error, with source refreshes coalesced as before and no additional API polling.
 
-Version consistency and a tracked `Cargo.lock` are release gates. A `v*` tag pointing at current `main` HEAD builds Linux DEB/AppImage and Windows NSIS; signed APT/R2 publication and GitHub Release happen only after successful builds, public readback and approved deployment. macOS is currently skipped. See [RELEASE.md](RELEASE.md), [PRODUCT.md](PRODUCT.md), [GIT_PROVIDER.md](GIT_PROVIDER.md), [RELAY.md](RELAY.md) and [ROADMAP.md](ROADMAP.md).
+Window-size recalculation must never reveal an intentionally hidden usage popup. Only an explicit hover-driven show may make the popup visible; any native Windows Z-order operation must remain non-activating. Diagnostic logging must distinguish hover show, hide, resize and actual native visibility.
 
-## Native Wayland hover surface and monitored status (dev candidate)
-
-The established 390x122 KDE Wayland card continues to use the GDK-owned native relative-pointer bridge and GTK Layer Shell. The read-only hover overlay is a separate non-focusable pointer-pass-through Layer Shell window, bottom/right anchored on the card's monitor, with a 12px vertical separation and independently measured 118–320px height. The application never adds a focusable scrolling WebView to the compact card.
-
-Current unmerged feature-branch UX has **two** compact status groups rather than the initial three: organization self-hosted registered runners (total/online/offline), and monitored Actions jobs (running/queued). Three independent hover triggers reuse one existing overlay and switch by a validated native event kind (`runners`, `tasks`, `billing`). The billing view has only separate organization and personal-account free allowance information, presently unknown; it is not derived from runner counts or Actions jobs. A queued job is not assigned to a runner; compatibility by labels is presented as a candidate, not as a reservation.
-
-Native HTTPS bearer tokens remain in the OS secret store and never enter JavaScript. The billing transport and expanded OAuth scopes are not implemented; [SPLIT_HOVER_BILLING.md](SPLIT_HOVER_BILLING.md) records the security decision requiring explicit user choice. Published v0.1.0, main, and the native Wayland drag integration are unchanged. Physical KDE acceptance of the new tooltip UX is outstanding.
+When no repositories are enrolled, center the empty-state message horizontally without adding height or changing the drawer's bottom anchoring. Native Windows and KDE hover, z-order, layout and uninstall behavior require actual platform acceptance; source tests cannot establish visual correctness.

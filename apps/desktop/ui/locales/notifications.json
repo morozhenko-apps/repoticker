@@ -1,0 +1,142 @@
+{
+  "en": {
+    "title": "RepoTicker: CI failure",
+    "body": "{repository}: workflow run {runId} (attempt {attempt}) failed.",
+    "permissionError": "System notification permission unavailable.",
+    "stateError": "Notification state unavailable.",
+    "deliveryError": "System notification delivery failed."
+  },
+  "ru": {
+    "title": "RepoTicker: сбой CI",
+    "body": "{repository}: запуск workflow {runId} (попытка {attempt}) завершился ошибкой.",
+    "permissionError": "Нет разрешения на системные уведомления.",
+    "stateError": "Состояние уведомлений недоступно.",
+    "deliveryError": "Не удалось отправить системное уведомление."
+  },
+  "es": {
+    "title": "RepoTicker: fallo de CI",
+    "body": "{repository}: falló la ejecución {runId} del flujo de trabajo (intento {attempt}).",
+    "permissionError": "No hay permiso para mostrar notificaciones del sistema.",
+    "stateError": "El estado de las notificaciones no está disponible.",
+    "deliveryError": "No se pudo enviar la notificación del sistema."
+  },
+  "pt": {
+    "title": "RepoTicker: falha de CI",
+    "body": "{repository}: a execução {runId} do workflow (tentativa {attempt}) falhou.",
+    "permissionError": "Permissão para notificações do sistema indisponível.",
+    "stateError": "Estado das notificações indisponível.",
+    "deliveryError": "Não foi possível enviar a notificação do sistema."
+  },
+  "de": {
+    "title": "RepoTicker: CI-Fehler",
+    "body": "{repository}: Workflow-Lauf {runId} (Versuch {attempt}) fehlgeschlagen.",
+    "permissionError": "Berechtigung für Systembenachrichtigungen nicht verfügbar.",
+    "stateError": "Benachrichtigungsstatus nicht verfügbar.",
+    "deliveryError": "Systembenachrichtigung konnte nicht zugestellt werden."
+  },
+  "fr": {
+    "title": "RepoTicker : échec CI",
+    "body": "{repository} : échec de l'exécution de workflow {runId} (tentative {attempt}).",
+    "permissionError": "Autorisation de notification système indisponible.",
+    "stateError": "État des notifications indisponible.",
+    "deliveryError": "Échec de l'envoi de la notification système."
+  },
+  "it": {
+    "title": "RepoTicker: errore CI",
+    "body": "{repository}: esecuzione workflow {runId} (tentativo {attempt}) non riuscita.",
+    "permissionError": "Autorizzazione alle notifiche di sistema non disponibile.",
+    "stateError": "Stato delle notifiche non disponibile.",
+    "deliveryError": "Impossibile inviare la notifica di sistema."
+  },
+  "pl": {
+    "title": "RepoTicker: błąd CI",
+    "body": "{repository}: przebieg workflow {runId} (próba {attempt}) zakończył się błędem.",
+    "permissionError": "Brak uprawnień do powiadomień systemowych.",
+    "stateError": "Stan powiadomień jest niedostępny.",
+    "deliveryError": "Nie udało się wysłać powiadomienia systemowego."
+  },
+  "hi": {
+    "title": "RepoTicker: CI विफलता",
+    "body": "{repository}: workflow रन {runId} (प्रयास {attempt}) विफल हुआ।",
+    "permissionError": "सिस्टम सूचना की अनुमति उपलब्ध नहीं है।",
+    "stateError": "सूचना की स्थिति उपलब्ध नहीं है।",
+    "deliveryError": "सिस्टम सूचना भेजी नहीं जा सकी।"
+  },
+  "zh-Hant": {
+    "title": "RepoTicker：CI 失敗",
+    "body": "{repository}：workflow 執行 {runId}（第 {attempt} 次嘗試）失敗。",
+    "permissionError": "無法取得系統通知權限。",
+    "stateError": "通知狀態無法取得。",
+    "deliveryError": "系統通知傳送失敗。"
+  },
+  "ja": {
+    "title": "RepoTicker：CI 失敗",
+    "body": "{repository}：workflow 実行 {runId}（試行 {attempt}）が失敗しました。",
+    "permissionError": "システム通知の権限を利用できません。",
+    "stateError": "通知の状態を取得できません。",
+    "deliveryError": "システム通知の送信に失敗しました。"
+  },
+  "nl": {
+    "title": "RepoTicker: CI-fout",
+    "body": "{repository}: workflowuitvoering {runId} (poging {attempt}) is mislukt.",
+    "permissionError": "Toestemming voor systeemmeldingen niet beschikbaar.",
+    "stateError": "Meldingsstatus niet beschikbaar.",
+    "deliveryError": "Systeemmelding kon niet worden verzonden."
+  },
+  "sv": {
+    "title": "RepoTicker: CI-fel",
+    "body": "{repository}: workflow-körning {runId} (försök {attempt}) misslyckades.",
+    "permissionError": "Behörighet för systemaviseringar saknas.",
+    "stateError": "Aviseringsstatus är otillgänglig.",
+    "deliveryError": "Systemaviseringen kunde inte skickas."
+  },
+  "tr": {
+    "title": "RepoTicker: CI hatası",
+    "body": "{repository}: workflow çalıştırması {runId} (deneme {attempt}) başarısız oldu.",
+    "permissionError": "Sistem bildirimi izni kullanılamıyor.",
+    "stateError": "Bildirim durumu kullanılamıyor.",
+    "deliveryError": "Sistem bildirimi gönderilemedi."
+  },
+  "ko": {
+    "title": "RepoTicker: CI 실패",
+    "body": "{repository}: workflow 실행 {runId}(시도 {attempt})이 실패했습니다.",
+    "permissionError": "시스템 알림 권한을 사용할 수 없습니다.",
+    "stateError": "알림 상태를 확인할 수 없습니다.",
+    "deliveryError": "시스템 알림 전송에 실패했습니다."
+  },
+  "bn": {
+    "title": "RepoTicker: CI ব্যর্থতা",
+    "body": "{repository}: workflow রান {runId} (চেষ্টা {attempt}) ব্যর্থ হয়েছে।",
+    "permissionError": "সিস্টেম বিজ্ঞপ্তির অনুমতি নেই।",
+    "stateError": "বিজ্ঞপ্তির অবস্থা জানা যাচ্ছে না।",
+    "deliveryError": "সিস্টেম বিজ্ঞপ্তি পাঠানো যায়নি।"
+  },
+  "th": {
+    "title": "RepoTicker: CI ล้มเหลว",
+    "body": "{repository}: การรัน workflow {runId} (ครั้งที่ {attempt}) ล้มเหลว",
+    "permissionError": "ไม่มีสิทธิ์ส่งการแจ้งเตือนของระบบ",
+    "stateError": "ตรวจสอบสถานะการแจ้งเตือนไม่ได้",
+    "deliveryError": "ส่งการแจ้งเตือนของระบบไม่สำเร็จ"
+  },
+  "id": {
+    "title": "RepoTicker: kegagalan CI",
+    "body": "{repository}: proses workflow {runId} (percobaan {attempt}) gagal.",
+    "permissionError": "Izin notifikasi sistem tidak tersedia.",
+    "stateError": "Status notifikasi tidak tersedia.",
+    "deliveryError": "Gagal mengirim notifikasi sistem."
+  },
+  "fil": {
+    "title": "RepoTicker: pagkabigo ng CI",
+    "body": "{repository}: nabigo ang workflow run {runId} (pagtatangka {attempt}).",
+    "permissionError": "Walang pahintulot para sa system notification.",
+    "stateError": "Hindi available ang status ng notification.",
+    "deliveryError": "Nabigong ipadala ang system notification."
+  },
+  "ar": {
+    "title": "RepoTicker: فشل CI",
+    "body": "فشل تشغيل workflow رقم {runId} للمستودع {repository} (المحاولة {attempt}).",
+    "permissionError": "إذن إشعارات النظام غير متاح.",
+    "stateError": "حالة الإشعارات غير متاحة.",
+    "deliveryError": "تعذّر إرسال إشعار النظام."
+  }
+}

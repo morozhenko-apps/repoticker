@@ -192,3 +192,93 @@ test("source contracts keep billing route exact, native-projected and token-free
   assert.match(controller, /scheduleBilling/);
   assert.doesNotMatch(controller, /accessToken|refreshToken|deviceCode|localStorage/);
 });
+
+
+test("Mode B: billing UTC month boundaries never use local offset or invent remaining", async () => {
+  for (const [timestamp, year, month] of [
+    ["2026-12-31T23:59:59Z", 2026, 12],
+    ["2027-01-01T00:00:00Z", 2027, 1],
+    ["2027-01-01T00:30:00+02:00", 2026, 12],
+    ["2026-10-31T23:30:00-02:00", 2026, 11],
+  ]) {
+    const result = billingMonth(new Date(timestamp));
+    assert.deepEqual(result, { year, month }, timestamp);
+  }
+});
+
+test("Mode B: usage length, SKU, quantity and accumulated safe-number boundaries", () => {
+  const valid = { sku: "actions_linux", grossQuantity: 1 };
+  const items = count => ({ usageItems: Array.from({ length: count }, () => ({ ...valid })) });
+  for (const size of [0, 1, 499, 500])
+    assert.equal(reportedActionsMinutes(items(size)), size);
+  assert.throws(() => reportedActionsMinutes(items(501)), /Invalid GitHub billing projection/);
+  for (const bad of [
+    { sku: "", grossQuantity: 1 },
+    { sku: "../private", grossQuantity: 1 },
+    { sku: "x".repeat(101), grossQuantity: 1 },
+    { sku: "actions_linux", grossQuantity: NaN },
+    { sku: "actions_linux", grossQuantity: -0.001 },
+    { sku: "actions_linux", grossQuantity: 2 ** 53 },
+    { sku: "actions_linux", grossQuantity: null },
+  ]) {
+    assert.throws(() => reportedActionsMinutes({ usageItems: [bad] }));
+  }
+  assert.equal(reportedActionsMinutes(summary(Number.MAX_SAFE_INTEGER)), Number.MAX_SAFE_INTEGER);
+  assert.throws(() => reportedActionsMinutes(summary(Number.MAX_SAFE_INTEGER, 1)), /safe numeric range/);
+});
+
+test("Mode B: an old in-flight organization read cannot poison new scope cache", async () => {
+  let resolveOld;
+  const calls = [];
+  const get = async path => {
+    calls.push(path);
+    if (path === "/orgs/old")
+      return new Promise(resolve => { resolveOld = resolve; });
+    if (path === "/user") return { login: "testuser", plan: { name: "free" } };
+    if (path === "/orgs/new") return { login: "new", plan: { name: "team" } };
+    return summary(2);
+  };
+  const cache = createBillingCache({
+    get, now: () => Date.parse("2026-10-21T17:00:00Z"),
+  });
+  const old = cache.load("old", true);
+  const newer = await cache.load("new", true);
+  assert.equal(newer.organization.plan, "team");
+  assert.equal(newer.organization.reported, 2);
+  resolveOld({ login: "old", plan: { name: "free" } });
+  const previous = await old;
+  assert.equal(previous.organization.plan, "free");
+  const before = calls.length;
+  assert.deepEqual(await cache.load("new", true), newer);
+  assert.equal(calls.length, before, "old completion must not evict new cache entry");
+});
+
+test("Mode B: billing cache refreshes at TTL boundary and after clock reversal", async () => {
+  let clock = Date.parse("2026-10-21T17:00:00Z");
+  let count = 0;
+  const cache = createBillingCache({
+    now: () => clock, ttlMs: 60_000,
+    get: async path => {
+      count++;
+      return path === "/user"
+        ? { login: "testuser", plan: { name: "free" } }
+        : path === "/orgs/team"
+          ? { login: "team", plan: { name: "team" } }
+          : summary(1);
+    }
+  });
+  await cache.load("team", true);
+  assert.equal(count, 4);
+  clock += 59_999;
+  await cache.load("team", true);
+  assert.equal(count, 4);
+  clock += 1;
+  await cache.load("team", true);
+  assert.equal(count, 8);
+  clock -= 300_000;
+  await cache.load("team", true);
+  assert.equal(count, 12);
+  assert.equal(await cache.load("team", false), null);
+  await cache.load("team", true);
+  assert.equal(count, 16);
+});

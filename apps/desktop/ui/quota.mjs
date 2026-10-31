@@ -1,6 +1,12 @@
 import { buildHoverDetails, isHoverKind } from "./quota-details.mjs";
+import { mergeMonitorPresentation } from "./monitor-presentation.mjs";
 import { usageHeight } from "./quota-size.mjs";
 import { createBillingCache } from "./github-billing.mjs";
+import { surfaceLocale, surfaceText, translateHoverDetails } from "./surface-i18n.mjs";
+import { localeDirection } from "./locale-catalog.mjs";
+import { disableBrowserContextMenu } from "./browser-context-menu.mjs";
+
+disableBrowserContextMenu(document);
 
 const byId = id => document.getElementById(id);
 const invoke = (name, args = {}) => window.__TAURI__.core.invoke(name, args);
@@ -11,12 +17,30 @@ function add(parent, tag, value, cls = "") {
   parent.append(node);
   return node;
 }
-function line(parent, label, value) {
+function line(parent, label, value, providerName = false) {
   const row = add(parent, "div", "", "quota-line");
-  add(row, "span", label, "quota-line-label");
-  add(row, "span", value, "quota-line-value");
+  const name = add(row, "span", label, "quota-line-label");
+  if (providerName) name.dir = "auto";
+  const count = add(row, "span", value, "quota-line-value");
+  count.dir = "ltr";
 }
-function paint(details) {
+let currentLanguage = "en";
+let localeRevision = 0;
+let lastRawDetails = null;
+let lastRunnerNameRows = 0;
+function setLocale(value) {
+  currentLanguage = surfaceLocale(value);
+  document.documentElement.lang = currentLanguage;
+  document.documentElement.dir = localeDirection(currentLanguage);
+  document.querySelector(".usage-bubble").setAttribute("aria-label",
+    surfaceText(currentLanguage, "GitHub Actions and usage"));
+  if (currentSnapshot) paintSnapshot(currentSnapshot);
+  else if (lastRawDetails) paint(lastRawDetails, lastRunnerNameRows);
+}
+function paint(details, runnerNameRows = 0) {
+  lastRawDetails = details;
+  lastRunnerNameRows = runnerNameRows;
+  details = translateHoverDetails(details, currentLanguage, runnerNameRows);
   const root = byId("quota-content");
   root.className = "quota-content kind-" + activeKind;
   const title = byId("quota-title");
@@ -28,7 +52,9 @@ function paint(details) {
     for (const section of details.sections) {
       const block = add(root, "section", "", "quota-section");
       if (section.title) add(block, "div", section.title, "quota-section-title");
-      for (const [label, value] of section.rows || []) line(block, label, value);
+      for (const [index, [label, value]] of (section.rows || []).entries()) {
+        line(block, label, value, activeKind === "tasks" && index < runnerNameRows);
+      }
       if (section.message) add(block, "span", section.message, "quota-message");
     }
     if (details.message) add(root, "span", details.message, "quota-message");
@@ -89,12 +115,23 @@ function statusUnavailable(message) {
 /** Respect explicit Settings selection; auto-selected installation lives
  * in the validated native monitor snapshot, not necessarily in config. */
 export function selectedOrganization(snapshot) {
-  return snapshot?.github_monitor_org ||
-    snapshot?.runner_state?.scope?.organization || "";
+  const configured = typeof snapshot?.github_monitor_org === "string"
+    ? snapshot.github_monitor_org : "";
+  const monitored = typeof snapshot?.runner_state?.scope?.organization === "string"
+    ? snapshot.runner_state.scope.organization : "";
+  // The lightweight monitor event may arrive before its config-change
+  // event. Never bill an old configured owner for a different owner's
+  // newly published runner snapshot. Prefer unknown until they agree.
+  if (configured && monitored &&
+      configured.toLowerCase() !== monitored.toLowerCase()) return "";
+  return configured || monitored;
 }
 function paintSnapshot(snapshot) {
-  paint(buildHoverDetails(snapshot.runner_state, activeKind, snapshot.connected,
-    snapshot.monitor_message, billingState));
+  const source = snapshot.runner_state;
+  const runnerNameRows = source?.coverage?.runners === true &&
+    Array.isArray(source.runners) ? Math.min(source.runners.length, 4) : 0;
+  paint(buildHoverDetails(source, activeKind, snapshot.connected,
+    snapshot.monitor_message, billingState, currentLanguage), runnerNameRows);
 }
 function scheduleBilling(snapshot) {
   if (activeKind !== "billing" || snapshot.connected !== true) return;
@@ -118,26 +155,80 @@ function scheduleBilling(snapshot) {
 }
 async function refresh() {
   const id = ++refreshId;
+  const startLocaleRevision = localeRevision;
   try {
-    // A detached GTK Wayland WebView can miss a one-shot shown event.
-    // Read the native selected view after the scan, not before, so a fast
-    // hover transition during a slow Git scan cannot restore stale content.
-    const snapshot = await invoke("get_snapshot");
+    // The detached popup needs only the GitHub monitor cache and
+    // the persisted account selection, not a full local Git scan.
+    const [remote, configuredOrg, localeConfig] = await Promise.all([
+      invoke("github_monitor_snapshot"), invoke("get_monitor_scope"),
+      invoke("get_settings_config").catch(() => ({ language: "en" }))
+    ]);
+    if (configuredOrg !== null && typeof configuredOrg !== "string")
+      throw Error("Invalid monitored organization.");
+    // The native hover choice is authoritative; read it last so a
+    // transition during either lightweight IPC read is not undone.
     const nativeKind = await invoke("get_usage_popup_kind");
     if (id !== refreshId) return;
+    if (startLocaleRevision === localeRevision)
+      setLocale(localeConfig?.language);
     if (isHoverKind(nativeKind)) activeKind = nativeKind;
-    currentSnapshot = snapshot;
-    const scope = snapshot.connected === true ? selectedOrganization(snapshot) : null;
-    if (billingScope !== scope || !snapshot.connected) {
+    currentSnapshot = mergeMonitorPresentation(currentSnapshot || {
+      github_monitor_org: null, connected: false,
+      runner_state: null, monitor_message: null,
+    }, remote);
+    currentSnapshot.github_monitor_org = configuredOrg;
+    const scope = currentSnapshot.connected === true
+      ? selectedOrganization(currentSnapshot) : null;
+    if (billingScope !== scope || !currentSnapshot.connected) {
       invalidateBilling();
       billingScope = scope;
     }
-    paintSnapshot(snapshot);
-    scheduleBilling(snapshot);
+    paintSnapshot(currentSnapshot);
+    scheduleBilling(currentSnapshot);
   } catch {
     if (id === refreshId)
       statusUnavailable("Cannot read GitHub status. Reopen the balloon to retry.");
   }
+}
+
+// A manual Runners/Tasks refresh changes only the native monitor cache.
+// The popup must not trigger full local Git inspection to display it.
+async function refreshMonitorOnly() {
+  const id = ++refreshId;
+  try {
+    const remote = await invoke("github_monitor_snapshot");
+    const nativeKind = await invoke("get_usage_popup_kind");
+    if (id !== refreshId) return;
+    if (isHoverKind(nativeKind)) activeKind = nativeKind;
+    currentSnapshot = mergeMonitorPresentation(currentSnapshot || {
+      github_monitor_org: null, connected: false,
+      runner_state: null, monitor_message: null,
+    }, remote);
+    const scope = currentSnapshot.connected === true
+      ? selectedOrganization(currentSnapshot) : null;
+    if (billingScope !== scope || !currentSnapshot.connected) {
+      invalidateBilling();
+      billingScope = scope;
+    }
+    paintSnapshot(currentSnapshot);
+    scheduleBilling(currentSnapshot);
+  } catch {
+    if (id === refreshId) statusUnavailable("Cannot read refreshed GitHub status.");
+  }
+}
+
+// Settings language changes should repaint the existing trusted model only;
+// they never trigger GitHub API reads or repository scans.
+async function refreshLocale() {
+  const revision = ++localeRevision;
+  let language = "en";
+  try {
+    const config = await invoke("get_settings_config");
+    language = config?.language;
+  } catch {
+    // Keep status available with the English fallback.
+  }
+  if (revision === localeRevision) setLocale(language);
 }
 
 function subscribe(eventName, handler = refresh) {
@@ -176,7 +267,8 @@ async function onUsageShown() {
   catch { /* Failed reconciliation is not fabricated as billing data. */ }
 }
 subscribe("repoticker-usage-shown", onUsageShown);
-subscribe("repoticker-monitor-updated");
+subscribe("repoticker-monitor-updated", refreshMonitorOnly);
 subscribe("repoticker-github-auth", () => { invalidateBilling(); void refresh(); });
 subscribe("repoticker-github-scope-changed", () => { invalidateBilling(); void refresh(); });
+subscribe("repoticker-config-changed", refreshLocale);
 void refresh();

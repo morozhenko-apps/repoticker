@@ -33,7 +33,7 @@ class SigningPassphraseIntegration(unittest.TestCase):
             home.mkdir(mode=0o700)
             env = os.environ.copy()
             env["GNUPGHOME"] = str(home)
-            passphrase = "repo-ticker-ci-fixture-only"
+            passphrase = "repoticker-ci-fixture-only"
             common = ("gpg", "--batch", "--yes", "--pinentry-mode", "loopback",
                       "--passphrase", passphrase)
             run(*common, "--quick-generate-key",

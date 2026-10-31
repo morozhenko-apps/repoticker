@@ -1,5 +1,15 @@
 # v0.2.0 RC follow-up — KDE AppImage UI and GTK sizing defects
 
+## Historical RC scope
+
+These are v0.2 candidate defect, root-cause, fix and physical-acceptance receipts.
+The original "planned"/"main unchanged" header is dated prepublication context;
+[v0.2 publication](RELEASE_0_2_0.md) and the
+[current handoff](ROADMAP.md#current-development-handoff-2026-10-24) supersede its
+queue role. Preserve all concrete KDE/GTK/geometry observations and limits; do
+not infer cross-platform, upgrade or newer dev UI acceptance from this record.
+
+
 Status: **MODE A — bugfix, planned (2026-10-22)**.
 Branch: `dev`; published `v0.1.0` and `main` unchanged.
 Trigger: owner physically ran local `RepoTicker_0.2.0_amd64.AppImage`

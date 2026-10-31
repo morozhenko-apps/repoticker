@@ -1,5 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { LOCALE_ROSTER } from "../apps/desktop/ui/locale-catalog.mjs";
+import { ERROR_TERMS } from "../apps/desktop/ui/locale-errors.mjs";
+import { surfaceText } from "../apps/desktop/ui/surface-i18n.mjs";
 import {
   githubFailureReason, githubFailureMessage, mostImportantGithubFailure
 } from "../apps/desktop/ui/github-errors.mjs";
@@ -51,4 +54,27 @@ test("failure priority favors login and throttling while handling empty and malf
   assert.equal(mostImportantGithubFailure([
     { reason: "unauthorized" }, { reason: "rate_limited" }
   ]), "unauthorized");
+});
+
+
+test("redacted monitor reasons are rendered in all twenty locales via the tooltip boundary", () => {
+  const expected = [
+    ["unauthorized", "GitHub authorization unavailable. Reconnect in Settings."],
+    ["permission_denied", "GitHub access denied. Check installation permissions."],
+    ["rate_limited", "GitHub API rate limited. Monitoring will retry on its normal schedule."],
+    ["not_found", "GitHub resource inaccessible to this installation."],
+    ["network", "GitHub network unavailable. Monitoring will retry."],
+    ["incomplete", "Some GitHub data is partial or incomplete."],
+    ["unavailable", "GitHub Actions data unavailable."]
+  ];
+  for (const { code } of LOCALE_ROSTER) {
+    for (const [reason, raw] of expected) {
+      assert.equal(githubFailureMessage(reason), raw,
+        "Native monitor publication must continue to carry canonical redacted text");
+      assert.equal(surfaceText(code, githubFailureMessage(reason)), ERROR_TERMS[code][raw]);
+    }
+    const override = githubFailureMessage("permission_denied", "runners");
+    assert.equal(surfaceText(code, override),
+      ERROR_TERMS[code]["Runner inventory access denied; authorized Actions jobs remain visible."]);
+  }
 });

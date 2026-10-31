@@ -1,0 +1,468 @@
+//! Conditional GitHub API responses, process-local and credential-bound.
+//! Contains only projected allowlisted JSON and an ETag, never credentials.
+//! A 304 can use cached JSON ONLY with the same auth/scope generation.
+use serde_json::Value;
+use std::{collections::VecDeque, sync::Mutex};
+
+const MAX_ENTRIES: usize = 64;
+const MAX_ITEM_BYTES: usize = 64 * 1024;
+const MAX_ETAG_BYTES: usize = 128;
+
+#[derive(Clone)]
+struct CacheItem {
+    path: String,
+    etag: String,
+    projection: Value,
+}
+
+#[derive(Default)]
+struct CacheState {
+    generation: u64,
+    entries: VecDeque<CacheItem>,
+}
+
+#[derive(Default)]
+pub struct GitHubETagCache {
+    inner: Mutex<CacheState>,
+}
+
+pub struct CacheLookup {
+    pub generation: u64,
+    pub etag: Option<String>,
+}
+
+fn valid_etag(etag: &str) -> bool {
+    let tag = etag.strip_prefix("W/").unwrap_or(etag);
+    etag.len() <= MAX_ETAG_BYTES
+        && tag.len() >= 2
+        && tag.starts_with('"')
+        && tag.ends_with('"')
+        && etag.bytes().all(|ch| ch.is_ascii_graphic())
+}
+
+fn cacheable(path: &str) -> bool {
+    // Billing contains sensitive, changing usage data: always fetch it live.
+    !path.contains("/settings/billing/")
+}
+
+impl GitHubETagCache {
+    pub fn snapshot(&self, path: &str) -> CacheLookup {
+        let state = self.inner.lock().unwrap_or_else(|err| err.into_inner());
+        let etag = if cacheable(path) {
+            state
+                .entries
+                .iter()
+                .find(|entry| entry.path == path)
+                .map(|entry| entry.etag.clone())
+        } else {
+            None
+        };
+        CacheLookup {
+            generation: state.generation,
+            etag,
+        }
+    }
+
+    pub fn unchanged(&self, generation: u64) -> bool {
+        self.inner
+            .lock()
+            .unwrap_or_else(|err| err.into_inner())
+            .generation
+            == generation
+    }
+
+    pub fn not_modified(&self, path: &str, lookup: &CacheLookup) -> Option<Value> {
+        let state = self.inner.lock().unwrap_or_else(|err| err.into_inner());
+        if state.generation != lookup.generation {
+            return None;
+        }
+        let tag = lookup.etag.as_deref()?;
+        state
+            .entries
+            .iter()
+            .find(|entry| entry.path == path && entry.etag == tag)
+            .map(|entry| entry.projection.clone())
+    }
+
+    /// Invalidates even in-flight GETs from previous auth/scope generations.
+    pub fn invalidate(&self) {
+        let mut state = self.inner.lock().unwrap_or_else(|err| err.into_inner());
+        state.generation = state.generation.wrapping_add(1);
+        state.entries.clear();
+    }
+
+    /// A successful 200 without a suitable ETag evicts the old path entry.
+    /// Do not store potentially stale JSON if auth/scope changed mid-request.
+    pub fn save(
+        &self,
+        path: &str,
+        lookup: &CacheLookup,
+        etag: Option<&str>,
+        value: &Value,
+    ) -> bool {
+        let mut state = self.inner.lock().unwrap_or_else(|err| err.into_inner());
+        if state.generation != lookup.generation {
+            return false;
+        }
+        let current_etag = state
+            .entries
+            .iter()
+            .find(|entry| entry.path == path)
+            .map(|entry| entry.etag.as_str());
+        if current_etag != lookup.etag.as_deref() {
+            // A newer in-flight request has already published an updated
+            // representation; never replace it with a late older 200.
+            return true;
+        }
+        state.entries.retain(|entry| entry.path != path);
+        let Some(etag) = etag.filter(|etag| valid_etag(etag)) else {
+            return true;
+        };
+        if !cacheable(path)
+            || serde_json::to_vec(value).map_or(true, |bytes| bytes.len() > MAX_ITEM_BYTES)
+        {
+            return true;
+        }
+        if state.entries.len() == MAX_ENTRIES {
+            state.entries.pop_front();
+        }
+        state.entries.push_back(CacheItem {
+            path: path.to_owned(),
+            etag: etag.to_owned(),
+            projection: value.clone(),
+        });
+        true
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn only_matching_conditional_entry_can_supply_304() {
+        let cache = GitHubETagCache::default();
+        let path = "/user/installations?per_page=100&page=1";
+        let fresh = cache.snapshot(path);
+        assert!(cache.not_modified(path, &fresh).is_none());
+        cache.save(
+            path,
+            &fresh,
+            Some("W/\"abc\""),
+            &json!({"installations": []}),
+        );
+        let saved = cache.snapshot(path);
+        assert_eq!(saved.etag.as_deref(), Some("W/\"abc\""));
+        assert_eq!(
+            cache.not_modified(path, &saved),
+            Some(json!({"installations": []}))
+        );
+        assert!(cache
+            .not_modified("/user/installations?per_page=100&page=2", &saved)
+            .is_none());
+    }
+
+    #[test]
+    fn generation_change_blocks_in_flight_and_old_cached_private_data() {
+        let cache = GitHubETagCache::default();
+        let path = "/user/installations?per_page=100&page=1";
+        let old = cache.snapshot(path);
+        cache.save(
+            path,
+            &old,
+            Some("\"private\""),
+            &json!({"installations": [1]}),
+        );
+        cache.invalidate();
+        assert!(!cache.unchanged(old.generation));
+        assert!(cache.not_modified(path, &old).is_none());
+        assert!(!cache.save(
+            path,
+            &old,
+            Some("\"private\""),
+            &json!({"installations": [1]})
+        ));
+        assert!(cache.snapshot(path).etag.is_none());
+    }
+
+    #[test]
+    fn late_http_200_does_not_replace_newer_cache_value() {
+        let cache = GitHubETagCache::default();
+        let path = "/user/installations?per_page=100&page=1";
+        let older = cache.snapshot(path);
+        let newer = cache.snapshot(path);
+        assert!(cache.save(path, &newer, Some("\"new\""), &json!({"updated": 2})));
+        assert!(cache.save(path, &older, Some("\"old\""), &json!({"updated": 1})));
+        let current = cache.snapshot(path);
+        assert_eq!(current.etag.as_deref(), Some("\"new\""));
+        assert_eq!(
+            cache.not_modified(path, &current),
+            Some(json!({"updated": 2}))
+        );
+    }
+
+    #[test]
+    fn cap_and_etag_validation_prevent_unbounded_or_malformed_cache() {
+        let cache = GitHubETagCache::default();
+        for index in 0..=MAX_ENTRIES {
+            let path = format!("/user?page={index}");
+            cache.save(
+                &path,
+                &cache.snapshot(&path),
+                Some("\"safe\""),
+                &json!({"login": "user"}),
+            );
+        }
+        assert!(cache.snapshot("/user?page=0").etag.is_none());
+        assert_eq!(
+            cache.snapshot("/user?page=64").etag.as_deref(),
+            Some("\"safe\"")
+        );
+        cache.save(
+            "/user",
+            &cache.snapshot("/user"),
+            Some("x\nInjected: secret"),
+            &json!({}),
+        );
+        assert!(cache.snapshot("/user").etag.is_none());
+        cache.save(
+            "/user",
+            &cache.snapshot("/user"),
+            Some("\"large\""),
+            &json!({"payload": "x".repeat(MAX_ITEM_BYTES)}),
+        );
+        assert!(cache.snapshot("/user").etag.is_none());
+        let billing = "/organizations/team/settings/billing/usage/summary?year=2026&month=10";
+        cache.save(
+            billing,
+            &cache.snapshot(billing),
+            Some("\"billing\""),
+            &json!({"usageItems": []}),
+        );
+        assert!(cache
+            .snapshot("/organizations/team/settings/billing/usage/summary?year=2026&month=10")
+            .etag
+            .is_none());
+    }
+
+    #[test]
+    fn invalid_conditional_tag_evicts_old_projection_instead_of_reusing_it() {
+        let cache = GitHubETagCache::default();
+        let path = "/user/installations?per_page=100&page=1";
+        let initial = cache.snapshot(path);
+        assert!(cache.save(path, &initial, Some("\"initial\""), &json!({"id": 1})));
+        let previous = cache.snapshot(path);
+        assert_eq!(cache.not_modified(path, &previous), Some(json!({"id": 1})));
+
+        for invalid in [
+            "missing-quotes",
+            "\"with\nnewline\"",
+            "W/missing-quoted-value",
+            "\u{00e9}",
+        ] {
+            let lookup = cache.snapshot(path);
+            assert!(cache.save(path, &lookup, Some(invalid), &json!({"id": 2})));
+            assert!(cache.snapshot(path).etag.is_none());
+            assert!(cache.not_modified(path, &previous).is_none());
+        }
+        let fresh = cache.snapshot(path);
+        assert!(cache.save(path, &fresh, None, &json!({"id": 3})));
+        assert!(cache.snapshot(path).etag.is_none());
+    }
+
+    #[test]
+    fn projected_json_at_exact_maximum_is_allowed_but_one_byte_over_is_not() {
+        let cache = GitHubETagCache::default();
+        let path = "/user/installations?per_page=100&page=1";
+        // {"p":"..."} contributes exactly eight JSON framing bytes.
+        let boundary = json!({"p": "x".repeat(MAX_ITEM_BYTES - 8)});
+        assert_eq!(serde_json::to_vec(&boundary).unwrap().len(), MAX_ITEM_BYTES);
+        assert!(cache.save(path, &cache.snapshot(path), Some("\"exact\""), &boundary,));
+        let accepted = cache.snapshot(path);
+        assert_eq!(accepted.etag.as_deref(), Some("\"exact\""));
+        assert_eq!(cache.not_modified(path, &accepted), Some(boundary));
+
+        let oversized = json!({"p": "x".repeat(MAX_ITEM_BYTES - 7)});
+        assert_eq!(
+            serde_json::to_vec(&oversized).unwrap().len(),
+            MAX_ITEM_BYTES + 1
+        );
+        assert!(cache.save(path, &accepted, Some("\"excess\""), &oversized));
+        assert!(cache.snapshot(path).etag.is_none());
+        assert!(cache.not_modified(path, &accepted).is_none());
+    }
+
+    #[test]
+    fn concurrent_auth_invalidation_rejects_delayed_old_generation_reply() {
+        use std::sync::{mpsc, Arc};
+        use std::thread;
+
+        let cache = Arc::new(GitHubETagCache::default());
+        let path = "/user/installations?per_page=100&page=1";
+        let (started_tx, started_rx) = mpsc::channel();
+        let (resume_tx, resume_rx) = mpsc::channel();
+        let worker_cache = Arc::clone(&cache);
+        let worker = thread::spawn(move || {
+            let old = worker_cache.snapshot(path);
+            started_tx.send(()).expect("old request ready");
+            resume_rx.recv().expect("release delayed HTTP 200");
+            worker_cache.save(path, &old, Some("\"old-account\""), &json!({"id": 1}))
+        });
+
+        started_rx.recv().expect("old request started");
+        cache.invalidate();
+        let current = cache.snapshot(path);
+        assert!(cache.save(path, &current, Some("\"new-account\""), &json!({"id": 2}),));
+        resume_tx.send(()).expect("release old request");
+        assert!(!worker.join().expect("old request joined"));
+        let current = cache.snapshot(path);
+        assert_eq!(current.etag.as_deref(), Some("\"new-account\""));
+        assert_eq!(cache.not_modified(path, &current), Some(json!({"id": 2})));
+    }
+
+    #[test]
+    fn different_paths_and_tags_never_share_conditional_private_data() {
+        let cache = GitHubETagCache::default();
+        let first = "/user/installations?per_page=100&page=1";
+        let second = "/user/installations?per_page=100&page=2";
+        let before = cache.snapshot(first);
+        assert!(cache.save(first, &before, Some("\"same\""), &json!({"page": 1})));
+        let other = cache.snapshot(second);
+        assert!(cache.save(second, &other, Some("\"same\""), &json!({"page": 2})));
+        let first_now = cache.snapshot(first);
+        let second_now = cache.snapshot(second);
+        assert_eq!(
+            cache.not_modified(first, &first_now),
+            Some(json!({"page": 1}))
+        );
+        assert_eq!(
+            cache.not_modified(second, &second_now),
+            Some(json!({"page": 2}))
+        );
+        assert!(cache.not_modified("/user", &first_now).is_none());
+        assert!(cache.not_modified("/user", &second_now).is_none());
+    }
+
+    #[test]
+    fn multiple_invalidation_generations_reject_every_prior_snapshot() {
+        let cache = GitHubETagCache::default();
+        let path = "/user/installations?per_page=100&page=1";
+        let initial = cache.snapshot(path);
+        cache.invalidate();
+        let intermediate = cache.snapshot(path);
+        cache.invalidate();
+        let current = cache.snapshot(path);
+        for old in [&initial, &intermediate] {
+            assert!(!cache.unchanged(old.generation));
+            assert!(!cache.save(path, old, Some("\"old\""), &json!({"scope": "old"})));
+            assert!(cache.not_modified(path, old).is_none());
+        }
+        assert!(cache.save(
+            path,
+            &current,
+            Some("\"current\""),
+            &json!({"scope": "new"})
+        ));
+        assert_eq!(
+            cache.not_modified(path, &cache.snapshot(path)),
+            Some(json!({"scope": "new"}))
+        );
+    }
+
+    #[test]
+    fn billing_path_is_never_reused_as_an_etag_even_with_valid_headers() {
+        let cache = GitHubETagCache::default();
+        let billing = "/organizations/org/settings/billing/usage/summary?year=2026&month=10";
+        let lookup = cache.snapshot(billing);
+        assert!(lookup.etag.is_none());
+        assert!(cache.save(
+            billing,
+            &lookup,
+            Some("\"usage\""),
+            &json!({"usageItems":[{"grossQuantity":1}]})
+        ));
+        assert!(cache.snapshot(billing).etag.is_none());
+        assert!(cache.not_modified(billing, &lookup).is_none());
+    }
+
+    #[test]
+    fn mode_b_late_unconditional_200_cannot_evict_newer_conditional_value() {
+        let cache = GitHubETagCache::default();
+        let path = "/user/installations?per_page=100&page=1";
+        let first = cache.snapshot(path);
+        let second = cache.snapshot(path);
+        assert_eq!(first.etag, None);
+        assert!(cache.save(path, &second, Some("\"fresh\""), &json!({"value": "fresh"})));
+        // An old transport response with no usable ETag is still older
+        // than the freshly cached conditional representation.
+        assert!(cache.save(path, &first, None, &json!({"value": "stale"})));
+        let now = cache.snapshot(path);
+        assert_eq!(now.etag.as_deref(), Some("\"fresh\""));
+        assert_eq!(
+            cache.not_modified(path, &now),
+            Some(json!({"value": "fresh"}))
+        );
+    }
+
+    #[test]
+    fn mode_b_stale_conditional_reply_cannot_replay_after_logout_and_new_login() {
+        let cache = GitHubETagCache::default();
+        let path = "/user/installations?per_page=100&page=1";
+        let before = cache.snapshot(path);
+        assert!(cache.save(
+            path,
+            &before,
+            Some("\"shared-tag\""),
+            &json!({"account": "old"})
+        ));
+        let stale = cache.snapshot(path);
+
+        cache.invalidate();
+        let fresh = cache.snapshot(path);
+        assert!(cache.save(
+            path,
+            &fresh,
+            Some("\"shared-tag\""),
+            &json!({"account": "new"})
+        ));
+        assert!(cache.not_modified(path, &stale).is_none());
+        assert!(!cache.save(
+            path,
+            &stale,
+            Some("\"shared-tag\""),
+            &json!({"account": "old"})
+        ));
+        let after = cache.snapshot(path);
+        assert_eq!(after.etag.as_deref(), Some("\"shared-tag\""));
+        assert_eq!(
+            cache.not_modified(path, &after),
+            Some(json!({"account": "new"}))
+        );
+        assert!(!cache.unchanged(stale.generation));
+    }
+
+    #[test]
+    fn mode_b_billing_disallows_etag_even_when_cache_holds_same_tag_elsewhere() {
+        let cache = GitHubETagCache::default();
+        let other = "/user/installations?per_page=100&page=1";
+        assert!(cache.save(
+            other,
+            &cache.snapshot(other),
+            Some("\"shared\""),
+            &json!({"id": 1})
+        ));
+        let billing = "/organizations/team/settings/billing/usage/summary?year=2026&month=10";
+        let previous = cache.snapshot(billing);
+        assert!(cache.save(
+            billing,
+            &previous,
+            Some("\"shared\""),
+            &json!({"usageItems": []})
+        ));
+        let current = cache.snapshot(billing);
+        assert!(current.etag.is_none());
+        assert!(cache.not_modified(billing, &previous).is_none());
+        assert_eq!(cache.snapshot(other).etag.as_deref(), Some("\"shared\""));
+    }
+}

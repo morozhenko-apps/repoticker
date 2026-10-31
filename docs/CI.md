@@ -1,50 +1,38 @@
-# CI and release evidence
+# RepoTicker verification
 
-RepoTicker CI takes the isolation and review principles of the rQuickShare baseline, but uses its own Tauri/Rust/Node tests, packaging artifacts and release credentials.
+Source checks, packaging, native machine acceptance and publishing are distinct.
 
-## Preflight — `.github/workflows/preflight.yml`
+Normal development verifies JavaScript contracts, Rust source and Git state tests without treating one successful fixture as evidence for all real repositories. Perform focused checks during implementation and a complete stable gate when the change is ready; expensive/race-sensitive suites are run at their documented final gate rather than after every small edit.
 
-Runs for pushes to `dev` and `main`, pull requests against either branch, and manual dispatch. Pushes modifying only designated documentation paths (including `README.md` and `docs/**`) are ignored; a docs-only commit does not imply that **all** PR or required-check runs will be skipped.
+**External CI rule:** Once a GitHub Actions run has been triggered, do not poll or repeatedly fetch its status. Provide the workflow URL and the exact work that remains unverified, then stop. Resume only when the owner supplies the result or another supported completion event occurs.
 
-Jobs on Ubuntu 24.04:
-1. Rust formatting, core unit/integration tests and Clippy with warnings denied.
-2. JS syntax checks, Node built-in JS tests and Python release-contract tests. The runner installs APT/GPG tools, so the signed-APT integration test is not intentionally skipped.
-3. Desktop Rust/Tauri Linux compile smoke (`cargo check -p repoticker-desktop`) with native dependencies.
-4. A required aggregate `Preflight result` that succeeds only when all three checks succeed.
+Source-only documentation edits must not deliberately start CI. Keep documentation commits separate from executable changes.
 
-**Verified v0.1.0 evidence:** [dev Preflight #39302540338](https://github.com/morozhenko-apps/repoticker/actions/runs/39302540338) and [main Preflight #39309058200](https://github.com/morozhenko-apps/repoticker/actions/runs/39309058200) both completed successfully for `21f3b61d9774b931b57a4e3c83f61b2bcf2bb0ee`. These validate source checks, not full installers or end-user runtime on every OS.
+A package artifact does not establish real Linux or Windows acceptance. Installer upgrades, autostart, tray focus, credential persistence and removal behavior require separate native verification. Publishing a release requires approval and verified immutable package checksums.
 
-## Manual strict gate — `.github/workflows/strict.yml`
+## Manual strict stable gate
 
-**Approved 1.0 requirement (documentation only, not yet implemented):** [Mode B roadmap](VERSION_ROADMAP_TO_1_0.md) requires separate STABLE and known-FLAKY test identification, complete documented Positive/N1–N12 coverage and mutation review before stable v1.0. The current manual strict workflow repeats all Rust+JS tests ten times; it does **not** implement the new STABLE/known-FLAKY separation and cannot by itself close Mode B. Align its configuration and record actual evidence at the v0.9 RC gate. The current agent SSOT uses a single end-of-task stable run and a separate known-flaky run; targeted repetition is for confirmed race/instability investigation, not routine entire-suite ×10.
+The manual `.github/workflows/strict.yml` runs Rust formatting, locked
+core tests and Clippy, Node unit tests, and Python release contracts
+once per explicit dispatch. Repeated 10x runs are not a release gate:
+repeatability diagnostics require evidence of a specific instability.
+Preflight separately checks Linux desktop compilation. Known-flaky
+tests, if identified and registered, require independent execution
+and explicit reporting, never omission from the stable result.
 
-Manual-only workflow that executes ten consecutive Rust core + JS passes on one SHA. It is a repeatability diagnostic, **not** evidence of a completed release, physical acceptance, or a configured flaky-test quarantine. Its existence does not mean it ran for the tagged candidate. No release keys or deployment permissions are provided.
+## Bounded ordinary verification
 
-Stable vs. known-flaky tests should be tracked explicitly as future test infrastructure evolves. Newly failing stable tests must not be reclassified or silenced to make CI green. Do not run the manual strict gate unnecessarily during routine edits.
+Keep the independent core, UI/contracts and Linux desktop lanes; execute every
+applicable stable suite once. Resolve prose-only PR scope using complete Git
+merge differences, including both rename sides. Packaged Markdown, executable
+fixtures and unknown inputs require checks. Always report the existing
+Preflight result, accepting only exact success or an explicitly justified
+whole-scope skip; failed/canceled/missing evidence must fail.
 
-## Tagged release — `.github/workflows/desktop-release-candidates.yml`
-
-Only a pushed `vMAJOR.MINOR.PATCH` tag at the current `main` commit may pass admission. Admission also requires matching Rust/Tauri versions and committed `Cargo.lock`.
-
-Pipeline:
-1. Build and checksum Linux amd64 DEB/AppImage on Ubuntu 24.04.
-2. Build and checksum unsigned Windows x64 NSIS on Windows 2025.
-3. After both pass, request protected `apt-release` environment approval. Import a scoped signing **subkey** and create a verified APT snapshot.
-4. Upload immutable release objects and APT by-hash indexes to scoped R2; independently read back the public download Worker URLs. Update mutable indexes and publish signed `InRelease` last.
-5. Publish GitHub Release only after the signed R2/APT operation and public-key artifact succeeded.
-
-macOS is intentionally skipped. **Release evidence:** [workflow #39319748009](https://github.com/morozhenko-apps/repoticker/actions/runs/39319748009) completed on attempt 3 with successful validate, Linux, Windows, publish and github-release jobs. The first attempt failed at GPG passphrase validation; the second signed successfully but the public readback was blocked by Cloudflare Browser Integrity Check. After a narrowly scoped BIC skip for the download hostname/path, attempt 3 passed and [v0.1.0](https://github.com/morozhenko-apps/repoticker/releases/tag/v0.1.0) became public. Runtime installation and future APT maintenance remain separate acceptance gates.
-
-## Branch/release isolation
-
-`dev` is the work branch; `main` is the release source. Never advance `main` while a release candidate still needs to verify that its tag matches current `main` HEAD. Use a separate **docs-only** commit on `dev` during an in-flight tagged release, promote it to `main` after the release gate finishes and the current release SHA has been validated. Application code and documentation changes belong to separate commits.
-
-Recommended repository rulesets remain subject to account settings verification; do not confuse CI job definitions with branch protection being enabled. An independently protected `apt-release` environment is used for deployment authorization.
-
-## Remaining assurance work
-
-- Independently verify signed APT enrollment, package installation/upgrade/removal, and physical Windows installer/runtime acceptance. Tagged build/sign/readback checks have passed on v0.1.0.
-- Test KDE multi-monitor, drag stability and supported desktop lifecycle.
-- Expand Git subprocess concurrency, hostile config/hooks and cancellation coverage.
-- Implement and contract-test GitHub API clients, token/rate-limit behavior and relay signing once those features exist.
-- Document a sustainable APT index refresh, metadata expiry and rollback procedure before broad public distribution.
+Use 5-minute scope/result, 10-minute UI and 20-minute Rust/desktop budgets;
+the manual stable gate is bounded to 20 minutes. Dependency caches are scoped
+by configuration and writable only from trusted dev executions. Ordinary
+checkouts must not persist credentials. Retain release signing/mainline gates
+and separate native acceptance, without building installers for CI-only edits.
+Focused CI policy regressions run in the existing contract lane. Implementation
+and validation state are tracked in the private cross-repository rollout record.

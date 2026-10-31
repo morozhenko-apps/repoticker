@@ -12,6 +12,7 @@ function element(tag) {
     append(child) { this.children.push(child); },
     remove() {},
     removeAttribute() {},
+    setAttribute(name, value) { this[name] = value; },
     addEventListener() {},
     getBoundingClientRect() { return { width: 304, height: 45 }; },
     cloneNode(deep = false) {
@@ -33,16 +34,23 @@ test("native-selected tooltip switches reliably and auto-selected organization p
   const calls = [];
   const listeners = new Map();
   let nativeKind = "billing";
+  let configuredOrg = null;
+  let savedLanguage = "en";
+  const usageBubble = element("main");
   let snapshot = { connected: false, runner_state: null, monitor_message: null };
+  const documentHandlers = new Map();
   const document = {
     body: element("body"),
+    documentElement: { lang: "en" },
+    addEventListener(type, handler) { documentHandlers.set(type, handler); },
     getElementById(id) {
       return id === "quota-content" ? root : id === "quota-title" ? title : null;
     },
     createElement: element,
     querySelector(selector) {
       return selector === ".quota-header"
-        ? { getBoundingClientRect: () => ({ height: 18 }) } : null;
+        ? { getBoundingClientRect: () => ({ height: 18 }) }
+        : selector === ".usage-bubble" ? usageBubble : null;
     },
   };
   const window = {
@@ -50,7 +58,12 @@ test("native-selected tooltip switches reliably and auto-selected organization p
       core: {
         async invoke(command, args) {
           calls.push([command, args]);
-          if (command === "get_snapshot") return snapshot;
+          if (command === "get_monitor_scope") return configuredOrg;
+          if (command === "get_settings_config") return { language: savedLanguage };
+          if (command === "github_monitor_snapshot") return {
+            connected: snapshot.connected, runner_state: snapshot.runner_state,
+            monitor_message: snapshot.monitor_message
+          };
           if (command === "get_usage_popup_kind") return nativeKind;
           if (command === "resize_usage_popup") return undefined;
           if (command === "github_api_get") {
@@ -75,9 +88,18 @@ test("native-selected tooltip switches reliably and auto-selected organization p
   globalThis.document = document;
   try {
     await import("../apps/desktop/ui/quota.mjs?usage-kind-regression");
+    assert.equal(typeof documentHandlers.get("contextmenu"), "function");
+    const rightClick = { prevented: false, preventDefault() { this.prevented = true; } };
+    documentHandlers.get("contextmenu")(rightClick);
+    assert.equal(rightClick.prevented, true);
     await new Promise(resolve => setImmediate(resolve));
     assert.match(allText(root), /Connect GitHub/);
     assert.ok(listeners.has("repoticker-usage-shown"));
+    assert.ok(listeners.has("repoticker-config-changed"));
+    assert.equal(document.documentElement.lang, "en");
+    assert.equal(calls.filter(([command]) => command === "get_snapshot").length, 0,
+      "opening the detached tooltip must never inspect local Git repositories");
+    assert.ok(calls.some(([command]) => command === "get_monitor_scope"));
 
     snapshot = {
       connected: true, github_monitor_org: null, monitor_message: null,
@@ -95,6 +117,20 @@ test("native-selected tooltip switches reliably and auto-selected organization p
     nativeKind = "tasks";
     await listeners.get("repoticker-monitor-updated")();
     assert.match(title.textContent, /Tasks/);
+    assert.match(allText(root), /GitHub-hosted/);
+    // A language preference update repaints the validated cached model;
+    // it does not trigger a new GitHub REST request or full Git scan.
+    savedLanguage = "ru";
+    const readsBeforeLocale = calls.filter(([name]) => name === "github_api_get").length;
+    await listeners.get("repoticker-config-changed")();
+    assert.equal(document.documentElement.lang, "ru");
+    assert.match(title.textContent, /Задачи/);
+    assert.match(allText(root), /Раннеры GitHub/);
+    assert.equal(calls.filter(([name]) => name === "github_api_get").length,
+      readsBeforeLocale);
+    savedLanguage = "en";
+    await listeners.get("repoticker-config-changed")();
+    assert.equal(document.documentElement.lang, "en");
     assert.match(allText(root), /GitHub-hosted/);
     const scansBeforeHover = calls.filter(([x]) => x === "get_snapshot").length;
 
@@ -122,6 +158,21 @@ test("native-selected tooltip switches reliably and auto-selected organization p
       args.path.startsWith("/organizations/morozhenko-apps/")));
     assert.ok(calls.some(([command, args]) => command === "github_api_get" &&
       args.path === "/orgs/morozhenko-apps"));
+    // Auth and account-scope change events must use the same lightweight
+    // monitor/config IPC as initial popup startup. The configured account
+    // (not a stale cached scope) must be read afresh.
+    configuredOrg = "morozhenko-apps";
+    await listeners.get("repoticker-github-auth")();
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(calls.filter(([command]) => command === "get_snapshot").length, 0);
+    assert.match(title.textContent, /Actions/);
+    configuredOrg = null;
+    nativeKind = "tasks";
+    await listeners.get("repoticker-github-scope-changed")();
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(calls.filter(([command]) => command === "get_snapshot").length, 0);
+    assert.match(title.textContent, /Tasks/);
+    assert.ok(calls.filter(([command]) => command === "get_monitor_scope").length >= 3);
   } finally {
     if (prior.window === undefined) delete globalThis.window;
     else globalThis.window = prior.window;

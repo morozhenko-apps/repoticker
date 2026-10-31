@@ -107,3 +107,79 @@ No unlisted module is implicitly covered.
 Next: inspect each remaining source function and test assertion; finish
 Stage 4, then proceed to exhaustive Stage 5–8 matrices. No test code
 written and no STABLE/known-FLAKY execution claimed in this stage.
+
+## Mode B current-source branch coverage increment — 2026-10-29
+
+The new tests and fixes are in the unpromoted code ancestry of
+`dev`. Their presence is **not** a result from executing tests.
+This register supplements, rather than replaces, the exhaustive
+source-to-branch map still required for every remaining artifact.
+
+| Branch group | Provenance and failure invariant | Current source tests |
+| --- | --- | --- |
+| COL01 kind=tasks with previous org different | old runners/counters/timestamp become unknown | `runner-collector.test.mjs`: Mode B org switch |
+| COL02 kind=runners with selected repo set different | old jobs/clock become unknown, new runners stay valid | same: Mode B selection |
+| COL03 scope names case/order differ but semantic selection equal | preserve existing jobs and timestamp | same: Mode B order/case |
+| COL04 missing or contradictory previous scope | never trust old task coverage | same: Mode B missing scope |
+| COL05 same org but repo change during tasks refresh | retain org-wide runners, replace jobs from new selection | same: Mode B same org |
+| COL06 invalid org, repo names, kind, concurrency and every page bound | reject without any API request | same: Mode B invalid collector bounds |
+| COL07 runner API malformed / 101 items | jobs stay independently complete; capacity unknown | same: Mode B oversize runner |
+| COL08 job API malformed / 101 items | tasks unknown; verified org runner counts preserved | same: Mode B oversize job |
+| INS01 installation row lacks safe ID/login | fail whole scope rather than silently skip one row | `github-installations-mode-b.test.mjs`: malformed |
+| INS02 same ID/name across pages, case variation | one logical installation, no duplicate selector entries | same: overlap |
+| INS03 same ID, different owner, or same owner different ID | fail closed; never choose an apparent sole account | same: conflict |
+| INS04 response not an array / over 100 | reject incomplete provider projection | same: page shape |
+| BILL01 UTC month at midnight with offset | use UTC billing period | `github-billing.test.mjs`: Mode B UTC boundaries |
+| BILL02 SKU/cardinality/finite safe quantity 0/1/500/501 | reject bad provider quantity, do not claim safe totals | same: Mode B usage bounds |
+| BILL03 old in-flight org result arrives after scope switch | old result must not overwrite current cached owner | same: Mode B stale org |
+| BILL04 TTL-1/TTL, wall-clock rollback, disconnect | force fresh read at expired/unreliable boundaries | same: Mode B cache |
+| STATE01 corrupted runner inventory versus valid jobs | runner capacity unknown, jobs remain complete | `runner-state.test.mjs`: Mode B malformed runner |
+| STATE02 corrupted job inventory versus valid runners | job counters unknown, capacity remains valid | same: Mode B malformed jobs |
+| STATE03 hosted/self-hosted label precedence | explicit self-hosted wins | same: Mode B lanes |
+| STATE04 identical job IDs across pages | dedup counts only one job | same: Mode B duplicates |
+
+**Mutation review design (not observed kills):**
+The above scenario assertions are intended to detect removal of org/repo
+comparisons, bypass of installation identity integrity, TTL boundary
+off-by-one, fake-zero behavior and classification priority inversion.
+A mutation score requires independently executing real source mutants.
+No mutation outcome is inferred from these test names.
+
+Native conditional code now receives platform-specific test execution:
+Linux desktop `cargo test --locked -p repoticker --bin repoticker`
+in Preflight, Windows same command in the unpublished Windows
+acceptance job. Neither is equivalent to interactive installed OS QA.
+
+- **INS05 — monitor integration:** `collectForAccount` must reject a mixed valid/corrupt installation inventory before invoking repository or task requests. `github-installations-mode-b.test.mjs` tests this with an injected read-only provider.
+
+## Notification date validity — additional branch evidence
+
+- CI01 Native GitHub completed-run `updated_at` accepts exact
+  canonical UTC seconds only: year/day/month/leap/time cases in
+  `github_api.rs` embedded Rust tests.
+- CI02 JS notification tracker rejects normalized impossible dates
+  rather than trusting `Date.parse` alone; test in
+  `tests/ci-failure-events.test.mjs` proves no partially advanced
+  history and valid leap day continues to notify once.
+- CI03 Executable M11 mutation replaces canonical JS date comparison
+  with unconditional acceptance and must be detected by the same
+  notification invariant assertion.
+
+These are source scenarios, not executed CI evidence or a general
+percentage of native API branch coverage.
+
+## Native credential-bound cache regression checks — 2026-10-29
+
+The `github_etag_cache.rs` embedded Rust test module now includes
+three focused source tests:
+
+| Scenario | Exact behavior under test | Intended escaped mutation |
+| --- | --- | --- |
+| ETAG01 concurrent unconditional 200 responses | Later HTTP response from an older snapshot cannot evict a newer ETag + projection | Remove current ETag equality comparison from `save` |
+| ETAG02 same ETag across consecutive authorized sessions | Prior-generation 304 replay and prior-generation save both rejected after `invalidate` | Remove generation guard from `not_modified` or `save` |
+| ETAG03 billing and unrelated path with same ETag | Live billing is never cached, independent non-billing cached projection preserved | Remove billing `cacheable` restriction |
+
+These checks are deterministic in-process Rust tests with no real bearer
+token, transport or external GitHub calls. Their execution is deferred
+to the single final stable CI run, and **no mutation kill count or
+branch coverage percentage is claimed** at the source-authoring stage.

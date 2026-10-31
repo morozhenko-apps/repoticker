@@ -1,69 +1,1063 @@
+"""Offline R2 publisher integration tests. Never connect to Cloudflare."""
+import gzip
+import hashlib
+import io
 import json
-import pathlib
 import sys
 import tempfile
+from types import ModuleType
 import unittest
+from urllib.error import HTTPError
+from urllib.request import Request
+from pathlib import Path
+from unittest.mock import patch
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "scripts"))
-import r2_release
-import release_assets
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+import r2_release as release
+
+VERSION = "0.1.0"
+COMMIT = "a" * 40
 
 
-class R2ArtifactContract(unittest.TestCase):
-    def prepare(self, root):
-        for platform in ("linux", "windows"):
-            folder = root / "release" / platform
-            folder.mkdir(parents=True)
-            files = []
-            for ext in release_assets.TYPES[platform]:
-                name = release_assets.canonical("0.1.0", platform, ext)
-                path = folder / name
-                path.write_bytes(b"test-" + name.encode())
-                checksum = release_assets.digest(path)
-                (folder / (name + ".sha256")).write_text(checksum + "  " + name + "\n")
-                files.append({"path": platform + "/" + name, "sha256": checksum,
-                              "size": path.stat().st_size})
-            (folder / "part.json").write_text(
-                json.dumps({"platform": platform, "version": "0.1.0", "files": files}))
-        apt = root / "apt"
-        for path in ("pool/main/r/repo-ticker/repo-ticker_0.1.0_amd64.deb",
-                     "dists/stable/InRelease", "repoticker-archive-keyring.gpg",
-                     "dists/stable/main/binary-amd64/Packages",
-                     "dists/stable/main/binary-amd64/Packages.gz"):
-            item = apt / path
-            item.parent.mkdir(parents=True, exist_ok=True)
-            item.write_bytes(b"test-" + path.encode())
-        index = apt / "dists/stable/main/binary-amd64"
-        for name in ("Packages", "Packages.gz"):
-            item = index / name
-            hashed = index / "by-hash/SHA256" / release_assets.digest(item)
-            hashed.parent.mkdir(parents=True, exist_ok=True)
-            hashed.write_bytes(item.read_bytes())
-        return apt
+def sha(data):
+    return hashlib.sha256(data).hexdigest()
 
-    def test_rejects_wrong_native_files_before_any_r2_write(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp)
-            apt = self.prepare(root)
-            release = root / "release"
-            items, active = r2_release.source_map(release, apt, "0.1.0")
-            self.assertIn("releases/v0.1.0/windows/RepoTicker-Setup-0.1.0-win-x64.exe", items)
-            self.assertEqual([key for key, _ in active], [
-                "apt/dists/stable/main/binary-amd64/Packages",
-                "apt/dists/stable/main/binary-amd64/Packages.gz",
-                "apt/dists/stable/InRelease",
-            ])
-            self.assertNotIn("apt/dists/stable/main/binary-amd64/Packages.gz", items)
-            self.assertNotIn("apt/dists/stable/main/binary-amd64/Packages", items)
-            unexpected = release / "linux" / "evil-0.1.0.deb"
-            unexpected.write_bytes(b"bad")
-            with self.assertRaisesRegex(ValueError, "Unexpected file"):
-                r2_release.source_map(release, apt, "0.1.0")
-            unexpected.unlink()
-            (release / "linux" / "repo-ticker_0.1.0_amd64.deb.sha256").write_text("bad")
-            with self.assertRaisesRegex(ValueError, "sidecar mismatch"):
-                r2_release.source_map(release, apt, "0.1.0")
 
+class PublicationFixture(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        root = Path(self.temp.name)
+        self.bundle = root / "release"
+        self.apt = root / "apt"
+        names = {
+            "linux": ["repoticker_0.1.0_amd64.deb", "RepoTicker-0.1.0-linux-x64.AppImage"],
+            "windows": ["RepoTicker-Setup-0.1.0-win-x64.exe"],
+        }
+        for platform, items in names.items():
+            directory = self.bundle / platform
+            directory.mkdir(parents=True)
+            manifest = {
+                "version": VERSION, "platform": platform, "files": []
+            }
+            if platform == "windows":
+                manifest["signed"] = False
+            for name in items:
+                content = ("validated package " + name).encode()
+                (directory / name).write_bytes(content)
+                checksum = sha(content)
+                (directory / (name + ".sha256")).write_text(
+                    checksum + "  " + name + "\n"
+                )
+                manifest["files"].append({
+                    "path": platform + "/" + name, "sha256": checksum, "size": len(content)
+                })
+            (directory / "part.json").write_text(json.dumps(manifest))
+        pool = self.apt / "repoticker_0.1.0_amd64.deb"
+        self.apt.mkdir(parents=True)
+        pool.write_bytes((self.bundle / "linux" / pool.name).read_bytes())
+        (self.apt / "repoticker-archive-keyring.gpg").write_bytes(b"public test key")
+        index = self.apt
+        package_bytes = pool.read_bytes()
+        control = (
+            "Package: repoticker\n"
+            f"Version: {VERSION}\n"
+            "Architecture: amd64\n"
+            f"Filename: ./{pool.name}\n"
+            f"Size: {len(package_bytes)}\n"
+            f"SHA256: {sha(package_bytes)}\n"
+            "Description: Minimal test package\n"
+            " fixture continuation line\n"
+            "\n"
+        ).encode("utf8")
+        files = {
+            "Packages": control,
+            "Packages.gz": gzip.compress(control, mtime=0),
+        }
+        for name, data in files.items():
+            (index / name).write_bytes(data)
+        self.seal_offline_indexes()
+
+    def seal_offline_indexes(self):
+        """Re-sign test-only flat metadata using fake GPG.
+
+        This never exercises a private key, network or real signature.
+        """
+        index = self.apt
+        signed_lines = [
+            "-----BEGIN PGP SIGNED MESSAGE-----",
+            "Hash: SHA256",
+            "",
+            "Origin: RepoTicker",
+            "SHA256:",
+        ]
+        for item in (index / "Packages", index / "Packages.gz"):
+            data = item.read_bytes()
+            relative = item.name
+            signed_lines.append(f" {sha(data)} {len(data)} {relative}")
+        signed_lines.extend([
+            "-----BEGIN PGP SIGNATURE-----",
+            "offline-fixture-signature; cryptography stubbed in tests",
+            "-----END PGP SIGNATURE-----",
+            "",
+        ])
+        (self.apt / "InRelease").write_text(
+            "\n".join(signed_lines), encoding="utf8"
+        )
+
+    def rewrite_package_indexes(self, plain, compressed=None):
+        """Intentionally construct internally wrong but signed test catalogs."""
+        index = self.apt
+        (index / "Packages").write_bytes(plain)
+        (index / "Packages.gz").write_bytes(
+            gzip.compress(plain, mtime=0) if compressed is None else compressed
+        )
+        self.seal_offline_indexes()
+
+    def planned(self):
+        with patch.object(release.subprocess, "run"):
+            return release.source_map(self.bundle, self.apt, VERSION, COMMIT)
+
+    def test_given_flat_distribution_when_isolated_exact_source_map_contains_signed_apt_and_release_files_then_contract_is_enforced(self):
+        immutable, mutable, platforms = self.planned()
+        self.assertEqual(set(platforms), {
+            "repoticker-linux", "repoticker-windows"
+        })
+        self.assertIn("linux/repoticker_0.1.0_amd64.deb", immutable)
+        self.assertIn("linux/repoticker-archive-keyring.gpg", immutable)
+        self.assertEqual(set(mutable), {"linux/Packages", "linux/Packages.gz",
+                                        "linux/InRelease"})
+        self.assertEqual(sum(k.endswith(".deb") for k in immutable), 1)
+        self.assertFalse(any(k.startswith(("apt/", "releases/")) for k in immutable))
+        self.assertEqual(len(platforms["repoticker-linux"]), 4)
+        self.assertEqual(len(platforms["repoticker-windows"]), 2)
+        for key in [*immutable, *mutable]:
+            self.assertNotIn("OtherProduct", key)
+            self.assertNotIn("..", key)
+
+
+    def test_given_flat_distribution_when_signed_apt_indexes_match_actual_sizes_and_digest_with_lf_and_crlf_then_contract_is_enforced(self):
+        inrelease = self.apt / "InRelease"
+        index = self.apt
+        release.verify_signed_apt_indexes(inrelease, index)
+        initial = inrelease.read_bytes()
+        inrelease.write_bytes(initial.replace(b"\n", b"\r\n"))
+        release.verify_signed_apt_indexes(inrelease, index)
+        self.planned()
+
+    def test_given_flat_distribution_when_old_signed_apt_index_must_reject_new_indexes_then_contract_is_enforced(self):
+        index = self.apt
+        packages = index / "Packages"
+        new_content = packages.read_bytes() + b"Version: unexpected\n"
+        packages.write_bytes(new_content)
+        with self.assertRaisesRegex(ValueError, "Signed APT index"):
+            self.planned()
+
+    def test_given_flat_distribution_when_signed_apt_index_rejects_wrong_size_digest_missing_and_duplicate_then_contract_is_enforced(self):
+        signed = self.apt / "InRelease"
+        original = signed.read_text(encoding="utf8")
+        lines = original.splitlines()
+        checksum_line = next(
+            row for row in lines if row.endswith("Packages.gz")
+        )
+        digest, size, path = checksum_line.split()
+        scenarios = {
+            "wrong-size": original.replace(checksum_line,
+                f" {digest} {int(size) + 1} {path}"),
+            "wrong-digest": original.replace(checksum_line,
+                f" {'f' if digest[0] != 'f' else 'e'}{digest[1:]} {size} {path}"),
+            "missing-index": original.replace(checksum_line + "\n", ""),
+            "duplicate-index": original.replace(checksum_line + "\n",
+                checksum_line + "\n" + checksum_line + "\n"),
+            "missing-sha256": original.replace("SHA256:", "SHA999:"),
+            "malformed-hash": original.replace(checksum_line,
+                f" corrupt {size} {path}"),
+            "invalid-envelope": original.replace(
+                "-----BEGIN PGP SIGNED MESSAGE-----", "invalid signed header"),
+        }
+        for name, mutated in scenarios.items():
+            with self.subTest(name=name):
+                signed.write_text(mutated, encoding="utf8")
+                with self.assertRaisesRegex(ValueError, "Signed APT index"):
+                    self.planned()
+        signed.write_text(original, encoding="utf8")
+        self.planned()
+
+
+    def test_given_flat_distribution_when_packages_control_exactly_binds_signed_index_to_approved_deb_then_contract_is_enforced(self):
+        """Realistic package fields and folded Description pass."""
+        index = self.apt
+        pool = self.apt / "repoticker_0.1.0_amd64.deb"
+        control = (index / "Packages").read_bytes()
+        self.assertIn(b" fixture continuation line\n", control)
+        release.verify_apt_package_catalog(index / "Packages",
+                                           index / "Packages.gz", pool, VERSION)
+        self.planned()
+
+    def test_given_flat_distribution_when_signed_but_wrong_package_control_fields_fail_before_publication_then_contract_is_enforced(self):
+        index = self.apt
+        original = (index / "Packages").read_text(encoding="utf8")
+        pool = self.apt / "repoticker_0.1.0_amd64.deb"
+        expected_name = "./" + pool.name
+        variants = {
+            "foreign package": original.replace("Package: repoticker",
+                                                  "Package: other-product"),
+            "wrong version": original.replace(f"Version: {VERSION}",
+                                               "Version: 0.1.1"),
+            "wrong architecture": original.replace("Architecture: amd64",
+                                                    "Architecture: arm64"),
+            "wrong filename": original.replace(f"Filename: {expected_name}",
+                                                "Filename: ./evil.deb"),
+            "traversal filename": original.replace(f"Filename: {expected_name}",
+                                                   "Filename: ../../private.deb"),
+            "wrong sha256": original.replace(f"SHA256: {sha(pool.read_bytes())}",
+                                              "SHA256: " + "f" * 64),
+            "wrong size": original.replace(f"Size: {pool.stat().st_size}",
+                                            f"Size: {pool.stat().st_size+1}"),
+            "duplicate critical SHA256": original.replace(
+                "SHA256:", "SHA256: " + sha(pool.read_bytes()) + "\nSHA256:", 1),
+            "missing filename": original.replace(
+                f"Filename: {expected_name}\n", ""),
+            "extra second package stanza": original + (
+                "Package: repoticker\nVersion: 0.1.1\n"
+                "Architecture: amd64\nFilename: " + expected_name + "\n\n"
+            ),
+            "folder substring outside filename": original.replace(
+                f"Filename: {expected_name}",
+                f"X-Directory: {expected_name}\nFilename: external/replaced.deb"),
+            "continued filename": original.replace(
+                f"Filename: {expected_name}",
+                f"Filename: {expected_name}\n unexpected-extension"),
+        }
+        for label, value in variants.items():
+            with self.subTest(case=label):
+                self.assertNotEqual(value, original, label + ": negative fixture must change the catalog")
+                self.rewrite_package_indexes(value.encode("utf8"))
+                with self.assertRaisesRegex(ValueError, "APT package catalog"):
+                    self.planned()
+
+    def test_given_flat_distribution_when_separately_signed_gzip_must_expand_to_identical_packages_then_contract_is_enforced(self):
+        index = self.apt
+        plain = (index / "Packages").read_bytes()
+        candidates = {
+            "different signed gzip contents": gzip.compress(
+                plain.replace(b"Package: repoticker", b"Package: foreign!"),
+                mtime=0),
+            "truncated signed gzip": gzip.compress(plain, mtime=0)[:-6],
+            "invalid signed gzip": b"not-gzip",
+            "two concatenated signed gzip members": (
+                gzip.compress(plain, mtime=0) + gzip.compress(plain, mtime=0)
+            ),
+        }
+        for label, payload in candidates.items():
+            with self.subTest(case=label):
+                self.rewrite_package_indexes(plain, payload)
+                with self.assertRaisesRegex(ValueError, "APT package catalog"):
+                    self.planned()
+
+    def test_given_flat_distribution_when_corrupt_manifest_and_wrong_git_provenance_rejected_then_contract_is_enforced(self):
+        original = self.bundle / "windows" / "part.json"
+        manifest = json.loads(original.read_text())
+        manifest["platform"] = "linux"
+        original.write_text(json.dumps(manifest))
+        with self.assertRaisesRegex(ValueError, "platform/version"):
+            self.planned()
+
+    def test_given_flat_distribution_when_modified_bundle_bytes_rejected_then_contract_is_enforced(self):
+        target = self.bundle / "linux/repoticker_0.1.0_amd64.deb"
+        target.write_bytes(b"changed")
+        with self.assertRaisesRegex(ValueError, "sidecar mismatch"):
+            self.planned()
+
+    def test_given_flat_distribution_when_unexpected_release_sidefile_and_symlink_rejected_then_contract_is_enforced(self):
+        extra = self.bundle / "windows" / "unexpected.txt"
+        extra.write_text("untrusted")
+        with self.assertRaisesRegex(ValueError, "Unexpected file"):
+            self.planned()
+        extra.unlink()
+        package = self.bundle / "windows/RepoTicker-Setup-0.1.0-win-x64.exe"
+        package.unlink()
+        package.symlink_to(self.bundle / "linux/RepoTicker-0.1.0-linux-x64.AppImage")
+        with self.assertRaisesRegex(ValueError, "unsafe native release artifact"):
+            self.planned()
+
+    def test_given_flat_distribution_when_staged_apt_deb_must_match_validated_linux_deb_then_contract_is_enforced(self):
+        pool = self.apt / "repoticker_0.1.0_amd64.deb"
+        pool.write_bytes(b"tampered pool")
+        with self.assertRaisesRegex(ValueError, "staged DEB"):
+            self.planned()
+
+    def test_given_flat_distribution_when_public_readback_verifies_full_body_and_size_then_contract_is_enforced(self):
+        file = self.bundle / "linux/repoticker_0.1.0_amd64.deb"
+        class Reply:
+            status = 200
+            def __init__(self, data): self.data = io.BytesIO(data)
+            def __enter__(self): return self
+            def __exit__(self, *args): pass
+            def read(self, n): return self.data.read(n)
+        good = release.public_readback(file, "linux/" + file.name,
+                                       lambda url, timeout: Reply(file.read_bytes()))
+        self.assertEqual(good["readback_sha256"], good["sha256"])
+        self.assertEqual(good["readback_size"], file.stat().st_size)
+        with self.assertRaisesRegex(ValueError, "does not match"):
+            release.public_readback(
+                file, "linux/" + file.name,
+                lambda url, timeout: Reply(b"corrupted"))
+
+    def test_given_flat_distribution_when_latest_manifest_points_only_to_immutable_approved_artifacts_then_contract_is_enforced(self):
+        immutable, mutable, _ = self.planned()
+        manifest = release.latest_manifest(immutable, VERSION, COMMIT)
+        self.assertEqual(manifest["version"], VERSION)
+        self.assertEqual(manifest["tag"], "v" + VERSION)
+        self.assertEqual(manifest["commit"], COMMIT)
+        values = [
+            manifest["files"]["linux"]["deb"],
+            manifest["files"]["linux"]["appimage"],
+            manifest["files"]["windows"]["installer"],
+        ]
+        self.assertEqual(len(values), 3)
+        for item in values:
+            self.assertIn(item["url"].removeprefix(release.BASE), immutable)
+            self.assertEqual(item["sha256"],
+                release.digest(immutable[item["url"].removeprefix(release.BASE)]))
+            self.assertGreater(item["size"], 0)
+            self.assertNotIn("/releases/", item["url"])
+        self.assertEqual(release.BUCKET, "app-dist")
+        self.assertNotIn("latest.json", mutable)
+
+    def offline_publication(self, fail_latest=False, fail_at=None,
+                            inject_latest=False, compete_pointer=False):
+        """Emulate cloud clients while running real upload/publish ordering."""
+        client = UploadSafetyTests.FakeS3()
+        boto = ModuleType("boto3")
+        boto.client = lambda *args, **kwargs: client
+        config = ModuleType("botocore.config")
+        config.Config = lambda **kwargs: None
+        botocore = ModuleType("botocore")
+        botocore.__path__ = []
+        botocore.config = config
+        seen = []
+        if compete_pointer:
+            def publish_competing_pointer(fake, key):
+                if key == release.PREFIX + "linux/Packages":
+                    fake.before_put = None
+                    fake.objects[release.PREFIX + "latest.json"] = (
+                        b'{"competing":"release"}', {"sha256": "f" * 64})
+            client.before_put = publish_competing_pointer
+
+        def public(file, key):
+            seen.append(key)
+            if key == "latest.json" and fail_latest:
+                raise ValueError("intentional last-pointer readback failure")
+            if key == fail_at:
+                raise ValueError("intentional staged readback failure")
+            if key == "linux/InRelease" and inject_latest:
+                latest = Path(self.temp.name) / "repoticker-latest-publish.json"
+                latest.write_text('{"existing":"other writer"}\n', encoding="utf8")
+            size = file.stat().st_size
+            checksum = release.digest(file)
+            return {
+                "url": release.BASE + key, "sha256": checksum,
+                "readback_sha256": checksum, "size": size,
+                "readback_size": size, "readback_status": 200,
+            }
+
+        destination = Path(self.temp.name) / "verified-publication-receipt.json"
+        with patch.dict(sys.modules, {
+            "boto3": boto, "botocore": botocore, "botocore.config": config
+        }), patch.object(release.subprocess, "run"), patch.object(
+                release, "public_readback", side_effect=public):
+            expected_error = ("last-pointer" if fail_latest else
+                              "staged readback" if fail_at else
+                              "existing latest manifest" if inject_latest else
+                              "Concurrent latest pointer" if compete_pointer else None)
+            if expected_error:
+                with self.assertRaisesRegex(ValueError, expected_error):
+                    release.publish(self.bundle, self.apt, VERSION, COMMIT, 51,
+                                    destination, "a" * 32, "test-key", "test-secret")
+            else:
+                release.publish(self.bundle, self.apt, VERSION, COMMIT, 51,
+                                destination, "a" * 32, "test-key", "test-secret")
+        return client, seen, destination
+
+    def test_given_flat_distribution_when_flat_publication_preserves_single_binary_and_publishes_latest_last_then_contract_is_enforced(self):
+        client, seen, destination = self.offline_publication()
+        self.assertTrue(destination.exists())
+        self.assertEqual(seen[-1], "latest.json")
+        self.assertEqual(seen[-2], "linux/InRelease")
+        self.assertEqual(sum(k.endswith(".deb") for k in client.objects), 1)
+        self.assertTrue(all(k.startswith(release.PREFIX) for k in client.objects))
+        self.assertEqual(len(client.objects), 11)
+        self.assertEqual([key for _, key, _ in client.writes][-1],
+                         release.PREFIX + "latest.json")
+        data = json.loads(destination.read_text(encoding="utf8"))
+        self.assertEqual(data["latest"]["url"], release.BASE + "latest.json")
+        self.assertEqual(len(data["artifacts"]), 2)
+        self.assertEqual(
+            json.loads(client.objects[release.PREFIX + "latest.json"][0])["version"],
+            VERSION
+        )
+
+    def test_given_flat_distribution_when_failed_final_latest_readback_never_emits_deletion_receipt_then_contract_is_enforced(self):
+        client, seen, destination = self.offline_publication(fail_latest=True)
+        self.assertEqual(seen[-1], "latest.json")
+        self.assertIn(release.PREFIX + "linux/InRelease", client.objects)
+        self.assertFalse(destination.exists())
+
+    def test_competing_latest_publisher_after_apt_start_does_not_get_overwritten(self):
+        client, _, receipt = self.offline_publication(compete_pointer=True)
+        self.assertFalse(receipt.exists())
+        pointer = release.PREFIX + "latest.json"
+        self.assertEqual(client.objects[pointer][0], b'{"competing":"release"}')
+        self.assertFalse(any(key == pointer for _, key, _ in client.writes))
+
+    def test_failed_public_readback_has_no_receipt_even_when_private_latest_committed(self):
+        client, _, receipt = self.offline_publication(fail_latest=True)
+        self.assertFalse(receipt.exists())
+        self.assertIn(release.PREFIX + "latest.json", client.objects)
+        self.assertTrue(client.objects[release.PREFIX + "latest.json"][0])
+        self.assertNotIn("verified_publication", str(client.objects))
+
+    def test_given_flat_distribution_when_receipt_cannot_be_emitted_with_missing_credentials_then_contract_is_enforced(self):
+        with self.assertRaisesRegex(ValueError, "credentials"):
+            release.publish(self.bundle, self.apt, VERSION, COMMIT, 10,
+                            Path(self.temp.name) / "receipt.json",
+                            "invalid", "", "")
+
+    def test_given_prior_publication_receipt_when_republishing_then_no_client_or_remote_write(self):
+        destination = Path(self.temp.name) / "verified-publication-receipt.json"
+        original = b'{"verified": "previous-run"}\n'
+        destination.write_bytes(original)
+        poison = ModuleType("boto3")
+
+        def forbidden_client(*args, **kwargs):
+            self.fail("existing receipt must abort before creating an S3 client")
+        poison.client = forbidden_client
+        with patch.dict(sys.modules, {"boto3": poison}):
+            with self.assertRaisesRegex(
+                ValueError, "Refusing to overwrite any prior publication receipt"
+            ):
+                release.publish(self.bundle, self.apt, VERSION, COMMIT, 51,
+                                destination, "a" * 32, "test-key", "test-secret")
+        self.assertEqual(destination.read_bytes(), original)
+
+    def test_given_invalid_run_id_when_publishing_then_validation_precedes_remote_access(self):
+        destination = Path(self.temp.name) / "unwritten-receipt.json"
+        poison = ModuleType("boto3")
+
+        def forbidden_client(*args, **kwargs):
+            self.fail("invalid run ID must abort before creating an S3 client")
+        poison.client = forbidden_client
+        with patch.dict(sys.modules, {"boto3": poison}):
+            for invalid in (0, -1, "0", "-1", "not-a-run-id"):
+                with self.subTest(run_id=invalid):
+                    with self.assertRaisesRegex(ValueError, "Invalid GitHub release run"):
+                        release.publish(self.bundle, self.apt, VERSION, COMMIT, invalid,
+                                        destination, "a" * 32, "test-key", "test-secret")
+        self.assertFalse(destination.exists())
+
+
+
+
+    def test_existing_latest_manifest_refuses_before_source_map_or_network(self):
+        destination = Path(self.temp.name) / "verified-publication-receipt.json"
+        latest = destination.parent / "repoticker-latest-publish.json"
+        original = b'{"existing":true}\n'
+        latest.write_bytes(original)
+        with patch.object(release, "source_map",
+                          side_effect=AssertionError("must not inspect artifacts")):
+            with self.assertRaisesRegex(ValueError, "existing latest manifest"):
+                release.publish(self.bundle, self.apt, VERSION, COMMIT, 51,
+                                destination, "a" * 32, "fake-key", "fake-secret")
+        self.assertEqual(latest.read_bytes(), original)
+        self.assertFalse(destination.exists())
+
+    def test_dangling_latest_symlink_is_rejected_without_creating_target(self):
+        destination = Path(self.temp.name) / "receipt.json"
+        latest = destination.parent / "repoticker-latest-publish.json"
+        missing = destination.parent / "never-create-latest.json"
+        latest.symlink_to(missing)
+        self.assertFalse(latest.exists())
+        self.assertTrue(latest.is_symlink())
+        with patch.object(release, "source_map",
+                          side_effect=AssertionError("must not inspect artifacts")):
+            with self.assertRaisesRegex(ValueError, "existing latest manifest"):
+                release.publish(self.bundle, self.apt, VERSION, COMMIT, 51,
+                                destination, "a" * 32, "fake-key", "fake-secret")
+        self.assertFalse(missing.exists())
+
+    def test_dangling_receipt_symlink_is_rejected_before_any_artifact_read(self):
+        destination = Path(self.temp.name) / "receipt.json"
+        missing = destination.parent / "do-not-write-here.json"
+        destination.symlink_to(missing)
+        self.assertFalse(destination.exists())
+        self.assertTrue(destination.is_symlink())
+        with patch.object(release, "source_map",
+                          side_effect=AssertionError("must not inspect artifacts")):
+            with self.assertRaisesRegex(ValueError, "prior publication receipt"):
+                release.publish(self.bundle, self.apt, VERSION, COMMIT, 51,
+                                destination, "a" * 32, "fake-key", "fake-secret")
+        self.assertFalse(missing.exists())
+
+    def test_failed_immutable_public_readback_stops_before_mutable_indexes(self):
+        client, seen, receipt = self.offline_publication(
+            fail_at="linux/RepoTicker-0.1.0-linux-x64.AppImage"
+        )
+        self.assertFalse(receipt.exists())
+        self.assertNotIn("latest.json", seen)
+        self.assertFalse(any(key in client.objects for key in
+            [release.PREFIX + "linux/Packages", release.PREFIX + "linux/InRelease",
+             release.PREFIX + "latest.json"]))
+
+    def test_failed_mutable_public_readback_cannot_publish_signed_commit_marker(self):
+        client, seen, receipt = self.offline_publication(fail_at="linux/Packages")
+        self.assertFalse(receipt.exists())
+        self.assertIn("linux/Packages", seen)
+        self.assertNotIn("linux/InRelease", seen)
+        self.assertNotIn("latest.json", seen)
+        self.assertNotIn(release.PREFIX + "linux/InRelease", client.objects)
+
+    def test_failed_inrelease_readback_never_writes_latest_pointer(self):
+        client, seen, receipt = self.offline_publication(fail_at="linux/InRelease")
+        self.assertFalse(receipt.exists())
+        self.assertEqual(seen[-1], "linux/InRelease")
+        self.assertNotIn(release.PREFIX + "latest.json", client.objects)
+
+    def test_late_local_latest_manifest_collision_is_still_rejected(self):
+        client, seen, receipt = self.offline_publication(inject_latest=True)
+        self.assertFalse(receipt.exists())
+        self.assertEqual(seen[-1], "linux/InRelease")
+        self.assertNotIn(release.PREFIX + "latest.json", client.objects)
+        latest = Path(self.temp.name) / "repoticker-latest-publish.json"
+        self.assertEqual(latest.read_text(), '{"existing":"other writer"}\n')
+
+    def test_invalid_source_files_fail_before_opening_a_remote_s3_client(self):
+        destination = Path(self.temp.name) / "verified-publication-receipt.json"
+        target = self.bundle / "linux/repoticker_0.1.0_amd64.deb"
+        target.write_bytes(b"unverified")
+        with self.assertRaisesRegex(ValueError, "sidecar mismatch"):
+            release.publish(self.bundle, self.apt, VERSION, COMMIT, 51,
+                            destination, "a" * 32, "fake-key", "fake-secret")
+        self.assertFalse(destination.exists())
+
+    def test_invalid_source_version_and_commit_are_rejected_before_signing(self):
+        for version, commit in (
+            ("01.2.3", COMMIT), ("v1.2.3", COMMIT), ("1.2", COMMIT),
+            (VERSION, ""), (VERSION, COMMIT.upper()), (VERSION, COMMIT + "x")
+        ):
+            with self.subTest(version=version, commit=commit):
+                with patch.object(release.subprocess, "run",
+                                  side_effect=AssertionError("never sign")):
+                    with self.assertRaisesRegex(ValueError, "Invalid signed-release"):
+                        release.source_map(self.bundle, self.apt, version, commit)
+
+    def test_zero_and_oversized_release_file_are_rejected_without_reading(self):
+        target = Path(self.temp.name) / "test-release-object"
+        target.write_bytes(b"")
+        with self.assertRaisesRegex(ValueError, "Invalid release file size"):
+            release.safe_file(target)
+        with target.open("wb") as output:
+            output.truncate(350 * 1024 * 1024 + 1)
+        with self.assertRaisesRegex(ValueError, "Invalid release file size"):
+            release.safe_file(target)
+
+    def test_release_safe_file_rejects_dangling_symlink_without_following_it(self):
+        target = Path(self.temp.name) / "missing"
+        link = Path(self.temp.name) / "release-link"
+        link.symlink_to(target)
+        with self.assertRaisesRegex(ValueError, "unsafe release file"):
+            release.safe_file(link)
+        self.assertFalse(target.exists())
+
+    def test_manifest_duplicate_file_entry_cannot_become_an_approved_artifact(self):
+        name = self.bundle / "windows" / "part.json"
+        manifest = json.loads(name.read_text(encoding="utf8"))
+        manifest["files"].append(dict(manifest["files"][0]))
+        name.write_text(json.dumps(manifest), encoding="utf8")
+        with self.assertRaisesRegex(ValueError, "Artifact manifest mismatch"):
+            self.planned()
+
+    def test_platform_manifest_symlink_is_not_a_verified_manifest(self):
+        manifest = self.bundle / "windows" / "part.json"
+        real = manifest.with_name("original-part.json")
+        manifest.rename(real)
+        manifest.symlink_to(real)
+        with self.assertRaisesRegex(ValueError, "Missing verified platform artifact"):
+            self.planned()
+
+    def test_signed_apt_keyring_symlink_is_refused_before_running_gpgv(self):
+        keyring = self.apt / "repoticker-archive-keyring.gpg"
+        target = self.apt / "test-gpg-key"
+        keyring.rename(target)
+        keyring.symlink_to(target)
+        with patch.object(release.subprocess, "run",
+                          side_effect=AssertionError("must not run gpgv")):
+            with self.assertRaisesRegex(ValueError, "unsafe release file"):
+                release.source_map(self.bundle, self.apt, VERSION, COMMIT)
+
+    def test_signed_apt_directory_symlink_is_not_a_verified_source(self):
+        real = Path(self.temp.name) / "apt-real"
+        self.apt.rename(real)
+        self.apt.symlink_to(real)
+        with self.assertRaisesRegex(ValueError, "Incomplete signed flat APT"):
+            self.planned()
+
+    def test_signed_non_utf8_packages_catalog_is_rejected_as_corrupt(self):
+        self.rewrite_package_indexes(b"\xff\xfePackage: repoticker\n\n")
+        with self.assertRaisesRegex(ValueError, "APT package catalog"):
+            self.planned()
+
+
+class IdentifiedPublicReadbackTests(unittest.TestCase):
+    """The real publisher must use identified GET, never bypass edge checks."""
+
+    class Reply:
+        def __init__(self, content, status=200):
+            self.status = status
+            self.body = io.BytesIO(content)
+            self.read_sizes = []
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            self.body.close()
+
+        def read(self, size):
+            self.read_sizes.append(size)
+            return self.body.read(size)
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.file = Path(self.temp.name) / "approved-package"
+        self.content = b"RepoTicker release provenance sample"
+        self.file.write_bytes(self.content)
+
+    def assert_request(self, request, timeout, relative):
+        self.assertIsInstance(request, Request)
+        self.assertEqual(request.get_method(), "GET")
+        self.assertIsNone(request.data)
+        self.assertEqual(request.full_url, release.BASE + relative)
+        self.assertEqual(timeout, 45)
+        self.assertEqual(dict(request.header_items()), {
+            "User-agent": "RepoTicker-ReleaseVerifier/1.0 "
+                          "(+https://github.com/morozhenko-apps/repoticker)"
+        })
+
+    def test_given_release_assets_when_public_readback_then_request_identifies_repoticker(self):
+        for relative in (
+            "linux/RepoTicker-0.1.0-linux-x64.AppImage",
+            "windows/RepoTicker-Setup-0.1.0-win-x64.exe",
+            "linux/InRelease",
+            "latest.json",
+        ):
+            with self.subTest(relative=relative):
+                calls = []
+                def opener(request, timeout):
+                    calls.append(request)
+                    self.assert_request(request, timeout, relative)
+                    return self.Reply(self.content)
+                result = release.public_readback(self.file, relative, opener)
+                self.assertEqual(len(calls), 1)
+                self.assertEqual(result["readback_status"], 200)
+                self.assertEqual(result["readback_sha256"], sha(self.content))
+                self.assertEqual(result["readback_size"], len(self.content))
+
+    def test_default_readback_rejects_any_redirect_before_accepting_matching_bytes(self):
+        """A mirror with the exact expected hash is not public CDN provenance."""
+        handlers = []
+        calls = []
+
+        class RedirectingTransport:
+            def __init__(self, handler):
+                self.handler = handler
+
+            def open(self, request, timeout):
+                self_assert = testcase.assert_request
+                self_assert(request, timeout, "latest.json")
+                calls.append(request.full_url)
+                # urllib would ordinarily follow this redirect and accept
+                # identical bytes as proof that our CDN served the package.
+                self.handler.redirect_request(
+                    request, None, 302, "Found", {},
+                    "https://unrelated.example/matching-package",
+                )
+                return testcase.Reply(testcase.content)
+
+        testcase = self
+
+        def fake_build_opener(handler):
+            self.assertIsInstance(handler, release._RejectPublicRedirect)
+            handlers.append(handler)
+            return RedirectingTransport(handler)
+
+        with patch.object(release.urllib.request, "build_opener",
+                          side_effect=fake_build_opener):
+            with self.assertRaisesRegex(ValueError, "redirected"):
+                release.public_readback(self.file, "latest.json")
+
+        self.assertEqual(len(handlers), 1)
+        self.assertEqual(calls, [release.BASE + "latest.json"])
+
+    def test_default_readback_installs_no_redirect_policy_for_successful_exact_url(self):
+        handlers = []
+        calls = []
+        testcase = self
+
+        class ExactPublicTransport:
+            def open(self, request, timeout):
+                testcase.assert_request(request, timeout, "latest.json")
+                calls.append(request.full_url)
+                return testcase.Reply(testcase.content)
+
+        def fake_build_opener(handler):
+            self.assertIsInstance(handler, release._RejectPublicRedirect)
+            handlers.append(handler)
+            return ExactPublicTransport()
+
+        with patch.object(release.urllib.request, "build_opener",
+                          side_effect=fake_build_opener):
+            verified = release.public_readback(self.file, "latest.json")
+
+        self.assertEqual(len(handlers), 1)
+        self.assertEqual(calls, [release.BASE + "latest.json"])
+        self.assertEqual(verified["readback_sha256"], sha(self.content))
+        self.assertEqual(verified["readback_size"], len(self.content))
+
+    def test_given_multichunk_response_when_readback_then_complete_sha_and_size_are_verified(self):
+        self.content = b"a" * (1024 * 1024) + b"z"
+        self.file.write_bytes(self.content)
+        reply = self.Reply(self.content)
+        result = release.public_readback(self.file, "linux/large", lambda req, timeout: reply)
+        self.assertEqual(result["readback_sha256"], sha(self.content))
+        self.assertEqual(result["readback_size"], len(self.content))
+        self.assertEqual(reply.read_sizes, [1024 * 1024, 1024 * 1024, 1024 * 1024])
+
+    def test_given_non200_or_edge_rejection_when_readback_then_no_success_receipt(self):
+        for status in (201, 206, 403):
+            with self.subTest(status=status):
+                reply = self.Reply(self.content, status)
+                with self.assertRaisesRegex(ValueError, "non-200"):
+                    release.public_readback(self.file, "latest.json", lambda req, timeout: reply)
+                self.assertEqual(reply.read_sizes, [])
+        error = HTTPError(release.BASE + "latest.json", 403, "Forbidden", {}, None)
+        def blocked(request, timeout):
+            self.assert_request(request, timeout, "latest.json")
+            raise error
+        with self.assertRaises(HTTPError) as raised:
+            release.public_readback(self.file, "latest.json", blocked)
+        self.assertIs(raised.exception, error)
+
+    def test_given_invalid_public_bytes_when_readback_then_checksum_and_size_fail_closed(self):
+        for label, actual in (
+            ("empty", b""),
+            ("truncated", self.content[:-1]),
+            ("extra", self.content + b"x"),
+            ("same-size mismatch", b"x" * len(self.content)),
+            ("edge challenge page", b"<html>Complete a challenge</html>"),
+        ):
+            with self.subTest(label=label), self.assertRaisesRegex(
+                ValueError, "does not match source"
+            ):
+                release.public_readback(self.file, "latest.json",
+                                        lambda req, timeout: self.Reply(actual))
+
+
+
+
+    def test_every_non_success_public_status_is_rejected_before_read(self):
+        for status in (301, 302, 304, 400, 401, 404, 409, 429, 500, 503):
+            with self.subTest(status=status):
+                reply = self.Reply(self.content, status=status)
+                with self.assertRaisesRegex(ValueError, "non-200"):
+                    release.public_readback(self.file, "latest.json",
+                                            lambda request, timeout: reply)
+                self.assertEqual(reply.read_sizes, [])
+
+    def test_missing_local_source_aborts_without_issuing_a_public_request(self):
+        self.file.unlink()
+        def forbidden(request, timeout):
+            self.fail("readback must not start without an existing source")
+        with self.assertRaises(FileNotFoundError):
+            release.public_readback(self.file, "latest.json", forbidden)
+
+    def test_network_error_is_propagated_without_a_verified_receipt(self):
+        from urllib.error import URLError
+        def unavailable(request, timeout):
+            self.assert_request(request, timeout, "latest.json")
+            raise URLError("synthetic DNS outage")
+        with self.assertRaises(URLError):
+            release.public_readback(self.file, "latest.json", unavailable)
+
+    def test_same_size_multichunk_corruption_fails_full_digest_check(self):
+        body = b"a" * (1024 * 1024) + b"z"
+        self.file.write_bytes(body)
+        mutated = b"a" * (1024 * 1024) + b"x"
+        with self.assertRaisesRegex(ValueError, "does not match source"):
+            release.public_readback(self.file, "latest.json",
+                                    lambda request, timeout: self.Reply(mutated))
+
+class UploadSafetyTests(unittest.TestCase):
+    """Exercise the actual R2 upload logic with offline S3 byte-contract fakes."""
+
+    class NotFound(Exception):
+        response = {"ResponseMetadata": {"HTTPStatusCode":404}}
+
+    class Forbidden(Exception):
+        response = {"ResponseMetadata": {"HTTPStatusCode":403}}
+
+    class Body:
+        def __init__(self, value):
+            self.value = value
+        def iter_chunks(self, chunk_size):
+            for i in range(0, len(self.value), chunk_size):
+                yield self.value[i:i + chunk_size]
+
+    class PreconditionFailed(Exception):
+        response = {"ResponseMetadata": {"HTTPStatusCode": 412}}
+
+    class FakeS3:
+        def __init__(self):
+            self.objects = {}
+            self.writes = []
+            self.deny_head = False
+            self.before_put = None
+
+        @staticmethod
+        def tag(data):
+            return '"' + hashlib.md5(data).hexdigest() + '"'
+
+        def head_object(self, Bucket, Key):
+            if self.deny_head:
+                raise UploadSafetyTests.Forbidden()
+            if Key not in self.objects:
+                raise UploadSafetyTests.NotFound()
+            data, metadata = self.objects[Key]
+            return {"Metadata": metadata, "ETag": self.tag(data)}
+
+        def put_object(self, *, Bucket, Key, Body, ContentLength, ContentType,
+                       Metadata, CacheControl, IfNoneMatch=None, IfMatch=None):
+            if self.before_put is not None:
+                self.before_put(self, Key)
+            current = self.objects.get(Key)
+            if IfNoneMatch == "*" and current is not None:
+                raise UploadSafetyTests.PreconditionFailed()
+            if IfMatch is not None and (
+                current is None or self.tag(current[0]) != IfMatch
+            ):
+                raise UploadSafetyTests.PreconditionFailed()
+            if (IfNoneMatch == "*") == (IfMatch is not None):
+                raise AssertionError("Every R2 write must use exactly one condition")
+            data = Body.read()
+            if len(data) != ContentLength:
+                raise AssertionError("Incomplete streamed PutObject body")
+            options = {"ContentType": ContentType, "CacheControl": CacheControl,
+                       "ContentLength": ContentLength, "Metadata": Metadata}
+            if IfNoneMatch is not None:
+                options["IfNoneMatch"] = IfNoneMatch
+            if IfMatch is not None:
+                options["IfMatch"] = IfMatch
+            self.writes.append((Bucket, Key, options))
+            self.objects[Key] = (data, Metadata)
+
+        def get_object(self, Bucket, Key):
+            return {"Body": UploadSafetyTests.Body(self.objects[Key][0])}
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.file = Path(self.temp.name) / "RepoTicker-0.1.0-linux-x64.AppImage"
+        self.file.write_bytes(b"isolated validated binary")
+        self.client = self.FakeS3()
+        self.key = "linux/" + self.file.name
+        self.object_key = release.PREFIX + self.key
+
+    def test_given_flat_distribution_when_missing_file_is_uploaded_to_isolated_bucket_and_sha_verified_then_contract_is_enforced(self):
+        release.upload(self.client, self.key, self.file, True)
+        self.assertEqual(len(self.client.writes),1)
+        bucket, key, options = self.client.writes[0]
+        self.assertEqual((bucket,key),("app-dist",self.object_key))
+        self.assertEqual(options["Metadata"]["sha256"],release.digest(self.file))
+        self.assertIn("immutable",options["CacheControl"])
+        self.assertEqual(self.client.objects[self.object_key][0],self.file.read_bytes())
+
+    def test_given_flat_distribution_when_immutable_identical_blob_is_reused_without_upload_then_contract_is_enforced(self):
+        self.client.objects[self.object_key] = (
+            self.file.read_bytes(),{"sha256":release.digest(self.file)}
+        )
+        release.upload(self.client,self.key,self.file,True)
+        self.assertEqual(self.client.writes,[])
+
+    def test_given_flat_distribution_when_immutable_conflict_rejects_without_overwriting_existing_bytes_then_contract_is_enforced(self):
+        self.client.objects[self.object_key] = (b"other data",{"sha256":"f"*64})
+        with self.assertRaisesRegex(ValueError,"Refusing to overwrite immutable"):
+            release.upload(self.client,self.key,self.file,True)
+        self.assertEqual(self.client.writes,[])
+        self.assertEqual(self.client.objects[self.object_key][0],b"other data")
+
+    def test_given_flat_distribution_when_mutable_index_updates_with_no_store_cache_control_then_contract_is_enforced(self):
+        self.client.objects[self.object_key] = (b"old index",{"sha256":"f"*64})
+        release.upload(self.client,self.key,self.file,False)
+        self.assertEqual(self.client.writes[0][2]["CacheControl"],"no-store")
+        self.assertEqual(self.client.objects[self.object_key][0],self.file.read_bytes())
+
+    def test_given_flat_distribution_when_private_readback_mismatch_fails_before_public_proof_then_contract_is_enforced(self):
+        self.client.objects[self.object_key] = (b"corrupted",{"sha256":release.digest(self.file)})
+        with self.assertRaisesRegex(ValueError,"Private R2 readback failed"):
+            release.upload(self.client,self.key,self.file,True)
+        self.assertEqual(self.client.writes,[])
+
+    def test_given_flat_distribution_when_forbidden_head_does_not_turn_into_an_unverified_upload_then_contract_is_enforced(self):
+        self.client.deny_head = True
+        with self.assertRaises(self.Forbidden):
+            release.upload(self.client,self.key,self.file,True)
+        self.assertEqual(self.client.writes,[])
+
+
+
+
+    def test_500_head_failure_never_becomes_missing_immutable_object(self):
+        class ServiceError(Exception):
+            response = {"ResponseMetadata": {"HTTPStatusCode": 500}}
+        with patch.object(self.client, "head_object", side_effect=ServiceError()):
+            with self.assertRaises(ServiceError):
+                release.upload(self.client, self.key, self.file, True)
+        self.assertEqual(self.client.writes, [])
+
+    def test_missing_head_error_metadata_is_not_equivalent_to_404(self):
+        with patch.object(self.client, "head_object", side_effect=OSError("broken")):
+            with self.assertRaises(OSError):
+                release.upload(self.client, self.key, self.file, True)
+        self.assertEqual(self.client.writes, [])
+
+    def test_existing_immutable_object_without_sha_metadata_is_rejected(self):
+        self.client.objects[self.object_key] = (self.file.read_bytes(), {})
+        with self.assertRaisesRegex(ValueError, "Refusing to overwrite immutable"):
+            release.upload(self.client, self.key, self.file, True)
+        self.assertEqual(self.client.writes, [])
+
+    def test_forged_identical_sha_metadata_does_not_hide_corrupt_stored_bytes(self):
+        self.client.objects[self.object_key] = (b"DIFFERENT CONTENT",
+            {"sha256": release.digest(self.file)})
+        with self.assertRaisesRegex(ValueError, "Private R2 readback failed"):
+            release.upload(self.client, self.key, self.file, True)
+        self.assertEqual(self.client.writes, [])
+
+    def test_private_readback_truncated_and_oversized_are_both_rejected(self):
+        approved = self.file.read_bytes()
+        for payload in (approved[:-1], approved + b"extra"):
+            with self.subTest(length=len(payload)):
+                self.client.objects[self.object_key] = (
+                    payload, {"sha256": release.digest(self.file)})
+                with self.assertRaisesRegex(ValueError, "Private R2 readback failed"):
+                    release.upload(self.client, self.key, self.file, True)
+        self.assertEqual(self.client.writes, [])
+
+    def test_private_s3_get_failure_is_not_treated_as_proof_of_uploaded_bytes(self):
+        approved = self.file.read_bytes()
+        self.client.objects[self.object_key] = (
+            approved, {"sha256": release.digest(self.file)})
+        with patch.object(self.client, "get_object",
+                          side_effect=OSError("readback unavailable")):
+            with self.assertRaisesRegex(OSError, "readback unavailable"):
+                release.upload(self.client, self.key, self.file, True)
+        self.assertEqual(self.client.writes, [])
+
+
+
+    def test_immutable_create_is_single_part_atomic_if_none_match(self):
+        release.upload(self.client, self.key, self.file, True)
+        self.assertEqual(self.client.writes[0][2]["IfNoneMatch"], "*")
+        self.assertNotIn("IfMatch", self.client.writes[0][2])
+        self.assertEqual(self.client.writes[0][2]["ContentLength"],
+                         self.file.stat().st_size)
+
+    def test_second_writer_cannot_replace_newly_created_immutable_key(self):
+        def competitor(fake, key):
+            fake.before_put = None
+            fake.objects[key] = (b"competing bytes", {"sha256": "f" * 64})
+        self.client.before_put = competitor
+        with self.assertRaises(self.PreconditionFailed):
+            release.upload(self.client, self.key, self.file, True)
+        self.assertEqual(self.client.objects[self.object_key][0],
+                         b"competing bytes")
+        self.assertEqual(self.client.writes, [])
+
+    def test_mutable_replacement_uses_original_etag_compare_and_swap(self):
+        previous = b"prior signed package index"
+        self.client.objects[self.object_key] = (previous, {"sha256": "f" * 64})
+        release.upload(self.client, self.key, self.file, False)
+        self.assertEqual(self.client.writes[0][2]["IfMatch"],
+                         self.client.tag(previous))
+        self.assertNotIn("IfNoneMatch", self.client.writes[0][2])
+
+    def test_competing_mutable_writer_causes_412_without_clobber(self):
+        self.client.objects[self.object_key] = (b"initial", {"sha256": "f" * 64})
+        def competitor(fake, key):
+            fake.before_put = None
+            fake.objects[key] = (b"writer B", {"sha256": "b" * 64})
+        self.client.before_put = competitor
+        with self.assertRaises(self.PreconditionFailed):
+            release.upload(self.client, self.key, self.file, False)
+        self.assertEqual(self.client.objects[self.object_key][0], b"writer B")
+        self.assertEqual(self.client.writes, [])
+
+    def test_existing_mutable_without_valid_etag_fails_before_write(self):
+        self.client.objects[self.object_key] = (b"older", {"sha256": "f" * 64})
+        with patch.object(self.client, "head_object",
+                          return_value={"Metadata": {"sha256": "f" * 64}}):
+            with self.assertRaisesRegex(ValueError, "ETag"):
+                release.upload(self.client, self.key, self.file, False)
+        self.assertEqual(self.client.writes, [])
+
+    def test_idempotent_mutable_readback_reuses_same_content_without_write(self):
+        approved = self.file.read_bytes()
+        self.client.objects[self.object_key] = (
+            approved, {"sha256": release.digest(self.file)}
+        )
+        release.upload(self.client, self.key, self.file, False)
+        self.assertEqual(self.client.writes, [])
+
+    def test_latest_pointer_compare_and_swap_is_pinned_to_pre_apt_snapshot(self):
+        pointer = "latest.json"
+        pointer_key = release.PREFIX + pointer
+        self.client.objects[pointer_key] = (b"old release", {"sha256": "a" * 64})
+        before = release.object_head(self.client, pointer)
+        self.client.objects[pointer_key] = (b"competing new release",
+                                            {"sha256": "b" * 64})
+        with self.assertRaisesRegex(ValueError, "Concurrent latest pointer"):
+            release.upload(self.client, pointer, self.file, False,
+                           expected_latest=before)
+        self.assertEqual(self.client.writes, [])
+        self.assertEqual(self.client.objects[pointer_key][0],
+                         b"competing new release")
+
+    def test_same_latest_pointer_recovery_does_not_rewrite_r2(self):
+        pointer = "latest.json"
+        pointer_key = release.PREFIX + pointer
+        approved = self.file.read_bytes()
+        self.client.objects[pointer_key] = (
+            approved, {"sha256": release.digest(self.file)}
+        )
+        before = release.object_head(self.client, pointer)
+        release.upload(self.client, pointer, self.file, False,
+                       expected_latest=before)
+        self.assertEqual(self.client.writes, [])
+        self.assertEqual(self.client.objects[pointer_key][0], approved)
+
+    def test_latest_pointer_creation_rejects_competing_new_object(self):
+        pointer_key = release.PREFIX + "latest.json"
+        def competitor(fake, key):
+            fake.before_put = None
+            fake.objects[key] = (b"someone else's latest", {"sha256": "0" * 64})
+        self.client.before_put = competitor
+        with self.assertRaises(self.PreconditionFailed):
+            release.upload(self.client, "latest.json", self.file, False,
+                           expected_latest=None)
+        self.assertEqual(self.client.writes, [])
+        self.assertEqual(self.client.objects[pointer_key][0],
+                         b"someone else's latest")
 
 if __name__ == "__main__":
     unittest.main()

@@ -12,21 +12,22 @@ button:focus-visible, input:focus-visible, .status-hover:focus-visible { outline
 [hidden] { display: none !important; }
 
 .card { height: 100%; width: 100%; display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden; position: relative; background: #e9ecef; border: 1px solid #c7cbd0; border-radius: 17px; padding: 9px 10px 10px; box-shadow: inset 0 1px 0 #ffffffbb; color: #242b30; }
-.drawer { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 0; border-bottom: 1px solid #d1d5d9; margin-bottom: 6px; }
-.rows { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; }
+.drawer { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 0; border-bottom: 1px solid #d1d5d9; margin-bottom: 6px; position: relative; isolation: isolate; }
+.rows { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; scrollbar-color: #a2adb8 transparent; cursor: default; }
 .repo-row { min-height: 35px; padding: 2px 7px; display: flex; gap: 9px; align-items: center; position: relative; font-size: 14px; border-bottom: 1px solid #d8dce0; }
 .repo-name { flex: 1; min-width: 0; font-weight: 400; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; }
 .repo-branch { max-width: 85px; font-size: 13px; color: GrayText; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.repo-name, .repo-branch { unicode-bidi: isolate; }
 .repo-delta { min-width: 32px; font-size: 15px; font-weight: 500; text-align: center; }
 .repo-delta.is-current { color: #159947; font-size: 21px; font-weight: 700; }
 .repo-delta.is-dirty { color: #bd8726; }
 .repo-delta.is-behind { color: #246da0; }
 .repo-more { width: 28px; height: 29px; font-size: 20px; border-radius: 5px; flex-shrink: 0; }
 .repo-more:hover { background: color-mix(in srgb, CanvasText 9%, transparent); }
-.repo-menu { position: absolute; right: 9px; top: 31px; z-index: 12; background: #f9fafb; border: 1px solid #c7cbd0; border-radius: 7px; padding: 4px; box-shadow: 0 5px 15px #0003; min-width: 114px; display: flex; flex-direction: column; }
-.repo-menu button { text-align: left; border-radius: 4px; font-size: 13px; padding: 6px 9px; }
+.drawer > .repo-menu { position: absolute; z-index: 30; background: #ffffff; color: #242b30; border: 1px solid #aeb8c1; border-radius: 7px; padding: 0; box-shadow: 0 7px 20px #0004; min-width: 155px; display: flex; flex-direction: column; pointer-events: auto; max-width: calc(100% - 12px); max-height: calc(100% - 12px); overflow-y: auto; overscroll-behavior: contain; }
+.repo-menu button { display: flex; align-items: center; text-align: start; border-radius: 4px; font-size: 13px; padding: 6px 11px; min-height: 35px; flex-shrink: 0; min-width: 0; max-width: 100%; line-height: 1.2; white-space: normal; overflow-wrap: anywhere; }
 .repo-menu button:hover { background: color-mix(in srgb, CanvasText 10%, transparent); }
-.empty { margin: 12px 15px; font-size: 13px; color: GrayText; }
+.empty { margin: 12px 15px; font-size: 13px; color: GrayText; text-align: center; }
 
 .status-strip { flex-shrink: 0; height: 25px; min-height: 25px; max-height: 25px; overflow: hidden; display: flex; align-items: center; justify-content: space-around; gap: 5px; padding: 0 5px 2px; font-size: 12px; color: #7a828b; white-space: nowrap; }
 .status-hover { cursor: help; display:inline-flex; align-items:center; justify-content:center; gap:3px; min-width:0; border-radius:4px; }
@@ -43,9 +44,27 @@ button:focus-visible, input:focus-visible, .status-hover:focus-visible { outline
 .action:hover:not(:disabled) { border-color: #81bfe5; background: #eaf5fc; }
 .action[aria-pressed="true"] { border-color: #78bde9; background: #d1e9f7; }
 .action-icon { font-size: 25px; font-weight: 400; line-height: 28px; font-variant-numeric: tabular-nums; }
+.hide-chevron { display: flex; align-items: center; justify-content: center; height: 28px; line-height: 1; }
+.hide-chevron svg { display: block; }
 .action-icon.has-commits { font-size: 18px; color: #1f8b4c; font-weight: 500; }
 
-#notice { position: absolute; left: 11px; right: 11px; bottom: 100px; z-index: 25; padding: 8px 10px; background: Canvas; border: 1px solid #cd664d; border-radius: 6px; box-shadow: 0 4px 10px #0003; font-size: 12px; font-weight: 400; max-height: 82px; overflow-y: auto; }
+/* CFVigil-style fixed vector arc; glyph and spinner share the same
+   grid cell, preserving label position and click target during loading. */
+.repo-glyph { display:grid; place-items:center; width:28px; height:28px; flex:none; line-height:1; }
+.repo-glyph .repo-symbol, .repo-glyph .repo-spinner { grid-area:1/1; }
+.repo-spinner { display:none; width:24px; height:24px; fill:none;
+  stroke:currentColor; stroke-width:2.2; stroke-linecap:round;
+  transform-box:view-box; transform-origin:50% 50%; }
+#show-repos[aria-busy="true"] .repo-symbol { visibility:hidden; }
+#show-repos[aria-busy="true"] .repo-spinner {
+  display:block; animation:repos-spinner 1.2s linear infinite;
+}
+@keyframes repos-spinner { to { transform:rotate(360deg); } }
+@media (prefers-reduced-motion:reduce) {
+  #show-repos[aria-busy="true"] .repo-spinner { animation:none; }
+}
+
+#notice { position: absolute; left: 11px; right: 11px; bottom: 100px; z-index: 25; padding: 8px 10px; background: Canvas; border: 1px solid #cd664d; border-radius: 6px; box-shadow: 0 4px 10px #0003; font-size: 12px; font-weight: 400; max-height: 82px; overflow-y: auto; white-space: normal; overflow-wrap: anywhere; }
 
 /* One translucent progress fill per repository row. Active work is indeterminate,
    finished repositories receive a full-width fill briefly. */
@@ -76,3 +95,31 @@ button:focus-visible, input:focus-visible, .status-hover:focus-visible { outline
 .action:disabled { background: #f1f2f3; color: #9ba1a9; opacity: 1; box-shadow: none; }
 #notice { background: #fcf7f3; }
 
+
+/* Two independent manual refresh controls retain their old hover targets. */
+.metric-button { position: relative; height: 23px; padding: 0 2px; background: transparent; border: 0;
+  font: inherit; color: inherit; white-space: nowrap; }
+.metric-button:hover { background: color-mix(in srgb, #7ab2d7 18%, transparent); }
+.metric-button[aria-busy="true"] { opacity: .62; pointer-events: none; }
+/* A positioned progress underline does not change label width, row
+   height or the spacing between the compact metrics on refresh. */
+.metric-button::after { content: ""; position: absolute; left: 6px; right: 6px; bottom: 1px;
+  height: 2px; border-radius: 2px; background: #4789b9; pointer-events: none;
+  opacity: 0; transform: scaleX(.2); }
+.metric-button[aria-busy="true"]::after { opacity: .85; animation: metric-sweep .9s ease-in-out infinite alternate; }
+@keyframes metric-sweep { from { transform: scaleX(.2); } to { transform: scaleX(1); } }
+@media (prefers-reduced-motion: reduce) {
+  .metric-button[aria-busy="true"]::after { animation: none; transform: scaleX(1); }
+}
+
+/* Windows WebView2 uses the same slim scrollbar as WebKitGTK; the drawer
+   is interactive and cannot start a native drag when selecting rows. */
+.drawer, .rows, .repo-row, .repo-menu { cursor: default; }
+.rows::-webkit-scrollbar { width: 7px; }
+.rows::-webkit-scrollbar-track { background: transparent; }
+.rows::-webkit-scrollbar-thumb { background: #a2adb8; border-radius: 8px; }
+.rows::-webkit-scrollbar-thumb:hover { background: #758390; }
+
+/* WebView2 compact height = 108: 3px top + 25px metrics +
+   70px actions + 10px bottom. Expanded Repos keeps its prior geometry. */
+.windows-platform .card[data-view="compact"] { padding-top: 3px; }

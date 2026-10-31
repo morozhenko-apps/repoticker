@@ -2,11 +2,11 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; overflow: hidden; }
 body { background: Canvas; color: CanvasText; }
-.settings-shell { max-width: 680px; height: 100%; margin: auto; padding: 14px 20px 12px; display: flex; flex-direction: column; gap: 9px; overflow: hidden; }
+.settings-shell { max-width: 680px; height: 100%; min-height: 0; margin: auto; padding: 14px 20px 12px; display: flex; flex-direction: column; gap: 9px; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scrollbar-width: thin; }
 .section-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
 h2 { font-size: 14px; font-weight: 600; margin: 0 0 8px; }
 .hint { color: GrayText; font-size: 12px; }
-.block { border: 1px solid color-mix(in srgb, CanvasText 15%, Canvas); border-radius: 9px; padding: 10px 12px; min-width: 0; }
+.block { border: 1px solid color-mix(in srgb, CanvasText 15%, Canvas); border-radius: 9px; padding: 10px 12px; min-width: 0; flex-shrink: 0; }
 .general-line { display: flex; align-items: center; gap: 12px; }
 .general-line label { min-width: 70px; }
 .general-line .hint { margin-left: auto; }
@@ -34,20 +34,151 @@ label { font-size: 12px; }
 .github-grid input, .github-grid select { min-width: 0; width: 100%; height: 34px; }
 .worker-label { grid-column: 1/-1; }
 .github-grid :disabled { opacity: .58; }
-.settings-footer { margin-top: auto; display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 39px; }
-.footer-buttons { display: flex; gap: 8px; }
+.settings-footer { position: sticky; bottom: -12px; z-index: 20; background: Canvas; margin-top: auto; padding: 8px 0 4px; display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 48px; flex-shrink: 0; }
+.footer-buttons { display: flex; gap: 8px; flex: 0 0 auto; }
 .footer-buttons button { min-width: 80px; }
 .footer-buttons .primary:not(:disabled) { border-color: #529acb; background: #d4eafa; color: #173e56; }
-#message { font-size: 12px; color: #577a9b; }
+#message { flex: 1 1 auto; min-width: 0; font-size: 12px; color: #577a9b; overflow-wrap: anywhere; }
 #message.error { color: #b64040; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 
 /* WebKitGTK's native select menu can be clipped or displaced on Wayland. */
-.language-picker { position: relative; z-index: 10; min-width: 126px; }
-#language-trigger { width: 126px; display: flex; align-items: center; justify-content: space-between; gap: 8px; text-align: left; background: Canvas; }
-#language-options { position: absolute; top: calc(100% + 3px); left: 0; width: 140px; padding: 4px; background: Canvas; border: 1px solid color-mix(in srgb, CanvasText 32%, Canvas); border-radius: 6px; box-shadow: 0 5px 13px #0003; }
-#language-options button { width: 100%; height: 32px; display: block; border: 0; text-align: left; background: transparent; }
+.language-picker { position: relative; z-index: 10; width: max-content; min-width: 126px; max-width: min(230px, 55vw); }
+#language-trigger { width: 100%; min-height: 34px; height: auto; display: flex; align-items: center; justify-content: space-between; gap: 8px; text-align: start; white-space: normal; overflow-wrap: anywhere; background: Canvas; }
+#language-trigger span { flex: 0 0 auto; }
+#language-options { position: absolute; top: calc(100% + 3px); left: 0; width: min(260px, 75vw); max-height: min(330px, 52vh); overflow-y: auto; scrollbar-width: thin; padding: 0; background: Canvas; border: 1px solid color-mix(in srgb, CanvasText 32%, Canvas); border-radius: 6px; box-shadow: 0 5px 13px #0003; }
+#language-options button { width: 100%; height: 32px; display: flex; align-items: center; line-height: 1.2; border: 0; text-align: left; background: transparent; }
 #language-options button:hover, #language-options button[aria-selected="true"] { background: color-mix(in srgb, #5aa4d4 19%, Canvas); }
+#language-trigger:focus-visible, #language-options button:focus-visible { outline: 2px solid #258ac7; outline-offset: -2px; }
 
 /* A flex/grid declaration must never override hidden scope controls. */
 .github-grid [hidden] { display: none; }
+
+/* The GitHub block is fully visible in the taller fixed Settings window. */
+.block.github { flex-shrink: 0; overflow: visible; }
+.github-repo-controls { margin-top: 8px; border-top: 1px solid color-mix(in srgb, CanvasText 13%, Canvas); padding-top: 8px; }
+.github-repo-controls[hidden], .github-repo-list[hidden], #github-repo-filter[hidden] { display: none; }
+/* Match the exact two-column geometry of the Monitor account selector. */
+.github-repo-heading { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 10px; align-items: center; }
+.github-repo-heading select { width: 100%; min-width: 0; height: 34px; }
+/* Native WebKitGTK select decoration adds block insets to the shared 6px
+ * field padding. Own only the closed control's painting, never the option
+ * popup, so all GitHub select labels have one centered text baseline. */
+.github-grid select,
+.github-repo-heading select {
+  -webkit-appearance: none;
+  appearance: none;
+  box-sizing: border-box;
+  height: 34px;
+  line-height: 32px;
+  padding: 0 32px 0 12px;
+  background-color: Canvas;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='m2 2 4 4 4-4' stroke='%236b757f' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 11px center;
+  background-size: 12px 8px;
+}
+.github-grid select:focus-visible,
+.github-repo-heading select:focus-visible {
+  outline: 2px solid #258ac7;
+  outline-offset: 2px;
+}
+@media (forced-colors: active) {
+  .github-grid select,
+  .github-repo-heading select {
+    -webkit-appearance: auto;
+    appearance: auto;
+    background-image: none;
+  }
+}
+
+
+/* Localized Arabic controls paint their chevron at the visual inline end.
+ * Monitor account IDs are explicitly dir=ltr and keep the LTR control. */
+[dir="rtl"] .github-grid select:not([dir="ltr"]),
+[dir="rtl"] .github-repo-heading select:not([dir="ltr"]) {
+  padding: 0 12px 0 32px;
+  background-position: left 11px center;
+  text-align: right;
+}
+
+#github-repo-filter { display: block; width: 100%; height: 30px; margin: 6px 0; }
+.github-repo-list { max-height: 108px; overflow-y: auto; border-radius: 5px; border: 1px solid color-mix(in srgb, CanvasText 14%, Canvas); }
+.github-repo-choice { display: flex; align-items: center; gap: 6px; min-height: 27px; padding: 3px 7px; }
+.github-repo-choice input { width: 15px; height: 15px; flex: none; }
+.github-repo-choice span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Shallow discovery exclusions are optional and collapsed by default. */
+.ignore-settings { margin-top: 7px; }
+.ignore-settings summary { cursor: pointer; font-size: 12px; padding: 4px 0; }
+.ignore-settings .inline { margin-top: 6px; }
+.ignore-settings .roots-list { max-height: 82px; }
+.ignore-settings .hint { margin: 4px 0 0; }
+
+/* Login launch is draft-only until Settings OK. */
+.autostart-controls { display: flex; align-items: center; gap: 12px; margin-top: 7px; }
+.autostart-controls label { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+.autostart-controls input[type="checkbox"] { width: 16px; height: 16px; padding: 0; }
+.autostart-controls .hint { margin-left: auto; }
+
+/* Native CI notifications are opt-in and do not change card geometry. */
+.ci-alert-controls { display: flex; align-items: center; margin-top: 8px; }
+.ci-alert-controls label { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+/* WebKitGTK native checkbox painting can overrun a custom 16px box.
+ * Use one deterministic visual treatment with unchanged input semantics. */
+.autostart-controls input[type="checkbox"],
+.ci-alert-controls input[type="checkbox"],
+.github-repo-choice input[type="checkbox"] {
+  -webkit-appearance: none;
+  appearance: none;
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  min-height: 16px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, CanvasText 44%, Canvas);
+  border-radius: 3px;
+  background-color: Canvas;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 12px 12px;
+  vertical-align: middle;
+  cursor: pointer;
+  flex: 0 0 16px;
+}
+.autostart-controls input[type="checkbox"]:checked,
+.ci-alert-controls input[type="checkbox"]:checked,
+.github-repo-choice input[type="checkbox"]:checked {
+  border-color: #258ac7;
+  background-color: #258ac7;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 8l3 3 7-7' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+.autostart-controls input[type="checkbox"]:focus-visible,
+.ci-alert-controls input[type="checkbox"]:focus-visible,
+.github-repo-choice input[type="checkbox"]:focus-visible {
+  outline: 2px solid #258ac7;
+  outline-offset: 2px;
+}
+@media (forced-colors: active) {
+  .autostart-controls input[type="checkbox"],
+  .ci-alert-controls input[type="checkbox"],
+  .github-repo-choice input[type="checkbox"] {
+    -webkit-appearance: checkbox;
+    appearance: auto;
+    background-image: none;
+  }
+}
+
+/* Keep keyboard and pointer scrolling usable when account selection expands. */
+.settings-shell::-webkit-scrollbar, .github-repo-list::-webkit-scrollbar { width: 7px; }
+.settings-shell::-webkit-scrollbar-thumb, .github-repo-list::-webkit-scrollbar-thumb { background: color-mix(in srgb, CanvasText 32%, Canvas); border-radius: 8px; }
+.settings-shell::-webkit-scrollbar-track, .github-repo-list::-webkit-scrollbar-track { background: transparent; }
+
+/* The 20-language list remains keyboard and pointer scrollable, including
+   scripts with long native names. Direction never reorders technical paths. */
+#language-options button { min-height: 34px; height: auto; padding: 7px 11px; white-space: normal; }
+[dir="rtl"] .language-picker { direction: rtl; }
+[dir="rtl"] #language-options { left: auto; right: 0; text-align: start; }
+[dir="rtl"] .roots-list, [dir="rtl"] .github-repo-choice { unicode-bidi: isolate; }

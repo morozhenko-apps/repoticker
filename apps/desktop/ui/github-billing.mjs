@@ -126,8 +126,10 @@ export function createBillingCache({ get, now = () => Date.now(),
   let saved = null;
   let generation = 0;
   let pending = null;
+  let activeKey = null;
   function clear() {
     generation++;
+    activeKey = null;
     saved = null;
     pending = null;
   }
@@ -139,10 +141,21 @@ export function createBillingCache({ get, now = () => Date.now(),
     const scope = typeof organization === "string" ? organization : "";
     const month = billingMonth(new Date(now()));
     const key = scope.toLowerCase() + "/" + month.year + "-" + month.month;
-    if (saved?.key === key && now() - saved.at < ttlMs) return saved.value;
+    // A connected account/month change is an authorization and reporting
+    // boundary even if the caller forgot to explicitly clear its popup.
+    // A late response can resolve to its original caller, never to this key.
+    if (activeKey !== key) {
+      generation++;
+      activeKey = key;
+      saved = null;
+      pending = null;
+    }
+    const started = now();
+    // A backwards wall-clock jump cannot make an old result fresh forever.
+    if (saved?.key === key && started >= saved.at &&
+        started - saved.at < ttlMs) return saved.value;
     if (pending?.key === key) return pending.promise;
     const current = generation;
-    const started = now();
     const promise = collectBillingUsage({ get, organization: scope,
       now: new Date(started) }).then(value => {
       if (current === generation) saved = { key, at: started, value };

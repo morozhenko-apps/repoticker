@@ -1,4 +1,22 @@
-# RepoTicker v0.2.0 — release readiness (draft, 2026-10-21)
+# RepoTicker v0.2.0 — release readiness and delivery evidence
+
+## Record role after publication
+
+This is the permanent v0.2 release-preparation and delivery evidence record,
+including intermediate blockers and final owner decisions. Its chronological
+unpublished-candidate and "active v0.3" prose is historical; use the
+[current handoff](ROADMAP.md#current-development-handoff-2026-10-24) for dev.
+[Published release copy](https://github.com/morozhenko-apps/repoticker/releases/tag/v0.2.0),
+[retained release notes](RELEASE_NOTES_0_2_0.md) and
+[KDE RC follow-up](RC_0_2_0_KDE_UI_FIXES.md) have separate provenance.
+Do not equate signed-APT candidate visibility with an observed 0.1→0.2
+upgrade transaction, or Windows packaging with physical runtime acceptance.
+All original blockers, source/CI receipts, limitations and rollback remain.
+
+
+> **Published 2026-10-22:** [v0.2.0 GitHub Release](https://github.com/morozhenko-apps/repoticker/releases/tag/v0.2.0), exact tag target/main commit `c16c435078133929c7bf640b7c25eb52074d0f1c`. [Release workflow #39840390468](https://github.com/morozhenko-apps/repoticker/actions/runs/39840390468) completed SUCCESS, including Linux/Windows packaging and protected APT/R2 publishing.
+> On Alcotester, `sudo apt update` completed with `repo-ticker 0.2.0` installed and also offered by signed APT at priority 500 from `download.morozhenko.com`; this confirms public repository candidate availability, **not** a recorded 0.1→0.2 transaction through signed APT. This file includes chronological pre-release notes below: references to an unpublished candidate there are historical snapshots. The active plan is now [v0.3.0](DEVELOPMENT_0_3_0.md).
+
 
 > **Approved series:** This is the next candidate in the [v0.1.0–v1.0.0 roadmap](VERSION_ROADMAP_TO_1_0.md). **Full Mode B audit belongs to v0.9.0**, not the v0.2.0 development checkpoint. Ordinary feature/regression tests and stable CI remain required for each release; preliminary Mode B matrices are not a prerequisite to implement or publish v0.2.0 after its actual release gates. It is accumulated by version and formally closed on the v0.9 RC. Publishing this roadmap does not trigger the v0.2 software release.
 

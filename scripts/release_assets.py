@@ -4,8 +4,10 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+import re
 import shutil
 import subprocess
+import tempfile
 
 TYPES = {
     "linux": [".deb", ".AppImage"],
@@ -30,7 +32,7 @@ def digest(path):
 
 def canonical(version, platform, ext):
     if ext == ".deb":
-        return f"repo-ticker_{version}_amd64.deb"
+        return f"repoticker_{version}_amd64.deb"
     if ext == ".AppImage":
         return f"RepoTicker-{version}-linux-x64.AppImage"
     if ext == ".exe":
@@ -40,14 +42,26 @@ def canonical(version, platform, ext):
     raise ValueError("Unexpected suffix")
 
 
+SEMVER = re.compile(r"(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\Z")
+
+
+def source_has_version(filename, version):
+    # A substring match would silently relabel v11.0.0 as v1.0.0,
+    # or v1.0.0.1 as v1.0.0. Require a whole numeric version token.
+    return re.search(r"(?<![0-9.])" + re.escape(version) +
+                     r"(?![0-9.])", filename) is not None
+
+
 def collect(source, target, platform, version):
+    if not SEMVER.fullmatch(version):
+        raise ValueError("Invalid candidate release version")
     if target.exists() and any(target.iterdir()):
         raise ValueError("Refusing non-empty output directory")
     results = []
     for ext in TYPES[platform]:
         choices = [
             p for p in source.rglob("*") if p.is_file() and not p.is_symlink()
-            and p.name.endswith(ext) and version in p.name
+            and p.name.endswith(ext) and source_has_version(p.name, version)
             and "debug" not in p.parts
         ]
         if len(choices) != 1:
@@ -56,7 +70,7 @@ def collect(source, target, platform, version):
         if not 0 < file.stat().st_size < 350 * 1024 * 1024:
             raise ValueError("Invalid artifact size")
         if ext == ".deb":
-            for key, expected in [("Package", "repo-ticker"), ("Version", version),
+            for key, expected in [("Package", "repoticker"), ("Version", version),
                                   ("Architecture", "amd64")]:
                 value = subprocess.check_output(["dpkg-deb", "-f", str(file), key], text=True).strip()
                 if value != expected:
@@ -64,6 +78,25 @@ def collect(source, target, platform, version):
             deps = subprocess.check_output(["dpkg-deb", "-f", str(file), "Depends"], text=True)
             if "libgtk-layer-shell0" not in deps:
                 raise ValueError("Linux runtime dependency missing from .deb")
+            # Package metadata alone does not prove the desktop launcher
+            # or executable is canonical. Inspect only an untrusted archive
+            # in a fresh temporary directory; never execute its contents.
+            with tempfile.TemporaryDirectory(prefix="repoticker-deb-audit-") as folder:
+                subprocess.run(["dpkg-deb", "--extract", str(file), folder],
+                               check=True, capture_output=True)
+                root = Path(folder)
+                executable = root / "usr/bin/repoticker"
+                launcher = root / "usr/share/applications/repoticker.desktop"
+                if not executable.is_file() or not launcher.is_file():
+                    raise ValueError("DEB is missing canonical executable or launcher")
+                desktop = launcher.read_text(encoding="utf-8").splitlines()
+                if "Name=RepoTicker" not in desktop:
+                    raise ValueError("DEB desktop launcher lost RepoTicker branding")
+                commands = [line.removeprefix("Exec=").strip() for line in desktop
+                            if line.startswith("Exec=")]
+                if len(commands) != 1 or commands[0].split(" ", 1)[0] not in (
+                        "repoticker", "/usr/bin/repoticker"):
+                    raise ValueError("DEB desktop launcher points to wrong executable")
         target.mkdir(parents=True, exist_ok=True)
         dest = target / canonical(version, platform, ext)
         shutil.copyfile(file, dest)

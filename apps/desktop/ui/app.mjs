@@ -1,7 +1,15 @@
-import { nextCardView, pullReadyCommitCount } from "./view.mjs";
+import { nextCardView, syncReadyCommitCount } from "./view.mjs";
 import { createNativeDragGesture } from "./native-drag.mjs";
 import { startGithubMonitoring } from "./github-monitor.mjs";
 import { compactStatus } from "./status-metrics.mjs";
+import { cardLocale, cardText, cardNoticeText, metricAccessibleLabel } from "./card-i18n.mjs";
+import { mergeMonitorPresentation, reconcileScanPresentation } from "./monitor-presentation.mjs";
+import { placeRepoMenu } from "./repo-menu.mjs";
+import { localeDirection } from "./locale-catalog.mjs";
+import { createScanRefreshQueue } from "./scan-refresh.mjs";
+import { disableBrowserContextMenu } from "./browser-context-menu.mjs";
+
+disableBrowserContextMenu(document);
 
 const emptySnapshot = {
   roots: [], repositories: [], errors: [],
@@ -9,18 +17,42 @@ const emptySnapshot = {
   connected: false
 };
 const byId = id => document.getElementById(id);
+if (navigator.userAgent.includes("Windows")) document.documentElement.classList.add("windows-platform");
 const invoke = (command, args = {}) => {
   if (!window.__TAURI__?.core?.invoke) {
     return Promise.reject(new Error("Launch the desktop application to use Git."));
   }
   return window.__TAURI__.core.invoke(command, args);
 };
+const traceStartup = stage => {
+  // Only native allowlisted labels are emitted when the user explicitly opts in.
+  // Fire and forget so diagnostics never block first render.
+  void invoke("trace_startup_stage", { stage }).catch(() => {});
+};
+traceStartup("card.start");
+let firstSnapshotReady = false;
+let firstMonitorReady = false;
+let monitorRevision = 0;
+let monitorRequest = 0;
 let snapshot = emptySnapshot;
+let cardLanguage = "en";
+let authoritativeSavedLocale = null;
+let lastMetricStatus = compactStatus(null);
 let busy = false;
+let fetchCancelling = false;
 let view = "compact";
 let progress = null;
 let idleTimer = null;
 let cardVisible = false;
+let localScanActive = false;
+let fullMonitorActive = false;
+function updateReposActivity() {
+  const loading = localScanActive || fullMonitorActive;
+  byId("show-repos").setAttribute("aria-busy", String(loading));
+  // Source reads are independent of Fetch/Safe sync and never block Repos.
+  if (loading) cancelAutoHide();
+  else armAutoHide();
+}
 const IDLE_MS = 15_000;
 const AUTO_HIDE_EVENTS = ["pointermove", "pointerdown", "keydown", "wheel", "touchstart"];
 function cancelAutoHide() {
@@ -30,7 +62,8 @@ function armAutoHide() {
   cancelAutoHide();
   // Only the compact card is transient. An open Repos drawer must never
   // disappear while users inspect repositories or perform operations.
-  if (!cardVisible || view !== "compact" || quotaExpanded) return;
+  if (!cardVisible || view !== "compact" || quotaExpanded ||
+      localScanActive || fullMonitorActive) return;
   idleTimer = setTimeout(async () => {
     try { await invoke("hide_card"); resetView(); }
     catch (error) { showError(error); }
@@ -44,14 +77,33 @@ document.addEventListener("visibilitychange", () => {
   else armAutoHide();
 });
 
-function showError(message) {
+let lastNotice = null;
+function paintNotice() {
   const node = byId("notice");
-  node.textContent = String(message);
+  if (lastNotice === null) {
+    node.hidden = true;
+    node.textContent = "";
+    return;
+  }
+  // Presentation-only: display can change locales; native values cannot.
+  node.textContent = cardNoticeText(cardLanguage, lastNotice);
   node.hidden = false;
 }
+function showError(message) {
+  lastNotice = { kind: "native", message: String(message) };
+  paintNotice();
+}
+function showResizeError(message) {
+  lastNotice = { kind: "resize", message: String(message) };
+  paintNotice();
+}
+function showGitOperationErrors(count, message) {
+  lastNotice = { kind: "git", count, message: String(message) };
+  paintNotice();
+}
 function clearError() {
-  byId("notice").hidden = true;
-  byId("notice").textContent = "";
+  lastNotice = null;
+  paintNotice();
 }
 function addText(parent, tag, value, className = "") {
   const el = document.createElement(tag);
@@ -60,19 +112,110 @@ function addText(parent, tag, value, className = "") {
   parent.append(el);
   return el;
 }
-function hideRepoMenus() {
-  document.querySelectorAll(".repo-menu").forEach(menu => { menu.hidden = true; });
-  document.querySelectorAll(".repo-more").forEach(button => {
+const repoMenu = byId("repo-menu");
+const repoDrawer = byId("repo-drawer");
+let menuAnchor = null;
+let menuRepoPath = null;
+
+function hideRepoMenus(restoreFocus = false) {
+  const previouslyFocused = menuAnchor;
+  repoMenu.hidden = true;
+  menuRepoPath = null;
+  menuAnchor = null;
+  document.querySelectorAll(".repo-more[aria-expanded='true']").forEach(button => {
     button.setAttribute("aria-expanded", "false");
   });
+  if (restoreFocus && previouslyFocused?.isConnected) previouslyFocused.focus();
 }
+
+function showRepoMenu(button, repoPath) {
+  const alreadyOpen = menuAnchor === button && !repoMenu.hidden;
+  hideRepoMenus();
+  if (alreadyOpen) return;
+  menuAnchor = button;
+  menuRepoPath = repoPath;
+  // A previous opening may have used another locale or text scale.
+  // Recompute intrinsic content size instead of measuring stale inline width.
+  repoMenu.style.width = "";
+  repoMenu.style.left = "";
+  repoMenu.style.top = "";
+  repoMenu.scrollTop = 0;
+  repoMenu.hidden = false;
+  const position = placeRepoMenu(
+    button.getBoundingClientRect(),
+    repoDrawer.getBoundingClientRect(),
+    repoMenu.getBoundingClientRect()
+  );
+  repoMenu.style.left = position.left + "px";
+  repoMenu.style.top = position.top + "px";
+  repoMenu.style.width = position.width + "px";
+  button.setAttribute("aria-expanded", "true");
+  repoMenu.querySelector("button")?.focus();
+}
+
+for (const [key, operation] of [
+  ["fetch", "fetch"],
+  ["safeSync", "safe_sync"],
+  ["openGithub", "open_github"],
+  ["openFolder", "open_folder"],
+  ["copyPath", "copy_path"]
+]) {
+  const item = addText(repoMenu, "button", cardText(cardLanguage, key));
+  item.dataset.localeKey = key;
+  item.type = "button";
+  item.setAttribute("role", "menuitem");
+  item.addEventListener("click", async () => {
+    const path = menuRepoPath;
+    hideRepoMenus();
+    if (!path) return;
+    const nativeActions = {
+      open_github: "open_repository_on_github",
+      open_folder: "open_repository_folder",
+      copy_path: "copy_repository_path"
+    };
+    if (Object.hasOwn(nativeActions, operation)) {
+      try {
+        await invoke(nativeActions[operation], { repoPath: path });
+      } catch (error) {
+        showError(error);
+      }
+    } else {
+      void runGitAction(operation, path);
+    }
+  });
+}
+
+repoMenu.addEventListener("keydown", event => {
+  const items = [...repoMenu.querySelectorAll("button")];
+  const current = items.indexOf(document.activeElement);
+  let target = null;
+  if (event.key === "ArrowDown") target = items[(current + 1) % items.length];
+  if (event.key === "ArrowUp") target = items[(current + items.length - 1) % items.length];
+  if (event.key === "Home") target = items[0];
+  if (event.key === "End") target = items[items.length - 1];
+  if (target) {
+    event.preventDefault();
+    target.focus();
+  }
+});
+
+document.addEventListener("pointerdown", event => {
+  if (!repoMenu.hidden &&
+      !repoMenu.contains(event.target) &&
+      !event.target.closest(".repo-more")) hideRepoMenus();
+});
+byId("repo-list").addEventListener("scroll", () => hideRepoMenus(), { passive: true });
+window.addEventListener("resize", () => hideRepoMenus());
+
 function makeRepoRow(repo) {
   const row = document.createElement("div");
   row.className = "repo-row";
   row.title = repo.path;
   row.dataset.repoPath = repo.path;
-  addText(row, "span", repo.name, "repo-name");
-  addText(row, "span", repo.branch, "repo-branch");
+  const name = addText(row, "span", repo.name, "repo-name");
+  name.dir = "auto"; // Preserve native script without inheriting RTL UI direction.
+  const branch = addText(row, "span", repo.branch, "repo-branch");
+  branch.dir = "ltr"; // Git refs are technical identifiers, not localized text.
   const current = !repo.dirty && !repo.ahead && !repo.behind && repo.upstream;
   const symbol = repo.dirty ? "●" :
     repo.ahead && repo.behind ? "⇅" :
@@ -95,57 +238,43 @@ function makeRepoRow(repo) {
 
   const button = addText(row, "button", "⋯", "repo-more");
   button.type = "button";
-  button.title = "Git operations";
-  button.setAttribute("aria-label", "Git operations for " + repo.name);
+  button.title = cardText(cardLanguage, "gitOperations");
+  button.setAttribute("aria-label", cardText(cardLanguage, "gitOperationsFor", repo.name));
   button.setAttribute("aria-expanded", "false");
-  const menu = document.createElement("div");
-  menu.className = "repo-menu";
-  menu.hidden = true;
-  for (const [label, operation] of [["Fetch", "fetch"], ["Safe pull", "safe_pull"]]) {
-    const item = addText(menu, "button", label);
-    item.type = "button";
-    item.addEventListener("click", () => {
-      hideRepoMenus();
-      runGitAction(operation, repo.path);
-    });
-  }
-  button.addEventListener("click", () => {
-    const open = menu.hidden;
-    hideRepoMenus();
-    if (open) {
-      menu.hidden = false;
-      button.setAttribute("aria-expanded", "true");
-    }
-  });
-  row.append(menu);
+  button.setAttribute("aria-controls", "repo-menu");
+  button.addEventListener("click", () => showRepoMenu(button, repo.path));
   return row;
 }
 
 function updateActionState() {
   const hasRepos = snapshot.repositories.length > 0;
-  const eligible = pullReadyCommitCount(snapshot.repositories);
+  const eligible = syncReadyCommitCount(snapshot.repositories);
   const isRunning = busy || (progress && progress.phase !== "finish");
-  byId("fetch-all").disabled = isRunning || !hasRepos;
+  const fetching = progress?.operation === "fetch" && progress.phase !== "finish";
+  byId("fetch-all").disabled = fetchCancelling ||
+    (isRunning && !fetching) || (!isRunning && !hasRepos);
+  byId("fetch-all").title = cardText(cardLanguage, fetching ? "fetchCancel" : "fetchTitle");
   byId("sync-all").disabled = isRunning || eligible === 0;
-  for (const [operation, id] of [["fetch", "fetch-all"], ["safe_pull", "sync-all"]]) {
+  for (const [operation, id] of [["fetch", "fetch-all"], ["safe_sync", "sync-all"]]) {
     const button = byId(id);
     const active = progress?.operation === operation;
     button.classList.toggle("is-working", active);
     if (active) {
       const pct = progress.total
         ? Math.round(100 * progress.completed / progress.total) : 100;
-      button.querySelector(".action-label").textContent = pct + "%";
+      button.querySelector(".action-label").textContent =
+        operation === "fetch" ? cardText(cardLanguage, fetchCancelling ? "stopping" : "cancel") : pct + "%";
     } else {
       button.querySelector(".action-label").textContent =
-        operation === "fetch" ? "Fetch" : "Safe pull";
+        cardText(cardLanguage, operation === "fetch" ? "fetch" : "safeSync");
     }
   }
   const count = byId("pull-indicator");
-  count.textContent = eligible ? "↓" + eligible : "↓";
+  count.textContent = eligible ? "⇅" + eligible : "⇅";
   count.classList.toggle("has-commits", eligible > 0);
   byId("sync-all").title = eligible
-    ? eligible + " commits eligible for fast-forward (clean upstream branches)"
-    : "No branches eligible for safe pull. Run Fetch to refresh remote refs.";
+    ? cardText(cardLanguage, "syncReady", eligible)
+    : cardText(cardLanguage, "syncUnavailable");
 }
 
 /* A single noninteractive native balloon follows three independent hover
@@ -156,10 +285,26 @@ const hoverTargets = {
   tasks: byId("ci-tasks"),
   billing: document.querySelector(".quota-anchor"),
 };
+// This opt-in trace is a one-time environment read, not a monitoring poll.
+// No hover IPC is sent during ordinary app usage. The native side accepts
+// only fixed stage/kind labels and cannot log credentials or repository names.
+let hoverDebugEnabled = false;
+let hoverDebugSequence = 0;
+function traceHover(kind, stage) {
+  if (!hoverDebugEnabled) return;
+  void invoke("trace_ui_hover", {
+    kind: kind ?? "none", stage, sequence: ++hoverDebugSequence
+  }).catch(() => {});
+}
+void invoke("ui_hover_debug_enabled").then(enabled => {
+  hoverDebugEnabled = enabled === true;
+  traceHover(null, "ready");
+}).catch(() => {});
 let quotaExpanded = false;
 let hoveredKind = null;
 let visibleKind = null;
 let quotaQueue = Promise.resolve();
+let triggerMonitorRefresh = null;
 
 function setActiveTooltip(kind) {
   for (const [name, node] of Object.entries(hoverTargets)) {
@@ -169,6 +314,7 @@ function setActiveTooltip(kind) {
 }
 
 function resetQuota() {
+  traceHover(hoveredKind, "reset");
   hoveredKind = null;
   visibleKind = null;
   quotaExpanded = false;
@@ -177,12 +323,19 @@ function resetQuota() {
 }
 
 function setQuotaOpen(kind = null) {
+  traceHover(kind, "requested");
   hoveredKind = kind;
   quotaQueue = quotaQueue.then(async () => {
     const wanted = cardVisible ? hoveredKind : null;
-    if (wanted === visibleKind) return;
+    traceHover(wanted, cardVisible ? "queue-visible" : "queue-hidden");
+    if (wanted === visibleKind) {
+      traceHover(wanted, "queue-skip");
+      return;
+    }
     if (wanted) {
+      traceHover(wanted, "show-ipc");
       await invoke("show_usage_popup", { kind: wanted });
+      traceHover(wanted, "show-resolved");
       if (!cardVisible || hoveredKind !== wanted) {
         // The final queued callback will show the newest target.
         if (!hoveredKind || !cardVisible) await invoke("hide_usage_popup");
@@ -196,13 +349,16 @@ function setQuotaOpen(kind = null) {
       setActiveTooltip(wanted);
       cancelAutoHide();
     } else {
+      traceHover(null, "hide-ipc");
       await invoke("hide_usage_popup");
+      traceHover(null, "hide-resolved");
       visibleKind = null;
       quotaExpanded = false;
       setActiveTooltip(null);
       armAutoHide();
     }
   }).catch(error => {
+    traceHover(null, "ipc-error");
     visibleKind = null;
     quotaExpanded = false;
     setActiveTooltip(null);
@@ -211,40 +367,175 @@ function setQuotaOpen(kind = null) {
   return quotaQueue;
 }
 
+// A real hover/focus proves this WebView is currently shown even if the
+// window-shown event was delivered before its listener was registered.
 for (const [kind, anchor] of Object.entries(hoverTargets)) {
-  anchor.addEventListener("mouseenter", () => { void setQuotaOpen(kind); });
+  const enter = () => {
+    traceHover(kind, "enter");
+    cardVisible = true;
+    void setQuotaOpen(kind);
+  };
+  // A native pointer may reach the target before WebView2's mouseenter
+  // dispatch. Keep these as diagnostics, not an alternate presentation path.
+  anchor.addEventListener("pointerenter", () => traceHover(kind, "pointer-enter"));
+  anchor.addEventListener("mouseenter", enter);
   anchor.addEventListener("mouseleave", () => {
+    traceHover(kind, "leave");
     if (hoveredKind === kind) void setQuotaOpen(null);
   });
-  anchor.addEventListener("focusin", () => { void setQuotaOpen(kind); });
+  anchor.addEventListener("focusin", enter);
   anchor.addEventListener("focusout", () => {
     if (hoveredKind === kind) void setQuotaOpen(null);
   });
 }
 
-function render(next) {
-  snapshot = next;
-  const status = compactStatus(next.runner_state);
+
+const manualIndicator = { runners: byId("runner-status"), tasks: byId("ci-tasks") };
+for (const [kind, node] of Object.entries(manualIndicator)) {
+  node.addEventListener("click", () => {
+    if (node.getAttribute("aria-busy") === "true") return;
+    node.setAttribute("aria-busy", "true");
+    clearError();
+    // Independent GitHub metric refresh; no local Git scanning.
+    void triggerMonitorRefresh?.(true, kind);
+  });
+}
+function monitorRefreshState(kind, active) {
+  if (kind === "all") {
+    fullMonitorActive = active;
+    updateReposActivity();
+    for (const node of Object.values(manualIndicator))
+      node.setAttribute("aria-busy", String(active));
+  } else {
+    manualIndicator[kind]?.setAttribute("aria-busy", String(active));
+  }
+  updateMetricAccessibleNames();
+}
+function clearBrowserTooltips() {
+  // The browser controls native title positioning and paints an unstyled
+  // system balloon. It can also mask the separate rich usage WebView.
+  // The dedicated native usage popup owns Runners, Tasks and Billing.
+  for (const node of Object.values(hoverTargets)) node.removeAttribute("title");
+}
+function updateMetricAccessibleNames() {
+  for (const [kind, node] of Object.entries(manualIndicator)) {
+    const busy = node.getAttribute("aria-busy") === "true";
+    node.setAttribute("aria-label",
+      metricAccessibleLabel(cardLanguage, kind, lastMetricStatus, busy));
+  }
+}
+function setCardLanguage(language) {
+  const next = cardLocale(language);
+  if (next === cardLanguage) return;
+  cardLanguage = next;
+  document.documentElement.lang = cardLanguage;
+  document.documentElement.dir = localeDirection(cardLanguage);
+  repoDrawer.setAttribute("aria-label", cardText(cardLanguage, "repositories"));
+  repoMenu.setAttribute("aria-label", cardText(cardLanguage, "repositoryActions"));
+  document.querySelector(".status-strip").setAttribute("aria-label",
+    cardText(cardLanguage, "githubMetrics"));
+  document.querySelector(".quota-anchor").setAttribute("aria-label",
+    cardText(cardLanguage, "billing"));
+  for (const item of repoMenu.querySelectorAll("[data-locale-key]"))
+    item.textContent = cardText(cardLanguage, item.dataset.localeKey);
+  byId("runner-status").querySelector(".metric-caption").textContent =
+    cardText(cardLanguage, "runners");
+  byId("ci-tasks").querySelector(".metric-caption").textContent =
+    cardText(cardLanguage, "tasks");
+  byId("fetch-all").querySelector(".action-label").textContent =
+    cardText(cardLanguage, "fetch");
+  byId("sync-all").querySelector(".action-label").textContent =
+    cardText(cardLanguage, "safeSync");
+  byId("show-repos").querySelector(".action-label").textContent =
+    cardText(cardLanguage, "repos");
+  byId("hide-card").querySelector(".action-label").textContent =
+    cardText(cardLanguage, "hide");
+  byId("show-repos").title = cardText(cardLanguage,
+    view === "repos" ? "hideRepos" : "showRepos");
+  byId("hide-card").title = cardText(cardLanguage, "hideCard");
+  updateActionState();
+  updateMetricAccessibleNames();
+  clearBrowserTooltips();
+  if (lastNotice !== null) paintNotice();
+}
+function renderMonitorMetrics(state) {
+  const status = compactStatus(state);
+  lastMetricStatus = status;
+  updateMetricAccessibleNames();
+  clearBrowserTooltips();
   byId("runners-total").textContent = status.total;
   byId("runners-online").textContent = status.online;
   byId("runners-offline").textContent = status.offline;
   byId("tasks-running").textContent = status.running;
   byId("tasks-queued").textContent = status.queued;
+}
+function traceMonitorReady() {
+  if (!firstMonitorReady && snapshot.runner_state != null) {
+    firstMonitorReady = true;
+    traceStartup("card.monitor_ready");
+  }
+}
+function render(next) {
+  hideRepoMenus();
+  const previousCount = snapshot.repositories.length;
+  snapshot = next;
+  if (view === "repos" && previousCount !== next.repositories.length) {
+    void invoke("set_card_view", {
+      view: "repos", repositoryCount: next.repositories.length
+    }).catch(showError);
+  }
+  setCardLanguage(authoritativeSavedLocale ?? next.language);
+  renderMonitorMetrics(next.runner_state);
   const list = byId("repo-list");
   list.replaceChildren();
   if (!next.repositories.length) {
     addText(list, "p", next.roots?.length
-      ? "No valid repositories found."
-      : "Add a repository folder through the tray Settings.", "empty");
+      ? cardText(cardLanguage, "noValidRepos")
+      : cardText(cardLanguage, "addRoot"), "empty");
   } else {
     for (const repo of next.repositories) list.append(makeRepoRow(repo));
   }
   updateActionState();
   if (next.errors?.length) showError(next.errors[0]);
 }
-async function refresh() {
+const refreshSnapshot = createScanRefreshQueue({
+  onBusyChange: active => {
+    localScanActive = active;
+    updateReposActivity();
+  },
+  // Capture the monitor revision at the START of each native scan.
+  // The projection keeps newer remote-only metrics while local Git is read.
+  scan: async () => {
+    const revision = monitorRevision;
+    const next = await invoke("get_snapshot");
+    return { revision, next };
+  },
+  publish: ({ revision, next }) => {
+    render(reconcileScanPresentation(next, snapshot, revision, monitorRevision));
+    if (!firstSnapshotReady) {
+      firstSnapshotReady = true;
+      traceStartup("card.snapshot_ready");
+    }
+    traceMonitorReady();
+  },
+  onError: showError
+});
+function refresh() {
+  return refreshSnapshot();
+}
+
+// Monitoring changes only the native in-memory presentation cache. A full
+// Git status scan would rebuild every repo row and block remote status.
+async function refreshMonitor() {
+  const request = ++monitorRequest;
   try {
-    render(await invoke("get_snapshot"));
+    const remote = await invoke("github_monitor_snapshot");
+    // Ignore older IPC replies if multiple events arrived together.
+    if (request !== monitorRequest) return;
+    snapshot = mergeMonitorPresentation(snapshot, remote);
+    monitorRevision++;
+    renderMonitorMetrics(snapshot.runner_state);
+    traceMonitorReady();
   } catch (error) {
     showError(error);
   }
@@ -254,8 +545,21 @@ function consumeResults(results) {
   // or a duplicate "N fetched" line. Real Git state is the success indicator.
   const errors = results.filter(item => item.status === "error");
   if (errors.length) {
-    showError(errors.length + " Git operation error(s): " + errors[0].message);
+    showGitOperationErrors(errors.length, errors[0].message);
   }
+}
+async function cancelActiveFetch() {
+  if (fetchCancelling) return;
+  fetchCancelling = true;
+  updateActionState();
+  try {
+    const accepted = await invoke("cancel_git_fetch");
+    if (!accepted) fetchCancelling = false;
+  } catch (error) {
+    fetchCancelling = false;
+    showError(error);
+  }
+  updateActionState();
 }
 async function runGitAction(operation, repoPath = null) {
   if (busy) return;
@@ -272,6 +576,7 @@ async function runGitAction(operation, repoPath = null) {
   } finally {
     busy = false;
     progress = null;
+    fetchCancelling = false;
     updateActionState();
     render(snapshot);
   }
@@ -282,7 +587,7 @@ function resetView() {
   byId("card").dataset.view = "compact";
   byId("repo-drawer").hidden = true;
   byId("show-repos").setAttribute("aria-pressed", "false");
-  byId("show-repos").title = "Show repositories";
+  byId("show-repos").title = cardText(cardLanguage, "showRepos");
   hideRepoMenus();
 }
 async function openView(target) {
@@ -290,16 +595,19 @@ async function openView(target) {
   const desired = nextCardView(view, target);
   if (desired === view) return;
   try {
-    await invoke("set_card_view", { view: desired });
+    await invoke("set_card_view", {
+      view: desired, repositoryCount: snapshot.repositories.length
+    });
     view = desired;
     armAutoHide();
     byId("card").dataset.view = view;
     byId("repo-drawer").hidden = view !== "repos";
     byId("show-repos").setAttribute("aria-pressed", String(view === "repos"));
-    byId("show-repos").title = view === "repos" ? "Hide repositories" : "Show repositories";
+    byId("show-repos").title = cardText(cardLanguage,
+      view === "repos" ? "hideRepos" : "showRepos");
     if (view !== "repos") hideRepoMenus();
   } catch (error) {
-    showError("Cannot resize card: " + error);
+    showResizeError(error);
   }
 }
 byId("show-repos").addEventListener("click", () => openView("repos"));
@@ -307,9 +615,20 @@ byId("hide-card").addEventListener("click", async () => {
   try { await invoke("hide_card"); resetView(); }
   catch (error) { showError(error); }
 });
-byId("fetch-all").addEventListener("click", () => runGitAction("fetch"));
-byId("sync-all").addEventListener("click", () => runGitAction("safe_pull"));
+byId("fetch-all").addEventListener("click", () => {
+  if (progress?.operation === "fetch" && progress.phase !== "finish") {
+    void cancelActiveFetch();
+  } else if (!busy) {
+    void runGitAction("fetch");
+  }
+});
+byId("sync-all").addEventListener("click", () => runGitAction("safe_sync"));
 document.addEventListener("keydown", event => {
+  if (event.key === "Escape" && !repoMenu.hidden) {
+    event.preventDefault();
+    hideRepoMenus(true);
+    return;
+  }
   if (event.key === "Escape") {
     if (quotaExpanded) { void setQuotaOpen(false); return; }
     if (view !== "compact") openView(view);
@@ -318,7 +637,7 @@ document.addEventListener("keydown", event => {
 });
 window.__TAURI__?.event?.listen?.("repoticker-git-progress", event => {
   const payload = event.payload;
-  if (!payload || !["fetch", "safe_pull"].includes(payload.operation)) return;
+  if (!payload || !["fetch", "safe_pull", "safe_sync"].includes(payload.operation)) return;
   if (!progress || progress.operation !== payload.operation) {
     progress = { operation: payload.operation, active: new Set(), done: new Set(), errors: new Set() };
   }
@@ -333,6 +652,7 @@ window.__TAURI__?.event?.listen?.("repoticker-git-progress", event => {
     if (payload.status === "error") progress.errors.add(payload.path);
   }
   if (payload.phase === "finish") {
+    fetchCancelling = false;
     // Clear after native tray operations finish; GUI invocations clear in finally.
     if (!busy) progress = null;
   }
@@ -346,6 +666,7 @@ window.__TAURI__?.event?.listen?.("repoticker-git-progress", event => {
   });
 });
 window.__TAURI__?.event?.listen?.("repoticker-card-hidden", () => {
+  hideRepoMenus();
   cardVisible = false;
   cancelAutoHide();
   resetQuota();
@@ -360,18 +681,41 @@ window.__TAURI__?.event?.listen?.("repoticker-reset-view", () => {
   clearError();
   refresh();
 });
-window.__TAURI__?.event?.listen?.("repoticker-config-changed", refresh);
-window.__TAURI__?.event?.listen?.("repoticker-monitor-updated", refresh);
-window.__TAURI__?.event?.listen?.("repoticker-github-auth", refresh);
-window.__TAURI__?.event?.listen?.("repoticker-github-scope-changed", refresh);
+// A saved locale must repaint controls immediately even if the local Git
+// snapshot is still scanning an expanded drawer.
+let appliedLocaleRevision = 0;
+function refreshCardConfiguration() {
+  const revision = ++appliedLocaleRevision;
+  void invoke("get_settings_config").then(config => {
+    if (revision !== appliedLocaleRevision) return;
+    if (typeof config?.language === "string") {
+      authoritativeSavedLocale = config.language;
+      setCardLanguage(config.language);
+    }
+  }).catch(() => {});
+  void refresh();
+}
+window.__TAURI__?.event?.listen?.("repoticker-config-changed", refreshCardConfiguration);
+window.__TAURI__?.event?.listen?.("repoticker-monitor-updated", refreshMonitor);
+window.__TAURI__?.event?.listen?.("repoticker-github-auth", refreshMonitor);
+window.__TAURI__?.event?.listen?.("repoticker-github-scope-changed", refreshMonitor);
 window.__TAURI__?.event?.listen?.("repoticker-git-action-finished", async event => {
   if (event.payload?.Ok) consumeResults(event.payload.Ok);
   else if (event.payload?.Err) showError(event.payload.Err);
   progress = null;
   await refresh();
 });
+// The persisted locale can be shown before slow local Git discovery.
+ // A later authoritative Git snapshot wins over a stale config-only reply.
+void invoke("get_settings_config").then(config => {
+  if (firstSnapshotReady || typeof config?.language !== "string") return;
+  setCardLanguage(config.language);
+}).catch(() => {});
 refresh();
-startGithubMonitoring({ invoke, event: window.__TAURI__?.event, onError: showError });
+triggerMonitorRefresh = startGithubMonitoring({
+  invoke, event: window.__TAURI__?.event, onError: showError,
+  onStage: traceStartup, onRefreshState: monitorRefreshState
+});
 
 /* GTK Layer Shell receives physical Wayland relative-pointer events directly.
    The WebView only owns the gesture start/end, never motion coordinates. */
@@ -396,7 +740,7 @@ function stopDragging(event = null) {
 
 dragSurface.addEventListener("pointerdown", event => {
   if (event.button !== 0 || !event.isPrimary ||
-      event.target.closest("button,input,select,a,.status-hover,[role=button]")) return;
+      event.target.closest("button,input,select,a,.status-hover,[role=button],.drawer,.rows,.repo-row,.repo-menu")) return;
   if (!dragGesture.begin(event.pointerId)) return;
   activePointerId = event.pointerId;
   dragSurface.setPointerCapture(event.pointerId);

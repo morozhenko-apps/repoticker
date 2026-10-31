@@ -2,6 +2,11 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
+import { listAvailableInstallations } from "../apps/desktop/ui/github-installations.mjs";
+import { settingsLocale, settingsText } from "../apps/desktop/ui/settings-i18n.mjs";
+import { localeName, localeDirection } from "../apps/desktop/ui/locale-catalog.mjs";
+import { repositorySelectionMessage } from "../apps/desktop/ui/locale-counts.mjs";
+import { disableBrowserContextMenu } from "../apps/desktop/ui/browser-context-menu.mjs";
 
 const html = readFileSync(
   new URL("../apps/desktop/ui/settings.html", import.meta.url), "utf8"
@@ -45,18 +50,22 @@ test("Device Flow buttons register and invoke native commands after JS startup",
   const invoke = async (command, args = {}) => {
     calls.push({ command, args });
     switch (command) {
-      case "get_snapshot": return {
-        roots: [], language: "en", github_monitor_org: null
+      case "get_settings_config": return {
+        roots: [], language: "en", github_monitor_org: null,
+        github_monitor_repositories: []
       };
+      case "get_monitor_scope": return null;
       case "github_auth_status": return { connected: false, phase: "idle", reason: null };
       case "github_begin": return { userCode: "ABCD-1234" };
       default: return undefined;
     }
   };
+  const documentHandlers = new Map();
   const document = {
+    documentElement: { lang: "en" },
     getElementById: id => elements.get(id) ?? null,
     createElement: () => createElement("dynamic"),
-    addEventListener() {},
+    addEventListener(type, handler) { documentHandlers.set(type, handler); },
   };
   const window = {
     __TAURI__: {
@@ -65,13 +74,35 @@ test("Device Flow buttons register and invoke native commands after JS startup",
     },
     addEventListener() {},
   };
-  // Any nonexistent HTML binding throws here, just as it does in WebKitGTK.
-  runInNewContext(js, {
-    document, window,
+  // vm.Script executes the actual Settings controller in an isolated realm,
+  // while its ESM dependency is supplied as the real imported function.
+  // Fail closed if the controller's single known import changes.
+  const importLine =
+    'import { listAvailableInstallations } from "./github-installations.mjs";\n' +
+    'import { settingsLocale, settingsText } from "./settings-i18n.mjs";\n' +
+    'import { localeName, localeDirection } from "./locale-catalog.mjs";\n' +
+    'import { repositorySelectionMessage } from "./locale-counts.mjs";\n' +
+    'import { disableBrowserContextMenu } from "./browser-context-menu.mjs";\n';
+  assert.equal(js.startsWith(importLine), true,
+    "Settings harness must recognize its real ESM dependency");
+  runInNewContext(js.slice(importLine.length), {
+    document, window, listAvailableInstallations, settingsLocale, settingsText,
+    localeName, localeDirection, repositorySelectionMessage, disableBrowserContextMenu,
     setInterval: () => 1,
     clearInterval() {},
   }, { filename: "settings.mjs" });
-  // Flush initial Settings -> get_snapshot -> github_auth_status refresh.
+  assert.equal(typeof documentHandlers.get("contextmenu"), "function");
+  const rightClick = { prevented: false, preventDefault() { this.prevented = true; } };
+  documentHandlers.get("contextmenu")(rightClick);
+  assert.equal(rightClick.prevented, true);
+  // New startup does not need a full local Git snapshot and checks
+  // authorization concurrently with config-only settings retrieval.
+  assert.equal(elements.get("github-connection-indicator").textContent,
+    "Checking connection...");
+  assert.equal(elements.get("github-connect").hidden, true);
+  assert.equal(elements.get("github-account-status").value,
+    "Checking connection...");
+  assert.ok(!calls.some(c => c.command === "get_snapshot"));
   await new Promise(resolve => setImmediate(resolve));
   const mode = elements.get("github-connection-mode");
   const workerRow = elements.get("github-worker-row");
@@ -120,9 +151,22 @@ test("Device Flow buttons register and invoke native commands after JS startup",
 
 test("shipped Simple polling has no configurable Worker URL or active Hybrid mode", () => {
   assert.match(html, /id="github-connection-mode" disabled/);
-  assert.match(html, /value="polling">Simple polling/);
-  assert.match(html, /value="hybrid">Hybrid webhook relay \(not available yet\)/);
+  assert.match(html, /value="polling" data-i18n="Simple polling">Simple polling/);
+  assert.match(html, /value="hybrid" data-i18n="Hybrid webhook relay \(not available yet\)">Hybrid webhook relay \(not available yet\)/);
   assert.match(html, /id="github-worker-row"[^>]*hidden/);
   assert.match(html, /id="github-worker-url" disabled/);
   assert.doesNotMatch(js, /save_settings[\s\S]*worker_url|save_settings[\s\S]*workerUrl/);
+});
+
+test("Settings native command reads config only, without Git scanning", () => {
+  const native = readFileSync(
+    new URL("../apps/desktop/src-tauri/src/main.rs", import.meta.url), "utf8");
+  const body = native.match(/fn get_settings_config\([\s\S]*?\n\}/)?.[0];
+  assert.ok(body, "native config-only Settings command must exist");
+  assert.match(body, /read_config\(&app\)\?/);
+  assert.doesNotMatch(body, /git::inspect|git::discover|scan\(/);
+  assert.match(native, /generate_handler!\[[\s\S]*?get_settings_config,/);
+  assert.doesNotMatch(js, /invoke\("get_snapshot"\)/,
+    "Settings must never request the expensive full Git snapshot");
+  assert.match(js, /Promise\.all\(\[\s*invoke\("get_settings_config"\),\s*invoke\("github_auth_status"\)/);
 });

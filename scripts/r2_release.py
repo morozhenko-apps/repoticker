@@ -1,20 +1,31 @@
 #!/usr/bin/env python3
-"""Publish verified artifacts to *only* dist/RepoTicker in Cloudflare R2.
+"""RepoTicker flat signed R2 publication. Never invoked by candidate workflows.
 
-Requires explicit deployment secrets. Versioned objects are immutable.
-InRelease is uploaded LAST. Public readback must match source bytes.
+Publishing requires an owner-approved exact-main tag, a protected environment,
+a separately provisioned signing subkey, and scoped RepoTicker R2 credentials.
+The verified receipt is written ONLY after every public download matches.
 """
 import argparse
+import gzip
 import hashlib
+import json
 import os
 from pathlib import Path
 import re
-import time
+import subprocess
 import urllib.request
+import zlib
 
-PREFIX = "dist/RepoTicker"
-BASE = "https://download.morozhenko.com/dist/RepoTicker"
-TYPES = {
+BUCKET = "app-dist"
+PREFIX = "dist/RepoTicker/"
+BASE = "https://download.morozhenko.com/" + PREFIX
+PUBLIC_READBACK_USER_AGENT = (
+    "RepoTicker-ReleaseVerifier/1.0 "
+    "(+https://github.com/morozhenko-apps/repoticker)"
+)
+VERSION = re.compile(r"(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\Z")
+COMMIT = re.compile(r"[a-f0-9]{40}\Z")
+MIMES = {
     ".deb": "application/vnd.debian.binary-package",
     ".AppImage": "application/octet-stream",
     ".exe": "application/octet-stream",
@@ -25,29 +36,32 @@ TYPES = {
 }
 
 
-def sha(path):
+def digest(path):
     h = hashlib.sha256()
-    with path.open("rb") as f:
-        for block in iter(lambda: f.read(1024 * 1024), b""):
-            h.update(block)
+    with path.open("rb") as fh:
+        for part in iter(lambda: fh.read(1024 * 1024), b""):
+            h.update(part)
     return h.hexdigest()
 
 
-def media(path):
-    if path.name == "InRelease" or path.name == "Release":
-        return "text/plain"
-    return TYPES.get(path.suffix, "application/octet-stream")
+def safe_file(path):
+    if path.is_symlink() or not path.is_file():
+        raise ValueError("Missing or unsafe release file: " + path.name)
+    size = path.stat().st_size
+    if not 0 < size <= 350 * 1024 * 1024:
+        raise ValueError("Invalid release file size: " + path.name)
+    return size
 
 
-def source_map(release, apt, version):
+def platform_files(release, platform, version, commit):
     # Do not allow a compromised/incorrect artifact job to make us publish
     # arbitrary side files simply because their names include the version.
     from release_assets import TYPES, canonical, digest
     import json
     result = {}
-    for platform in ("linux", "windows"):
+    for platform in (platform,):
         base = release / platform
-        if not base.is_dir() or not (base / "part.json").is_file():
+        if base.is_symlink() or not base.is_dir() or (base / "part.json").is_symlink() or not (base / "part.json").is_file():
             raise ValueError("Missing verified platform artifact directory " + str(base))
         manifest = json.loads((base / "part.json").read_text())
         if manifest.get("platform") != platform or manifest.get("version") != version:
@@ -59,13 +73,15 @@ def source_map(release, apt, version):
             required.update((name, name + ".sha256"))
             binary = base / name
             sidecar = base / (name + ".sha256")
-            if not binary.is_file() or not sidecar.is_file() or binary.is_symlink():
+            if not binary.is_file() or not sidecar.is_file() or binary.is_symlink() or sidecar.is_symlink():
                 raise ValueError("Missing or unsafe native release artifact: " + name)
+            safe_file(binary)
+            safe_file(sidecar)
             checksum = digest(binary)
             if sidecar.read_text().strip() != checksum + "  " + name:
                 raise ValueError("Release checksum sidecar mismatch: " + name)
             entries[f"{platform}/{name}"] = (checksum, binary.stat().st_size)
-        if {file.name for file in base.iterdir() if file.is_file()} != required | {"part.json"}:
+        if {file.name for file in base.iterdir()} != required | {"part.json"}:
             raise ValueError("Unexpected file in release artifact directory " + str(base))
         actual = {
             item["path"]: (item["sha256"], item["size"])
@@ -74,129 +90,395 @@ def source_map(release, apt, version):
         if actual != entries or len(manifest.get("files", [])) != len(entries):
             raise ValueError("Artifact manifest mismatch: " + platform)
         for name in sorted(required):
-            result[f"releases/v{version}/{platform}/{name}"] = base / name
-    index = apt / "dists/stable/main/binary-amd64"
-    package = apt / f"pool/main/r/repo-ticker/repo-ticker_{version}_amd64.deb"
+            result[f"{platform}/{name}"] = base / name
+    return result
+
+
+def verify_signed_apt_indexes(inrelease, index):
+    """Validate the bytes APT's verified InRelease SHA256 section commits to.
+
+    Caller must verify the signature with gpgv first. A valid signature
+    over OLD index hashes is not proof of the new Packages files.
+    """
+    try:
+        lines = inrelease.read_text(encoding="utf8").splitlines()
+        blank = lines.index("", 1)
+        signed_end = lines.index("-----BEGIN PGP SIGNATURE-----", blank + 1)
+    except (UnicodeError, ValueError) as error:
+        raise ValueError("Signed APT index has a malformed cleartext envelope") from error
+    if (not lines or lines[0] != "-----BEGIN PGP SIGNED MESSAGE-----"
+            or "Hash: SHA256" not in lines[1:blank]
+            or signed_end <= blank + 1
+            or "-----END PGP SIGNATURE-----" not in lines[signed_end + 1:]):
+        raise ValueError("Signed APT index has a malformed cleartext envelope")
+
+    required = {
+        "Packages": index / "Packages",
+        "Packages.gz": index / "Packages.gz",
+    }
+    found = {}
+    in_sha256 = False
+    saw_sha256 = False
+    for line in lines[blank + 1:signed_end]:
+        if line == "SHA256:":
+            if saw_sha256:
+                raise ValueError("Signed APT index repeats SHA256 section")
+            saw_sha256, in_sha256 = True, True
+            continue
+        if not in_sha256:
+            continue
+        if not line.startswith((" ", "\t")):
+            in_sha256 = False
+            continue
+        match = re.fullmatch(r"\s+([a-fA-F0-9]{64})\s+([0-9]+)\s+(\S+)\s*", line)
+        if match is None:
+            raise ValueError("Signed APT index has a malformed SHA256 row")
+        expected_sha, size, name = match.groups()
+        if name in required:
+            if name in found:
+                raise ValueError("Signed APT index repeats a package-index entry")
+            found[name] = (expected_sha.lower(), int(size))
+    if not saw_sha256 or set(found) != set(required):
+        raise ValueError("Signed APT index lacks the required SHA256 entries")
+    for name, package_index in required.items():
+        if not package_index.is_file():
+            raise ValueError("Signed APT index is missing a referenced file")
+        signed_sha, signed_size = found[name]
+        if signed_size != package_index.stat().st_size or signed_sha != digest(package_index):
+            raise ValueError("Signed APT index SHA256 or size does not match the file")
+
+
+
+def verify_apt_package_catalog(packages, compressed, pool, version):
+    """Bind APT's signed single-package index to the exact approved DEB.
+
+    The caller must first authenticate InRelease and confirm its SHA256
+    records for both index files. Independent signatures over two files
+    do not establish that either describes the correct package, nor
+    that the compressed variant contains the same index bytes.
+    """
+    try:
+        lines = packages.read_text(encoding="utf8").splitlines()
+    except UnicodeError as error:
+        raise ValueError("APT package catalog is not valid UTF-8") from error
+    critical = {"Package", "Version", "Architecture", "Filename", "Size", "SHA256"}
+    entries = []
+    fields = {}
+    previous = None
+    for line in lines:
+        if not line:
+            if fields:
+                entries.append(fields)
+                fields = {}
+            previous = None
+            continue
+        if line[0] in " \t":
+            # Debian control files permit folded Description and other
+            # informational fields, but critical identities cannot fold.
+            if previous is None or previous in critical:
+                raise ValueError("APT package catalog has unsafe continuation")
+            continue
+        key, separator, value = line.partition(":")
+        if (not separator or
+                not re.fullmatch(r"[A-Za-z][A-Za-z0-9-]*", key) or
+                key in fields):
+            raise ValueError("APT package catalog contains malformed or duplicate fields")
+        fields[key] = value.strip()
+        previous = key
+    if fields:
+        entries.append(fields)
+    if len(entries) != 1:
+        raise ValueError("APT package catalog must contain one exact RepoTicker package")
+    record = entries[0]
+    expected = {
+        "Package": "repoticker",
+        "Version": version,
+        "Architecture": "amd64",
+        "Filename": f"./repoticker_{version}_amd64.deb",
+        "Size": str(pool.stat().st_size),
+        "SHA256": digest(pool),
+    }
+    if any(record.get(key) != value for key, value in expected.items()):
+        raise ValueError("APT package catalog does not match approved DEB")
+
+    # Compare bounded output chunks to the signed plain index. Never
+    # unboundedly inflate a compressed file into memory.
+    try:
+        with packages.open("rb") as plain, gzip.open(compressed, "rb") as packed:
+            while chunk := plain.read(1024 * 1024):
+                if packed.read(len(chunk)) != chunk:
+                    raise ValueError("APT package catalog gzip differs from Packages")
+            if packed.read(1):
+                raise ValueError("APT package catalog gzip contains additional data")
+    except (EOFError, OSError, zlib.error) as error:
+        raise ValueError("APT package catalog has invalid gzip") from error
+
+
+def apt_files(apt, linux_deb, version):
+    if apt.is_symlink() or not apt.is_dir():
+        raise ValueError("Incomplete signed flat APT directory")
+    # apt_repository.py stages a local copy for dpkg-scanpackages;
+    # the published object is only linux/repoticker_VERSION_amd64.deb
+    # from the platform candidate, never this second staging file.
+    staged = apt / f"repoticker_{version}_amd64.deb"
     keyring = apt / "repoticker-archive-keyring.gpg"
-    mutable = apt / "dists/stable/InRelease"
-    immutable = [package, keyring]
-    mutable_indexes = [index / "Packages", index / "Packages.gz"]
-    if not all(path.is_file() and not path.is_symlink()
-               for path in immutable + mutable_indexes + [mutable]):
-        raise ValueError("Incomplete signed APT snapshot")
-    from release_assets import digest as checksum
-    for path in mutable_indexes:
-        hashed = index / "by-hash/SHA256" / checksum(path)
-        if not hashed.is_file() or hashed.is_symlink() or checksum(hashed) != checksum(path):
-            raise ValueError("Missing or invalid APT by-hash index: " + path.name)
-        immutable.append(hashed)
-    for path in immutable:
-        result["apt/" + path.relative_to(apt).as_posix()] = path
-    # These filenames stay constant across releases, so their contents are
-    # mutable and must not be served with immutable caching. InRelease is last.
-    mutable_paths = [
-        ("apt/" + path.relative_to(apt).as_posix(), path)
-        for path in mutable_indexes
-    ]
-    mutable_paths.append(("apt/dists/stable/InRelease", mutable))
-    return result, mutable_paths
+    packages = apt / "Packages"
+    compressed = apt / "Packages.gz"
+    inrelease = apt / "InRelease"
+    for file in (staged, keyring, packages, compressed, inrelease):
+        safe_file(file)
+    if digest(staged) != digest(linux_deb):
+        raise ValueError("Flat APT staged DEB does not match validated RepoTicker DEB")
+    subprocess.run(["gpgv", "--keyring", str(keyring), str(inrelease)],
+                   check=True, stdout=subprocess.DEVNULL)
+    verify_signed_apt_indexes(inrelease, apt)
+    verify_apt_package_catalog(packages, compressed, linux_deb, version)
+    return ({"linux/" + keyring.name: keyring},
+            {"linux/" + packages.name: packages,
+             "linux/" + compressed.name: compressed,
+             "linux/" + inrelease.name: inrelease})
 
 
-def public_verify(path, key):
-    url = BASE + "/" + key
-    for attempt in range(4):
-        try:
-            with urllib.request.urlopen(url, timeout=45) as resp:
-                if resp.status != 200:
-                    raise ValueError(f"HTTP {resp.status} for {key}")
-                downloaded = hashlib.sha256()
-                while block := resp.read(1024 * 1024):
-                    downloaded.update(block)
-                if downloaded.hexdigest() == sha(path):
-                    return
-                raise ValueError("Public checksum mismatch for " + key)
-        except (OSError, ValueError):
-            if attempt == 3:
-                raise
-            time.sleep(2 * (attempt + 1))
+def source_map(release, apt, version, commit):
+    if not VERSION.fullmatch(version) or not COMMIT.fullmatch(commit):
+        raise ValueError("Invalid signed-release version or commit")
+    linux = platform_files(release, "linux", version, commit)
+    windows = platform_files(release, "windows", version, commit)
+    package = linux["linux/repoticker_" + version + "_amd64.deb"]
+    apt_immutable, apt_mutable = apt_files(apt, package, version)
+    immutable = {**linux, **windows, **apt_immutable}
+    if set(immutable).intersection(apt_mutable):
+        raise ValueError("Overlapping R2 publication keys")
+    return immutable, apt_mutable, {
+        "repoticker-linux": linux,
+        "repoticker-windows": windows,
+    }
 
 
-def publish(release, apt, version, account, access_key, secret):
-    if not re.fullmatch("[0-9a-f]{32}", account):
-        raise ValueError("Invalid Cloudflare account ID")
-    if not access_key or not secret:
-        raise ValueError("Missing scoped R2 credentials")
+def latest_manifest(immutable, version, commit):
+    """A small mutable pointer; never a second binary or an update signature."""
+    def item(key):
+        file = immutable[key]
+        return {"url": BASE + key, "sha256": digest(file), "size": file.stat().st_size}
+    return {
+        "schema": 1, "product": "RepoTicker",
+        "version": version, "tag": "v" + version, "commit": commit,
+        "files": {
+            "linux": {
+                "deb": item(f"linux/repoticker_{version}_amd64.deb"),
+                "appimage": item(f"linux/RepoTicker-{version}-linux-x64.AppImage"),
+            },
+            "windows": {
+                "installer": item(f"windows/RepoTicker-Setup-{version}-win-x64.exe")
+            },
+        },
+    }
+
+
+def content_type(path):
+    if path.name == "InRelease" or path.name == "Packages":
+        return "text/plain; charset=utf-8"
+    return MIMES.get(path.suffix, "application/octet-stream")
+
+
+class _RejectPublicRedirect(urllib.request.HTTPRedirectHandler):
+    """The exact public R2 URL, not a redirected mirror, must serve the bytes."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        raise ValueError("Public R2 download redirected; CDN readback not verified")
+
+
+def _verified_public_opener(request, timeout):
+    # urllib.request.urlopen follows 301/302/303/307/308 by default.
+    # A matching SHA256 at a different URL is not proof of availability
+    # at the approved public R2 custom-domain object URL.
+    return urllib.request.build_opener(_RejectPublicRedirect()).open(
+        request, timeout=timeout,
+    )
+
+
+def public_readback(path, relative, opener=_verified_public_opener):
+    # Direct R2 custom-domain readback is mandatory; private S3 reads alone
+    # cannot demonstrate that visitors can download this exact object.
+    expected_size = path.stat().st_size
+    expected_sha = digest(path)
+    # Public edge security must be able to distinguish our release verifier
+    # from urllib's generic Python client. No browser impersonation or bypass.
+    request = urllib.request.Request(
+        BASE + relative, headers={"User-Agent": PUBLIC_READBACK_USER_AGENT},
+        method="GET",
+    )
+    with opener(request, timeout=45) as reply:
+        if reply.status != 200:
+            raise ValueError("Public R2 download returned non-200")
+        hasher = hashlib.sha256()
+        length = 0
+        while chunk := reply.read(1024 * 1024):
+            length += len(chunk)
+            if length > expected_size:
+                raise ValueError("Public R2 download does not match source")
+            hasher.update(chunk)
+        if length != expected_size or hasher.hexdigest() != expected_sha:
+            raise ValueError("Public R2 download does not match source")
+        return {
+            "url": BASE + relative, "sha256": expected_sha,
+            "readback_sha256": hasher.hexdigest(), "size": expected_size,
+            "readback_size": length, "readback_status": 200,
+        }
+
+
+_NO_SNAPSHOT = object()
+
+
+def object_head(client, key):
+    """Strongly consistent S3 snapshot; only an explicit 404 is absent."""
+    try:
+        return client.head_object(Bucket=BUCKET, Key=PREFIX + key)
+    except Exception as error:
+        status = getattr(error, "response", {}).get("ResponseMetadata", {}).get("HTTPStatusCode")
+        if status == 404:
+            return None
+        raise
+
+
+def object_etag(head):
+    """Validate the exact opaque, quoted tag required by S3 IfMatch."""
+    if head is None:
+        return None
+    etag = head.get("ETag")
+    if not isinstance(etag, str) or not re.fullmatch(r'"[^"\r\n]{1,128}"', etag):
+        raise ValueError("Missing or malformed R2 object ETag")
+    return etag
+
+
+def upload(client, key, file, immutable, expected_latest=_NO_SNAPSHOT):
+    """Single-part, per-object conditional write with mandatory private readback."""
+    object_key = PREFIX + key
+    sha = digest(file)
+    size = safe_file(file)
+    existing = object_head(client, key)
+    if expected_latest is not _NO_SNAPSHOT:
+        # Never promote a release based on an ETag observed AFTER
+        # the mutable APT index publication has already begun.
+        if object_etag(existing) != object_etag(expected_latest):
+            raise ValueError("Concurrent latest pointer changed during publication")
+        if existing is not None and existing.get("Metadata", {}).get("sha256") == sha:
+            # Same version/SHA recovery: do not rewrite an already committed
+            # pointer merely because the public CDN verification previously failed.
+            pass
+    if existing and immutable:
+        if existing.get("Metadata", {}).get("sha256") != sha:
+            raise ValueError("Refusing to overwrite immutable RepoTicker R2 object")
+    elif not (existing and existing.get("Metadata", {}).get("sha256") == sha):
+        conditional = ({"IfNoneMatch": "*"} if existing is None else
+                       {"IfMatch": object_etag(existing)})
+        # boto3 upload_file has no per-object atomic creation contract.
+        # R2 supports single-part streamed PutObject for these bounded files.
+        with file.open("rb") as source:
+            client.put_object(
+                Bucket=BUCKET, Key=object_key, Body=source,
+                ContentLength=size, ContentType=content_type(file),
+                Metadata={"sha256": sha},
+                CacheControl=("public,max-age=31536000,immutable"
+                              if immutable else "no-store"),
+                **conditional,
+            )
+    elif not immutable:
+        # Even idempotent mutable reuse needs a valid ETag for the
+        # next writer's compare-and-swap contract.
+        object_etag(existing)
+    obj = client.get_object(Bucket=BUCKET, Key=object_key)
+    hasher = hashlib.sha256()
+    length = 0
+    for piece in obj["Body"].iter_chunks(chunk_size=1024 * 1024):
+        if piece:
+            length += len(piece)
+            if length > size:
+                raise ValueError("Private R2 readback failed")
+            hasher.update(piece)
+    if length != size or hasher.hexdigest() != sha:
+        raise ValueError("Private R2 readback failed")
+
+
+def publish(release, apt, version, commit, run_id, output, account, access_key, secret):
+    if not re.fullmatch(r"[a-f0-9]{32}", account) or not access_key or not secret:
+        raise ValueError("Missing separately scoped RepoTicker R2 credentials")
+    if not str(run_id).isdigit() or int(run_id) < 1:
+        raise ValueError("Invalid GitHub release run")
+    if output.exists() or output.is_symlink():
+        raise ValueError("Refusing to overwrite any prior publication receipt")
+    # Fail before any remote write if the local final-pointer manifest name
+    # is occupied, even by a dangling symlink. Retain the late check too:
+    # another process may create the file while uploads are in flight.
+    latest_path = output.parent / "repoticker-latest-publish.json"
+    if latest_path.exists() or latest_path.is_symlink():
+        raise ValueError("Refusing to overwrite an existing latest manifest")
+    immutable, mutable, platforms = source_map(release, apt, version, commit)
     import boto3
     from botocore.config import Config
-
-    client = boto3.client(
-        "s3", endpoint_url=f"https://{account}.r2.cloudflarestorage.com",
-        region_name="auto", aws_access_key_id=access_key, aws_secret_access_key=secret,
-        config=Config(signature_version="s3v4", retries={"max_attempts": 3, "mode": "standard"})
+    client = boto3.client("s3",
+        endpoint_url="https://" + account + ".r2.cloudflarestorage.com",
+        region_name="auto", aws_access_key_id=access_key,
+        aws_secret_access_key=secret,
+        config=Config(signature_version="s3v4", retries={"total_max_attempts":1,"mode":"standard"})
     )
-    items, mutable_paths = source_map(release, apt, version)
-    def upload(key, file, immutable):
-        object_key = PREFIX + "/" + key
-        existing = None
-        try:
-            existing = client.head_object(Bucket="app-dist", Key=object_key)
-        except client.exceptions.NoSuchKey:
-            pass
-        except Exception as exc:
-            status = getattr(exc, "response", {}).get("ResponseMetadata", {}).get("HTTPStatusCode")
-            if status != 404:
-                raise
-        if existing:
-            if not immutable:
-                pass
-            else:
-                if existing.get("Metadata", {}).get("sha256") != sha(file):
-                    raise ValueError(f"Immutable R2 key already contains different bytes: {object_key}")
-                return
-        # Mutable indexes and InRelease are serialized by the one-at-a-time
-        # release workflow. The signed InRelease must always be written last.
-        client.upload_file(str(file), "app-dist", object_key, ExtraArgs={
-            "ContentType": media(file),
-            "Metadata": {"sha256": sha(file)},
-            "CacheControl": "public,max-age=31536000,immutable" if immutable else "no-store",
-        })
-        obj = client.get_object(Bucket="app-dist", Key=object_key)
-        digest = hashlib.sha256()
-        for part in obj["Body"].iter_chunks(chunk_size=1024 * 1024):
-            if part:
-                digest.update(part)
-        if digest.hexdigest() != sha(file):
-            raise ValueError("R2 readback failed: " + object_key)
+    # Pin the pointer before any APT mutation; a later HEAD is not
+    # permission to silently adopt a different release's new ETag.
+    original_latest = object_head(client, "latest.json")
+    if original_latest is not None:
+        object_etag(original_latest)
+    verified = {}
+    for key, file in sorted(immutable.items()):
+        upload(client, key, file, True)
+        verified[key] = public_readback(file, key)
+    # Two mutable index representations first; signed InRelease commits
+    # APT afterwards. Without by-hash a concurrent client may see a
+    # transient signed-index mismatch and must retry, never bypass GPG.
+    for key, file in sorted(mutable.items()):
+        if key == "linux/InRelease":
+            continue
+        upload(client, key, file, False)
+        verified[key] = public_readback(file, key)
+    inrelease = "linux/InRelease"
+    upload(client, inrelease, mutable[inrelease], False)
+    verified[inrelease] = public_readback(mutable[inrelease], inrelease)
 
-    for key, path in sorted(items.items()):
-        upload(key, path, True)
-    # Verify the public read-only projection BEFORE rotating the current index.
-    pool = next((key for key in items if key.startswith("apt/pool/")), None)
-    if pool is None:
-        raise ValueError("No DEB in APT pool")
-    public_verify(items[pool], pool)
-    apt_key = next((key for key in items if key.endswith("repoticker-archive-keyring.gpg")), None)
-    if not apt_key:
-        raise ValueError("Missing public signing key")
-    public_verify(items[apt_key], apt_key)
-    for key, path in items.items():
-        if "/by-hash/" in key:
-            public_verify(path, key)
-    for key, path in mutable_paths:
-        upload(key, path, False)
-        public_verify(path, key)
+    # latest.json is the FINAL commit point. No duplicate "latest" binary
+    # aliases: the site reads this pointer and links immutable binaries.
+    manifest = latest_manifest(immutable, version, commit)
+    if latest_path.exists() or latest_path.is_symlink():
+        raise ValueError("Refusing to overwrite an existing latest manifest")
+    latest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
+    upload(client, "latest.json", latest_path, False,
+           expected_latest=original_latest)
+    latest_verified = public_readback(latest_path, "latest.json")
+    receipt = {
+        "schema": 1, "product": "RepoTicker", "base_url": BASE,
+        "version": version, "commit": commit, "latest": latest_verified,
+        "artifacts": [
+            {"name": name, "run_id": int(run_id),
+             "files": [verified[key] for key in sorted(files)]}
+            for name, files in platforms.items()
+        ],
+    }
+    output.write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n")
+    print("RepoTicker flat R2 publication, APT and latest manifest readback completed")
 
 
 def main():
-    p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--release", required=True, type=Path)
-    p.add_argument("--apt", required=True, type=Path)
-    p.add_argument("--version", required=True)
-    a = p.parse_args()
-    publish(a.release, a.apt, a.version,
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--release", type=Path, required=True)
+    parser.add_argument("--apt", type=Path, required=True)
+    parser.add_argument("--version", required=True)
+    parser.add_argument("--commit", required=True)
+    parser.add_argument("--run-id", type=int, required=True)
+    parser.add_argument("--receipt", type=Path, required=True)
+    args = parser.parse_args()
+    publish(args.release, args.apt, args.version, args.commit,
+            args.run_id, args.receipt,
             os.environ["REPOTICKER_R2_ACCOUNT_ID"],
-            os.environ.get("REPOTICKER_R2_ACCESS_KEY_ID", ""),
-            os.environ.get("REPOTICKER_R2_SECRET_ACCESS_KEY", ""))
+            os.environ["REPOTICKER_R2_ACCESS_KEY_ID"],
+            os.environ["REPOTICKER_R2_SECRET_ACCESS_KEY"])
 
 
 if __name__ == "__main__":

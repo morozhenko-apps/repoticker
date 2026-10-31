@@ -4,21 +4,14 @@ on:
   push:
     branches: [dev, main]
     paths-ignore:
-      - 'docs/**'
-      - 'doc/**'
-      - '**/docs/**'
-      - '**/doc/**'
+      - 'docs/**/*.md'
+      - 'doc/**/*.md'
       - 'README.md'
-      - '**/README.md'
       - 'AGENT.md'
-      - '**/AGENT.md'
       - 'AGENTS.md'
-      - '**/AGENTS.md'
       - 'CHANGELOG.md'
-      - '**/CHANGELOG.md'
       - 'CONTRIBUTING.md'
-      - '**/CONTRIBUTING.md'
-      - '.github/agents/**'
+      - '.github/agents/*.md'
       - '.codex.md'
   pull_request:
     branches: [dev, main]
@@ -32,26 +25,56 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  format_and_core:
-    name: Rust format, core tests, Clippy
+  scope:
+    name: Resolve verification scope
     runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      required: ${{ steps.classify.outputs.required }}
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Classify complete PR merge diff
+        id: classify
+        run: bash scripts/ci-pr-scope.sh
+
+  format_and_core:
+    needs: scope
+    if: needs.scope.outputs.required == 'true'
+    name: Rust format, core tests, Clippy
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@c676846f29d98ff6b0106d3608c7ffd4048af17b # v2.9.0
+        with:
+          workspaces: . -> target
+          shared-key: repoticker-format_and_core
+          save-if: ${{ github.ref == 'refs/heads/dev' && github.event_name != 'pull_request' }}
       - name: Check formatting
         run: cargo fmt --all --check
       - name: Core tests
-        run: cargo test -p repoticker-core
+        run: cargo test --locked -p repoticker-core
       - name: Core Clippy
-        run: cargo clippy -p repoticker-core --all-targets -- -D warnings
+        run: cargo clippy --locked -p repoticker-core --all-targets -- -D warnings
 
   ui:
+    needs: scope
+    if: needs.scope.outputs.required == 'true'
     name: Card model and JS syntax
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v7
         with:
           node-version: 24
@@ -61,20 +84,36 @@ jobs:
           node --check apps/desktop/ui/view.mjs
           node --check apps/desktop/ui/app.mjs
       - name: JS unit tests
-        run: node --test tests/*.test.mjs
+        run: node --experimental-test-coverage --test --test-coverage-include='apps/desktop/ui/*.mjs' tests/*.test.mjs
       - name: Install release contract tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends apt-utils dpkg-dev gnupg gpgv
+          sudo apt-get install -y --no-install-recommends apt-utils dpkg-dev gnupg gpgv python3-venv
       - name: Version and release metadata tests
         run: python3 -m unittest discover -s tests -p 'test_release_*.py' -v
 
+      - name: CI policy and scope contracts
+        run: |
+          python3 -m venv "$RUNNER_TEMP/ci-policy"
+          "$RUNNER_TEMP/ci-policy/bin/python" -m pip install -r scripts/requirements-ci.txt
+          "$RUNNER_TEMP/ci-policy/bin/python" -m unittest discover -s tests -p 'test_ci_policy.py' -v
+
   desktop:
+    needs: scope
+    if: needs.scope.outputs.required == 'true'
     name: Desktop compile (Linux)
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
       - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@c676846f29d98ff6b0106d3608c7ffd4048af17b # v2.9.0
+        with:
+          workspaces: . -> target
+          shared-key: repoticker-desktop
+          save-if: ${{ github.ref == 'refs/heads/dev' && github.event_name != 'pull_request' }}
       - name: Install Tauri Linux dependencies
         run: |
           sudo apt-get update
@@ -93,17 +132,33 @@ jobs:
             libwayland-bin \
             wayland-protocols
       - name: Check desktop shell
-        run: cargo check -p repoticker-desktop
+        run: cargo check --locked -p repoticker
+      - name: Native Rust desktop unit tests
+        run: cargo test --locked -p repoticker --bin repoticker
 
   preflight:
     name: Preflight result
     if: always()
-    needs: [format_and_core, ui, desktop]
+    needs: [scope, format_and_core, ui, desktop]
     runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      SCOPE_RESULT: ${{ needs.scope.result }}
+      REQUIRED: ${{ needs.scope.outputs.required }}
+      CORE_RESULT: ${{ needs.format_and_core.result }}
+      UI_RESULT: ${{ needs.ui.result }}
+      DESKTOP_RESULT: ${{ needs.desktop.result }}
     steps:
-      - name: Require all jobs green
-        env:
-          RESULTS: ${{ join(needs.*.result, ',') }}
+      - name: Require exact applicable outcomes
+        shell: bash
         run: |
-          echo "$RESULTS"
-          test "$RESULTS" = "success,success,success"
+          set -euo pipefail
+          [[ "$SCOPE_RESULT" == success ]] || exit 1
+          case "$REQUIRED" in
+            true) expected=success ;;
+            false) expected=skipped ;;
+            *) exit 1 ;;
+          esac
+          for result in "$CORE_RESULT" "$UI_RESULT" "$DESKTOP_RESULT"; do
+            [[ "$result" == "$expected" ]] || exit 1
+          done

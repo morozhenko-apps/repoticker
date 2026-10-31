@@ -2,17 +2,40 @@
 //! The UI may request ONLY documented Actions, account and billing read routes.
 //! OAuth bearer strings never cross IPC; error responses are not returned.
 
-use std::{collections::HashSet, time::Duration};
+use std::{collections::HashSet, sync::OnceLock, time::Duration};
 
 use reqwest::{header, redirect::Policy, Client, Url};
 use serde_json::{json, Value};
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 
-use crate::github_session;
+use crate::{github_etag_cache, github_rate_gate, github_session};
 
 const MAX_BODY: usize = 2 * 1024 * 1024;
 const PAGE_CAP: u32 = 10;
 const API_VERSION: &str = "2022-11-28";
+
+/// One process-local native REST transport across monitoring, Settings and
+/// usage. The client retains TCP/TLS connections, not bearer tokens or JSON.
+/// A failed initialization is reported using a fixed, redacted error.
+#[derive(Default)]
+pub struct GitHubRestClient {
+    client: OnceLock<Result<Client, &'static str>>,
+}
+
+impl GitHubRestClient {
+    fn client(&self) -> Result<&Client, String> {
+        self.client
+            .get_or_init(|| {
+                Client::builder()
+                    .redirect(Policy::none())
+                    .timeout(Duration::from_secs(15))
+                    .build()
+                    .map_err(|_| "Cannot initialize GitHub API client.")
+            })
+            .as_ref()
+            .map_err(|reason| (*reason).to_owned())
+    }
+}
 
 /// A fixed, redacted error vocabulary shared with the JS monitor policy.
 /// Do not return GitHub response bodies, account names or HTTP header values.
@@ -39,6 +62,45 @@ pub(crate) fn valid_name(value: &str) -> bool {
         && value
             .bytes()
             .all(|b| b.is_ascii_alphanumeric() || b"._-".contains(&b))
+}
+
+fn valid_utc_second_timestamp(timestamp: &str) -> bool {
+    let bytes = timestamp.as_bytes();
+    if bytes.len() != 20
+        || !bytes
+            .iter()
+            .copied()
+            .enumerate()
+            .all(|(index, byte)| match index {
+                4 | 7 => byte == b'-',
+                10 => byte == b'T',
+                13 | 16 => byte == b':',
+                19 => byte == b'Z',
+                _ => byte.is_ascii_digit(),
+            })
+    {
+        return false;
+    }
+    let number = |start: usize, end: usize| timestamp[start..end].parse::<u32>().ok();
+    let (Some(year), Some(month), Some(day), Some(hour), Some(minute), Some(second)) = (
+        number(0, 4),
+        number(5, 7),
+        number(8, 10),
+        number(11, 13),
+        number(14, 16),
+        number(17, 19),
+    ) else {
+        return false;
+    };
+    let leap = year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
+    let days = match month {
+        1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
+        4 | 6 | 9 | 11 => 30,
+        2 if leap => 29,
+        2 => 28,
+        _ => return false,
+    };
+    year > 0 && (1..=days).contains(&day) && hour < 24 && minute < 60 && second < 60
 }
 
 fn valid_path(requested: &str) -> bool {
@@ -105,7 +167,9 @@ fn valid_path(requested: &str) -> bool {
                     && value
                         .parse::<u32>()
                         .is_ok_and(|n| (1..=PAGE_CAP).contains(&n)) => {}
-            "status" if route == 3 && (value == "queued" || value == "in_progress") => {}
+            "status"
+                if route == 3
+                    && (value == "queued" || value == "in_progress" || value == "completed") => {}
             "filter" if route == 4 && value == "latest" => {}
             "year"
                 if route == 5
@@ -143,14 +207,16 @@ fn project_billing(value: Value) -> Result<Value, String> {
             .get("sku")
             .and_then(Value::as_str)
             .ok_or_else(|| "Incomplete GitHub billing item.".to_owned())?;
-        let quantity = item
+        let original_quantity = item
             .get("grossQuantity")
-            .and_then(Value::as_f64)
+            .ok_or_else(|| "Incomplete GitHub billing quantity.".to_owned())?;
+        let quantity = original_quantity
+            .as_f64()
             .ok_or_else(|| "Incomplete GitHub billing quantity.".to_owned())?;
         if sku.len() > 80 || sku.is_empty() || !quantity.is_finite() || quantity < 0.0 {
             return Err("Invalid GitHub billing quantity.".into());
         }
-        projected.push(json!({ "sku": sku, "grossQuantity": quantity }));
+        projected.push(json!({ "sku": sku, "grossQuantity": original_quantity }));
     }
     Ok(json!({ "usageItems": projected }))
 }
@@ -205,6 +271,56 @@ fn project(path: &str, value: Value) -> Result<Value, String> {
     if arr.len() > 100 {
         return Err("GitHub returned more than the requested page size.".into());
     }
+    // Completed runs are a narrowly projected notification input.
+    // Do not return actor or repository payloads to the WebView.
+    if key == "workflow_runs" && path.contains("status=completed") {
+        let completed: Vec<Value> = arr
+            .iter()
+            .map(|item| {
+                let id = item
+                    .get("id")
+                    .and_then(Value::as_u64)
+                    .filter(|id| *id > 0 && *id <= 9_007_199_254_740_991)
+                    .ok_or_else(|| "Invalid completed GitHub run ID.".to_owned())?;
+                let attempt = item
+                    .get("run_attempt")
+                    .and_then(Value::as_u64)
+                    .filter(|attempt| (1..=1_000_000).contains(attempt))
+                    .ok_or_else(|| "Invalid completed GitHub run attempt.".to_owned())?;
+                let conclusion = item
+                    .get("conclusion")
+                    .and_then(Value::as_str)
+                    .filter(|value| {
+                        matches!(
+                            *value,
+                            "success"
+                                | "failure"
+                                | "cancelled"
+                                | "skipped"
+                                | "timed_out"
+                                | "action_required"
+                                | "neutral"
+                                | "stale"
+                                | "startup_failure"
+                        )
+                    })
+                    .ok_or_else(|| "Invalid completed GitHub run conclusion.".to_owned())?;
+                let updated_at = item
+                    .get("updated_at")
+                    .and_then(Value::as_str)
+                    .filter(|timestamp| valid_utc_second_timestamp(timestamp))
+                    .ok_or_else(|| "Invalid completed GitHub run timestamp.".to_owned())?;
+                Ok(json!({
+                    "id": id, "run_attempt": attempt,
+                    "conclusion": conclusion, "updated_at": updated_at,
+                }))
+            })
+            .collect::<Result<_, String>>()?;
+        return Ok(json!({
+            "workflow_runs": completed,
+            "total_count": value.get("total_count").cloned().unwrap_or(Value::Null),
+        }));
+    }
     let items: Vec<Value> = arr
         .iter()
         .map(|item| match key {
@@ -246,22 +362,52 @@ pub async fn github_api_get(app: AppHandle, path: String) -> Result<Value, Strin
     if !valid_path(&path) {
         return Err("Unsupported GitHub read-only API request.".into());
     }
-    let token = github_session::github_access_token(&app).await?;
-    let client = Client::builder()
-        .redirect(Policy::none())
-        .timeout(Duration::from_secs(15))
-        .build()
-        .map_err(|_| "Cannot initialize GitHub API client.")?;
-    let mut response = client
+    // Never include the path itself: it can contain private repository names.
+    let stage = if path.starts_with("/user/installations?") {
+        "github.rest_installations"
+    } else if path.starts_with("/user/installations/") {
+        "github.rest_repositories"
+    } else if path.contains("/actions/runners?") {
+        "github.rest_runners"
+    } else if path.contains("/actions/runs/") {
+        "github.rest_jobs"
+    } else if path.contains("/actions/runs?") {
+        "github.rest_runs"
+    } else {
+        "github.rest_other"
+    };
+    let _api = crate::startup_diagnostics::Span::new(stage);
+    // Shared across card, Settings and usage views; no network under cooldown.
+    let gate = app.state::<github_rate_gate::GitHubRateGate>();
+    if gate.remaining_seconds() > 0 {
+        return Err("GitHub API rate limited.".into());
+    }
+    let (token, lookup) = github_session::github_access_token_with_cache(&app, &path).await?;
+    let cached = app.state::<github_etag_cache::GitHubETagCache>();
+    let transport = app.state::<GitHubRestClient>();
+    let client = transport.client()?;
+    let mut request = client
         .get(format!("https://api.github.com{path}"))
         .header(header::ACCEPT, "application/vnd.github+json")
         .header("X-GitHub-Api-Version", API_VERSION)
         .header(header::USER_AGENT, "RepoTicker/0.1")
-        .bearer_auth(&token)
+        .bearer_auth(&token);
+    if let Some(etag) = &lookup.etag {
+        request = request.header(header::IF_NONE_MATCH, etag.as_str());
+    }
+    let mut response = request
         .send()
         .await
         .map_err(|_| "GitHub API network error.")?;
+    if response.status() == reqwest::StatusCode::NOT_MODIFIED {
+        return cached
+            .not_modified(&path, &lookup)
+            .ok_or_else(|| "GitHub conditional response unavailable.".into());
+    }
     if !response.status().is_success() {
+        if matches!(response.status().as_u16(), 401 | 403 | 404) {
+            cached.invalidate();
+        }
         let remaining = response
             .headers()
             .get("x-ratelimit-remaining")
@@ -270,8 +416,26 @@ pub async fn github_api_get(app: AppHandle, path: String) -> Result<Value, Strin
             .headers()
             .get(header::RETRY_AFTER)
             .and_then(|header| header.to_str().ok());
+        let reset = response
+            .headers()
+            .get("x-ratelimit-reset")
+            .and_then(|header| header.to_str().ok());
+        if let Some(duration) = github_rate_gate::backoff_duration(
+            response.status().as_u16(),
+            remaining,
+            retry_after,
+            reset,
+            github_rate_gate::now_unix(),
+        ) {
+            gate.defer(duration);
+        }
         return Err(api_http_failure(response.status().as_u16(), remaining, retry_after).into());
     }
+    let etag = response
+        .headers()
+        .get(header::ETAG)
+        .and_then(|etag| etag.to_str().ok())
+        .map(str::to_owned);
     let mut bytes = Vec::new();
     while let Some(chunk) = response
         .chunk()
@@ -285,12 +449,35 @@ pub async fn github_api_get(app: AppHandle, path: String) -> Result<Value, Strin
     }
     let value: Value =
         serde_json::from_slice(&bytes).map_err(|_| "GitHub API returned invalid JSON.")?;
-    project(&path, value)
+    let projected = project(&path, value)?;
+    if !cached.unchanged(lookup.generation) {
+        return Err("GitHub authorization changed. Retry.".into());
+    }
+    if !cached.save(&path, &lookup, etag.as_deref(), &projected) {
+        return Err("GitHub authorization changed. Retry.".into());
+    }
+    Ok(projected)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn rest_client_reuses_connections_but_never_stores_auth_headers() {
+        let transport = GitHubRestClient::default();
+        let first = transport.client().expect("native HTTP client");
+        let second = transport.client().expect("same native HTTP client");
+        assert!(std::ptr::eq(first, second));
+
+        let request = first
+            .get("https://api.github.com/user")
+            .build()
+            .expect("build read-only GitHub request");
+        // No client-level default authorization, so each GET must explicitly
+        // obtain its current native credential and set bearer_auth itself.
+        assert!(!request.headers().contains_key(header::AUTHORIZATION));
+    }
 
     #[test]
     fn only_documented_read_routes_are_allowed() {
@@ -303,6 +490,7 @@ mod tests {
             "/user/installations/123/repositories?per_page=100&page=2",
             "/orgs/team-apps/actions/runners?per_page=100&page=1",
             "/repos/team-apps/tool/actions/runs?status=queued&per_page=100&page=1",
+            "/repos/team-apps/tool/actions/runs?status=completed&per_page=100&page=1",
             "/repos/team-apps/tool/actions/runs/123/jobs?filter=latest&per_page=100&page=1",
         ] {
             assert!(valid_path(path), "{path}");
@@ -322,7 +510,7 @@ mod tests {
             "/user/installations?per_page=100&page=1&token=secret",
             "/user/installations?per_page=100&page=1&page=2",
             "/repos/team/repo/actions/workflows?per_page=100&page=1",
-            "/repos/team/repo/actions/runs?status=completed&per_page=100&page=1",
+            "/repos/team/repo/actions/runs?status=failed&per_page=100&page=1",
             "/repos/team/../actions/runs?per_page=100&page=1",
             "/orgs/%2e%2e/actions/runners?per_page=100&page=1",
             "/orgs/team/actions/runners?per_page=100&page=1#frag",
@@ -330,6 +518,50 @@ mod tests {
         ] {
             assert!(!valid_path(path), "{path}");
         }
+    }
+
+    #[test]
+    fn completed_run_projection_is_minimal_and_rejects_invalid_facts() {
+        let path = "/repos/team/repo/actions/runs?status=completed&per_page=100&page=1";
+        let fixture = json!({"total_count": 1, "workflow_runs": [{
+            "id": 123, "run_attempt": 2, "conclusion": "failure",
+            "updated_at": "2026-10-24T18:30:00Z",
+            "actor": {"token": "private-token"}, "display_title": "private-title",
+            "head_repository": {"name": "private-repo"}
+        }]});
+        let projected = project(path, fixture.clone()).unwrap();
+        assert_eq!(projected["workflow_runs"][0]["id"], 123);
+        assert_eq!(projected["workflow_runs"][0]["run_attempt"], 2);
+        assert_eq!(projected["workflow_runs"][0]["conclusion"], "failure");
+        assert_eq!(
+            projected["workflow_runs"][0]["updated_at"],
+            "2026-10-24T18:30:00Z"
+        );
+        assert!(!projected.to_string().contains("private-token"));
+        assert!(!projected.to_string().contains("private-title"));
+        assert!(!projected.to_string().contains("private-repo"));
+        for invalid in [
+            json!({"id": 0}),
+            json!({"id": 9007199254740992u64}),
+            json!({"run_attempt": 0}),
+            json!({"run_attempt": 1000001}),
+            json!({"conclusion": "unknown"}),
+            json!({"conclusion": null}),
+            json!({"updated_at": "bad"}),
+            json!({"updated_at": "2026-10-24T18:30:00Z\n"}),
+        ] {
+            let mut damaged = fixture.clone();
+            for (key, value) in invalid.as_object().unwrap() {
+                damaged["workflow_runs"][0][key] = value.clone();
+            }
+            assert!(project(path, damaged).is_err(), "{invalid}");
+        }
+        let active = project(
+            "/repos/team/repo/actions/runs?status=queued&per_page=100&page=1",
+            fixture,
+        )
+        .unwrap();
+        assert_eq!(active["workflow_runs"][0], json!({"id": 123}));
     }
 
     #[test]
@@ -427,5 +659,147 @@ mod tests {
             api_http_failure(502, None, None),
             "GitHub API request failed."
         );
+    }
+
+    #[test]
+    fn paths_reject_encoded_traversal_duplicate_queries_and_write_operations() {
+        for route in [
+            "/repos/team/a/actions/runs?per_page=100&page=1&page=1",
+            "/repos/team/a/actions/runs?per_page=100&page=1%26token=x",
+            "/repos/team/a/actions/runs?per_page=100&page=11",
+            "/repos/team/a/actions/runs?per_page=100&page=-1",
+            "/repos/team/a/actions/runs/0/jobs?filter=latest&per_page=100&page=1",
+            "/repos/team/a/actions/runs/1/jobs?filter=all&per_page=100&page=1",
+            "/user/installations/0/repositories?per_page=100&page=1",
+            "/repos/team/%2e%2e/actions/runs?per_page=100&page=1",
+            "/repos/team/a/actions/runs?status=completed&per_page=100&page=1&foo=x",
+            "/repos/team/a/actions/runs?status=completed&per_page=100&page=1#x",
+            "/repos/team/a/actions/runs?status=completed&per_page=100&page=1/../user",
+        ] {
+            assert!(!valid_path(route), "unsafe route accepted: {route}");
+        }
+    }
+
+    #[test]
+    fn repository_and_runner_projections_never_forward_arbitrary_provider_fields() {
+        let fixture = json!({
+            "total_count": 1, "repositories": [{
+                "full_name":"team/a","owner":{"login":"team","email":"secret@example.test"},
+                "permissions":{"admin":true},"token":"synthetic-token"
+            }]
+        });
+        let result = project(
+            "/user/installations/1/repositories?per_page=100&page=1",
+            fixture,
+        )
+        .unwrap();
+        assert_eq!(result["repositories"][0]["full_name"], "team/a");
+        assert!(!result.to_string().contains("secret"));
+        assert!(!result.to_string().contains("permissions"));
+        let runners = json!({"runners":[{"id":1,"name":"ci",
+            "status":"online","busy":false,"labels":["self-hosted"],
+            "secret":"private","private_ip":"10.0.0.1"}]});
+        let projected = project("/orgs/team/actions/runners?per_page=100&page=1", runners).unwrap();
+        assert!(!projected.to_string().contains("private_ip"));
+        assert!(!projected.to_string().contains("\"secret\""));
+        assert_eq!(projected["runners"][0]["id"], 1);
+    }
+
+    #[test]
+    fn oversized_or_broken_provider_pages_are_not_treated_as_empty() {
+        let path = "/user/installations?per_page=100&page=1";
+        assert!(project(path, json!({})).is_err());
+        assert!(project(path, json!({"installations":null})).is_err());
+        assert!(project(path, json!({"installations":101})).is_err());
+        assert!(project(path, json!({"installations":vec![json!({});101]})).is_err());
+        assert_eq!(
+            project(path, json!({"installations":[]})).unwrap()["installations"]
+                .as_array()
+                .unwrap()
+                .len(),
+            0
+        );
+    }
+
+    #[test]
+    fn mode_b_billing_projection_preserves_integer_and_fractional_number_types() {
+        let result = project_billing(json!({"usageItems": [
+            {"product": "Actions", "unitType": "minutes",
+             "sku": "actions_linux", "grossQuantity": 42, "private": "omit"},
+            {"product": "Actions", "unitType": "minutes",
+             "sku": "actions_windows", "grossQuantity": 2.75, "private": "omit"}
+        ]}))
+        .unwrap();
+        assert_eq!(result["usageItems"][0]["grossQuantity"], json!(42));
+        assert_eq!(result["usageItems"][1]["grossQuantity"], json!(2.75));
+        assert!(result["usageItems"][0]["grossQuantity"].is_i64());
+        assert!(result["usageItems"][1]["grossQuantity"].is_f64());
+        assert!(!result.to_string().contains("private"));
+    }
+
+    #[test]
+    fn billing_projection_never_exposes_other_products_or_private_metadata() {
+        let payload = json!({"usageItems":[
+            {"product":"Actions","unitType":"minutes","sku":"actions_linux",
+             "grossQuantity":0,"netAmount":900,"token":"private"},
+            {"product":"Copilot","unitType":"requests","sku":"copilot",
+             "grossQuantity":55,"private":"different"}
+        ],"user":{"email":"secret@example.test"}});
+        let projected = project_billing(payload).unwrap();
+        assert_eq!(projected["usageItems"].as_array().unwrap().len(), 1);
+        assert_eq!(projected["usageItems"][0]["grossQuantity"], 0);
+        assert!(!projected.to_string().contains("private"));
+        assert!(!projected.to_string().contains("netAmount"));
+        assert!(!projected.to_string().contains("secret"));
+        let invalid = json!({"usageItems":[{"product":"Actions","unitType":"minutes",
+            "sku":"actions_linux","grossQuantity":-1}]});
+        assert!(project_billing(invalid).is_err());
+    }
+
+    #[test]
+    fn mode_b_completed_run_timestamp_enforces_calendar_and_leap_year() {
+        for accepted in [
+            "2024-02-29T23:59:59Z",
+            "2026-01-31T00:00:00Z",
+            "2000-02-29T00:00:00Z",
+        ] {
+            assert!(valid_utc_second_timestamp(accepted), "{accepted}");
+        }
+        for invalid in [
+            "",
+            "2026-02-29T00:00:00Z",
+            "2026-02-30T00:00:00Z",
+            "2026-04-31T00:00:00Z",
+            "2026-01-00T00:00:00Z",
+            "2026-13-01T00:00:00Z",
+            "1900-02-29T00:00:00Z",
+            "2026-12-31T24:00:00Z",
+            "2026-12-31T23:60:00Z",
+            "2026-12-31T23:59:60Z",
+            "2026-12-31T23:59:59+00:00",
+        ] {
+            assert!(!valid_utc_second_timestamp(invalid), "{invalid}");
+        }
+    }
+
+    #[test]
+    fn mode_b_native_completed_run_projection_rejects_impossible_dates() {
+        let path = "/repos/team/app/actions/runs?status=completed&per_page=100&page=1";
+        let run = json!({
+            "id": 8,
+            "run_attempt": 1,
+            "conclusion": "failure",
+            "updated_at": "2024-02-29T23:59:59Z"
+        });
+        let valid = project(path, json!({"workflow_runs": [run.clone()]})).unwrap();
+        assert_eq!(valid["workflow_runs"][0]["id"], 8);
+        for bad in ["2026-02-31T00:00:00Z", "2026-04-31T10:00:00Z"] {
+            let mut invalid = run.clone();
+            invalid["updated_at"] = json!(bad);
+            assert!(
+                project(path, json!({"workflow_runs": [invalid]})).is_err(),
+                "{bad}"
+            );
+        }
     }
 }

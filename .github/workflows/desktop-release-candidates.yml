@@ -49,7 +49,7 @@ jobs:
         run: cargo install tauri-cli --version '^2' --locked
       - name: Build Linux distributions
         working-directory: apps/desktop/src-tauri
-        run: cargo tauri build --bundles deb,appimage
+        run: cargo tauri build --bundles deb,appimage -- --locked
       - name: Verify Linux artifacts
         env:
           VERSION: ${{ needs.validate.outputs.version }}
@@ -62,7 +62,7 @@ jobs:
           name: repoticker-linux
           path: ${{ runner.temp }}/linux/*
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 1
   windows:
     name: Windows x64 NSIS
     needs: validate
@@ -77,7 +77,7 @@ jobs:
         run: cargo install tauri-cli --version '^2' --locked
       - name: Build installer
         working-directory: apps/desktop/src-tauri
-        run: cargo tauri build --bundles nsis
+        run: cargo tauri build --bundles nsis -- --locked
       - name: Verify Windows artifact
         shell: pwsh
         env:
@@ -89,7 +89,7 @@ jobs:
           name: repoticker-windows
           path: ${{ runner.temp }}/windows/*
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 1
   macos:
     name: macOS stub (Apple Developer account unavailable)
     if: ${{ false }}
@@ -102,6 +102,8 @@ jobs:
     environment: apt-release
     runs-on: ubuntu-24.04
     timeout-minutes: 65
+    outputs:
+      receipt: ${{ steps.publish.outputs.receipt }}
     env:
       VERSION: ${{ needs.validate.outputs.version }}
       SIGNING_FPR: ${{ vars.REPOTICKER_APT_FINGERPRINT }}
@@ -125,7 +127,7 @@ jobs:
           [[ "$SIGNING_FPR" =~ ^[a-fA-F0-9]{40}$ ]]
           [[ "$REPOTICKER_R2_ACCOUNT_ID" =~ ^[a-f0-9]{32}$ ]]
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends apt-utils dpkg-dev gnupg gpgv
+          sudo apt-get install -y --no-install-recommends dpkg-dev gnupg gpgv
           python3 -m venv "$RUNNER_TEMP/release-python"
           "$RUNNER_TEMP/release-python/bin/pip" install --no-cache-dir \
             -r scripts/requirements-release.txt
@@ -155,14 +157,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          deb="$(find "$RUNNER_TEMP/release/linux" -maxdepth 1 -name 'repo-ticker_*.deb' -type f -print -quit)"
+          deb="$(find "$RUNNER_TEMP/release/linux" -maxdepth 1 -name 'repoticker_*.deb' -type f -print -quit)"
           test -n "$deb"
           python3 scripts/apt_repository.py \
             --deb "$deb" --out "$RUNNER_TEMP/apt" --version "$VERSION" \
             --gpg-home "$RUNNER_TEMP/private/gnupg" \
             --fingerprint "$SIGNING_FPR" \
             --passphrase-file "$RUNNER_TEMP/private/passphrase"
-      - name: Verify R2 artifacts and publish signed APT last
+      - name: Verify flat R2 files, signed APT and latest manifest
+        id: publish
         shell: bash
         env:
           REPOTICKER_R2_ACCESS_KEY_ID: ${{ secrets.REPOTICKER_R2_ACCESS_KEY_ID }}
@@ -170,12 +173,12 @@ jobs:
         run: |
           set -euo pipefail
           "$RUNNER_TEMP/release-python/bin/python" scripts/r2_release.py \
-            --release "$RUNNER_TEMP/release" --apt "$RUNNER_TEMP/apt" --version "$VERSION"
-      - uses: actions/upload-artifact@v4
-        with:
-          name: repoticker-apt-keyring
-          path: ${{ runner.temp }}/apt/repoticker-archive-keyring.gpg
-          if-no-files-found: error
+            --release "$RUNNER_TEMP/release" --apt "$RUNNER_TEMP/apt" --version "$VERSION" \
+            --commit "$GITHUB_SHA" --run-id "$GITHUB_RUN_ID" \
+            --receipt "$RUNNER_TEMP/publication-receipt.json"
+          printf 'receipt=' >> "$GITHUB_OUTPUT"
+          base64 -w0 "$RUNNER_TEMP/publication-receipt.json" >> "$GITHUB_OUTPUT"
+          printf '\n' >> "$GITHUB_OUTPUT"
       - name: Securely clean signing files
         if: always()
         shell: bash
@@ -185,37 +188,41 @@ jobs:
           fi
           rm -rf "$RUNNER_TEMP/private"
 
-  github-release:
+  cleanup:
     needs: [validate, linux, windows, publish]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Remove exact temporary archives after verified public R2 readback
+        env:
+          RECEIPT_BASE64: ${{ needs.publish.outputs.receipt }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$RECEIPT_BASE64" | base64 --decode > "$RUNNER_TEMP/receipt.json"
+          node scripts/cleanup-published-artifacts.mjs --verified-receipt "$RUNNER_TEMP/receipt.json"
+          rm -f "$RUNNER_TEMP/receipt.json"
+
+  github-release:
+    needs: [validate, publish, cleanup]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: repoticker-linux
-          path: ${{ runner.temp }}/release/linux
-      - uses: actions/download-artifact@v4
-        with:
-          name: repoticker-windows
-          path: ${{ runner.temp }}/release/windows
-      - uses: actions/download-artifact@v4
-        with:
-          name: repoticker-apt-keyring
-          path: ${{ runner.temp }}/release/public
-      - name: Publish GitHub Release only after signed R2/APT
-        shell: bash
+      - name: Publish text-only GitHub Release after verified R2 and cleanup
         env:
           GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.validate.outputs.version }}
         run: |
           set -euo pipefail
-          gh release create "$GITHUB_REF_NAME" \
-            "$RUNNER_TEMP"/release/linux/*.deb \
-            "$RUNNER_TEMP"/release/linux/*.AppImage \
-            "$RUNNER_TEMP"/release/linux/*.sha256 \
-            "$RUNNER_TEMP"/release/windows/*.exe \
-            "$RUNNER_TEMP"/release/windows/*.sha256 \
-            "$RUNNER_TEMP"/release/public/repoticker-archive-keyring.gpg \
-            --repo "$GITHUB_REPOSITORY" --verify-tag \
-            --title "RepoTicker $GITHUB_REF_NAME" \
-            --notes "RepoTicker v0.2.0 adds native GitHub Device Flow, OS keyring storage, self-hosted runner and Actions job monitoring, billing hover, and KDE Wayland fixes. Linux amd64 DEB/AppImage; signed APT at download.morozhenko.com. Windows x64 NSIS is unsigned and CI-built but NOT physically tested; Windows runtime verification follows release. macOS is not shipped. Known limitations: slow staged initial GitHub connection display; physical OAuth expiry/revocation, locked wallet and offline/error recovery have not been accepted yet. No free-minute balance is inferred from billing totals. Apache License 2.0; author Stanislav Moseyko (morozhenko)."
+          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
+            --verify-tag --title "RepoTicker $GITHUB_REF_NAME" \
+            --notes "RepoTicker $VERSION. Linux DEB and signed flat APT: https://download.morozhenko.com/dist/RepoTicker/linux/ . Direct AppImage and Windows installer links: https://download.morozhenko.com/dist/RepoTicker/latest.json . Windows NSIS is unsigned. Verify SHA256 before installation. No GitHub binary attachments."

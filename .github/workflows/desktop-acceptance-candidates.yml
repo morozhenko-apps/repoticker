@@ -1,0 +1,120 @@
+# Unpublished native Windows/KDE UI and uninstall acceptance candidates.
+name: Desktop acceptance candidates (no publishing)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [dev]
+    paths:
+      - '.github/workflows/desktop-acceptance-candidates.yml'
+      - 'Cargo.lock'
+      - 'crates/repoticker-core/Cargo.toml'
+      - 'apps/desktop/src-tauri/Cargo.toml'
+      - 'apps/desktop/src-tauri/tauri.conf.json'
+      - 'scripts/release_version.py'
+      - 'scripts/release_assets.py'
+      - 'tests/test_release_candidate_contract.py'
+      # Every native source change must exercise the Windows-native gate.
+      # Match application WebViews and resources as well as the shell.
+      - 'apps/desktop/src-tauri/src/**'
+      - 'crates/repoticker-core/src/**'
+      - 'apps/desktop/src-tauri/capabilities/**'
+      - 'apps/desktop/src-tauri/icons/**'
+      - 'apps/desktop/ui/**'
+      - 'tests/windows-qa-seven-findings.test.mjs'
+      - 'tests/windows-tray-physical-regressions.test.mjs'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: repoticker-acceptance-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux:
+    name: KDE candidate DEB and AppImage
+    if: github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install platform dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends build-essential curl file wget libssl-dev libxdo-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev libgtk-layer-shell-dev librsvg2-dev libfuse2t64 dpkg-dev libwayland-dev libwayland-bin wayland-protocols
+      - name: Verify locked sources and install Tauri CLI
+        run: |
+          cargo metadata --locked --no-deps --format-version 1 > /dev/null
+          cargo install tauri-cli --version '^2' --locked
+      - name: Build acceptance bundles (never publish)
+        working-directory: apps/desktop/src-tauri
+        run: cargo tauri build --bundles deb,appimage -- --locked
+      - name: Validate artifact integrity and label source
+        env:
+          OUT: ${{ runner.temp }}/candidate-linux
+        run: |
+          set -euo pipefail
+          VERSION="$(python3 scripts/release_version.py)"
+          python3 scripts/release_assets.py collect --source target/release/bundle --target "$OUT" --platform linux --version "$VERSION"
+          (cd "$OUT" && sha256sum -c -- *.sha256)
+          printf '%s\n' "$GITHUB_SHA" > "$OUT/SOURCE_SHA.txt"
+          printf '%s\n' 'UNRELEASED dev acceptance only: not signed APT, not an official release.' > "$OUT/NOT_A_RELEASE.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: repoticker-acceptance-linux
+          path: ${{ runner.temp }}/candidate-linux/*
+          if-no-files-found: error
+          retention-days: 7
+
+  windows:
+    name: Windows acceptance NSIS candidate
+    if: github.ref == 'refs/heads/dev'
+    runs-on: windows-2025
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Verify locked sources and install Tauri CLI
+        shell: pwsh
+        run: |
+          cargo metadata --locked --no-deps --format-version 1 > $null
+          cargo install tauri-cli --version '^2' --locked
+      - name: Validate headless Git process startup on Windows
+        shell: pwsh
+        run: cargo test --locked -p repoticker-core windows_git_process_tests
+      - name: Native Windows desktop unit tests
+        shell: pwsh
+        run: cargo test --locked -p repoticker --bin repoticker
+      - name: Build acceptance NSIS (never publish)
+        working-directory: apps/desktop/src-tauri
+        shell: pwsh
+        run: cargo tauri build --bundles nsis -- --locked
+      - name: Validate artifact integrity and label source
+        shell: pwsh
+        env:
+          OUT: ${{ runner.temp }}/candidate-windows
+        run: |
+          $version = python scripts/release_version.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python scripts/release_assets.py collect --source target/release/bundle --target "$env:OUT" --platform windows --version "$version"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Get-ChildItem "$env:OUT" -Filter *.sha256 | ForEach-Object {
+            $parts = (Get-Content $_.FullName).Trim() -split '\s+', 2
+            $binary = Join-Path "$env:OUT" $parts[1]
+            $actual = (Get-FileHash -Algorithm SHA256 $binary).Hash.ToLowerInvariant()
+            if ($actual -ne $parts[0].ToLowerInvariant()) { throw "Checksum mismatch: $binary" }
+          }
+          Set-Content -Path "$env:OUT/SOURCE_SHA.txt" -Value "$env:GITHUB_SHA"
+          Set-Content -Path "$env:OUT/NOT_A_RELEASE.txt" -Value 'UNRELEASED dev acceptance only: unsigned NSIS, not an official release.'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: repoticker-acceptance-windows
+          path: ${{ runner.temp }}/candidate-windows/*
+          if-no-files-found: error
+          retention-days: 7

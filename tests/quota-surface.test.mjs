@@ -91,7 +91,14 @@ test("the separate usage WebView can listen without inheriting main permissions"
   assert.deepEqual(usageCapability.permissions, ["core:event:allow-listen"]);
   const quotaJs = read("../apps/desktop/ui/quota.mjs");
   assert.match(quotaJs, /subscribe\("repoticker-usage-shown", onUsageShown\)/);
-  assert.match(quotaJs, /subscribe\("repoticker-monitor-updated"\)/);
+  assert.match(quotaJs, /subscribe\("repoticker-monitor-updated", refreshMonitorOnly\)/);
+  assert.doesNotMatch(quotaJs, /invoke\("get_snapshot"\)/,
+    "usage popup must not trigger local repo discovery on any event");
+  assert.match(quotaJs, /invoke\("github_monitor_snapshot"\)/);
+  assert.match(quotaJs, /invoke\("get_monitor_scope"\)/);
+  assert.match(quotaJs, /invoke\("get_settings_config"\)/);
+  assert.match(quotaJs, /subscribe\("repoticker-config-changed", refreshLocale\)/);
+  assert.match(quotaJs, /invoke\("get_usage_popup_kind"\)/);
   assert.match(quotaJs, /Status unavailable/);
   assert.doesNotMatch(quotaJs, /catch\s*\{\s*paint\(buildQuotaDetails\(null\)\)/);
 });
@@ -104,4 +111,63 @@ test("GTK exact min/max height updates stay valid while growing and shrinking", 
   assert.match(helper, /\} else \{\s*viewport\.set_min_content_height\(height\);\s*viewport\.set_max_content_height\(height\)/);
   assert.match(native, /USAGE_HEIGHT\.load\(Ordering::Acquire\),\s*height,/);
   assert.match(native, /set_exact_viewport_height\(&viewport, CARD_HEIGHT\.load\(Ordering::Acquire\), height\)/);
+});
+
+test("Windows usage tooltip clips the WebView corner pixels on show and resize", () => {
+  const win = read("../apps/desktop/src-tauri/src/windows_geometry.rs");
+  const main = read("../apps/desktop/src-tauri/src/main.rs");
+  const window = conf.app.windows.find(w => w.label === "usage");
+  assert.equal(window.transparent, true);
+  assert.equal(window.shadow, false);
+  assert.match(css, /html,body \{[^}]*background:transparent/);
+  assert.match(css, /border-radius:11px; clip-path:inset\(0 round 11px\)/);
+  assert.doesNotMatch(css, /box-shadow/);
+  assert.match(win, /fn CreateRoundRectRgn\(/);
+  assert.match(win, /fn SetWindowRgn\(/);
+  assert.match(win, /if attached == 0 \{[\s\S]*DeleteObject\(region\)/);
+  assert.match(win, /On success Windows owns and frees HRGN/);
+  const show = main.slice(main.indexOf("fn show_usage_popup("),
+    main.indexOf("fn hide_usage_popup("));
+  assert.match(show, /windows_geometry::clip_usage_popup\(&popup\)/);
+  assert.ok(show.indexOf("windows_geometry::clip_usage_popup(&popup)") <
+    show.indexOf("popup\n            .show()"));
+  const resize = main.slice(main.indexOf("fn resize_usage_popup("),
+    main.indexOf("fn hide_card("));
+  assert.match(resize, /windows_geometry::clip_usage_popup\(&popup\)/);
+  assert.match(resize, /if popup\s*\.is_visible\(\)/);
+});
+
+
+test("localized billing diagnostics are not needlessly clamped before native size limit", () => {
+  const message = css.match(/\.quota-section > \.quota-message \{([^}]+)\}/)?.[1] ?? "";
+  assert.match(message, /white-space:normal/);
+  assert.match(message, /overflow-wrap:anywhere/);
+  assert.doesNotMatch(message, /line-clamp|-webkit-box|overflow:hidden/);
+  assert.match(css, /\.quota-content \{[^}]*min-height:0;[^}]*overflow:hidden/);
+  assert.equal(usageHeight(20, [320]), USAGE_MAX_HEIGHT);
+  assert.match(read("../apps/desktop/ui/quota.mjs"),
+    /probe\.getBoundingClientRect\(\)\.height/);
+  assert.match(css, /clip-path:inset\(0 round 11px\)/);
+});
+
+
+test("long locale diagnostics wrap within bounded card and tooltip instead of horizontal cropping", () => {
+  const cardCss = read("../apps/desktop/ui/style.css");
+  const cardNotice = cardCss.match(/#notice \{([^}]+)\}/)?.[1] ?? "";
+  assert.match(cardNotice, /overflow-y: auto/);
+  assert.match(cardNotice, /max-height: 82px/);
+  assert.match(cardNotice, /overflow-wrap: anywhere/);
+  assert.match(cardNotice, /white-space: normal/);
+  for (const selector of [
+    /\.quota-title \{([^}]+)\}/,
+    /\.quota-content > \.quota-message \{([^}]+)\}/,
+    /\.quota-section-title \{([^}]+)\}/
+  ]) {
+    const rule = css.match(selector)?.[1] ?? "";
+    assert.match(rule, /min-width:0/);
+    assert.match(rule, /overflow-wrap:anywhere/);
+  }
+  assert.match(css, /pointer-events:none/);
+  assert.equal(usageHeight(30, [600]), USAGE_MAX_HEIGHT);
+  assert.equal(conf.app.windows.find(w => w.label === "usage").width, 340);
 });

@@ -149,3 +149,65 @@ test("all lane counts sum to the corresponding total", () => {
     result.counts.queuedSelfHosted + result.counts.queuedGitHubHosted +
       result.counts.queuedUnclassified);
 });
+
+
+test("Mode B: malformed runner rows must not report confident capacity", () => {
+  for (const invalid of [
+    null, {}, { ...runners[0], id: 0 },
+    { ...runners[0], id: Number.MAX_SAFE_INTEGER + 1 },
+    { ...runners[0], status: "unknown" },
+    { ...runners[0], busy: "false" },
+    { ...runners[0], labels: [{}] },
+    { ...runners[0], labels: null },
+  ]) {
+    const result = complete([], { runners: [invalid] });
+    assert.equal(result.coverage.runners, false);
+    assert.equal(result.counts.busy, null);
+    assert.equal(result.counts.idle, null);
+    assert.equal(result.counts.offline, null);
+    assert.equal(result.coverage.jobs, true, "independent jobs remain complete");
+    assert.equal(result.counts.queued, 0);
+  }
+});
+
+test("Mode B: malformed jobs fail all task totals without erasing known runner availability", () => {
+  for (const invalid of [
+    null, {}, { id: 0, status: "queued" },
+    { id: Number.MAX_SAFE_INTEGER + 1, status: "in_progress" },
+    { id: 30, status: "unknown" },
+    { id: 30, status: null },
+  ]) {
+    const result = complete([invalid]);
+    assert.equal(result.coverage.jobs, false);
+    assert.equal(result.counts.queued, null);
+    assert.equal(result.counts.running, null);
+    assert.equal(result.counts.waiting, null);
+    assert.equal(result.counts.queuedObserved, 0);
+    assert.equal(result.coverage.runners, true);
+    assert.equal(result.counts.busy, 1);
+  }
+});
+
+test("Mode B: hosted labels are strict and self-hosted priority wins mixed labels", () => {
+  for (const label of [
+    "ubuntu-24.04", "ubuntu-latest", "windows-2025",
+    "macos-15", "macos-15-intel",
+  ]) assert.equal(classifyJobLane(job(10, "queued", [label])), "githubHosted");
+  for (const label of [
+    "", "ubuntu", "custom-ubuntu-latest", "ubuntu/", "WIN"
+  ]) assert.equal(classifyJobLane(job(10, "queued", [label])), "unknown");
+  assert.equal(classifyJobLane(job(10, "queued", ["ubuntu-latest", "self-hosted"])),
+    "selfHosted");
+  assert.equal(classifyJobLane(job(10, "queued", null, 10), new Set([10])),
+    "selfHosted");
+});
+
+test("Mode B: valid identical job duplicates are idempotent across pages", () => {
+  const first = job(17, "queued", ["self-hosted", "linux"]);
+  const result = complete([first, { ...first }, job(18, "in_progress", ["ubuntu-latest"])]);
+  assert.equal(result.coverage.jobs, true);
+  assert.equal(result.counts.queued, 1);
+  assert.equal(result.counts.running, 1);
+  assert.equal(result.counts.queuedSelfHosted, 1);
+  assert.equal(result.counts.runningGitHubHosted, 1);
+});

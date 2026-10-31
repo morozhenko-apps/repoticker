@@ -10,7 +10,7 @@ class ReleaseArtifactRetention(unittest.TestCase):
     def test_given_release_when_staged_then_both_archives_expire_after_one_day(self):
         workflow = WORKFLOW.read_text(encoding="utf-8")
         blocks = re.findall(
-            r"(?m)^      - uses: actions/upload-artifact@v4\n"
+            r"(?m)^      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9\n"
             r"        with:\n"
             r"(?P<body>(?:          [^\n]*\n)+)",
             workflow,
@@ -29,7 +29,7 @@ class ReleaseArtifactRetention(unittest.TestCase):
 
     def test_given_release_when_finalized_then_cleanup_and_text_only_notes_follow_public_readback(self):
         workflow = WORKFLOW.read_text(encoding="utf-8")
-        self.assertEqual(workflow.count("actions/download-artifact@v4"), 2)
+        self.assertEqual(workflow.count("actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333"), 2)
         self.assertIn("Verify flat R2 files, signed APT and latest manifest", workflow)
         self.assertIn("needs: [validate, publish, cleanup]", workflow)
         self.assertIn("scripts/cleanup-published-artifacts.mjs", workflow)

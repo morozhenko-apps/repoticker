@@ -9,7 +9,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 SPEC = {'workflow': 'preflight.yml', 'gate': 'preflight', 'gate_name': 'Preflight result', 'workers': ['format_and_core', 'ui', 'desktop'], 'results': {'CORE_RESULT': 'format_and_core', 'UI_RESULT': 'ui', 'DESKTOP_RESULT': 'desktop'}, 'budgets': {'scope': 5, 'format_and_core': 20, 'ui': 10, 'desktop': 20, 'preflight': 5}, 'caches': 2, 'once': ['cargo test --locked -p repoticker-core', 'cargo test --locked -p repoticker --bin repoticker', "unittest discover -s tests -p 'test_release_*.py'"]}
 WRITER = "${{ github.ref == 'refs/heads/dev' && github.event_name != 'pull_request' }}"
-CACHE = 'Swatinem/rust-cache@c676846f29d98ff6b0106d3608c7ffd4048af17b'
+CACHE = 'Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0'
 
 def workflow(name):
     return yaml.load((ROOT / '.github/workflows' / name).read_text(), Loader=yaml.BaseLoader)

@@ -38,7 +38,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 100
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # actions/checkout@v7.0.1
         with:
           persist-credentials: false
       - uses: dtolnay/rust-toolchain@stable
@@ -63,7 +63,7 @@ jobs:
           (cd "$OUT" && sha256sum -c -- *.sha256)
           printf '%s\n' "$GITHUB_SHA" > "$OUT/SOURCE_SHA.txt"
           printf '%s\n' 'UNRELEASED dev acceptance only: not signed APT, not an official release.' > "$OUT/NOT_A_RELEASE.txt"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # actions/upload-artifact@v7.0.2
         with:
           name: repoticker-acceptance-linux
           path: ${{ runner.temp }}/candidate-linux/*
@@ -76,7 +76,7 @@ jobs:
     runs-on: windows-2025
     timeout-minutes: 100
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # actions/checkout@v7.0.1
         with:
           persist-credentials: false
       - uses: dtolnay/rust-toolchain@stable
@@ -112,7 +112,7 @@ jobs:
           }
           Set-Content -Path "$env:OUT/SOURCE_SHA.txt" -Value "$env:GITHUB_SHA"
           Set-Content -Path "$env:OUT/NOT_A_RELEASE.txt" -Value 'UNRELEASED dev acceptance only: unsigned NSIS, not an official release.'
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # actions/upload-artifact@v7.0.2
         with:
           name: repoticker-acceptance-windows
           path: ${{ runner.temp }}/candidate-windows/*

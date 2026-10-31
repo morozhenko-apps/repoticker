@@ -10,7 +10,7 @@ class ReleaseArtifactRetention(unittest.TestCase):
     def test_given_release_when_staged_then_both_archives_expire_after_one_day(self):
         workflow = WORKFLOW.read_text(encoding="utf-8")
         blocks = re.findall(
-            r"(?m)^      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9\n"
+            r"(?m)^      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9(?:[ \t]+#[^\n]*)?\n"
             r"        with:\n"
             r"(?P<body>(?:          [^\n]*\n)+)",
             workflow,

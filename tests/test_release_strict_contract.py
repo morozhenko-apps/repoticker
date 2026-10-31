@@ -29,7 +29,7 @@ class StrictStablePolicyContract(unittest.TestCase):
         for command in commands:
             with self.subTest(command=command):
                 self.assertEqual(self.workflow.count(command), 1)
-        self.assertIn("node-version: 24", self.workflow)
+        self.assertIn("node-version: 26.13.0", self.workflow)
         self.assertIn("components: rustfmt, clippy", self.workflow)
         self.assertIn("apt-utils dpkg-dev gnupg gpgv", self.workflow)
 

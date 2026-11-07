@@ -20,7 +20,7 @@ Baseline: `dev` at `df22d025cca176243068876b5e0931aa6d0afd53`; `main` stays rese
 1. [x] Analyze the active dev source, relevant test assertions and native/platform boundaries. Record the user-visible requirements and a bounded diagnosis.
 2. [x] Commit scoped card spinner/progress and native tray/localization adjustments with matching source-level regression tests. Notification configuration remains unchanged. Final execution is pending.
 3. [x] Owner chose a single `ci_notification_mode` enum (`off | failures | successes | both`) on 2026-11-07; default `off`; **no migration** from `ci_failure_notifications`. Legacy boolean is deliberately ignored. Other persisted preferences and OS credentials remain untouched.
-4. [ ] Implement selected-mode Settings control, native configuration/authorization guard, event tracker and 20 native message templates; add deterministic tests for startup silence, identity, scope, deduplication and each choice.
+4. [x] Implement selected-mode Settings control, native configuration/authorization guard, event tracker and 20 native message templates, with deterministic JS/Rust regression tests for startup silence, identity, scope, deduplication and each choice. Runtime test gate is still pending.
 5. [x] Implement a frameless About titlebar with only an accessible Close button, localized in 20 languages; restrict drag permission to the About window.
 6. [ ] Validate actual KDE Wayland and Windows drag, keyboard close, focus, re-open and native presentation. No physical acceptance has been performed yet.
 7. [ ] Execute final applicable STABLE JS, Rust and release-contract checks once and record exact evidence; no CI polling after a run is started.
@@ -46,4 +46,8 @@ A successful GitHub workflow run must not be confused with a successfully comple
 - Spinner isolation, Fetch percentage and cancellation accessible name, native Linux/Windows menu order, Russian labels and associated tests: `7bf604db29c563d8d417d81c5dad6f4fed4a2207`.
 - Frameless About with scoped native drag permission, close-only UI, 20 localized accessible Close labels and associated tests: `86f57bdfbee467304055cd81a8c10653492aa052`.
 
-**Current state: PARTIAL / unverified runtime.** No local JS, Rust, release-contract or physical UI suite has been executed in this ChatGPT environment. No release/tag/main change was made. The failure-only CI alert preference remains unchanged until its configuration compatibility decision. A passing source diff is not a passing validation gate.
+**Current state: PARTIAL / unverified installed runtime.** No full Node/Rust/Python CI suite or KDE/Windows physical acceptance has been executed in this ChatGPT environment. No release/tag/main change was made. The single four-choice opt-in CI alert mode has replaced the old persisted boolean. A passing source diff is not a passing validation gate.
+
+- Mode-selection decision documented before source changes: `c8c06a92f4dc07503bd785aafd63874d107d0180`.
+- Native config, GitHub monitor, per-run conclusion tracking, localized option labels and native notification templates, plus related test contracts: `3253bc2d870106c53ad15314fd9d62352ce04f18`.
+- Focused offline validation in the connected ChatGPT JS environment: transformed source syntax parses for the tracker, monitoring, Settings and locale catalog; tracker simulated baseline, both conclusions and deduplication; validated notification templates contain all three placeholders in all 20 locales and option text exists across 18 non-EN/RU locales. This does **not** replace Node test execution or Rust compilation.

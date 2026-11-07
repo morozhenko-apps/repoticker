@@ -377,3 +377,93 @@ production distribution, Rust app behavior or CI workflows.
 - Await actual Debian installation and KDE Wayland physical
   acceptance. Do not claim a native install or release success
   based solely on the earlier SHA checks.
+
+
+## Follow-up: KDE notification alignment, cached Repos reads, CI indicator, Hybrid (2026-11-07)
+
+**Mode A — Feature / UX correction**, owner-observed physical KDE
+candidate. Work is strictly on `dev`; no tag, release, main, or
+production infrastructure changes.
+
+### Diagnosis
+
+The CI notification selector is the only GitHub choice whose
+closed native `select` retains default WebKitGTK control painting:
+the existing aligned native selectors already share a custom
+34px closed control, but `.ci-alert-controls select` is excluded.
+The CI label is also a wrapping flex row instead of a
+two-column grid. Plausible causes: native block insets, flex
+wrap, unequal label column, inherited line height, locale/RTL,
+or platform-specific decoration. Source-level comparison favors
+the first three; physical compositor validation remains required.
+
+The Repos spinner currently receives `aria-busy=true` on **every**
+local `get_snapshot` read. Causes considered: single-flight scan
+busy callback, repeated config invalidations, Git-action rescan,
+startup scan, monitor-driven request, and lack of initial-cache
+visibility state. Code confirms the busy callback plus absence of
+`firstSnapshotReady` gate. GitHub monitoring is already isolated
+and must stay isolated. The list has no independent in-progress
+status, so subsequent scans visibly spin the compact action.
+
+The green `✓` in a local repository row indicates **clean and
+up-to-date local Git refs**, *not* a successful GitHub Actions
+workflow run. Replacing it with a last-workflow failure cross
+requires a defined per-repository CI provenance/status, freshness,
+scope and permission contract. Do not overwrite the Git meaning,
+fabricate a successful latest run from absence of results, or
+reuse the optional CI notification polling as an authoritative
+per-repository latest-run feed. Keep this change out of the
+unblocked CSS/local-scan patch until a design decision.
+
+`Connection mode` currently offers Simple polling and a
+**disabled/unavailable Hybrid** option. Both relay adapters are
+not implemented and the Cloudflare adapter replies HTTP 501.
+Prior high-level Hybrid plan covers signed GitHub webhook,
+self-hosted relay/WebSocket and REST reconciliation, not a
+final accepted authentication, tenancy and persistent protocol
+contract. Activating Hybrid or accepting a Worker URL before
+these security boundaries is a STOP FACTOR. Do not persist
+secrets in the WebView or expose an unverified webhook.
+
+### Unblocked UI plan
+
+1. Bring the CI mode closed select into the existing shared,
+   keyboard-accessible 34px selector paint/focus/forced-colors/
+   RTL contract and align label/control to the existing
+   two-column GitHub form. Keep its four native options and
+   transactional Settings semantics.
+2. Keep the Repos glyph spinner **only until the first successful
+   local snapshot is cached in this card process**. Every later
+   rescan keeps previous repository rows available, even when
+   changing configuration or finishing Git actions. Show a
+   localized in-list `Refreshing` status while source work runs;
+   on first empty load show that status instead of a false
+   `no repositories` result. After a failed first read do not
+   invent authoritative emptiness or cached data; retain
+   existing failure notice. The status must never be tied to
+   GitHub monitor refresh or mutate Git state.
+3. Keep existing card size, menu and independent GitHub metrics;
+   add/adjust deterministic source regression assertions.
+4. Record scoped commits and focused validation. Do not rebuild
+   native candidates until the owner reviews the UI and the
+   architectural blockers below.
+
+### Deferred architectural choices
+
+A) Define whether a latest GitHub Actions failure should be a
+**separate CI status** (local Git check stays green) or whether
+the repository-row status icon changes semantic meaning to
+**latest CI workflow run** (losing the Git clean indication).
+This also requires choosing a bounded, authenticated read-only
+source, scope and unknown/stale semantics.
+
+B) Hybrid relay contract must specify authenticated clients,
+per-tenant isolation, replay/dedup bounds, signed GitHub delivery,
+recoverable REST fallback and user-owned secret provisioning.
+Alternatives to be presented for owner choice before
+implementing a persistent public contract. Existing disabled
+mode remains disabled.
+
+Rollback: revert each isolated UI commit; no source Git-core
+changes, credentials or GitHub API permission changes.

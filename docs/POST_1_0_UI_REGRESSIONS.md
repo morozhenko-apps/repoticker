@@ -40,6 +40,46 @@ Notifications are only for the explicit conclusions `failure` and `success`, and
 A successful GitHub workflow run must not be confused with a successfully completed local Git Fetch. These notification preferences affect GitHub Actions only. Avoid verbose operation logs and sensitive values.
 
 
+## Follow-up: CI notification recovery and Mode B regression map
+
+The approved opt-in enum and per-conclusion native guard remain unchanged. Existing
+source-level tests covered launch baselines and mode changes, but a focused
+reproduction found a recovery regression: after a **previously successful**
+repository snapshot, a failed completed-run read retained its old tracker
+history. Subsequent recovery incorrectly alerted on completions from the
+unobserved interval. Whole-monitor task/API failure has the same potential
+because it skips notification observation without clearing historical state.
+
+Plan: clear **only the affected repository's** tracker history after a failed
+completed-run read; preserve unaffected repositories' dedup history. When a
+task/all monitoring cycle cannot provide trustworthy job coverage or provider
+scope, reset notification history before a future successful poll. Runner-only
+refreshes retain the existing independent task baseline. No extra REST calls,
+persistent queues, logging, window changes or stored notification history.
+This enforces the already-approved silent-on-recovery behavior.
+
+Mode B risk mapping for this incremental feature (historical
+`MODE_B_MATRIX.md` and `MODE_B_COVERAGE.md` remain in Git history,
+not in the current public docs tree):
+
+| Class | Required notification scenario | Test owner |
+| --- | --- | --- |
+| Positive | A new selected success/failure after valid baseline emits once | `tests/ci-failure-events.test.mjs`, `tests/ci-native-integration.test.mjs` |
+| N1/N2 | Invalid mode, run ID, attempt, duplicate run facts, page/identity bounds reject | JS tracker + native Rust scope tests |
+| N3/N5 | One repo fails, other remains live; recovery baselines silently; late refresh cannot rewind selection | JS tracker and monitor integration |
+| N4 | Repeated identical poll, corrected conclusion, restart/mode switch do not replay | JS tracker |
+| N6/N7 | Invalid UTC, malicious repo identity, unauthorized owner/conclusion never notify | JS collector and native Rust guard |
+| N8/N9 | Time validity, disconnect, rate limit and permission failure respect silent baseline | JS tracker/monitor integration |
+| N10 | User-selected mode and 20 native notification translations | Settings and localization tests |
+| N11 | Not applicable: no paid notification entitlements | Contractual N/A |
+| N12 | Native notification permission/delivery and OS window interaction require Linux/Windows physical evidence | Native tests and platform acceptance |
+
+This is a **feature-specific test matrix**, not a claim of 100%
+repository-wide branch coverage. Historic 2026-10-29 measurement was
+60.95% JS lines, 56.34% branches and 48.22% functions on the specified
+source. The owner’s earlier Mode B work should not be described as
+unperformed; new code still needs its own exact-source execution evidence.
+
 ## Implementation evidence (2026-11-07)
 
 - Documentation-first plan: `0d719ef9a715b4146ca0364369bea23810c83e28`.

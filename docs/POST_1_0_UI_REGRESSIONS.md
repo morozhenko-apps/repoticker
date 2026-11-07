@@ -80,6 +80,22 @@ repository-wide branch coverage. Historic 2026-10-29 measurement was
 source. The owner’s earlier Mode B work should not be described as
 unperformed; new code still needs its own exact-source execution evidence.
 
+Recovery fix: [`26038df`](https://github.com/morozhenko-apps/repoticker/commit/26038df2bd53f0ec0f4963bd74611889f4c2e906).
+An error in a single repository's completed-run API read clears only
+that repository's notification history; global task/transport failure
+clears the alert tracker, and runner-only polling preserves it.
+The existing source tests also acquired an exact `conclusion` field
+assertion, previously omitted from the expected alert structure.
+
+Execution boundary: isolated GitHub-sourced JavaScript evaluation in the
+connected tool environment executed **19 tracker tests, 11 monitor/native
+integration tests and 9 Settings visual contract tests, all passing**.
+The integration harness substitutes external I/O and asynchronous event
+loop scheduling and is therefore focused diagnostic evidence, not a
+Node test runner result. No Rust/Cargo compile, full STABLE suite or
+installed KDE/Windows acceptance was executed for this commit.
+
+
 ## Implementation evidence (2026-11-07)
 
 - Documentation-first plan: `0d719ef9a715b4146ca0364369bea23810c83e28`.

@@ -200,3 +200,43 @@ Only rerun relevant Rust tests if subsequent source changes warrant it;
 the owner's Rust tests passed before the test-only/format-only changes.
 Do not infer CI outcomes from push events or query active jobs repeatedly.
 
+
+## Ubuntu follow-up: three format-sensitive tests (2026-11-07)
+
+Mode B / Testing only. Local owner run at exact `dev=476f7d4`:
+`node v24.22.2`, **562 tests / 559 pass / 3 fail**.
+The owner attempted `nvm install 26.13.0` and `nvm use 26.13.0`;
+both failed because `nvm` is not installed. `cargo fmt --all
+--check` produced no diff after the Node run, consistent with clean
+formatting (separate shell commands lack explicit exit codes in this
+pasted transcript).
+
+Failure map:
+
+- `tests/ci-native-integration.test.mjs` and
+  `tests/locale-counts-and-notifications.test.mjs`: same exact
+  one-line `notification_text(...)` regex now mismatches a
+  rustfmt-produced multi-line call. Its arguments, ordering, native
+  mode check and authorization boundary remain intact.
+- `tests/git-fetch-cancel.test.mjs`: stale assertion
+  `cardText(cardLanguage, fetchCancelling...)`; production card
+  now uses `fetchCancelling` as a separate title / accessible label
+  ternary while keeping the button text as operation progress percent.
+
+Diagnostics: confirmed actual Rust call, title/aria-label and unchanged
+native `cancel_git_fetch` source. Alternatives considered: missing
+native invocation, lost cancellation semantics, corrupted fixtures,
+wrong revision, incompatible Node syntax and stale exact-source tests.
+The evidence confirms the final cause; this change is **test-contract
+maintenance only**, not production repair.
+
+Plan: (1) tighten both Rust-source assertions to accept Rust
+whitespace and optional trailing comma while still asserting the
+exact five ordered arguments, (2) verify both Fetch title and
+aria-label instead of matching an obsolete inline-label expression,
+(3) perform one final focused local source contract validation, then
+commit tests; (4) await owner's final Node/Cargo gate and KDE OS
+acceptance. Rollback is an independent test-only commit revert.
+No native config, notification schema, UI behavior, account scope,
+or release flow may change in this repair.
+

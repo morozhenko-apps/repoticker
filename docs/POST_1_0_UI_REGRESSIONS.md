@@ -552,3 +552,14 @@ Owner's next local gate: pull current dev; run pinned
 Node26.13.0 `node --test tests/*.test.mjs`, verify KDE
 UI directly; no release or native candidate build
 until the applicable review/acceptance gate is ready.
+
+
+## Locale contract completion for Repos scanning (2026-11-07)
+
+`af7f69244decce187b49c8e25ce6e9551eb12796` adds
+an explicit all-twenty-locale assertion for the existing
+`refreshing` key used by the in-drawer source-scan
+status, plus a markup binding and Russian value check.
+The source test was syntax-parsed by the connected tool
+environment; the new full STABLE Node26 regression gate
+remains unexecuted on the resulting dev tip.

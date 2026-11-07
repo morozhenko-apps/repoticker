@@ -493,3 +493,62 @@ reconciliation for the approved next architectural decision.
 No deployment, Worker secret provisioning or HTTP POST success
 responses in this incremental work. The verifier by itself is NOT
 a functional Hybrid connection mode.
+
+
+## Scoped follow-up implementation receipt (2026-11-07)
+
+- `325c9c10bec7bac61da65f854c3a70407cb98fff`:
+  the native CI notification `select` now shares the closed
+  34px CSS paint/focus/forced-colors/RTL rules and aligned
+  two-column grid of other GitHub selectors. It remains one
+  keyboard-accessible native `select` with the existing four
+  choices and transactional Save/Cancel. Updated its
+  deterministic CSS contract tests.
+- `596fa2bb5d8193ef47f08ba403f5a2dede506f98`:
+  added `shouldSpinForRepos(scanActive, hasCachedSnapshot)`.
+  The compact action spinner indicates **only the initial
+  uncached local snapshot**, not repeated work. In-drawer
+  `repo-scan-status` uses the preexisting twenty-language
+  `refreshing` key during every source scan, retaining
+  existing rows, Git cancellation, scan coalescing and
+  nonmonitoring boundary. Added its four-state matrix and
+  source contract checks. Cache is **process memory**, not
+  persistent on-disk state; an actual new launch has no
+  snapshot until its first successful read.
+- `c00470a1961c687bea851c8e26fb8e4822a6ef4a`:
+  added Cloudflare-compatible pure WebCrypto
+  `verifyGithubWebhookSignature` over the unmodified
+  `Uint8Array` payload, with strict lowercase 64-hex
+  `sha256=` header and nonempty secret. Invalid data fails
+  closed; no arbitrary body parsing or logs. The Worker
+  endpoint itself remains `501`, and Hybrid Settings
+  remain unavailable. No credentials, persistence,
+  REST cadence or network scopes changed.
+  Node `v22.16.0` isolated test execution in a clean
+  disposable local sandbox **matched both exact Git blob
+  hashes** (`fb10ad624fb5763b09db9254cd196f8b582be136`,
+  `5d5039f402f5a5c0fb1ee0172b91c52ea58c2bdb`).
+  `node --test tests/relay-webhook-signature.test.mjs`:
+  **5 pass / 0 fail**. Sandbox removed after the run.
+
+Focused connected-tool source checks for the CSS,
+first-snapshot state machine and in-drawer status passed
+(12 explicit assertions plus syntax checks of both
+changed test modules). These are not a full Node26.13.0
+STABLE gate, full Rust/Python gate or physical KDE
+acceptance.
+
+**Remaining unresolved architectural STOP FACTORS:**
+The green local Git `✓` has no GitHub Actions semantic,
+so the requested red cross needs owner choice on a
+separate CI result signal versus redefined combined
+status. The future WebSocket/relay authentication and
+tenant isolation model needs an approved persistent
+security protocol before enabling Hybrid/Worker URL.
+Do not publish the existing 1.0.0 native artifacts as
+containing these newer code changes.
+
+Owner's next local gate: pull current dev; run pinned
+Node26.13.0 `node --test tests/*.test.mjs`, verify KDE
+UI directly; no release or native candidate build
+until the applicable review/acceptance gate is ready.

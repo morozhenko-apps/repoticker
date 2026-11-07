@@ -54,7 +54,7 @@ const messages = Object.freeze({
     githubMetrics: "Задания GitHub Actions и раннеры",
     runners: "Раннеры",
     tasks: "Задачи",
-    fetch: "Получить",
+    fetch: "Фетч",
     safeSync: "Синхр.",
     repos: "Репо",
     hide: "Скрыть",

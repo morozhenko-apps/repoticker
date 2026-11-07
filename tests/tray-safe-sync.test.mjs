@@ -16,7 +16,9 @@ test("six stable tray actions have 20-language labels and keep Safe Sync dispatc
     for (const name of names)
       assert.ok(values[name]?.trim(), "Native label missing: " + name);
   }
-  assert.equal(nativeLabels.ru.Sync, "Синхронизация");
+  assert.equal(nativeLabels.ru.Sync, "Синхр.");
+  assert.equal(nativeLabels.ru.Fetch, "Фетч");
+  assert.equal(nativeLabels.ru["About RepoTicker"], "О программе");
   assert.equal(nativeLabels.pt.Settings, "Definições");
   assert.match(locale, /"sync" => "Sync"/);
   for (const id of ["open", "settings", "fetch", "sync", "about", "quit"]) {
@@ -43,7 +45,12 @@ test("Windows changes menu labels without replacing tray icon or stable action I
   assert.match(native, /fn build_desktop_tray_menu\(/);
   assert.match(native, /app\.tray_by_id\("repoticker"\)/);
   assert.match(native, /tray\.set_menu\(Some\(menu\)\)/);
-  assert.match(native, /Menu::with_items\(app, &\[&open, &settings, &fetch, &sync, &about, &quit\]\)/);
+  assert.match(native, /Menu::with_items\(app, &\[&open, &fetch, &sync, &settings, &about, &quit\]\)/);
+  const menu = linux.slice(linux.indexOf("    fn menu(&self)"),
+    linux.indexOf("\n    }", linux.indexOf("    fn menu(&self)")));
+  const actualOrder = [...menu.matchAll(/tray_i18n::label\(&self\.language, "([^"]+)"\)/g)]
+    .map(match => match[1]);
+  assert.deepEqual(actualOrder, ["open", "fetch", "sync", "settings", "about", "quit"]);
   assert.match(native, /"quit" => request_quit\(app\)/);
   assert.match(linux, /"quit" => request_quit\(&app\)/);
   assert.doesNotMatch(native, /app\.exit\(0\);\s*refresh_tray_language/);

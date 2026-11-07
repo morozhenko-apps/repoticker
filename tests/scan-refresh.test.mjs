@@ -146,8 +146,10 @@ test("Repos spinner follows source work without disabling repository drawer", ()
   const app = readFileSync(new URL("../apps/desktop/ui/app.mjs", import.meta.url), "utf8");
   const css = readFileSync(new URL("../apps/desktop/ui/style.css", import.meta.url), "utf8");
   assert.match(app, /onBusyChange: active => \{\s*localScanActive = active;\s*updateReposActivity\(\)/);
-  assert.match(app, /fullMonitorActive = active;\s*updateReposActivity\(\)/);
-  assert.match(app, /const loading = localScanActive \|\| fullMonitorActive/);
+  assert.doesNotMatch(app, /fullMonitorActive/, "remote monitoring must not own the Repos busy state");
+  assert.match(app, /const loading = localScanActive;/);
+  assert.match(app, /if \(kind === "all"\) \{\s*for \(const node/,
+    "full GitHub refresh keeps independent metric busy states");
   assert.match(app, /byId\("show-repos"\)\.setAttribute\("aria-busy", String\(loading\)\)/);
   assert.match(app, /if \(loading\) cancelAutoHide\(\)/);
   assert.doesNotMatch(app, /byId\("show-repos"\)\.disabled/);

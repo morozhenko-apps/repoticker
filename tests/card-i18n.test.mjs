@@ -16,6 +16,7 @@ test("card recognizes canonical locales and rejects unknown variants", () => {
     assert.equal(cardLocale(value), "en");
   }
   assert.equal(cardText("en", "fetch"), "Fetch");
+  assert.equal(cardText("ru", "fetch"), "Фетч");
   assert.equal(cardText("ru", "repos"), "Репо");
   assert.equal(cardText("ru", "safeSync"), "Синхр.");
   assert.equal(cardLocale("pt"), "pt");
@@ -112,4 +113,16 @@ test("compact accessible metrics isolate Arabic numeric values but not unknown",
     }
   }
   assert.equal(source.offline, "—");
+});
+
+test("Fetch keeps progress percentage visible with cancellation available through its accessible label", () => {
+  const start = card.indexOf("function updateActionState()");
+  const end = card.indexOf("\n/*", start);
+  const action = card.slice(start, end);
+  assert.ok(start >= 0 && end > start, "action state controller must exist");
+  assert.match(action, /Math\.round\(100 \* progress\.completed \/ progress\.total\) : 0/);
+  assert.match(action, /button\.querySelector\("\.action-label"\)\.textContent = pct \+ "%"/);
+  assert.match(action, /button\.setAttribute\("aria-label", cardText\(cardLanguage,/);
+  assert.match(action, /fetchCancelling \? "stopping" : fetching \? "fetchCancel" : "fetchTitle"/);
+  assert.match(card, /void cancelActiveFetch\(\)/, "Fetch action remains cancellable");
 });

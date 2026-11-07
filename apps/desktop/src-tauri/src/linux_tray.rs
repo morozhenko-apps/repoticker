@@ -60,12 +60,6 @@ impl Tray for LinuxTray {
             }
             .into(),
             StandardItem {
-                label: tray_i18n::label(&self.language, "settings").into(),
-                activate: Box::new(|tray: &mut Self| tray.on_ui("settings")),
-                ..Default::default()
-            }
-            .into(),
-            StandardItem {
                 label: tray_i18n::label(&self.language, "fetch").into(),
                 activate: Box::new(|tray: &mut Self| tray.on_ui("fetch")),
                 ..Default::default()
@@ -74,6 +68,12 @@ impl Tray for LinuxTray {
             StandardItem {
                 label: tray_i18n::label(&self.language, "sync").into(),
                 activate: Box::new(|tray: &mut Self| tray.on_ui("sync")),
+                ..Default::default()
+            }
+            .into(),
+            StandardItem {
+                label: tray_i18n::label(&self.language, "settings").into(),
+                activate: Box::new(|tray: &mut Self| tray.on_ui("settings")),
                 ..Default::default()
             }
             .into(),

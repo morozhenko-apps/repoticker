@@ -1534,7 +1534,7 @@ fn build_desktop_tray_menu(app: &AppHandle, language: &str) -> tauri::Result<Men
         true,
         None::<&str>,
     )?;
-    Menu::with_items(app, &[&open, &settings, &fetch, &sync, &about, &quit])
+    Menu::with_items(app, &[&open, &fetch, &sync, &settings, &about, &quit])
 }
 
 /// A settings write must not be reported as failed merely because the

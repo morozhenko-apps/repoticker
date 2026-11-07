@@ -45,9 +45,8 @@ let progress = null;
 let idleTimer = null;
 let cardVisible = false;
 let localScanActive = false;
-let fullMonitorActive = false;
 function updateReposActivity() {
-  const loading = localScanActive || fullMonitorActive;
+  const loading = localScanActive;
   byId("show-repos").setAttribute("aria-busy", String(loading));
   // Source reads are independent of Fetch/Safe sync and never block Repos.
   if (loading) cancelAutoHide();
@@ -63,7 +62,7 @@ function armAutoHide() {
   // Only the compact card is transient. An open Repos drawer must never
   // disappear while users inspect repositories or perform operations.
   if (!cardVisible || view !== "compact" || quotaExpanded ||
-      localScanActive || fullMonitorActive) return;
+      localScanActive) return;
   idleTimer = setTimeout(async () => {
     try { await invoke("hide_card"); resetView(); }
     catch (error) { showError(error); }
@@ -253,7 +252,8 @@ function updateActionState() {
   const fetching = progress?.operation === "fetch" && progress.phase !== "finish";
   byId("fetch-all").disabled = fetchCancelling ||
     (isRunning && !fetching) || (!isRunning && !hasRepos);
-  byId("fetch-all").title = cardText(cardLanguage, fetching ? "fetchCancel" : "fetchTitle");
+  byId("fetch-all").title = cardText(cardLanguage,
+    fetchCancelling ? "stopping" : fetching ? "fetchCancel" : "fetchTitle");
   byId("sync-all").disabled = isRunning || eligible === 0;
   for (const [operation, id] of [["fetch", "fetch-all"], ["safe_sync", "sync-all"]]) {
     const button = byId(id);
@@ -261,12 +261,15 @@ function updateActionState() {
     button.classList.toggle("is-working", active);
     if (active) {
       const pct = progress.total
-        ? Math.round(100 * progress.completed / progress.total) : 100;
-      button.querySelector(".action-label").textContent =
-        operation === "fetch" ? cardText(cardLanguage, fetchCancelling ? "stopping" : "cancel") : pct + "%";
+        ? Math.round(100 * progress.completed / progress.total) : 0;
+      button.querySelector(".action-label").textContent = pct + "%";
     } else {
       button.querySelector(".action-label").textContent =
         cardText(cardLanguage, operation === "fetch" ? "fetch" : "safeSync");
+    }
+    if (operation === "fetch") {
+      button.setAttribute("aria-label", cardText(cardLanguage,
+        fetchCancelling ? "stopping" : fetching ? "fetchCancel" : "fetchTitle"));
     }
   }
   const count = byId("pull-indicator");
@@ -402,8 +405,6 @@ for (const [kind, node] of Object.entries(manualIndicator)) {
 }
 function monitorRefreshState(kind, active) {
   if (kind === "all") {
-    fullMonitorActive = active;
-    updateReposActivity();
     for (const node of Object.values(manualIndicator))
       node.setAttribute("aria-busy", String(active));
   } else {

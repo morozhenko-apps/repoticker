@@ -80,7 +80,8 @@ test("native catalog uses the identical seven fixed menu/title keys", () => {
   for (const [code, records] of Object.entries(native)) {
     assert.deepEqual(Object.keys(records).sort(), keys, code);
     assert.ok(records["RepoTicker Settings"].includes("RepoTicker"));
-    assert.ok(records["About RepoTicker"].includes("RepoTicker"));
+    if (code === "ru") assert.equal(records["About RepoTicker"], "О программе");
+    else assert.ok(records["About RepoTicker"].includes("RepoTicker"));
   }
   assert.equal(native.pt.Settings, "Definições");
   assert.equal(native["zh-Hant"].Quit, "結束");

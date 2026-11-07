@@ -641,3 +641,75 @@ sixth is an important defensive test.
 Rollback: separate atomic native-projection and UI/monitor
 commits; no release, protected branch, credentials, schema,
 cloud deployment or Git mutation changes.
+
+
+### Exact implementation and focused acceptance receipt
+
+- `277d200d5d47fbc85e3ced209f9cfdf1c3e09ebb`:
+  documentation-first owner decision and fail-closed scope.
+- `b922f17d36e81b07c956252b475c148e693882df`:
+  Rust Git inspection now includes a nonsecret, validated,
+  optional canonical GitHub `origin` owner/repo in its local
+  snapshot. A missing/non-GitHub origin cannot invalidate
+  ordinary local Git status; no network access is added to
+  the Git scanner.
+- `43ea688484e0fd435ca621a427490c66733e4460`:
+  standalone CI status projection keyed by trusted
+  `account/owner/repo` identity; tests cover green, red,
+  unknown, wrong-origin, provider error, missing identity,
+  non-failure conclusions, duplicates and mismatched scope.
+- `4447070d3258c5cbed63bb6e398c5f89e9aa36d5`:
+  existing monitor reuses its **single** one-page
+  `collectRecentCompleted` snapshot for new read-only
+  UI status and optional native notifications, but only after
+  authorized/covered monitoring. A runner-only refresh
+  adds no CI call. Without a UI status consumer and with
+  notifications off it makes no completed-run call. When
+  the app's status consumer is active, this read is
+  independent of notification opt-in. Stale scopes,
+  disconnect and provider failures clear old outcomes.
+- `cc872da269b1059b731c56d3db1a787fbeb3f59d`:
+  add CI result tooltip/accessibility descriptions in all
+  twenty existing card locales.
+- `0a2b34638b8364b2357884ec9b1175083d9a9267`:
+  existing row indicator is exclusively GitHub Actions:
+  green `✓` for success, red `✕` for failure, neutral
+  `—` for unknown, based on the verified origin. Dynamic
+  monitor updates repaint existing row elements without
+  resetting scroll; Safe Sync numeric eligibility and
+  Git mutation behaviors are untouched.
+- `405049e0e7185d81de7780f3c1cc931fa740060d`:
+  three integration regressions for status with
+  notifications off, API outage and disconnect, and
+  incomplete/rate-limited job coverage.
+- `7661567ef636ab017d0b99ed4c21aa7724cef733`:
+  native Git fixture validates supported GitHub origin
+  mapping and failure-safe unsupported remotes.
+- `853035bace0e2c9f2dc1b37deb2855f3ade7b346`:
+  test name clarifies opt-out is for notifications, not
+  the optional read-only status consumer.
+- `3224833d1c3fc2cdffb6c17872c3eb2dd75f3af7`:
+  removes no-longer-used local Git row indicator CSS
+  classes.
+
+**Focused execution:** in connected V8 with the exact GitHub
+source loaded and external I/O mocked, four CI source
+projection tests passed and thirteen native-monitor
+integration scenarios passed (one static Rust-source
+assertion excluded). An additional 61 source/locale
+checks confirmed all eighteen extra locale keys,
+status binding, stale-data clearing and unchanged
+Safe Sync numeric eligibility. This is **not a Node
+26 test-runner pass**; it is not Rust compilation or
+native KDE/Windows physical acceptance.
+
+The existing full-bundle artifact from run
+`42417534851` predates this new implementation and
+MUST NOT be treated as acceptance evidence for it.
+Next owner gate on current dev: `node --test
+tests/*.test.mjs` using pinned Node26.13.0,
+`cargo fmt --all --check`, `cargo test --locked -p
+repoticker-core`, and `cargo test --locked -p
+repoticker --bin repoticker`. Do not publish or merge
+to main before the actual results and installed UI
+acceptance.

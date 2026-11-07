@@ -63,7 +63,7 @@ test("only clean, behind and upstream tracking repos activate safe pull", () => 
 test("successes do not create logs, errors remain visible and check is green", () => {
   assert.doesNotMatch(ui, /result-line/);
   assert.match(ui, /results\.filter\(item => item\.status === "error"\)/);
-  assert.match(css, /\.repo-delta\.is-current \{[^}]*color: #159947/s);
+  assert.match(css, /\.repo-delta\.is-ci-success \{[^}]*color: #159947/s);
   assert.match(css, /\.repo-name \{[^}]*font-weight: 400/s);
   assert.match(html, /class="quota-anchor status-hover" tabindex="0"/);
   assert.doesNotMatch(html, /id="quota-tooltip"/);
@@ -221,4 +221,18 @@ test("only status hovers use help cursor and compact metric row cannot change ca
   assert.match(css, /\.card button:disabled \{ cursor: default; \}/);
   assert.doesNotMatch(css, /\.card button, \.card input, \.card select, \.card \.quota-anchor/);
   assert.match(css, /\.status-strip \{[^}]*height: 25px; min-height: 25px; max-height: 25px; overflow: hidden;/);
+});
+
+test("CI checkmark and cross depend only on resolved GitHub Actions outcomes", () => {
+  assert.match(ui, /ciOutcomeForRepo\(repo, ciStatuses\)/);
+  assert.match(ui, /outcome === "success" \? "✓"/);
+  assert.match(ui, /outcome === "failure" \? "✕"/);
+  assert.match(ui, /"ciUnknown"/);
+  assert.match(ui, /onCiStatus: updateCiStatuses/);
+  assert.match(ui, /document\.querySelectorAll\("\.repo-row"\)\.forEach/);
+  assert.doesNotMatch(ui, /const current = !repo\.dirty/);
+  assert.doesNotMatch(ui, /current \? "✓"/);
+  assert.match(css, /\.repo-delta\.is-ci-success \{[^}]*color: #159947/);
+  assert.match(css, /\.repo-delta\.is-ci-failed \{[^}]*color: #bf3434/);
+  assert.match(ui, /syncReadyCommitCount\(snapshot\.repositories\)/);
 });

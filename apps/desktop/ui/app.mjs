@@ -7,6 +7,7 @@ import { mergeMonitorPresentation, reconcileScanPresentation } from "./monitor-p
 import { placeRepoMenu } from "./repo-menu.mjs";
 import { localeDirection } from "./locale-catalog.mjs";
 import { createScanRefreshQueue, shouldSpinForRepos } from "./scan-refresh.mjs";
+import { ciOutcomeForRepo } from "./ci-status.mjs";
 import { disableBrowserContextMenu } from "./browser-context-menu.mjs";
 
 disableBrowserContextMenu(document);
@@ -45,6 +46,7 @@ let progress = null;
 let idleTimer = null;
 let cardVisible = false;
 let localScanActive = false;
+let ciStatuses = null;
 function updateReposActivity() {
   const loading = shouldSpinForRepos(localScanActive, firstSnapshotReady);
   byId("show-repos").setAttribute("aria-busy", String(loading));
@@ -209,6 +211,28 @@ document.addEventListener("pointerdown", event => {
 byId("repo-list").addEventListener("scroll", () => hideRepoMenus(), { passive: true });
 window.addEventListener("resize", () => hideRepoMenus());
 
+function paintCiIndicator(row, repo) {
+  const outcome = ciOutcomeForRepo(repo, ciStatuses);
+  const indicator = row.querySelector(".repo-delta");
+  const statusKey = outcome === "success" ? "ciSuccess" :
+    outcome === "failure" ? "ciFailure" : "ciUnknown";
+  indicator.textContent = outcome === "success" ? "✓" :
+    outcome === "failure" ? "✕" : "—";
+  indicator.title = cardText(cardLanguage, statusKey);
+  indicator.setAttribute("aria-label", cardText(cardLanguage, statusKey));
+  indicator.classList.toggle("is-ci-success", outcome === "success");
+  indicator.classList.toggle("is-ci-failed", outcome === "failure");
+}
+
+function updateCiStatuses(next) {
+  ciStatuses = next;
+  // Existing rows stay mounted: no scroll reset during remote status updates.
+  document.querySelectorAll(".repo-row").forEach(row => {
+    const repo = snapshot.repositories.find(item => item.path === row.dataset.repoPath);
+    if (repo) paintCiIndicator(row, repo);
+  });
+}
+
 function makeRepoRow(repo) {
   const row = document.createElement("div");
   row.className = "repo-row";
@@ -218,12 +242,7 @@ function makeRepoRow(repo) {
   name.dir = "auto"; // Preserve native script without inheriting RTL UI direction.
   const branch = addText(row, "span", repo.branch, "repo-branch");
   branch.dir = "ltr"; // Git refs are technical identifiers, not localized text.
-  const current = !repo.dirty && !repo.ahead && !repo.behind && repo.upstream;
-  const symbol = repo.dirty ? "●" :
-    repo.ahead && repo.behind ? "⇅" :
-    repo.behind ? "↓" + repo.behind :
-    repo.ahead ? "↑" + repo.ahead :
-    current ? "✓" : "—";
+  // Local Git cleanliness and ahead/behind counts never imply CI success.
   if (progress) {
     if (progress.active?.has(repo.path)) {
       row.classList.add("is-running");
@@ -232,11 +251,8 @@ function makeRepoRow(repo) {
       if (progress.errors?.has(repo.path)) row.classList.add("is-failed");
     }
   }
-  const indicator = addText(row, "span", symbol, "repo-delta");
-  indicator.title = repo.sync_state;
-  indicator.classList.toggle("is-current", Boolean(current));
-  indicator.classList.toggle("is-dirty", Boolean(repo.dirty));
-  indicator.classList.toggle("is-behind", !repo.dirty && repo.behind > 0 && !repo.ahead);
+  addText(row, "span", "—", "repo-delta");
+  paintCiIndicator(row, repo);
 
   const button = addText(row, "button", "⋯", "repo-more");
   button.type = "button";
@@ -458,6 +474,10 @@ function setCardLanguage(language) {
     view === "repos" ? "hideRepos" : "showRepos");
   byId("hide-card").title = cardText(cardLanguage, "hideCard");
   updateActionState();
+  document.querySelectorAll(".repo-row").forEach(row => {
+    const repo = snapshot.repositories.find(item => item.path === row.dataset.repoPath);
+    if (repo) paintCiIndicator(row, repo);
+  });
   if (localScanActive) byId("repo-scan-status").textContent =
     cardText(cardLanguage, "refreshing") + "…";
   updateMetricAccessibleNames();
@@ -720,7 +740,8 @@ void invoke("get_settings_config").then(config => {
 refresh();
 triggerMonitorRefresh = startGithubMonitoring({
   invoke, event: window.__TAURI__?.event, onError: showError,
-  onStage: traceStartup, onRefreshState: monitorRefreshState
+  onStage: traceStartup, onRefreshState: monitorRefreshState,
+  onCiStatus: updateCiStatuses
 });
 
 /* GTK Layer Shell receives physical Wayland relative-pointer events directly.

@@ -18,10 +18,11 @@ Baseline: `dev` at `df22d025cca176243068876b5e0931aa6d0afd53`; `main` stays rese
 ## Milestones
 
 1. [x] Analyze the active dev source, relevant test assertions and native/platform boundaries. Record the user-visible requirements and a bounded diagnosis.
-2. [ ] Commit strictly scoped unblocked card spinner/progress and native tray/localization adjustments with matching regression tests. Keep the notification contract unchanged.
+2. [x] Commit scoped card spinner/progress and native tray/localization adjustments with matching source-level regression tests. Notification configuration remains unchanged. Final execution is pending.
 3. [ ] Resolve the notification persistent-config/API contract choice with the owner before implementing the success/failure controls, backend guard, deduplication and 20 native templates.
-4. [ ] Design a movable Close-only About window with an accessible local Close action. Test KDE Wayland and Windows native behavior before marking complete.
-5. [ ] Execute final applicable STABLE JS, Rust and release-contract checks once and record exact evidence; run separately documented physical acceptance. No CI polling after a run is started.
+4. [x] Implement a frameless About titlebar with only an accessible Close button, localized in 20 languages; restrict drag permission to the About window.
+5. [ ] Validate actual KDE Wayland and Windows drag, keyboard close, focus, re-open and native presentation. No physical acceptance has been performed yet.
+6. [ ] Execute final applicable STABLE JS, Rust and release-contract checks once and record exact evidence; no CI polling after a run is started.
 
 ## Validation and rollback
 
@@ -34,3 +35,11 @@ Use deterministic tests for scan/monitor isolation, progress semantics and cance
 **Option B (unified schema with migration):** replace the old boolean with `ci_notification_mode` = `off | failures | successes | both` and explicitly migrate old configs. It centralizes policy but adds a schema migration and compatibility risks for rollback/downgrade.
 
 Do not implement either persistent format until the owner selects an option. Successful and failed alerts must be separate monotonic `run id + attempt + conclusion` facts, silently baselined on startup/scope change, bounded/deduplicated, rate-limit aware and limited to authorized monitored repositories.
+
+## Implementation evidence (2026-11-07)
+
+- Documentation-first plan: `0d719ef9a715b4146ca0364369bea23810c83e28`.
+- Spinner isolation, Fetch percentage and cancellation accessible name, native Linux/Windows menu order, Russian labels and associated tests: `7bf604db29c563d8d417d81c5dad6f4fed4a2207`.
+- Frameless About with scoped native drag permission, close-only UI, 20 localized accessible Close labels and associated tests: `86f57bdfbee467304055cd81a8c10653492aa052`.
+
+**Current state: PARTIAL / unverified runtime.** No local JS, Rust, release-contract or physical UI suite has been executed in this ChatGPT environment. No release/tag/main change was made. The failure-only CI alert preference remains unchanged until its configuration compatibility decision. A passing source diff is not a passing validation gate.

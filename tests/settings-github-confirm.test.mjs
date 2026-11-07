@@ -97,7 +97,10 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
                 github_monitor_org: monitorOrg,
                 github_monitor_repositories: monitorRepositories,
                 ignored_child_names: persistedIgnored,
-                ci_failure_notifications: options.ciFailureNotifications === true
+                // Deliberately omit the enum in legacy-format fixtures.
+                ...(options.legacyCiFailureNotifications === true
+                  ? { ci_failure_notifications: true }
+                  : { ci_notification_mode: options.ciNotificationMode ?? "off" })
               };
               configReadCount++;
               if (configReadCount === 1 && deferredInitialConfig) return deferredInitialConfig;
@@ -496,13 +499,13 @@ test("removing an ignored name re-enables OK without changing enrolled roots", a
   } finally { ui.restore(); }
 });
 
-test("CI failure notifications stay OFF by default and Cancel does not persist opt-in", async () => {
+test("CI notification mode defaults off and Cancel does not persist opt-in", async () => {
   const ui = await fixture("notify-cancel", false);
   try {
-    assert.equal(ui.node("ci-failure-notifications").checked, false);
+    assert.equal(ui.node("ci-notification-mode").value, "off");
     assert.equal(ui.node("apply-settings").disabled, true);
-    ui.node("ci-failure-notifications").checked = true;
-    await ui.node("ci-failure-notifications").fire("change");
+    ui.node("ci-notification-mode").value = "failures";
+    await ui.node("ci-notification-mode").fire("change");
     assert.equal(ui.node("apply-settings").disabled, false);
     assert.equal(ui.calls.filter(([name]) => name === "save_settings").length, 0);
     await ui.node("cancel-settings").fire("click");
@@ -510,17 +513,44 @@ test("CI failure notifications stay OFF by default and Cancel does not persist o
   } finally { ui.restore(); }
 });
 
-test("CI failure notification opt-in persists only on OK with existing GitHub scope", async () => {
-  const ui = await fixture("notify-save", true);
+test("CI failure notification mode persists only on OK with existing GitHub scope", async () => {
+  const ui = await fixture("notify-save", true, [], {
+    legacyCiFailureNotifications: true
+  });
   try {
-    assert.equal(ui.node("ci-failure-notifications").checked, false);
-    ui.node("ci-failure-notifications").checked = true;
-    await ui.node("ci-failure-notifications").fire("change");
+    assert.equal(ui.node("ci-notification-mode").value, "off",
+      "a legacy true Boolean never migrates to an enabled enum");
+    ui.node("ci-notification-mode").value = "failures";
+    await ui.node("ci-notification-mode").fire("change");
     await ui.node("apply-settings").fire("click");
     assert.equal(ui.calls.find(([command]) => command === "save_settings")?.[1]
-      ?.ciFailureNotifications, true);
+      ?.ciNotificationMode, "failures");
     assert.equal(ui.closed, true);
   } finally { ui.restore(); }
+});
+
+test("CI successes and both modes are independent, draft-only Settings choices", async () => {
+  for (const mode of ["successes", "both"]) {
+    const cancel = await fixture("notify-" + mode + "-cancel", true);
+    try {
+      assert.equal(cancel.node("ci-notification-mode").value, "off");
+      cancel.node("ci-notification-mode").value = mode;
+      await cancel.node("ci-notification-mode").fire("change");
+      assert.equal(cancel.node("apply-settings").disabled, false);
+      await cancel.node("cancel-settings").fire("click");
+      assert.equal(cancel.calls.some(([name]) => name === "save_settings"), false);
+    } finally { cancel.restore(); }
+
+    const commit = await fixture("notify-" + mode + "-save", true);
+    try {
+      commit.node("ci-notification-mode").value = mode;
+      await commit.node("ci-notification-mode").fire("change");
+      await commit.node("apply-settings").fire("click");
+      assert.deepEqual(commit.calls.filter(([name]) => name === "save_settings")
+        .map(([, args]) => args), [{ ciNotificationMode: mode }]);
+      assert.equal(commit.closed, true);
+    } finally { commit.restore(); }
+  }
 });
 
 test("Saved Russian Settings renders native status in Russian and draft EN preview does not persist on Cancel", async () => {
@@ -672,12 +702,12 @@ test("Existing OS autostart can be disabled and saved with another preference", 
     assert.equal(ui.node("autostart-enabled").checked, true);
     ui.node("autostart-enabled").checked = false;
     await ui.node("autostart-enabled").fire("change");
-    ui.node("ci-failure-notifications").checked = true;
-    await ui.node("ci-failure-notifications").fire("change");
+    ui.node("ci-notification-mode").value = "failures";
+    await ui.node("ci-notification-mode").fire("change");
     await ui.node("apply-settings").fire("click");
     assert.equal(ui.autostartEnabled, false);
     assert.ok(ui.calls.some(([name, args]) => name === "save_settings" &&
-      args.ciFailureNotifications === true));
+      args.ciNotificationMode === "failures"));
     assert.equal(ui.closed, true);
   } finally { ui.restore(); }
 });
@@ -687,8 +717,8 @@ test("Unavailable autostart state stays unknown but does not block other Setting
   try {
     assert.equal(ui.node("autostart-enabled").disabled, true);
     assert.equal(ui.node("autostart-status").textContent, "Autostart unavailable");
-    ui.node("ci-failure-notifications").checked = true;
-    await ui.node("ci-failure-notifications").fire("change");
+    ui.node("ci-notification-mode").value = "failures";
+    await ui.node("ci-notification-mode").fire("change");
     await ui.node("apply-settings").fire("click");
     assert.equal(ui.closed, true);
     assert.equal(ui.calls.some(([name]) => name === "autostart_set_enabled"), false);
@@ -763,7 +793,7 @@ test("Native folder picker rejects concurrent modal requests", async () => {
 
 test("Changing only language never reapplies existing GitHub account or other settings", async () => {
   const ui = await fixture("locale-no-reapply", true, ["one/core"], {
-    language: "en", ignoredChildNames: ["Archive"], ciFailureNotifications: true
+    language: "en", ignoredChildNames: ["Archive"], ciNotificationMode: "both"
   });
   try {
     await ui.languageOption("ru").fire("click");
@@ -988,14 +1018,14 @@ test("Mode B: denied config write retains draft and never commits unrelated nati
     saveSettingsError: true
   });
   try {
-    ui.node("ci-failure-notifications").checked = true;
-    await ui.node("ci-failure-notifications").fire("change");
+    ui.node("ci-notification-mode").value = "failures";
+    await ui.node("ci-notification-mode").fire("change");
     assert.equal(ui.node("apply-settings").disabled, false);
     await ui.node("apply-settings").fire("click");
     assert.equal(ui.closed, false);
     assert.equal(ui.node("apply-settings").disabled, false,
       "rejected save must keep edited draft available for retry");
-    assert.equal(ui.node("ci-failure-notifications").checked, true);
+    assert.equal(ui.node("ci-notification-mode").value, "failures");
     assert.match(ui.node("message").textContent, /Settings write denied/);
     assert.equal(ui.calls.filter(([name]) => name === "save_settings").length, 1);
     assert.equal(ui.calls.some(([name]) => [
@@ -1120,8 +1150,8 @@ test("Mode B: offline saved repository subset survives unrelated Settings persis
   try {
     assert.equal(ui.node("github-repo-mode").value, "selected");
     assert.match(ui.node("github-repo-status").textContent, /unavailable/i);
-    ui.node("ci-failure-notifications").checked = true;
-    await ui.node("ci-failure-notifications").fire("change");
+    ui.node("ci-notification-mode").value = "failures";
+    await ui.node("ci-notification-mode").fire("change");
     assert.equal(ui.node("apply-settings").disabled, false,
       "unmodified offline selection must not block unrelated settings");
     await ui.node("apply-settings").fire("click");
@@ -1129,7 +1159,7 @@ test("Mode B: offline saved repository subset survives unrelated Settings persis
     assert.deepEqual(ui.monitorRepositories, ["one/core"]);
     assert.equal(ui.monitorOrg, "one");
     assert.deepEqual(ui.calls.filter(([name]) => name === "save_settings")
-      .map(([, args]) => args), [{ ciFailureNotifications: true }]);
+      .map(([, args]) => args), [{ ciNotificationMode: "failures" }]);
     assert.equal(ui.calls.some(([name]) => name === "github_set_monitor_org"),
       false, "an offline inventory must not silently rewrite the selected scope");
   } finally { ui.restore(); }
@@ -1428,8 +1458,8 @@ test("Mode B: initial Settings config failure reports unavailable without reveal
 test("Mode B: failed Settings reopen blocks stale dirty draft until a successful reload", async () => {
   const ui = await fixture("mode-b-config-reopen-failure", true);
   try {
-    ui.node("ci-failure-notifications").checked = true;
-    await ui.node("ci-failure-notifications").fire("change");
+    ui.node("ci-notification-mode").value = "failures";
+    await ui.node("ci-notification-mode").fire("change");
     assert.equal(ui.node("apply-settings").disabled, false);
     ui.setConfigReadError(true);
     await ui.dispatchOpened();
@@ -1443,7 +1473,7 @@ test("Mode B: failed Settings reopen blocks stale dirty draft until a successful
     ui.setConfigReadError(false);
     await ui.dispatchOpened();
     assert.equal(ui.node("github-connection-indicator").textContent, "Authorized");
-    assert.equal(ui.node("ci-failure-notifications").checked, false);
+    assert.equal(ui.node("ci-notification-mode").value, "off");
     assert.equal(ui.node("apply-settings").disabled, true);
     await ui.node("cancel-settings").fire("click");
     assert.equal(ui.closed, true);
@@ -1473,7 +1503,7 @@ test("Mode B: late first config read cannot overwrite the newer reopened Setting
     assert.equal(ui.language, "ru");
     assert.deepEqual(ui.node("roots-list").children.map(row =>
       row.children[0]?.textContent), ["/repos"]);
-    assert.equal(ui.node("ci-failure-notifications").checked, false);
+    assert.equal(ui.node("ci-notification-mode").value, "off");
     assert.equal(ui.node("apply-settings").disabled, true);
     assert.equal(ui.calls.some(([name]) => name === "save_settings"), false);
   } finally { ui.restore(); }
@@ -1557,8 +1587,8 @@ test("Mode B: unrelated Settings save preserves scope when repository page is co
   });
   try {
     assert.match(ui.node("github-repo-status").textContent, /unavailable/i);
-    ui.node("ci-failure-notifications").checked = true;
-    await ui.node("ci-failure-notifications").fire("change");
+    ui.node("ci-notification-mode").value = "failures";
+    await ui.node("ci-notification-mode").fire("change");
     assert.equal(ui.node("apply-settings").disabled, false,
       "a corrupt inventory must not block independent preference edits");
     await ui.node("apply-settings").fire("click");
@@ -1566,7 +1596,7 @@ test("Mode B: unrelated Settings save preserves scope when repository page is co
     assert.deepEqual(ui.monitorRepositories, ["one/core"]);
     assert.equal(ui.monitorOrg, "one");
     assert.deepEqual(ui.calls.filter(([name]) => name === "save_settings")
-      .map(([, args]) => args), [{ ciFailureNotifications: true }]);
+      .map(([, args]) => args), [{ ciNotificationMode: "failures" }]);
     assert.equal(ui.calls.some(([name]) => name === "github_set_monitor_org"),
       false, "unknown inventory is not a reason to rewrite native scope");
   } finally { ui.restore(); }
@@ -1621,8 +1651,8 @@ test("Mode B: native status failure after open is redacted and blocks dirty Appl
   const sensitiveError = "PRIVATE_PROVIDER_BODY_MUST_NOT_RENDER";
   const ui = await fixture("mode-b-status-event-failure", true);
   try {
-    ui.node("ci-failure-notifications").checked = true;
-    await ui.node("ci-failure-notifications").fire("change");
+    ui.node("ci-notification-mode").value = "failures";
+    await ui.node("ci-notification-mode").fire("change");
     assert.equal(ui.node("apply-settings").disabled, false);
     ui.setAuthStatusErrorText(sensitiveError);
     ui.setAuthStatusError(true);

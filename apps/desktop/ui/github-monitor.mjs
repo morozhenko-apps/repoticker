@@ -1,4 +1,5 @@
 import { collectRecentCompleted, createCiFailureTracker } from "./ci-failure-events.mjs";
+import { projectLatestCiStatuses } from "./ci-status.mjs";
 import { collectRunnerState } from "./runner-collector.mjs";
 import { listAvailableInstallations } from "./github-installations.mjs";
 export { listAvailableInstallations } from "./github-installations.mjs";
@@ -180,7 +181,7 @@ export function invalidateMetricGroup(previous, kind) {
 
 export function startGithubMonitoring({ invoke, event, onError = () => {},
   collect = collectForAccount, schedule = setInterval, onStage = () => {},
-  onRefreshState = () => {}, now = () => Date.now() }) {
+  onRefreshState = () => {}, onCiStatus = null, now = () => Date.now() }) {
   let busy = false;
   let rerunKind = null;
   let lastState = null;
@@ -206,6 +207,7 @@ export function startGithubMonitoring({ invoke, event, onError = () => {},
   }
   function invalidatePresentation(message) {
     ciTracker.reset();
+    onCiStatus?.(null);
     selectionRevision++;
     hasPublishedResult = false;
     lastState = null;
@@ -245,6 +247,7 @@ export function startGithubMonitoring({ invoke, event, onError = () => {},
       if (revision !== selectionRevision) return;
       if (!authorized) {
         ciTracker.reset();
+        onCiStatus?.(null);
         hasPublishedResult = false;
         lastState = null;
         await publish(false, null, null, revision);
@@ -253,6 +256,7 @@ export function startGithubMonitoring({ invoke, event, onError = () => {},
       // Native credential validation precedes this message. Never say
       // "Connect GitHub" while an authorized account is loading.
       if (now() < cooldownUntil) {
+        if (kind !== "runners") onCiStatus?.(null);
         await publish(true, invalidateMetricGroup(lastState, kind),
           githubFailureMessage("rate_limited"), revision);
         lastState = invalidateMetricGroup(lastState, kind);
@@ -292,39 +296,46 @@ export function startGithubMonitoring({ invoke, event, onError = () => {},
         result.state.errors.every(error =>
           error?.scope === "runners" && error?.reason === "permission_denied");
       const alertMode = selection.ci_notification_mode;
-      if (!["failures", "successes", "both"].includes(alertMode)) {
-        ciTracker.reset();
-      } else if (revision === selectionRevision && kind !== "runners" &&
-          (!result.failure || runnerOnlyDenied) &&
-          next?.coverage?.jobs === true &&
-          next.scope?.organization && Array.isArray(next.scope.repositories)) {
-        // Completed runs are deliberately independent of active job counts.
-        // One bounded native REST page per repository; no requests when opt-out.
+      const notificationsEnabled = ["failures", "successes", "both"].includes(alertMode);
+      if (!notificationsEnabled) ciTracker.reset();
+      const trustedCiRead = revision === selectionRevision && kind !== "runners" &&
+        (!result.failure || runnerOnlyDenied) &&
+        next?.coverage?.jobs === true &&
+        next.scope?.organization && Array.isArray(next.scope.repositories);
+      // The status read is independent of notification opt-in and uses the
+      // same bounded API snapshot as notifications when they are enabled.
+      if (trustedCiRead && (notificationsEnabled || onCiStatus)) {
         const observations = await collectRecentCompleted({
           get, account: next.scope.organization,
           repositories: next.scope.repositories, maxPages: 1
         });
         if (revision !== selectionRevision) return;
-        const alerts = ciTracker.observe({
-          account: next.scope.organization,
-          repositories: next.scope.repositories,
-          results: observations, mode: alertMode
-        });
-        for (const alert of alerts.slice(0, 5)) {
-          if (revision !== selectionRevision) break;
-          await invoke("ci_run_notify", {
-            repository: alert.repository, runId: alert.id,
-            runAttempt: alert.run_attempt, conclusion: alert.conclusion
-          }).catch(onError);
+        onCiStatus?.(projectLatestCiStatuses(next.scope.organization, observations));
+        if (notificationsEnabled) {
+          const alerts = ciTracker.observe({
+            account: next.scope.organization,
+            repositories: next.scope.repositories,
+            results: observations, mode: alertMode
+          });
+          for (const alert of alerts.slice(0, 5)) {
+            if (revision !== selectionRevision) break;
+            await invoke("ci_run_notify", {
+              repository: alert.repository, runId: alert.id,
+              runAttempt: alert.run_attempt, conclusion: alert.conclusion
+            }).catch(onError);
+          }
         }
       } else if (revision === selectionRevision && kind !== "runners") {
-        // A missing trustworthy task snapshot invalidates completion history;
-        // the next successful observation is a silent recovery baseline.
+        // Missing trustworthy coverage invalidates old green/red indicators.
+        onCiStatus?.(null);
         ciTracker.reset();
       }
     } catch (error) {
       if (revision !== selectionRevision) return;
-      if (kind !== "runners") ciTracker.reset();
+      if (kind !== "runners") {
+        ciTracker.reset();
+        onCiStatus?.(null);
+      }
       if (first) onStage("monitor.failed");
       const reason = githubFailureReason(error);
       await applyCooldown(reason);

@@ -240,3 +240,28 @@ acceptance. Rollback is an independent test-only commit revert.
 No native config, notification schema, UI behavior, account scope,
 or release flow may change in this repair.
 
+
+## Three-test correction receipt (2026-11-07)
+
+Implementation: [`d3990d6`](https://github.com/morozhenko-apps/repoticker/commit/d3990d6d791997f3ed2ae13d304d4be401b50f82).
+Exact source examination confirmed that the Rust invocation still passes
+five ordered arguments to `notification_text`, and Fetch still has
+both the native cancellation IPC and the tooltip/accessible cancellation
+labels while its visible action label shows percent complete.
+
+Only three existing source contract test files were edited:
+`tests/ci-native-integration.test.mjs`,
+`tests/locale-counts-and-notifications.test.mjs`, and
+`tests/git-fetch-cancel.test.mjs`. The assertions now tolerate
+Rust formatting, preserve exact argument order, and require both Fetch
+title and aria-label to expose the cancel state.
+
+Focused verification: new regular expressions matched the exact
+production source files read from the immutable `eecea7d` commit;
+all three JavaScript test files parsed after replacement. This is
+not a Node test runner pass. Native binary behavior is unchanged.
+The owner must still run the complete STABLE gate on the final SHA
+and visually accept the KDE Wayland behavior before marking Issue #21
+complete. `nvm` is not installed in the owner's observed Ubuntu shell,
+so Node26.13.0 has not yet been used for this gate.
+

@@ -1409,9 +1409,7 @@ mod monitor_selection_tests {
             assert!(!mode.allows("cancelled"));
             assert!(!mode.allows("unknown"));
         }
-        let invalid = serde_json::from_value::<CiNotificationMode>(
-            serde_json::json!("unknown")
-        );
+        let invalid = serde_json::from_value::<CiNotificationMode>(serde_json::json!("unknown"));
         assert!(invalid.is_err(), "unknown persisted mode must fail closed");
     }
 

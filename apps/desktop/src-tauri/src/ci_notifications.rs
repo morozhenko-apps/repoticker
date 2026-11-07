@@ -58,9 +58,12 @@ fn notification_text(
     } else {
         (&templates.title, &templates.body)
     };
-    (title.clone(), body.replace("{repository}", repository)
-        .replace("{runId}", &run_id.to_string())
-        .replace("{attempt}", &attempt.to_string()))
+    (
+        title.clone(),
+        body.replace("{repository}", repository)
+            .replace("{runId}", &run_id.to_string())
+            .replace("{attempt}", &attempt.to_string()),
+    )
 }
 
 const MAX_DELIVERED: usize = 512;
@@ -142,7 +145,13 @@ pub(crate) fn ci_run_notify(
     if delivered.contains(&key) {
         return Ok(false);
     }
-    let (title, body) = notification_text(&config.language, &repository, run_id, run_attempt, &conclusion);
+    let (title, body) = notification_text(
+        &config.language,
+        &repository,
+        run_id,
+        run_attempt,
+        &conclusion,
+    );
     app.notification()
         .builder()
         .title(title)
@@ -173,8 +182,9 @@ mod tests {
         for (locale, template) in notification_catalog() {
             assert!(crate::tray_i18n::is_supported_locale(locale));
             assert!(!template.title.is_empty() && template.title.contains("RepoTicker"));
-            assert!(!template.success_title.is_empty()
-                && template.success_title.contains("RepoTicker"));
+            assert!(
+                !template.success_title.is_empty() && template.success_title.contains("RepoTicker")
+            );
             for error in [
                 &template.permission_error,
                 &template.state_error,
@@ -225,7 +235,13 @@ mod tests {
             assert!(!approved_scope(&value, "team/alpha", id, 1, "failure"));
         }
         for attempt in [0, 1_000_001] {
-            assert!(!approved_scope(&value, "team/alpha", 12, attempt, "failure"));
+            assert!(!approved_scope(
+                &value,
+                "team/alpha",
+                12,
+                attempt,
+                "failure"
+            ));
         }
         value.github_monitor_repositories.clear();
         assert!(approved_scope(&value, "Team/other", 12, 2, "failure"));

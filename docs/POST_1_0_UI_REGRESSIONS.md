@@ -19,22 +19,26 @@ Baseline: `dev` at `df22d025cca176243068876b5e0931aa6d0afd53`; `main` stays rese
 
 1. [x] Analyze the active dev source, relevant test assertions and native/platform boundaries. Record the user-visible requirements and a bounded diagnosis.
 2. [x] Commit scoped card spinner/progress and native tray/localization adjustments with matching source-level regression tests. Notification configuration remains unchanged. Final execution is pending.
-3. [ ] Resolve the notification persistent-config/API contract choice with the owner before implementing the success/failure controls, backend guard, deduplication and 20 native templates.
-4. [x] Implement a frameless About titlebar with only an accessible Close button, localized in 20 languages; restrict drag permission to the About window.
-5. [ ] Validate actual KDE Wayland and Windows drag, keyboard close, focus, re-open and native presentation. No physical acceptance has been performed yet.
-6. [ ] Execute final applicable STABLE JS, Rust and release-contract checks once and record exact evidence; no CI polling after a run is started.
+3. [x] Owner chose a single `ci_notification_mode` enum (`off | failures | successes | both`) on 2026-11-07; default `off`; **no migration** from `ci_failure_notifications`. Legacy boolean is deliberately ignored. Other persisted preferences and OS credentials remain untouched.
+4. [ ] Implement selected-mode Settings control, native configuration/authorization guard, event tracker and 20 native message templates; add deterministic tests for startup silence, identity, scope, deduplication and each choice.
+5. [x] Implement a frameless About titlebar with only an accessible Close button, localized in 20 languages; restrict drag permission to the About window.
+6. [ ] Validate actual KDE Wayland and Windows drag, keyboard close, focus, re-open and native presentation. No physical acceptance has been performed yet.
+7. [ ] Execute final applicable STABLE JS, Rust and release-contract checks once and record exact evidence; no CI polling after a run is started.
 
 ## Validation and rollback
 
 Use deterministic tests for scan/monitor isolation, progress semantics and cancellation, both tray menu orders, and translation key integrity. Relevant suites: `node --test tests/*.test.mjs`, `cargo test --workspace`, and `python3 -m unittest discover -s tests -v` (only if available locally or in trusted CI). A source-level change without executed checks is **PARTIAL**, never complete. Do not commit verbose tracing; use the existing opt-in `REPOTICKER_STARTUP_DEBUG=1` to measure local scan and monitor milestones without logging paths, tokens, repository names or runner inventory. Roll back the scoped functional commit independently of this document if required.
 
-## Open architectural choice: CI notification preferences
+## Approved decision: one opt-in CI notification mode (2026-11-07)
 
-**Option A (preferred, compatible additive extension):** keep `ci_failure_notifications: bool` and introduce a separately persisted `ci_success_notifications: bool` defaulting to false. Old configurations retain the existing failure preference, and success alerts remain off unless explicitly opted in. The native notification command must validate both permission and requested conclusion.
+The owner approved **Option B with no migration**. Persist a single enum `ci_notification_mode` with values `off`, `failures`, `successes`, `both`, defaulting to `off`. An older `ci_failure_notifications` field must be ignored, even when it was `true`; do not copy it or enable notifications. Other local settings, monitor scope, and OS credentials remain untouched. A later settings save may naturally drop the ignored unknown field. Reject invalid values on the native Settings command; fail closed on unknown persisted enum states.
 
-**Option B (unified schema with migration):** replace the old boolean with `ci_notification_mode` = `off | failures | successes | both` and explicitly migrate old configs. It centralizes policy but adds a schema migration and compatibility risks for rollback/downgrade.
+Use a single labelled Settings select, transactional Apply/Cancel, and locale-complete labels for all twenty supported languages. A changed setting requires a native config event; no GitHub auth regrant should be necessary.
 
-Do not implement either persistent format until the owner selects an option. Successful and failed alerts must be separate monotonic `run id + attempt + conclusion` facts, silently baselined on startup/scope change, bounded/deduplicated, rate-limit aware and limited to authorized monitored repositories.
+Notifications are only for the explicit conclusions `failure` and `success`, and only when that conclusion is selected. Restrict native IPC by currently persisted mode, monitored organization and repository selection; never accept arbitrary notification strings, links or provider payload. Independently deduplicate each `repository + run_id + run_attempt + conclusion` fact. The first successful observation after launch, scope/mode switch or provider recovery establishes a silent baseline; transient stale API responses must not create duplicate alerts. Keep bounded memory, provider request bounds and no extra API requests when notifications are off.
+
+A successful GitHub workflow run must not be confused with a successfully completed local Git Fetch. These notification preferences affect GitHub Actions only. Avoid verbose operation logs and sensitive values.
+
 
 ## Implementation evidence (2026-11-07)
 

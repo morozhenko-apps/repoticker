@@ -373,6 +373,8 @@ pub struct RepoSnapshot {
     pub ahead: u64,
     pub behind: u64,
     pub decision: SyncDecision,
+    /// Validated GitHub origin identity; no credential or arbitrary URL.
+    pub github_repo: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -844,6 +846,13 @@ pub fn inspect(repo: &Path) -> Result<RepoSnapshot, GitError> {
         ahead,
         behind,
     });
+    // Optional, bounded local Git config read. An unsupported or missing origin
+    // cannot invalidate otherwise valid local repository status.
+    let github_repo = optional(repo, &["remote", "get-url", "origin"])
+        .ok()
+        .flatten()
+        .and_then(|remote| github_remote_to_browser_url(&remote))
+        .and_then(|url| url.strip_prefix("https://github.com/").map(str::to_owned));
     let name = repo
         .file_name()
         .map(|value| value.to_string_lossy().into_owned())
@@ -857,6 +866,7 @@ pub fn inspect(repo: &Path) -> Result<RepoSnapshot, GitError> {
         ahead,
         behind,
         decision,
+        github_repo,
     })
 }
 

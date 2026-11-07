@@ -117,7 +117,8 @@ struct RepoSummary {
     behind: u64,
     dirty: bool,
     sync_state: String,
-    ci: Option<String>,
+    /// Canonical provider identity, never inferred from the folder name.
+    github_repo: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -239,7 +240,7 @@ fn present(repo: RepoSnapshot) -> RepoSummary {
         behind: repo.behind,
         dirty: repo.dirty,
         sync_state: decision_label(repo.decision),
-        ci: None,
+        github_repo: repo.github_repo,
     }
 }
 

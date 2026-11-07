@@ -30,3 +30,16 @@ test("QA installer starts exactly one actual installed binary, not guessed CLI",
   assert.match(source, /exec "\$BIN"/);
   assert.doesNotMatch(source, /^repo-ticker\s*$/m);
 });
+
+test("QA installer requires the synchronized current Debian package version", () => {
+  // Only the exact candidate version is allowed. No wildcard or stale pin.
+  assert.match(source, /python3[^\n]*release_version\\.py/);
+  assert.match(source, /DEB="\\$OUT\\/repoticker_\\$\\{VERSION\\}_amd64\\.deb"/);
+  assert.match(source, /dpkg-deb -f "\\$DEB" Package/);
+  assert.match(source, /dpkg-deb -f "\\$DEB" Version/);
+  assert.match(source, /dpkg-deb -f "\\$DEB" Architecture/);
+  assert.match(source, /Version\\)" != "\\$VERSION"/);
+  assert.match(source, /Architecture\\)" != "amd64"/);
+  assert.doesNotMatch(source, /repoticker_0\\.2\\.0_amd64\\.deb/);
+  assert.doesNotMatch(source, /\\[\\[ -f "\\$OUT"\\/\\*\\.deb/);
+});

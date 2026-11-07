@@ -7,7 +7,7 @@ if [[ "$#" -ne 2 || ! "$1" =~ ^[0-9]+$ || ! "$2" =~ ^[0-9a-f]{40}$ ]]; then
   echo "Usage: bash scripts/install_qa_linux.sh RUN_ID SOURCE_SHA" >&2
   exit 2
 fi
-for binary in gh sha256sum dpkg-deb dpkg-query sudo pgrep; do
+for binary in gh sha256sum dpkg-deb dpkg-query sudo pgrep python3; do
   command -v "$binary" >/dev/null || { echo "Missing: $binary" >&2; exit 1; }
 done
 # The legacy DEB is a DIFFERENT package. Never silently leave two
@@ -36,10 +36,15 @@ fi
   cd "$OUT"
   sha256sum -c -- *.sha256
 )
-DEB="$OUT/repoticker_0.2.0_amd64.deb"
+# The candidate workflow uses this same synchronized Cargo/Tauri version.
+# Never choose a different DEB from the artifact directory by wildcard.
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+VERSION="$(python3 "$SCRIPT_DIR/release_version.py")"
+DEB="$OUT/repoticker_${VERSION}_amd64.deb"
 if [[ ! -f "$DEB" ||
       "$(dpkg-deb -f "$DEB" Package)" != "repoticker" ||
-      "$(dpkg-deb -f "$DEB" Version)" != "0.2.0" ]]; then
+      "$(dpkg-deb -f "$DEB" Version)" != "$VERSION" ||
+      "$(dpkg-deb -f "$DEB" Architecture)" != "amd64" ]]; then
   echo "Unexpected DEB package; installation refused" >&2
   exit 1
 fi

@@ -301,3 +301,47 @@ authorization to publish a release or modify `main`.
 A source-only test pass must not be presented as full Mode B
 branch/coverage completion. Rollback remains per prior atomic commits.
 
+
+
+## QA DEB installer stale version guard (2026-11-07)
+
+**Mode A / corrective tooling maintenance.** The owner executed
+`bash scripts/install_qa_linux.sh 42417534851
+14737da90be479ac4870b848e62042193e3be4e4`.
+The workflow produced the exact-version artifact
+`repoticker_1.0.0_amd64.deb`. The installer reported both Linux
+SHA-256 sidecar checks as `OK`, then refused installation with
+`Unexpected DEB package`. No package install was attempted.
+
+Five considered causes: corrupted archive, mismatched source SHA,
+wrong Debian `Package`, stale version expectation, or running/
+conflicting installed binary. The first two are excluded by the
+successful source/sidecar gates; the last is not reached. Direct
+source comparison confirms an exact `repoticker_0.2.0_amd64.deb`
+filename and `Version=0.2.0` check, while
+`scripts/release_version.py` and the Tauri/Cargo project
+configuration derive current `1.0.0`; release-asset collection
+already uses that same authoritative version.
+
+**Plan** (no version/schema/provenance relaxation):
+1. Keep mandatory `gh run` success and exact `SOURCE_SHA.txt`
+   equality; keep `sha256sum -c -- *.sha256`, the legacy package
+   conflict check, running-process rejection, canonical binary
+   verification and post-install launch.
+2. Read the authoritative synchronized version from the installer
+   checkout via `scripts/release_version.py`, independent of
+   current working directory. Construct a **single exact** expected
+   `repoticker_${VERSION}_amd64.deb`; validate Debian
+   `Package=repoticker`, `Version=${VERSION}` and
+   `Architecture=amd64`. A different checked-out version or
+   unrecognized artifact must remain a hard failure, not a wildcard.
+3. Extend the existing Linux QA installer regression contract to
+   require synchronized version derivation and reject 0.2.0 pins.
+   Use focused syntax/source checks. No remote candidate rebuild is
+   needed since only the installer script/tests change.
+4. Record a post-change receipt separately; owner installs the
+   already verified run on Ubuntu, then performs KDE UI acceptance.
+
+**Rollback**: revert the isolated installer/test commit, preserving
+this diagnostic record. Do not alter `main`, release tags,
+production distribution, Rust app behavior or CI workflows.

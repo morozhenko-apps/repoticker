@@ -265,3 +265,39 @@ and visually accept the KDE Wayland behavior before marking Issue #21
 complete. `nvm` is not installed in the owner's observed Ubuntu shell,
 so Node26.13.0 has not yet been used for this gate.
 
+
+## Owner-confirmed final Node and rustfmt gate (2026-11-07)
+
+On an Ubuntu host, the owner executed the STABLE JS command from the
+`dev` tree at exact SHA
+`12ffe39c3c51ebd3d77d1568a7cfed8b7b980658` after `git pull
+--ff-only`. A locally installed, official
+`node-v26.13.0-linux-x64.tar.xz` archive passed the published
+SHA-256 manifest verification. Node reported `v26.13.0`.
+
+- `node --test tests/*.test.mjs` on **v26.13.0**:
+  **562 tests, 562 pass, 0 fail, 0 skipped/cancelled**, total
+  duration `2255.060149 ms`.
+- `cargo fmt --all --check`: no diff/error output; the command
+  group was run with `set -euo pipefail` and returned to the prompt.
+- The three previously failing source-contract tests now pass:
+  `Given WebView alert data When native delivery runs Then permissions
+  and config gate OS plugin`, `all CI notifications preserve provider
+  run identity and opt-in scope`, and `existing four-button card reuses
+  Fetch as Cancel without interrupting Safe pull`.
+- Earlier source revision `c5f5606` passed 71 core unit, 33 core
+  integration and 69 desktop Rust tests plus native Cargo check; later
+  Rust changes were formatting only. These are reused earlier test
+  results, **not a new exact-SHA Rust execution**.
+
+**Gate status:** STABLE JS on Node26.13.0 **PASS**, rustfmt **PASS**.
+Linux KDE/Wayland installed-bundle UI and native OS notification
+permission/delivery acceptance **NOT YET VERIFIED**. Windows
+installed-bundle acceptance, any applicable final Python
+distribution-contract check and exact-SHA remote platform CI evidence
+are also not established by this local Node execution. Therefore
+the UI regression batch and Issue #21 stay open; this is not
+authorization to publish a release or modify `main`.
+A source-only test pass must not be presented as full Mode B
+branch/coverage completion. Rollback remains per prior atomic commits.
+

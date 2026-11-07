@@ -22,8 +22,6 @@ button:focus-visible, input:focus-visible, .status-hover:focus-visible { outline
 .repo-delta { min-width: 32px; font-size: 15px; font-weight: 500; text-align: center; }
 .repo-delta.is-ci-success { color: #159947; font-size: 21px; font-weight: 700; }
 .repo-delta.is-ci-failed { color: #bf3434; font-size: 21px; font-weight: 700; }
-.repo-delta.is-dirty { color: #bd8726; }
-.repo-delta.is-behind { color: #246da0; }
 .repo-more { width: 28px; height: 29px; font-size: 20px; border-radius: 5px; flex-shrink: 0; }
 .repo-more:hover { background: color-mix(in srgb, CanvasText 9%, transparent); }
 .drawer > .repo-menu { position: absolute; z-index: 30; background: #ffffff; color: #242b30; border: 1px solid #aeb8c1; border-radius: 7px; padding: 0; box-shadow: 0 7px 20px #0004; min-width: 155px; display: flex; flex-direction: column; pointer-events: auto; max-width: calc(100% - 12px); max-height: calc(100% - 12px); overflow-y: auto; overscroll-behavior: contain; }

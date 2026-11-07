@@ -69,7 +69,7 @@ function fixture(mode, { showCiStatus = false } = {}) {
   };
 }
 
-test("Given notifications disabled When the regular monitor refreshes Then completed runs are not read", async () => {
+test("Given notifications disabled without a CI status consumer When monitoring Then no completed runs are read", async () => {
   const app = fixture("off");
   await app.ready();
   assert.equal(app.calls.filter(x => x.command === "github_api_get").length, 0);

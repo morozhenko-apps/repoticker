@@ -32,7 +32,8 @@ test("Settings preserves keyboard-accessible native CI selector and shared check
   ]) assert.match(base, rule);
   assert.match(css, /\.autostart-controls input\[type="checkbox"\]:checked,\s*\.github-repo-choice input\[type="checkbox"\]:checked \{[^}]*background-image: url\("data:image\/svg\+xml/);
   assert.match(css, /\.autostart-controls input\[type="checkbox"\]:focus-visible,\s*\.github-repo-choice input\[type="checkbox"\]:focus-visible \{[^}]*outline:/);
-  assert.match(css, /\.ci-alert-controls select \{[^}]*min-width: 180px;[^}]*max-width: 350px/);
+  assert.match(css, /\.ci-alert-controls label \{[^}]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);[^}]*column-gap: 10px/);
+  assert.match(css, /\.ci-alert-controls select \{[^}]*min-width: 0;[^}]*width: 100%;[^}]*height: 34px/);
   assert.match(css, /@media \(forced-colors: active\)/);
 });
 
@@ -46,7 +47,7 @@ test("KDE alignment fix does not alter settings confirmation or popup geometry",
 });
 
 test("KDE GitHub selects have zero block padding and CSS-owned centered closed controls", () => {
-  const control = css.match(/\.github-grid select,\s*\.github-repo-heading select \{([^}]+)\}/)?.[1];
+  const control = css.match(/\.github-grid select,\s*\.github-repo-heading select,\s*\.ci-alert-controls select \{([^}]+)\}/)?.[1];
   assert.ok(control, "All three visible GitHub selectors share one text-painting contract");
   for (const rule of [
     /-webkit-appearance: none/, /appearance: none/,
@@ -54,10 +55,10 @@ test("KDE GitHub selects have zero block padding and CSS-owned centered closed c
     /padding: 0 32px 0 12px/,
     /background-position: right 11px center/
   ]) assert.match(control, rule);
-  assert.match(css, /\.github-grid select:focus-visible,\s*\.github-repo-heading select:focus-visible/);
+  assert.match(css, /\.github-grid select:focus-visible,\s*\.github-repo-heading select:focus-visible,\s*\.ci-alert-controls select:focus-visible/);
   assert.match(css, /@media \(forced-colors: active\)[\s\S]*\.github-grid select/);
   // Real HTML selects and their native options remain, not a scripted proxy.
-  for (const id of ["github-monitor-scope", "github-connection-mode", "github-repo-mode"]) {
+  for (const id of ["github-monitor-scope", "github-connection-mode", "github-repo-mode", "ci-notification-mode"]) {
     assert.match(html, new RegExp('<select id="' + id + '"'));
   }
   assert.doesNotMatch(html, /role="combobox"/);
@@ -119,11 +120,11 @@ test("L10N-20 Settings layouts accommodate long language names and full footer e
 });
 
 test("Arabic selectors mirror only translated controls, keeping technical account LTR", () => {
-  const source = css.match(/\[dir="rtl"\] \.github-grid select:not\(\[dir="ltr"\]\),\s*\[dir="rtl"\] \.github-repo-heading select:not\(\[dir="ltr"\]\) \{([^}]+)\}/)?.[1] ?? "";
+  const source = css.match(/\[dir="rtl"\] \.github-grid select:not\(\[dir="ltr"\]\),\s*\[dir="rtl"\] \.github-repo-heading select:not\(\[dir="ltr"\]\),\s*\[dir="rtl"\] \.ci-alert-controls select:not\(\[dir="ltr"\]\) \{([^}]+)\}/)?.[1] ?? "";
   assert.match(source, /padding: 0 12px 0 32px/);
   assert.match(source, /background-position: left 11px center/);
   assert.match(source, /text-align: right/);
-  const defaultSelect = css.match(/\.github-grid select,\s*\.github-repo-heading select \{([^}]+)\}/)?.[1] ?? "";
+  const defaultSelect = css.match(/\.github-grid select,\s*\.github-repo-heading select,\s*\.ci-alert-controls select \{([^}]+)\}/)?.[1] ?? "";
   assert.match(defaultSelect, /padding: 0 32px 0 12px/);
   assert.match(defaultSelect, /background-position: right 11px center/);
   assert.match(settings, /select\.dir = "ltr";/);

@@ -65,7 +65,8 @@ label { font-size: 12px; }
  * field padding. Own only the closed control's painting, never the option
  * popup, so all GitHub select labels have one centered text baseline. */
 .github-grid select,
-.github-repo-heading select {
+.github-repo-heading select,
+.ci-alert-controls select {
   -webkit-appearance: none;
   appearance: none;
   box-sizing: border-box;
@@ -79,13 +80,15 @@ label { font-size: 12px; }
   background-size: 12px 8px;
 }
 .github-grid select:focus-visible,
-.github-repo-heading select:focus-visible {
+.github-repo-heading select:focus-visible,
+.ci-alert-controls select:focus-visible {
   outline: 2px solid #258ac7;
   outline-offset: 2px;
 }
 @media (forced-colors: active) {
   .github-grid select,
-  .github-repo-heading select {
+  .github-repo-heading select,
+  .ci-alert-controls select {
     -webkit-appearance: auto;
     appearance: auto;
     background-image: none;
@@ -96,7 +99,8 @@ label { font-size: 12px; }
 /* Localized Arabic controls paint their chevron at the visual inline end.
  * Monitor account IDs are explicitly dir=ltr and keep the LTR control. */
 [dir="rtl"] .github-grid select:not([dir="ltr"]),
-[dir="rtl"] .github-repo-heading select:not([dir="ltr"]) {
+[dir="rtl"] .github-repo-heading select:not([dir="ltr"]),
+[dir="rtl"] .ci-alert-controls select:not([dir="ltr"]) {
   padding: 0 12px 0 32px;
   background-position: left 11px center;
   text-align: right;
@@ -122,10 +126,10 @@ label { font-size: 12px; }
 .autostart-controls .hint { margin-left: auto; }
 
 /* One native, keyboard-accessible CI result selection; no extra controls. */
-.ci-alert-controls { display: flex; align-items: center; margin-top: 8px; }
-.ci-alert-controls label { display: flex; flex-wrap: wrap; width: 100%; align-items: center; gap: 8px 12px; cursor: pointer; }
-.ci-alert-controls label > span { min-width: 130px; }
-.ci-alert-controls select { flex: 1 1 220px; min-width: 180px; max-width: 350px; height: 34px; }
+.ci-alert-controls { margin-top: 8px; }
+.ci-alert-controls label { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 10px; align-items: center; cursor: pointer; }
+.ci-alert-controls label > span { min-width: 0; }
+.ci-alert-controls select { min-width: 0; width: 100%; height: 34px; }
 /* WebKitGTK native checkbox painting can overrun a custom 16px box.
  * Use one deterministic visual treatment with unchanged input semantics. */
 .autostart-controls input[type="checkbox"],

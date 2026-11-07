@@ -126,3 +126,12 @@ test("Fetch keeps progress percentage visible with cancellation available throug
   assert.match(action, /fetchCancelling \? "stopping" : fetching \? "fetchCancel" : "fetchTitle"/);
   assert.match(card, /void cancelActiveFetch\(\)/, "Fetch action remains cancellable");
 });
+
+
+test("repository source-refresh status uses existing translations in every supported locale", () => {
+  assert.match(markup, /id="repo-scan-status"[^>]*role="status"/);
+  assert.match(card, /cardText\(cardLanguage, "refreshing"\) \+ "…"/);
+  assert.equal(cardText("ru", "refreshing"), "Обновление");
+  for (const { code } of LOCALE_ROSTER)
+    assert.ok(cardText(code, "refreshing").trim().length > 0, code);
+});

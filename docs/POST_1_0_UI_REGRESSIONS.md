@@ -467,3 +467,29 @@ mode remains disabled.
 
 Rollback: revert each isolated UI commit; no source Git-core
 changes, credentials or GitHub API permission changes.
+
+
+### Safe Hybrid groundwork without enabling a public endpoint
+
+The owner explicitly requested continued implementation of connection mode.
+The previously agreed read-only design mandates GitHub
+`X-Hub-Signature-256` HMAC verification on **original HTTP body bytes**
+before any webhook delivery can be acknowledged. This verification
+primitive can be independently implemented and tested without choosing
+a public endpoint/transport/storage/authentication contract.
+Keep the existing Cloudflare Worker `501` handler, hidden Worker URL,
+unavailable Hybrid selector and existing polling unchanged.
+
+Plan: add a provider-independent, Cloudflare-Worker-compatible pure
+async verifier using WebCrypto's HMAC SHA-256 `verify` (no ad-hoc
+timing-sensitive string comparison); reject missing, multiple,
+malformed or incorrect signatures, missing secret and wrong body;
+retain exact raw body, including Unicode and whitespace; add
+Node-based deterministic negative and known-vector tests. Do not
+log secrets or bodies. Leave delivery ID dedup, per-tenant routing,
+bounded payload/read, WebSocket client authentication and REST
+reconciliation for the approved next architectural decision.
+
+No deployment, Worker secret provisioning or HTTP POST success
+responses in this incremental work. The verifier by itself is NOT
+a functional Hybrid connection mode.

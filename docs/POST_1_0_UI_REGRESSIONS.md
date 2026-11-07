@@ -345,3 +345,35 @@ already uses that same authoritative version.
 **Rollback**: revert the isolated installer/test commit, preserving
 this diagnostic record. Do not alter `main`, release tags,
 production distribution, Rust app behavior or CI workflows.
+
+
+## QA DEB installer correction receipt (2026-11-07)
+
+- Documentation-first diagnosis: `977c44635b671852020ad89ac401fb710b72361c`.
+- Fix: `518917724ab11684e41cef2bd07aeacc0aac1f06`.
+  `scripts/install_qa_linux.sh` now executes
+  `scripts/release_version.py` to derive the exact current
+  synchronized Cargo/Tauri version, independent of shell working
+  directory. The filename remains canonical, the Debian
+  `Package`, `Version` and `Architecture` checks are strict,
+  and all earlier receipt/checksum/legacy/running-process and
+  installed-binary gates are untouched.
+- Targeted regression: `8c0317cd9bf77915f6ea1858d24d35b2e276c231`
+  adds a direct contract asserting dynamic version sourcing,
+  exact filename and exact Debian metadata guards, rejecting the
+  obsolete `0.2.0` filename. Focused evaluation of the actual
+  source and new regex assertions passed in the connected tool
+  environment. This is **not** proof of a full Node/Cargo run
+  or an installed runtime.
+- The existing 7 November acceptance workflow
+  `42417534851` was successful, with Linux and Windows
+  artifacts generated from exact SHA `14737da90be479ac4870b848e62042193e3be4e4`.
+  The fix only affects local QA tooling and tests, so a new
+  native bundle is unnecessary. Re-run focused
+  `node --test tests/linux-qa-installer.test.mjs` and
+  `bash -n scripts/install_qa_linux.sh` on Ubuntu before
+  executing the corrected script using the existing run ID
+  and recorded source SHA.
+- Await actual Debian installation and KDE Wayland physical
+  acceptance. Do not claim a native install or release success
+  based solely on the earlier SHA checks.

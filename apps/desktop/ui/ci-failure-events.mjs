@@ -136,8 +136,13 @@ export function createCiFailureTracker({ maxRemembered = 500 } = {}) {
       }
       const alerts = [];
       for (const result of results) {
-        if (result.error) continue;
         const repo = result.repository.toLowerCase();
+        if (result.error) {
+          // A missing observation cannot prove when the unseen runs ended.
+          // Silently rebaseline this repository after its next valid read.
+          history.delete(repo);
+          continue;
+        }
         const previous = history.get(repo);
         const seen = previous || new Map();
         for (const run of result.runs) {

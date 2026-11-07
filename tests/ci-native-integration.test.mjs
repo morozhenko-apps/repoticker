@@ -16,6 +16,7 @@ function fixture(mode) {
   let runs = [run(10)];
   let setting = mode;
   let collectionFailure = null;
+  let readFailure = false;
   const state = {
     coverage: { jobs: true, runners: true },
     scope: { organization: "team", repositories: ["team/repo"] },
@@ -29,7 +30,10 @@ function fixture(mode) {
       ci_notification_mode: setting
     };
     if (command === "github_monitor_publish") return undefined;
-    if (command === "github_api_get") return { workflow_runs: runs };
+    if (command === "github_api_get") {
+      if (readFailure) throw Error("Provider unavailable");
+      return { workflow_runs: runs };
+    }
     if (command === "ci_run_notify") return true;
     throw Error("Unexpected command " + command);
   };
@@ -44,6 +48,7 @@ function fixture(mode) {
     calls, refresh,
     async ready() { await tick(); },
     setRuns(values) { runs = values; },
+    setReadFailure(value) { readFailure = value; },
     setSetting(value) { setting = value; },
     setCollectorFailure(reason, errors, jobsCovered = true) {
       collectionFailure = reason;
@@ -222,4 +227,37 @@ test("Successes mode notifies only new successes; both mode baselines before dua
   assert.deepEqual(app.calls.filter(x => x.command === "ci_run_notify")
     .map(x => [x.args.runId, x.args.conclusion]),
   [[52, "success"], [54, "success"], [53, "failure"]]);
+});
+
+test("Given a completed-run API outage When it recovers Then old completions stay silent", async () => {
+  const app = fixture("both");
+  await app.ready();
+  app.setReadFailure(true);
+  await app.refresh(true, "tasks");
+  app.setRuns([{ ...run(60), conclusion: "success" }, run(59)]);
+  app.setReadFailure(false);
+  await app.refresh(true, "tasks");
+  assert.equal(app.calls.filter(x => x.command === "ci_run_notify").length, 0);
+  app.setRuns([{ ...run(61), conclusion: "success" },
+    { ...run(60), conclusion: "success" }, run(59)]);
+  await app.refresh(true, "tasks");
+  assert.deepEqual(app.calls.filter(x => x.command === "ci_run_notify")
+    .map(x => [x.args.runId, x.args.conclusion]), [[61, "success"]]);
+});
+
+test("Given a failed task collection When monitoring recovers Then history is rebaselined", async () => {
+  const app = fixture("failures");
+  await app.ready();
+  app.setCollectorFailure("rate_limited",
+    [{ scope: "team/repo", reason: "rate_limited" }], false);
+  await app.refresh(true, "tasks");
+  app.setRuns([run(71), run(10)]);
+  app.setCollectorFailure(null, [], true);
+  await app.refresh(true, "tasks");
+  assert.equal(app.calls.filter(x => x.command === "ci_run_notify").length, 0,
+    "Unknown provider interval is not historical catch-up");
+  app.setRuns([run(72), run(71), run(10)]);
+  await app.refresh(true, "tasks");
+  assert.deepEqual(app.calls.filter(x => x.command === "ci_run_notify")
+    .map(x => x.args.runId), [72]);
 });

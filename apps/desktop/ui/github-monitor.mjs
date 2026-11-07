@@ -317,9 +317,14 @@ export function startGithubMonitoring({ invoke, event, onError = () => {},
             runAttempt: alert.run_attempt, conclusion: alert.conclusion
           }).catch(onError);
         }
+      } else if (revision === selectionRevision && kind !== "runners") {
+        // A missing trustworthy task snapshot invalidates completion history;
+        // the next successful observation is a silent recovery baseline.
+        ciTracker.reset();
       }
     } catch (error) {
       if (revision !== selectionRevision) return;
+      if (kind !== "runners") ciTracker.reset();
       if (first) onStage("monitor.failed");
       const reason = githubFailureReason(error);
       await applyCooldown(reason);

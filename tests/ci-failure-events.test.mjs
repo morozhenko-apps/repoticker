@@ -24,7 +24,7 @@ test("Given first completed reads When failures predate startup Then baseline is
       snapshot("team/beta", [run(2, "success")])
     ]
   }), [{ repository: "team/alpha", id: 3, run_attempt: 1,
-    updated_at: "2026-10-24T18:30:00Z" }]);
+    conclusion: "failure", updated_at: "2026-10-24T18:30:00Z" }]);
   assert.deepEqual(tracker.observe({
     ...scope, results: [snapshot("team/alpha", [run(3, "failure")])]
   }), [], "repeat polls must not duplicate an alert");
@@ -282,4 +282,40 @@ test("Switching notification mode does not replay old runs", () => {
   assert.deepEqual(tracker.observe({ ...base, mode: "both", results: [
     snapshot("team/alpha", [run(3, "success"), run(1, "success")])
   ] }).map(x => [x.id, x.conclusion]), [[3, "success"]]);
+});
+
+test("Given prior baseline and a failed provider read When recovered Then missing interval is silent", () => {
+  const tracker = createCiFailureTracker();
+  const selected = { account: "team", repositories: ["team/alpha"], mode: "both" };
+  tracker.observe({ ...selected, results: [
+    snapshot("team/alpha", [run(1, "success")])
+  ] });
+  assert.deepEqual(tracker.observe({ ...selected, results: [
+    { repository: "team/alpha", error: "unavailable" }
+  ] }), []);
+  assert.deepEqual(tracker.observe({ ...selected, results: [
+    snapshot("team/alpha", [run(2, "failure"), run(3, "success")])
+  ] }), [], "recovered repository reestablishes a silent baseline");
+  assert.deepEqual(tracker.observe({ ...selected, results: [
+    snapshot("team/alpha", [run(4, "success"), run(2, "failure")])
+  ] }).map(x => [x.id, x.conclusion]), [[4, "success"]]);
+});
+
+test("Given one repository fails When another succeeds Then healthy history stays intact", () => {
+  const tracker = createCiFailureTracker();
+  const selected = { ...scope, mode: "both" };
+  tracker.observe({ ...selected, results: [
+    snapshot("team/alpha", [run(1, "success")]),
+    snapshot("team/beta", [run(8, "failure")])
+  ] });
+  const alerts = tracker.observe({ ...selected, results: [
+    { repository: "team/alpha", error: "unavailable" },
+    snapshot("team/beta", [run(9, "success"), run(8, "failure")])
+  ] });
+  assert.deepEqual(alerts.map(x => [x.repository, x.id, x.conclusion]),
+    [["team/beta", 9, "success"]]);
+  assert.deepEqual(tracker.observe({ ...selected, results: [
+    snapshot("team/alpha", [run(2, "failure")]),
+    snapshot("team/beta", [run(9, "success")])
+  ] }), []);
 });

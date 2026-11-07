@@ -9,8 +9,9 @@ const tick = async () => {
 const run = id => ({
   id, run_attempt: 1, conclusion: "failure", updated_at: "2026-10-24T19:00:00Z"
 });
-function fixture(mode) {
+function fixture(mode, { showCiStatus = false } = {}) {
   let authorized = true;
+  const ciStatuses = [];
   const calls = [];
   const listeners = new Map();
   let runs = [run(10)];
@@ -41,11 +42,12 @@ function fixture(mode) {
     invoke,
     event: { listen(name, callback) { listeners.set(name, callback); } },
     schedule() {},
+    onCiStatus: showCiStatus ? value => ciStatuses.push(value) : null,
     collect: async () => ({ state: structuredClone(state), repositoryCount: 1,
       failure: collectionFailure, reason: null })
   });
   return {
-    calls, refresh,
+    calls, refresh, ciStatuses,
     async ready() { await tick(); },
     setRuns(values) { runs = values; },
     setReadFailure(value) { readFailure = value; },
@@ -261,4 +263,50 @@ test("Given a failed task collection When monitoring recovers Then history is re
   await app.refresh(true, "tasks");
   assert.deepEqual(app.calls.filter(x => x.command === "ci_run_notify")
     .map(x => x.args.runId), [72]);
+});
+
+test("Given CI status enabled with notifications off When tasks refresh Then last run is shown without alerts", async () => {
+  const app = fixture("off", { showCiStatus: true });
+  await app.ready();
+  assert.equal(app.calls.filter(call => call.command === "github_api_get").length, 1);
+  assert.equal(app.calls.filter(call => call.command === "ci_run_notify").length, 0);
+  assert.equal(app.ciStatuses.at(-1).outcomes.get("team/repo"), "failure");
+  app.setRuns([{ ...run(77), conclusion: "success" }, run(10)]);
+  await app.refresh(true, "tasks");
+  assert.equal(app.ciStatuses.at(-1).outcomes.get("team/repo"), "success");
+  assert.equal(app.calls.filter(call => call.command === "ci_run_notify").length, 0);
+  const reads = app.calls.filter(call => call.command === "github_api_get").length;
+  await app.refresh(true, "runners");
+  assert.equal(app.calls.filter(call => call.command === "github_api_get").length, reads,
+    "Runner-only refresh never spends extra CI status requests");
+});
+
+test("Given CI status presented When provider data fails or user disconnects Then prior green is cleared", async () => {
+  const app = fixture("both", { showCiStatus: true });
+  app.setRuns([{ ...run(92), conclusion: "success" }]);
+  await app.ready();
+  assert.equal(app.ciStatuses.at(-1).outcomes.get("team/repo"), "success");
+  app.setReadFailure(true);
+  await app.refresh(true, "tasks");
+  assert.equal(app.ciStatuses.at(-1).outcomes.get("team/repo"), null);
+  app.setReadFailure(false);
+  app.setRuns([run(93)]);
+  await app.refresh(true, "tasks");
+  assert.equal(app.ciStatuses.at(-1).outcomes.get("team/repo"), "failure");
+  app.disconnect();
+  await app.ready();
+  assert.equal(app.ciStatuses.at(-1), null,
+    "Disconnected status must not retain the previous account's CI result");
+});
+
+test("Given incomplete job coverage When CI status would otherwise be present Then do not read untrusted runs", async () => {
+  const app = fixture("off", { showCiStatus: true });
+  await app.ready();
+  app.setCollectorFailure("rate_limited",
+    [{ scope: "team/repo", reason: "rate_limited" }], false);
+  const previous = app.calls.filter(call => call.command === "github_api_get").length;
+  await app.refresh(true, "tasks");
+  assert.equal(app.calls.filter(call => call.command === "github_api_get").length, previous);
+  assert.equal(app.ciStatuses.at(-1), null);
+  assert.equal(app.calls.filter(call => call.command === "ci_run_notify").length, 0);
 });

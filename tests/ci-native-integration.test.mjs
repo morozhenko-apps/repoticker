@@ -137,7 +137,8 @@ test("Given WebView alert data When native delivery runs Then permissions and co
   const titles = JSON.parse(readFileSync(new URL(
     "../apps/desktop/ui/locales/notifications.json", import.meta.url), "utf8"));
   assert.equal(titles.en.title, "RepoTicker: CI failure");
-  assert.match(native, /notification_text\(&config\.language, &repository, run_id, run_attempt, &conclusion\)/);
+  assert.match(native,
+    /let \(title, body\)\s*=\s*notification_text\(\s*&config\.language,\s*&repository,\s*run_id,\s*run_attempt,\s*&conclusion,?\s*\)/);
   assert.match(native, /\.title\(title\)/);
   assert.match(native, /\.show\(\)/);
   assert.doesNotMatch(native, /bearer_auth|access_token|shell|spawn\(/);

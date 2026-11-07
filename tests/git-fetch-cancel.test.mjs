@@ -50,7 +50,8 @@ test("existing four-button card reuses Fetch as Cancel without interrupting Safe
   assert.equal([...actions.matchAll(/<button /g)].length, 4);
   assert.match(ui, /invoke\("cancel_git_fetch"\)/);
   assert.match(ui, /fetchCancelling \? "stopping" : fetching \? "fetchCancel" : "fetchTitle"/);
-  assert.match(ui, /cardText\(cardLanguage, fetchCancelling/);
+  assert.match(ui, /byId\("fetch-all"\)\.title\s*=\s*cardText\(cardLanguage,\s*fetchCancelling\s*\?/);
+  assert.match(ui, /button\.setAttribute\("aria-label",\s*cardText\(cardLanguage,\s*fetchCancelling\s*\?/);
   assert.match(ui, /progress\?\.operation === "fetch"/);
   assert.match(ui, /Math\.round\(100 \* progress\.completed \/ progress\.total\)/);
   assert.match(ui, /button\.querySelector\("\.action-label"\)\.textContent = pct \+ "%"/);

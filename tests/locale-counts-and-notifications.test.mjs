@@ -95,7 +95,8 @@ test("all CI notifications preserve provider run identity and opt-in scope", () 
     assert.doesNotMatch(values.body, /<script|javascript:/i);
     assert.doesNotMatch(values.successBody, /<script|javascript:/i);
   }
-  assert.match(native, /notification_text\(&config\.language, &repository, run_id, run_attempt, &conclusion\)/);
+  assert.match(native,
+    /let \(title, body\)\s*=\s*notification_text\(\s*&config\.language,\s*&repository,\s*run_id,\s*run_attempt,\s*&conclusion,?\s*\)/);
   assert.match(native, /approved_scope\(&config, &repository, run_id, run_attempt, &conclusion\)/);
   assert.match(native, /MAX_DELIVERED/);
   assert.match(native, /notification_error\(&config\.language, "permission"\)/);

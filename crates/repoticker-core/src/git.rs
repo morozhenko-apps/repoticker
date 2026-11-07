@@ -1405,6 +1405,29 @@ mod concurrent_git_tests {
     }
 
     #[test]
+    fn local_ci_identity_comes_only_from_a_supported_github_origin() {
+        let checkout = Checkout::new();
+        assert_eq!(super::inspect(&checkout.root).unwrap().github_repo, None);
+
+        git(
+            &checkout.root,
+            &["remote", "set-url", "origin", "git@github.com:Team/Repo.git"],
+        );
+        assert_eq!(
+            super::inspect(&checkout.root).unwrap().github_repo,
+            Some("Team/Repo".to_owned())
+        );
+
+        git(
+            &checkout.root,
+            &["remote", "set-url", "origin", "https://example.invalid/Team/Repo.git"],
+        );
+        assert_eq!(super::inspect(&checkout.root).unwrap().github_repo, None);
+        // Unsupported CI remotes must not invalidate the legitimate Git snapshot.
+        checkout.unchanged();
+    }
+
+    #[test]
     fn moving_upstream_to_equally_distant_commit_aborts_without_changes() {
         let checkout = Checkout::new();
         let result = safe_pull_with_checkpoints(

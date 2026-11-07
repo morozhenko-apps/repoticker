@@ -28,6 +28,12 @@ test("About labels and native icon/accessibility annotations have Russian transl
     assert.notEqual(surfaceText("ru", key), key);
   }
   assert.match(about, /id="version"/);
+  assert.match(about, /id="close-about"/);
+  for (const { code } of LOCALE_ROSTER) {
+    const label = surfaceText(code, "Close");
+    assert.ok(label.trim(), "Close accessible label absent for " + code);
+    if (code !== "en") assert.notEqual(label, "Close", "Missing localized Close label: " + code);
+  }
   assert.match(about, /id="author"/);
   assert.match(about, /id="website"/);
 });

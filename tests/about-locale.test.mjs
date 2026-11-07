@@ -22,7 +22,7 @@ test("About obtains saved EN/RU on first open and focus, without changing versio
       getAttribute() { return key; },
       setAttribute(name,value) { this.aria = value; }
     });
-  const controls = new Map(["version","author","website"].map(id=>[id, {
+  const controls = new Map(["version","author","website","close-about"].map(id=>[id, {
     textContent: "", title: "", handlers: new Map(),
     addEventListener(name,handler) { this.handlers.set(name,handler); }
   }]));
@@ -50,6 +50,7 @@ test("About obtains saved EN/RU on first open and focus, without changing versio
         if (command === "get_about_info")
           return { version: "0.2.0", author: "author's name", website: "https://morozhenko.com" };
         if (command === "open_project_website") return undefined;
+        if (command === "hide_about") return undefined;
         throw Error("Unexpected IPC: "+command);
       }
     }}
@@ -66,6 +67,7 @@ test("About obtains saved EN/RU on first open and focus, without changing versio
     assert.equal(doc.documentElement.lang, "ru");
     assert.equal(doc.title, "О RepoTicker");
     assert.equal(nodes.get("txt:Version").textContent, "Версия");
+    assert.equal(nodes.get("aria:Close").aria, "Закрыть");
     assert.equal(nodes.get("txt:Created by").textContent, "Автор");
     assert.equal(nodes.get("alt:RepoTicker application icon").alt, "Значок RepoTicker");
     assert.equal(controls.get("version").textContent, "0.2.0");
@@ -82,8 +84,31 @@ test("About obtains saved EN/RU on first open and focus, without changing versio
     await new Promise(resolve => setImmediate(resolve));
     assert.equal(calls.filter(x=>x==="open_project_website").length, 1);
     assert.equal(calls.filter(x=>x==="get_snapshot").length, 0);
+    controls.get("close-about").handlers.get("click")();
+    listeners.get("keydown")({ key: "Escape" });
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(calls.filter(x=>x==="hide_about").length, 2);
   } finally {
     if(old.document===undefined) delete globalThis.document; else globalThis.document=old.document;
     if(old.window===undefined) delete globalThis.window; else globalThis.window=old.window;
   }
+});
+
+test("About uses an undecorated Close-only titlebar and a scoped native drag permission", () => {
+  const html = readFileSync(new URL("../apps/desktop/ui/about.html", import.meta.url), "utf8");
+  const aboutJs = readFileSync(new URL("../apps/desktop/ui/about.mjs", import.meta.url), "utf8");
+  const rust = readFileSync(new URL("../apps/desktop/src-tauri/src/main.rs", import.meta.url), "utf8");
+  const config = JSON.parse(readFileSync(new URL("../apps/desktop/src-tauri/tauri.conf.json", import.meta.url), "utf8"));
+  const capability = JSON.parse(readFileSync(new URL("../apps/desktop/src-tauri/capabilities/about-drag.json", import.meta.url), "utf8"));
+  const about = config.app.windows.find(item => item.label === "about");
+  assert.equal(about.decorations, false);
+  assert.equal(about.resizable, false);
+  assert.match(html, /class="about-titlebar" data-tauri-drag-region/);
+  assert.match(html, /id="close-about"[^>]*data-i18n-aria="Close"/);
+  assert.doesNotMatch(html, /id="minimize-about"|id="maximize-about"/);
+  assert.deepEqual(capability.windows, ["about"]);
+  assert.deepEqual(capability.permissions, ["core:window:allow-start-dragging"]);
+  assert.match(aboutJs, /invoke\("hide_about"\)/);
+  assert.match(rust, /fn hide_about\(app: AppHandle\)/);
+  assert.match(rust, /get_webview_window\("about"\)/);
 });

@@ -71,7 +71,7 @@
         "resizable": false,
         "minimizable": false,
         "maximizable": false,
-        "decorations": true
+        "decorations": false
       }
     ],
     "security": {

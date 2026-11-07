@@ -990,6 +990,14 @@ fn show_about(app: &AppHandle) {
     }
 }
 
+#[tauri::command]
+fn hide_about(app: AppHandle) -> Result<(), String> {
+    let window = app
+        .get_webview_window("about")
+        .ok_or_else(|| "About window is unavailable".to_owned())?;
+    window.hide().map_err(|error| error.to_string())
+}
+
 #[derive(Serialize)]
 struct AboutInfo {
     version: &'static str,
@@ -1783,6 +1791,7 @@ fn main() {
             github_session::github_open_device_page,
             github_session::github_copy_user_code,
             get_about_info,
+            hide_about,
             open_actions_job,
             open_repository_on_github,
             open_repository_folder,

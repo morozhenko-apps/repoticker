@@ -1,7 +1,12 @@
 :root {font:14px system-ui,"Segoe UI",sans-serif;color-scheme:light dark}
 * {box-sizing:border-box}
 body {margin:0;height:100vh;overflow:hidden;background:Canvas;color:CanvasText}
-.about {height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:7px;text-align:center;padding:12px}
+.about-titlebar {height:34px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 7px 0 12px;background:color-mix(in srgb,CanvasText 7%,Canvas);font-size:12px;font-weight:600;user-select:none;cursor:move}
+.about-titlebar span {flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.about-titlebar .close-about {margin:0;padding:0;width:29px;height:27px;flex:none;font-size:19px;font-weight:400;border:0;border-radius:5px;background:transparent;cursor:pointer}
+.about-titlebar .close-about:hover {background:color-mix(in srgb,CanvasText 12%,Canvas)}
+.about-titlebar .close-about:focus-visible {outline:2px solid #3b82f6;outline-offset:-2px}
+.about {height:calc(100% - 34px);display:flex;flex-direction:column;justify-content:center;align-items:center;gap:7px;text-align:center;padding:12px}
 .about img {width:68px;height:68px;object-fit:contain}
 h1 {margin:0;font-size:19px;font-weight:600}
 p {margin:0;font-size:12px;color:GrayText}

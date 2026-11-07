@@ -17,9 +17,11 @@ function paintLocale(value) {
     item.textContent = surfaceText(language, item.getAttribute("data-i18n"));
   for (const item of document.querySelectorAll("[data-i18n-alt]"))
     item.alt = surfaceText(language, item.getAttribute("data-i18n-alt"));
-  for (const item of document.querySelectorAll("[data-i18n-aria]"))
-    item.setAttribute("aria-label",
-      surfaceText(language, item.getAttribute("data-i18n-aria")));
+  for (const item of document.querySelectorAll("[data-i18n-aria]")) {
+    const translated = surfaceText(language, item.getAttribute("data-i18n-aria"));
+    item.setAttribute("aria-label", translated);
+    if (item.id === "close-about") item.title = translated;
+  }
 }
 async function refreshLocale() {
   const revision = ++localeRevision;
@@ -48,4 +50,14 @@ document.getElementById("website").addEventListener("click", () => {
   void invoke("open_project_website").catch(error => {
     document.getElementById("website").title = String(error);
   });
+});
+
+function closeAbout() {
+  void invoke("hide_about").catch(error => {
+    document.getElementById("close-about").title = String(error);
+  });
+}
+document.getElementById("close-about").addEventListener("click", closeAbout);
+window.addEventListener("keydown", event => {
+  if (event.key === "Escape") closeAbout();
 });

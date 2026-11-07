@@ -1,0 +1,6 @@
+{
+  "identifier": "about-drag",
+  "description": "Allow native dragging of the undecorated About titlebar only.",
+  "windows": ["about"],
+  "permissions": ["core:window:allow-start-dragging"]
+}

@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { settingsLocale, settingsText } from "../apps/desktop/ui/settings-i18n.mjs";
+import { LOCALE_ROSTER } from "../apps/desktop/ui/locale-catalog.mjs";
 const html = readFileSync(new URL("../apps/desktop/ui/settings.html", import.meta.url), "utf8");
 const settings = readFileSync(new URL("../apps/desktop/ui/settings.mjs", import.meta.url), "utf8");
 
@@ -28,6 +29,17 @@ test("All Settings declarative labels and accessibility keys have RU text", () =
   assert.match(settings, /applySettingsLanguage\(draft\.language\)/);
   assert.match(settings, /draft\.language = option\.dataset\.value;/);
   assert.doesNotMatch(settings, /draft\.language = option\.dataset\.value;\s*applySettingsLanguage/);
-  assert.match(settings, /configChanges\.ciFailureNotifications = draft\.ciFailureNotifications/);
+  assert.match(settings, /configChanges\.ciNotificationMode = draft\.ciNotificationMode/);
   assert.equal(settingsText("ru", "RepoTicker Settings"), "Настройки RepoTicker");
+});
+
+test("CI notification options have complete distinct translations in all twenty locales", () => {
+  for (const { code } of LOCALE_ROSTER) {
+    for (const key of ["CI notifications", "Off", "Failures only",
+      "Successes only", "Failures and successes"]) {
+      const translated = settingsText(code, key);
+      assert.ok(translated.trim(), code + ": " + key);
+      if (code !== "en") assert.notEqual(translated, key, code + ": " + key);
+    }
+  }
 });

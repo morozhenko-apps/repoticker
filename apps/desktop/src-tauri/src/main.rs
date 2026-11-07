@@ -77,7 +77,30 @@ struct Config {
     #[serde(default)]
     github_monitor_repositories: Vec<String>,
     #[serde(default)]
-    ci_failure_notifications: bool,
+    ci_notification_mode: CiNotificationMode,
+}
+
+// Configs written by previous versions contain no notification mode.
+// Unknown values fail closed; the old failure-only boolean is ignored.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+enum CiNotificationMode {
+    #[default]
+    Off,
+    Failures,
+    Successes,
+    Both,
+}
+
+impl CiNotificationMode {
+    fn allows(self, conclusion: &str) -> bool {
+        match (self, conclusion) {
+            (Self::Both, "failure" | "success")
+            | (Self::Failures, "failure")
+            | (Self::Successes, "success") => true,
+            _ => false,
+        }
+    }
 }
 
 fn default_language() -> String {
@@ -167,7 +190,7 @@ fn default_config() -> Config {
         card_right_margin: None,
         github_monitor_org: None,
         github_monitor_repositories: Vec::new(),
-        ci_failure_notifications: false,
+        ci_notification_mode: CiNotificationMode::Off,
     }
 }
 
@@ -476,7 +499,7 @@ fn get_monitor_scope(app: AppHandle) -> Result<Option<String>, String> {
 struct MonitorSelection {
     github_monitor_org: Option<String>,
     github_monitor_repositories: Vec<String>,
-    ci_failure_notifications: bool,
+    ci_notification_mode: CiNotificationMode,
 }
 
 #[tauri::command]
@@ -485,7 +508,7 @@ fn get_monitor_selection(app: AppHandle) -> Result<MonitorSelection, String> {
     Ok(MonitorSelection {
         github_monitor_org: config.github_monitor_org,
         github_monitor_repositories: config.github_monitor_repositories,
-        ci_failure_notifications: config.ci_failure_notifications,
+        ci_notification_mode: config.ci_notification_mode,
     })
 }
 
@@ -498,7 +521,7 @@ struct SettingsConfig {
     github_monitor_org: Option<String>,
     github_monitor_repositories: Vec<String>,
     ignored_child_names: Vec<String>,
-    ci_failure_notifications: bool,
+    ci_notification_mode: CiNotificationMode,
 }
 
 #[tauri::command]
@@ -511,7 +534,7 @@ fn get_settings_config(app: AppHandle) -> Result<SettingsConfig, String> {
         github_monitor_org: config.github_monitor_org,
         github_monitor_repositories: config.github_monitor_repositories,
         ignored_child_names: config.ignored_child_names,
-        ci_failure_notifications: config.ci_failure_notifications,
+        ci_notification_mode: config.ci_notification_mode,
     })
 }
 
@@ -1198,7 +1221,7 @@ fn save_settings(
     roots: Option<Vec<String>>,
     language: Option<String>,
     ignored_child_names: Option<Vec<String>>,
-    ci_failure_notifications: Option<bool>,
+    ci_notification_mode: Option<CiNotificationMode>,
 ) -> Result<(), String> {
     if language
         .as_deref()
@@ -1243,9 +1266,9 @@ fn save_settings(
                 changed = true;
             }
         }
-        if let Some(enabled) = ci_failure_notifications {
-            if config.ci_failure_notifications != enabled {
-                config.ci_failure_notifications = enabled;
+        if let Some(mode) = ci_notification_mode {
+            if config.ci_notification_mode != mode {
+                config.ci_notification_mode = mode;
                 changed = true;
             }
         }
@@ -1356,7 +1379,40 @@ mod monitor_selection_tests {
         let config: Config = serde_json::from_value(old).unwrap();
         assert!(config.github_monitor_repositories.is_empty());
         assert!(config.ignored_child_names.is_empty());
-        assert!(!config.ci_failure_notifications);
+        assert_eq!(config.ci_notification_mode, CiNotificationMode::Off);
+    }
+
+    #[test]
+    fn old_notification_boolean_is_ignored_and_new_mode_defaults_off() {
+        let legacy = serde_json::json!({
+            "roots": [],
+            "language": "en",
+            "ci_failure_notifications": true
+        });
+        let config: Config = serde_json::from_value(legacy).unwrap();
+        assert_eq!(config.ci_notification_mode, CiNotificationMode::Off);
+        let saved = serde_json::to_value(config).unwrap();
+        assert!(saved.get("ci_failure_notifications").is_none());
+        assert_eq!(saved["ci_notification_mode"], "off");
+    }
+
+    #[test]
+    fn ci_notification_mode_restricts_conclusions() {
+        for (mode, fail, success) in [
+            (CiNotificationMode::Off, false, false),
+            (CiNotificationMode::Failures, true, false),
+            (CiNotificationMode::Successes, false, true),
+            (CiNotificationMode::Both, true, true),
+        ] {
+            assert_eq!(mode.allows("failure"), fail);
+            assert_eq!(mode.allows("success"), success);
+            assert!(!mode.allows("cancelled"));
+            assert!(!mode.allows("unknown"));
+        }
+        let invalid = serde_json::from_value::<CiNotificationMode>(
+            serde_json::json!("unknown")
+        );
+        assert!(invalid.is_err(), "unknown persisted mode must fail closed");
     }
 
     #[test]
@@ -1776,7 +1832,7 @@ fn main() {
             get_settings_config,
             autostart::autostart_is_enabled,
             autostart::autostart_set_enabled,
-            ci_notifications::ci_failure_notify,
+            ci_notifications::ci_run_notify,
             startup_diagnostics::trace_startup_stage,
             github_session::github_auth_status,
             github_session::github_flow_status,

@@ -291,7 +291,8 @@ export function startGithubMonitoring({ invoke, event, onError = () => {},
         Array.isArray(result.state?.errors) && result.state.errors.length > 0 &&
         result.state.errors.every(error =>
           error?.scope === "runners" && error?.reason === "permission_denied");
-      if (selection.ci_failure_notifications !== true) {
+      const alertMode = selection.ci_notification_mode;
+      if (!["failures", "successes", "both"].includes(alertMode)) {
         ciTracker.reset();
       } else if (revision === selectionRevision && kind !== "runners" &&
           (!result.failure || runnerOnlyDenied) &&
@@ -307,13 +308,13 @@ export function startGithubMonitoring({ invoke, event, onError = () => {},
         const alerts = ciTracker.observe({
           account: next.scope.organization,
           repositories: next.scope.repositories,
-          results: observations
+          results: observations, mode: alertMode
         });
         for (const alert of alerts.slice(0, 5)) {
           if (revision !== selectionRevision) break;
-          await invoke("ci_failure_notify", {
+          await invoke("ci_run_notify", {
             repository: alert.repository, runId: alert.id,
-            runAttempt: alert.run_attempt
+            runAttempt: alert.run_attempt, conclusion: alert.conclusion
           }).catch(onError);
         }
       }

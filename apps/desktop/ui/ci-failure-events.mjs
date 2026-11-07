@@ -1,4 +1,4 @@
-/** Read-only CI failure inputs. Does not send notifications or hold credentials.
+/** Read-only completed CI inputs. Does not send notifications or hold credentials.
  * Native GitHub REST transport projects the exact fields accepted here.
  */
 const NAME = /^[A-Za-z0-9_.-]{1,100}$/;
@@ -84,10 +84,10 @@ export async function collectRecentCompleted({
   return results;
 }
 
-/** Process-local transition tracking, intentionally silent on first observation.
- * An explicit new failure for a distinct run attempt is the only alert trigger.
- * A scope change always creates a new silent baseline; cached provider errors
- * and missing run IDs cannot be interpreted as CI failures.
+/** Process-local outcome tracking, silent on the first observation.
+ * Each explicit failure/success for a run attempt is emitted at most once.
+ * A mode or repository scope change creates a new silent baseline. Partial
+ * provider errors and missing runs cannot fabricate completion events.
  */
 export function createCiFailureTracker({ maxRemembered = 500 } = {}) {
   if (!Number.isInteger(maxRemembered) || maxRemembered < 200 ||
@@ -100,7 +100,9 @@ export function createCiFailureTracker({ maxRemembered = 500 } = {}) {
       scope = null;
       history.clear();
     },
-    observe({ account, repositories, results }) {
+    observe({ account, repositories, results, mode = "off" }) {
+      if (!["off", "failures", "successes", "both"].includes(mode))
+        throw Error("Invalid notification mode");
       const names = validateSelection(account, repositories);
       if (!Array.isArray(results)) throw Error("Invalid notification observations");
       const allowed = new Set(names.map(name => name.toLowerCase()));
@@ -126,7 +128,7 @@ export function createCiFailureTracker({ maxRemembered = 500 } = {}) {
           throw Error("Invalid notification run facts");
         }
       }
-      const nextScope = account.toLowerCase() + ":" +
+      const nextScope = mode + ":" + account.toLowerCase() + ":" +
         [...allowed].sort().join(",");
       if (scope !== nextScope) {
         scope = nextScope;
@@ -140,20 +142,25 @@ export function createCiFailureTracker({ maxRemembered = 500 } = {}) {
         const seen = previous || new Map();
         for (const run of result.runs) {
           const key = run.id + "/" + run.run_attempt;
-          const prior = seen.get(key);
-          // An already observed success/neutral outcome can be corrected to
-          // failure by GitHub. Once failure is observed, never alert again
-          // for this attempt even if stale cached reads temporarily disagree.
-          if (previous && run.conclusion === "failure" && prior !== "failure") {
+          // Two monotonic conclusion bits prevent stale alternating API reads
+          // from re-alerting an already seen run/attempt/outcome.
+          const prior = seen.get(key) || 0;
+          const bit = run.conclusion === "failure" ? 1 :
+            run.conclusion === "success" ? 2 : 0;
+          const enabled = mode === "both" ||
+            (mode === "failures" && bit === 1) ||
+            (mode === "successes" && bit === 2);
+          if (previous && bit !== 0 && enabled && !(prior & bit)) {
             alerts.push({
               repository: result.repository, id: run.id,
-              run_attempt: run.run_attempt, updated_at: run.updated_at
+              run_attempt: run.run_attempt, conclusion: run.conclusion,
+              updated_at: run.updated_at
             });
           }
-          // Refresh LRU order; retain a monotonic failed marker.
-          // Do not retain titles, actors, URLs or any raw provider metadata.
+          // Preserve distinct failure/success facts across stale responses.
+          // Do not retain titles, actors, URLs or other provider metadata.
           seen.delete(key);
-          seen.set(key, prior === "failure" ? prior : run.conclusion);
+          seen.set(key, prior | bit);
         }
         while (seen.size > maxRemembered) seen.delete(seen.keys().next().value);
         history.set(repo, seen);

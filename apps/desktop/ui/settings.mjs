@@ -531,7 +531,7 @@ function isDirty() {
   return original.language !== draft.language ||
     (original.autostartEnabled !== null &&
      original.autostartEnabled !== draft.autostartEnabled) ||
-    original.ciFailureNotifications !== draft.ciFailureNotifications ||
+    original.ciNotificationMode !== draft.ciNotificationMode ||
     JSON.stringify(original.roots) !== JSON.stringify(draft.roots) ||
     JSON.stringify(original.ignoredChildNames) !== JSON.stringify(draft.ignoredChildNames);
 }
@@ -669,17 +669,18 @@ async function refresh() {
       roots: [...(snapshot.roots || [])],
       language: snapshot.language || "en",
       ignoredChildNames: [...(snapshot.ignored_child_names || [])].sort(),
-      ciFailureNotifications: snapshot.ci_failure_notifications === true,
+      ciNotificationMode: ["off", "failures", "successes", "both"].includes(snapshot.ci_notification_mode)
+         ? snapshot.ci_notification_mode : "off",
       autostartEnabled: typeof autostartState === "boolean" ? autostartState : null
     };
     draft = {
       roots: [...original.roots],
       language: original.language,
       ignoredChildNames: [...original.ignoredChildNames],
-      ciFailureNotifications: original.ciFailureNotifications,
+      ciNotificationMode: original.ciNotificationMode,
       autostartEnabled: original.autostartEnabled
     };
-    byId("ci-failure-notifications").checked = draft.ciFailureNotifications;
+    byId("ci-notification-mode").value = draft.ciNotificationMode;
     byId("autostart-enabled").checked = draft.autostartEnabled === true;
     byId("autostart-enabled").disabled = draft.autostartEnabled === null;
     byId("autostart-status").textContent = draft.autostartEnabled === null
@@ -716,9 +717,11 @@ byId("autostart-enabled").addEventListener("change", event => {
   draft.autostartEnabled = event.target.checked === true;
   updateApply();
 });
-byId("ci-failure-notifications").addEventListener("change", event => {
+byId("ci-notification-mode").addEventListener("change", event => {
   if (!draft || saving) return;
-  draft.ciFailureNotifications = event.target.checked === true;
+  const value = event.target.value;
+  if (!["off", "failures", "successes", "both"].includes(value)) return;
+  draft.ciNotificationMode = value;
   updateApply();
 });
 byId("add-root-form").addEventListener("submit", event => {
@@ -914,8 +917,8 @@ byId("apply-settings").addEventListener("click", async () => {
     const configChanges = {};
     if (original.language !== draft.language)
       configChanges.language = draft.language;
-    if (original.ciFailureNotifications !== draft.ciFailureNotifications)
-      configChanges.ciFailureNotifications = draft.ciFailureNotifications;
+    if (original.ciNotificationMode !== draft.ciNotificationMode)
+      configChanges.ciNotificationMode = draft.ciNotificationMode;
     if (JSON.stringify(original.roots) !== JSON.stringify(draft.roots))
       configChanges.roots = [...draft.roots];
     if (JSON.stringify(original.ignoredChildNames) !== JSON.stringify(draft.ignoredChildNames))

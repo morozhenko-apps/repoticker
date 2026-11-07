@@ -16,18 +16,23 @@ test("KDE monitor selectors share two-column alignment and control height", () =
   assert.doesNotMatch(css, /\.github-repo-heading select \{[^}]*width: 165px/);
 });
 
-test("all three Settings checkbox groups have identical visuals and keyboard access", () => {
-  assert.match(html, /<label for="ci-failure-notifications">\s*<input id="ci-failure-notifications" type="checkbox">/);
-  assert.match(settings, /checkbox\.type = "checkbox"/);
-  const base = css.match(/\.autostart-controls input\[type="checkbox"\],\s*\.ci-alert-controls input\[type="checkbox"\],\s*\.github-repo-choice input\[type="checkbox"\] \{([^}]+)\}/)?.[1];
-  assert.ok(base, "Autostart, CI and selected repositories must share one checkbox style");
+test("Settings preserves keyboard-accessible native CI selector and shared checkboxes", () => {
+  assert.match(html, /<select id="ci-notification-mode">/);
+  for (const value of ["off", "failures", "successes", "both"])
+    assert.match(html, new RegExp('<option value="' + value + '"'));
+  assert.match(settings, /byId\("ci-notification-mode"\)\.addEventListener\("change"/);
+  assert.match(settings, /configChanges\.ciNotificationMode = draft\.ciNotificationMode/);
+  assert.doesNotMatch(html, /ci-failure-notifications/);
+  const base = css.match(/\.autostart-controls input\[type="checkbox"\],\s*\.github-repo-choice input\[type="checkbox"\] \{([^}]+)\}/)?.[1];
+  assert.ok(base, "Autostart and selected repositories keep their checkbox style");
   for (const rule of [
     /-webkit-appearance: none/, /appearance: none/, /width: 16px/,
     /height: 16px/, /margin: 0/, /padding: 0/, /background-position: center/,
     /background-size: 12px 12px/
   ]) assert.match(base, rule);
-  assert.match(css, /\.autostart-controls input\[type="checkbox"\]:checked,\s*\.ci-alert-controls input\[type="checkbox"\]:checked,\s*\.github-repo-choice input\[type="checkbox"\]:checked \{[^}]*background-image: url\("data:image\/svg\+xml/);
-  assert.match(css, /\.autostart-controls input\[type="checkbox"\]:focus-visible,\s*\.ci-alert-controls input\[type="checkbox"\]:focus-visible,\s*\.github-repo-choice input\[type="checkbox"\]:focus-visible \{[^}]*outline:/);
+  assert.match(css, /\.autostart-controls input\[type="checkbox"\]:checked,\s*\.github-repo-choice input\[type="checkbox"\]:checked \{[^}]*background-image: url\("data:image\/svg\+xml/);
+  assert.match(css, /\.autostart-controls input\[type="checkbox"\]:focus-visible,\s*\.github-repo-choice input\[type="checkbox"\]:focus-visible \{[^}]*outline:/);
+  assert.match(css, /\.ci-alert-controls select \{[^}]*min-width: 180px;[^}]*max-width: 350px/);
   assert.match(css, /@media \(forced-colors: active\)/);
 });
 
@@ -37,7 +42,7 @@ test("KDE alignment fix does not alter settings confirmation or popup geometry",
   assert.match(html, /id="github-repo-controls"[^>]*hidden/);
   assert.match(css, /\.github-repo-controls\[hidden\]/);
   assert.match(css, /\.settings-shell \{[^}]*height: 100%/);
-  assert.match(settings, /configChanges\.ciFailureNotifications = draft\.ciFailureNotifications/);
+  assert.match(settings, /configChanges\.ciNotificationMode = draft\.ciNotificationMode/);
 });
 
 test("KDE GitHub selects have zero block padding and CSS-owned centered closed controls", () => {
@@ -73,7 +78,7 @@ test("Settings scrolls vertically when repository selections expand beyond the w
   assert.match(css, /\.github-repo-list \{[^}]*overflow-y: auto;/);
 });
 
-test("One clean opt-in checkbox remains without temporary diagnostic UI or IPC", () => {
+test("One opt-in CI result selector remains without diagnostic UI or IPC", () => {
   const rust = readFileSync(new URL(
     "../apps/desktop/src-tauri/src/ci_notifications.rs", import.meta.url), "utf8");
   const main = readFileSync(new URL(
@@ -82,10 +87,10 @@ test("One clean opt-in checkbox remains without temporary diagnostic UI or IPC",
   assert.doesNotMatch(settings, /ci_notification_test|ci_notification_permission|ciNativePermission|ciTestRunning/);
   assert.doesNotMatch(rust, /ci_notification_test|ci_notification_permission|notification_test_enabled/);
   assert.doesNotMatch(main, /ci_notifications::ci_notification_test|ci_notifications::ci_notification_permission/);
-  assert.match(main, /ci_notifications::ci_failure_notify,/);
+  assert.match(main, /ci_notifications::ci_run_notify,/);
   assert.match(rust, /app\.notification\(\)\.permission_state\(\)/);
-  assert.match(html, /id="ci-failure-notifications" type="checkbox"/);
-  assert.match(settings, /configChanges\.ciFailureNotifications = draft\.ciFailureNotifications/);
+  assert.match(html, /id="ci-notification-mode"/);
+  assert.match(settings, /configChanges\.ciNotificationMode = draft\.ciNotificationMode/);
 });
 
 test("All-repositories helper text hides without losing selected-mode guidance", () => {

@@ -97,9 +97,14 @@
       </label>
     </div>
     <div class="ci-alert-controls">
-      <label for="ci-failure-notifications">
-        <input id="ci-failure-notifications" type="checkbox">
-        <span data-i18n="Notify on new CI failures">Notify on new CI failures</span>
+      <label for="ci-notification-mode">
+        <span data-i18n="CI notifications">CI notifications</span>
+        <select id="ci-notification-mode">
+          <option value="off" data-i18n="Off">Off</option>
+          <option value="failures" data-i18n="Failures only">Failures only</option>
+          <option value="successes" data-i18n="Successes only">Successes only</option>
+          <option value="both" data-i18n="Failures and successes">Failures and successes</option>
+        </select>
       </label>
     </div>
     <div id="github-repo-controls" class="github-repo-controls" hidden>

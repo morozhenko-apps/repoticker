@@ -4,7 +4,7 @@ import {
   collectRecentCompleted, createCiFailureTracker
 } from "../apps/desktop/ui/ci-failure-events.mjs";
 
-const scope = { account: "team", repositories: ["team/alpha", "team/beta"] };
+const scope = { account: "team", repositories: ["team/alpha", "team/beta"], mode: "failures" };
 const run = (id, conclusion, attempt = 1) => ({
   id, run_attempt: attempt, conclusion, updated_at: "2026-10-24T18:30:00Z"
 });
@@ -224,4 +224,62 @@ test("Mode B: real leap-day UTC timestamp remains accepted without changing noti
   });
   assert.equal(alerts.length, 1);
   assert.equal(alerts[0].updated_at, timestamp);
+});
+
+test("Mode defaults off and never emits unselected completed conclusions", () => {
+  const tracker = createCiFailureTracker();
+  const selected = { account: "team", repositories: ["team/alpha"] };
+  tracker.observe({ ...selected, results: [snapshot("team/alpha", [])] });
+  assert.deepEqual(tracker.observe({ ...selected, results: [
+    snapshot("team/alpha", [run(1, "success"), run(2, "failure")])
+  ] }), []);
+  assert.throws(() => tracker.observe({ ...selected, mode: "unknown",
+    results: [snapshot("team/alpha", [])] }), /Invalid notification mode/);
+});
+
+test("Successes mode is silent on baseline and emits a new success only once", () => {
+  const tracker = createCiFailureTracker();
+  const selected = { account: "team", repositories: ["team/alpha"], mode: "successes" };
+  assert.deepEqual(tracker.observe({ ...selected, results: [
+    snapshot("team/alpha", [run(1, "success")])
+  ] }), []);
+  const next = [run(2, "failure"), run(3, "success"), run(1, "success")];
+  assert.deepEqual(tracker.observe({ ...selected, results: [
+    snapshot("team/alpha", next)
+  ] }).map(x => [x.id, x.conclusion]), [[3, "success"]]);
+  assert.deepEqual(tracker.observe({ ...selected, results: [
+    snapshot("team/alpha", next)
+  ] }), []);
+});
+
+test("Both mode retains distinct success/failure facts through stale API alternation", () => {
+  const tracker = createCiFailureTracker();
+  const selected = { account: "team", repositories: ["team/alpha"], mode: "both" };
+  tracker.observe({ ...selected, results: [snapshot("team/alpha", [])] });
+  assert.deepEqual(tracker.observe({ ...selected, results: [
+    snapshot("team/alpha", [run(4, "failure")])
+  ] }).map(x => x.conclusion), ["failure"]);
+  assert.deepEqual(tracker.observe({ ...selected, results: [
+    snapshot("team/alpha", [run(4, "success")])
+  ] }).map(x => x.conclusion), ["success"]);
+  assert.deepEqual(tracker.observe({ ...selected, results: [
+    snapshot("team/alpha", [run(4, "failure")])
+  ] }), []);
+  assert.deepEqual(tracker.observe({ ...selected, results: [
+    snapshot("team/alpha", [run(4, "success")])
+  ] }), []);
+});
+
+test("Switching notification mode does not replay old runs", () => {
+  const tracker = createCiFailureTracker();
+  const base = { account: "team", repositories: ["team/alpha"] };
+  tracker.observe({ ...base, mode: "failures", results: [
+    snapshot("team/alpha", [run(1, "success")])
+  ] });
+  assert.deepEqual(tracker.observe({ ...base, mode: "both", results: [
+    snapshot("team/alpha", [run(1, "success"), run(2, "failure")])
+  ] }), []);
+  assert.deepEqual(tracker.observe({ ...base, mode: "both", results: [
+    snapshot("team/alpha", [run(3, "success"), run(1, "success")])
+  ] }).map(x => [x.id, x.conclusion]), [[3, "success"]]);
 });

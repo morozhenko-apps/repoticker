@@ -85,13 +85,18 @@ test("all CI notifications preserve provider run identity and opt-in scope", () 
       assert.ok(values[name].trim(), language + "/" + name);
       assert.doesNotMatch(values[name], /<script|javascript:/i);
     }
+    assert.ok(values.successTitle.includes("RepoTicker"), language);
+    assert.ok(values.successTitle.includes("CI"), language);
     for (const key of ["{repository}", "{runId}", "{attempt}"]) {
       assert.equal(values.body.split(key).length - 1, 1, language + "/" + key);
+      assert.equal(values.successBody.split(key).length - 1, 1,
+        language + "/success/" + key);
     }
     assert.doesNotMatch(values.body, /<script|javascript:/i);
+    assert.doesNotMatch(values.successBody, /<script|javascript:/i);
   }
-  assert.match(native, /notification_text\(&config\.language, &repository, run_id, run_attempt\)/);
-  assert.match(native, /approved_scope\(&config, &repository, run_id, run_attempt\)/);
+  assert.match(native, /notification_text\(&config\.language, &repository, run_id, run_attempt, &conclusion\)/);
+  assert.match(native, /approved_scope\(&config, &repository, run_id, run_attempt, &conclusion\)/);
   assert.match(native, /MAX_DELIVERED/);
   assert.match(native, /notification_error\(&config\.language, "permission"\)/);
   assert.match(native, /notification_error\(&config\.language, "state"\)/);

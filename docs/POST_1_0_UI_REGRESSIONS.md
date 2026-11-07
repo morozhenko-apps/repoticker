@@ -25,6 +25,59 @@ Baseline: `dev` at `df22d025cca176243068876b5e0931aa6d0afd53`; `main` stays rese
 6. [ ] Validate actual KDE Wayland and Windows drag, keyboard close, focus, re-open and native presentation. No physical acceptance has been performed yet.
 7. [ ] Execute final applicable STABLE JS, Rust and release-contract checks once and record exact evidence; no CI polling after a run is started.
 
+## Final-gate repair: real Ubuntu test log (2026-11-07)
+
+**Mode B — Testing**. The owner's exact `dev=c5f5606` local test log
+reports Node v24.22.2 (instead of project-pinned 26.13.0), Node
+`node --test tests/*.test.mjs` **538 pass / 23 fail / 561 total**,
+Rust core 71 unit + 30 Git integration + 3 remote tests pass,
+Rust native 69 pass, `cargo check --locked -p repoticker` passes, and
+`cargo fmt --all --check` reports formatting diffs.
+
+Six diagnostic hypotheses: (1) legacy failure-only config flags in
+Mode B fixtures, (2) old checkbox IDs and Boolean semantics in Settings
+fixtures, (3) pre-change error-recovery expectations, (4) obsolete
+card/locale static assertions, (5) missing Rust formatting, (6) a real
+production contract violation or Node toolchain incompatibility. Root
+cause from exact failing assertions and current source is primarily
+(1)/(2)/(3) plus unrelated renamed UI strings and Rust formatting.
+All 23 failures have concrete source-level explanations; focus on
+verifying, not weakening, the underlying test assertions. Restore
+the repo's full existing Mode B scenarios and keep assertion intent.
+
+Planned changes, separate from this docs commit:
+
+1. Change existing notification Mode B test fixtures to explicitly
+   opt into `failures` (or `both` where relevant), leaving no-mode
+   default-off tests untouched. Replace the old native IPC command
+   fixture with `ci_run_notify` and assert the conclusion payload.
+2. Update the *one* obsolete provider-error expectation to require a
+   silent recovery baseline for just the failing repository, preserving
+   the healthy repository's notification history and a subsequent new
+   completion alert. Retain identity, bounds, invalid-run and duplicate
+   invariants.
+3. Switch Settings integration fixtures from the Boolean checkbox to
+   the four-value select. Preserve Apply/Cancel, error, re-open, auth,
+   offline selected-repo and OS autostart assertions. Add explicit
+   opt-in choices `successes` and `both` if not otherwise covered.
+   The old `ci_failure_notifications: true` field remains ONLY in an
+   intentional no-migration fixture.
+4. Refresh static UI tests for progress-as-percentage (Fetch remains
+   cancellable via accessible title), local scan-only busy state,
+   Russian `Фетч` and `О программе`, retaining locale parity.
+5. Apply precisely `cargo fmt`-compatible Rust whitespace changes,
+   no Rust semantic modifications. Use focused test reruns first,
+   then one fresh final full STABLE run **on Node26.13.0** on the
+   owner's machine or trusted CI. This ChatGPT environment does not
+   have a repo checkout with installed cargo.
+
+No notification schema/API changes, no production behavioral changes,
+no unrelated feature work, no `main`/tag/release changes.
+Rollback: revert the scoped test/formatting commits independently
+of this documentation change. The owner's successful Rust tests
+already establish semantic native compilation on `c5f5606`,
+not a new green final gate after source amendments.
+
 ## Validation and rollback
 
 Use deterministic tests for scan/monitor isolation, progress semantics and cancellation, both tray menu orders, and translation key integrity. Relevant suites: `node --test tests/*.test.mjs`, `cargo test --workspace`, and `python3 -m unittest discover -s tests -v` (only if available locally or in trusted CI). A source-level change without executed checks is **PARTIAL**, never complete. Do not commit verbose tracing; use the existing opt-in `REPOTICKER_STARTUP_DEBUG=1` to measure local scan and monitor milestones without logging paths, tokens, repository names or runner inventory. Roll back the scoped functional commit independently of this document if required.

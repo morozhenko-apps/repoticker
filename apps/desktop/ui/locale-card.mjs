@@ -23,6 +23,9 @@ export const CARD_TERMS = Object.freeze({
     "billing": "Límites gratuitos de GitHub-hosted",
     "refresh": "Activar para actualizar",
     "refreshing": "Actualizando",
+    "ciSuccess": "Último CI correcto",
+    "ciFailure": "Último CI fallido",
+    "ciUnknown": "Resultado de CI no disponible",
     "cannotResize": "No se puede cambiar el tamaño de la tarjeta: ",
     "gitErrors": "Errores de operaciones Git: {count}. ",
     "total": "total"
@@ -48,6 +51,9 @@ export const CARD_TERMS = Object.freeze({
     "billing": "Limites gratuitos do GitHub-hosted",
     "refresh": "Ativar para atualizar",
     "refreshing": "A atualizar",
+    "ciSuccess": "Última execução de CI concluída",
+    "ciFailure": "Última execução de CI falhou",
+    "ciUnknown": "Resultado de CI indisponível",
     "cannotResize": "Não foi possível redimensionar o painel: ",
     "gitErrors": "Erros de operações Git: {count}. ",
     "total": "total"
@@ -73,6 +79,9 @@ export const CARD_TERMS = Object.freeze({
     "billing": "Kostenlose GitHub-Hosted-Kontingente",
     "refresh": "Zum Aktualisieren aktivieren",
     "refreshing": "Aktualisierung läuft",
+    "ciSuccess": "Letzter CI-Lauf erfolgreich",
+    "ciFailure": "Letzter CI-Lauf fehlgeschlagen",
+    "ciUnknown": "CI-Ergebnis nicht verfügbar",
     "cannotResize": "Kartengröße konnte nicht geändert werden: ",
     "gitErrors": "Git-Operationsfehler: {count}. ",
     "total": "gesamt"
@@ -98,6 +107,9 @@ export const CARD_TERMS = Object.freeze({
     "billing": "Quotas gratuits hébergés par GitHub",
     "refresh": "Activer pour actualiser",
     "refreshing": "Actualisation",
+    "ciSuccess": "Dernière exécution CI réussie",
+    "ciFailure": "Dernière exécution CI échouée",
+    "ciUnknown": "Résultat CI indisponible",
     "cannotResize": "Impossible de redimensionner la fenêtre : ",
     "gitErrors": "Erreurs d'opérations Git : {count}. ",
     "total": "total"
@@ -123,6 +135,9 @@ export const CARD_TERMS = Object.freeze({
     "billing": "Quote gratuite GitHub-hosted",
     "refresh": "Attiva per aggiornare",
     "refreshing": "Aggiornamento in corso",
+    "ciSuccess": "Ultima esecuzione CI riuscita",
+    "ciFailure": "Ultima esecuzione CI non riuscita",
+    "ciUnknown": "Risultato CI non disponibile",
     "cannotResize": "Impossibile ridimensionare la scheda: ",
     "gitErrors": "Errori delle operazioni Git: {count}. ",
     "total": "totale"
@@ -148,6 +163,9 @@ export const CARD_TERMS = Object.freeze({
     "billing": "Bezpłatne limity hostowane przez GitHub",
     "refresh": "Aktywuj, aby odświeżyć",
     "refreshing": "Odświeżanie",
+    "ciSuccess": "Ostatni przebieg CI zakończony sukcesem",
+    "ciFailure": "Ostatni przebieg CI nieudany",
+    "ciUnknown": "Wynik CI niedostępny",
     "cannotResize": "Nie można zmienić rozmiaru panelu: ",
     "gitErrors": "Błędy operacji Git: {count}. ",
     "total": "łącznie"
@@ -173,6 +191,9 @@ export const CARD_TERMS = Object.freeze({
     "billing": "GitHub-hosted की मुफ़्त सीमा",
     "refresh": "अपडेट करने के लिए सक्रिय करें",
     "refreshing": "अपडेट हो रहा है",
+    "ciSuccess": "पिछला CI रन सफल रहा",
+    "ciFailure": "पिछला CI रन विफल रहा",
+    "ciUnknown": "CI परिणाम उपलब्ध नहीं है",
     "cannotResize": "कार्ड का आकार नहीं बदल सका: ",
     "gitErrors": "Git क्रिया त्रुटियाँ: {count}। ",
     "total": "कुल"
@@ -198,6 +219,9 @@ export const CARD_TERMS = Object.freeze({
     "billing": "GitHub 託管免費配額",
     "refresh": "啟用以更新",
     "refreshing": "更新中",
+    "ciSuccess": "上一次 CI 執行成功",
+    "ciFailure": "上一次 CI 執行失敗",
+    "ciUnknown": "CI 結果無法取得",
     "cannotResize": "無法調整面板大小：",
     "gitErrors": "Git 操作錯誤：{count}。 ",
     "total": "總數"
@@ -223,6 +247,9 @@ export const CARD_TERMS = Object.freeze({
     "billing": "GitHub ホストの無料枠",
     "refresh": "有効にして更新",
     "refreshing": "更新中",
+    "ciSuccess": "最新の CI 実行は成功",
+    "ciFailure": "最新の CI 実行は失敗",
+    "ciUnknown": "CI の結果を取得できません",
     "cannotResize": "カードのサイズを変更できません：",
     "gitErrors": "Git 操作エラー：{count} 件。 ",
     "total": "合計"
@@ -248,6 +275,9 @@ export const CARD_TERMS = Object.freeze({
     "billing": "Gratis GitHub-hosted tegoeden",
     "refresh": "Activeren om te vernieuwen",
     "refreshing": "Vernieuwen",
+    "ciSuccess": "Laatste CI-run geslaagd",
+    "ciFailure": "Laatste CI-run mislukt",
+    "ciUnknown": "CI-resultaat niet beschikbaar",
     "cannotResize": "Kan kaartgrootte niet wijzigen: ",
     "gitErrors": "Fouten bij Git-bewerkingen: {count}. ",
     "total": "totaal"
@@ -273,6 +303,9 @@ export const CARD_TERMS = Object.freeze({
     "billing": "Kostnadsfria GitHub-värdade kvoter",
     "refresh": "Aktivera för att uppdatera",
     "refreshing": "Uppdaterar",
+    "ciSuccess": "Senaste CI-körningen lyckades",
+    "ciFailure": "Senaste CI-körningen misslyckades",
+    "ciUnknown": "CI-resultat saknas",
     "cannotResize": "Kan inte ändra panelstorlek: ",
     "gitErrors": "Fel vid Git-åtgärder: {count}. ",
     "total": "totalt"
@@ -298,6 +331,9 @@ export const CARD_TERMS = Object.freeze({
     "billing": "GitHub-hosted ücretsiz kotaları",
     "refresh": "Güncellemek için etkinleştir",
     "refreshing": "Güncelleniyor",
+    "ciSuccess": "Son CI çalıştırması başarılı",
+    "ciFailure": "Son CI çalıştırması başarısız",
+    "ciUnknown": "CI sonucu kullanılamıyor",
     "cannotResize": "Kart boyutu değiştirilemedi: ",
     "gitErrors": "Git işlem hataları: {count}. ",
     "total": "toplam"
@@ -323,6 +359,9 @@ export const CARD_TERMS = Object.freeze({
     "billing": "GitHub 호스팅 무료 할당량",
     "refresh": "활성화하여 갱신",
     "refreshing": "갱신 중",
+    "ciSuccess": "최근 CI 실행 성공",
+    "ciFailure": "최근 CI 실행 실패",
+    "ciUnknown": "CI 결과를 확인할 수 없음",
     "cannotResize": "카드 크기를 변경할 수 없음: ",
     "gitErrors": "Git 작업 오류: {count}. ",
     "total": "전체"
@@ -348,6 +387,9 @@ export const CARD_TERMS = Object.freeze({
     "billing": "GitHub হোস্ট করা বিনামূল্যের সীমা",
     "refresh": "আপডেট করতে সক্রিয় করুন",
     "refreshing": "আপডেট হচ্ছে",
+    "ciSuccess": "সর্বশেষ CI রান সফল",
+    "ciFailure": "সর্বশেষ CI রান ব্যর্থ",
+    "ciUnknown": "CI ফলাফল অনুপলব্ধ",
     "cannotResize": "কার্ডের আকার বদলানো যায়নি: ",
     "gitErrors": "Git কাজের ত্রুটি: {count}। ",
     "total": "মোট"
@@ -373,6 +415,9 @@ export const CARD_TERMS = Object.freeze({
     "billing": "โควต้าฟรีสำหรับ GitHub-hosted",
     "refresh": "เปิดใช้งานเพื่ออัปเดต",
     "refreshing": "กำลังอัปเดต",
+    "ciSuccess": "การรัน CI ล่าสุดสำเร็จ",
+    "ciFailure": "การรัน CI ล่าสุดล้มเหลว",
+    "ciUnknown": "ไม่มีผลลัพธ์ CI",
     "cannotResize": "เปลี่ยนขนาดการ์ดไม่ได้: ",
     "gitErrors": "ข้อผิดพลาดการทำงาน Git: {count} ",
     "total": "ทั้งหมด"
@@ -398,6 +443,9 @@ export const CARD_TERMS = Object.freeze({
     "billing": "Kuota gratis GitHub-hosted",
     "refresh": "Aktifkan untuk memperbarui",
     "refreshing": "Memperbarui",
+    "ciSuccess": "Proses CI terakhir berhasil",
+    "ciFailure": "Proses CI terakhir gagal",
+    "ciUnknown": "Hasil CI tidak tersedia",
     "cannotResize": "Tidak dapat mengubah ukuran kartu: ",
     "gitErrors": "Kesalahan operasi Git: {count}. ",
     "total": "total"
@@ -423,6 +471,9 @@ export const CARD_TERMS = Object.freeze({
     "billing": "Libreng GitHub-hosted na quota",
     "refresh": "I-activate para i-update",
     "refreshing": "Ina-update",
+    "ciSuccess": "Nagtagumpay ang huling CI run",
+    "ciFailure": "Nabigo ang huling CI run",
+    "ciUnknown": "Hindi available ang resulta ng CI",
     "cannotResize": "Hindi mabago ang laki ng card: ",
     "gitErrors": "Mga error sa Git operation: {count}. ",
     "total": "kabuuan"
@@ -448,6 +499,9 @@ export const CARD_TERMS = Object.freeze({
     "billing": "الحصص المجانية لمشغّلات GitHub",
     "refresh": "تنشيط للتحديث",
     "refreshing": "جارٍ التحديث",
+    "ciSuccess": "نجح تشغيل CI الأخير",
+    "ciFailure": "فشل تشغيل CI الأخير",
+    "ciUnknown": "نتيجة CI غير متاحة",
     "cannotResize": "تعذّر تغيير حجم البطاقة: ",
     "gitErrors": "أخطاء عمليات Git: {count}. ",
     "total": "الإجمالي"

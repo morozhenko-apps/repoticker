@@ -34,7 +34,7 @@ test("Native titles use saved locale and pending locale cannot repaint Settings"
   assert.match(native, /window\.set_title\(tray_i18n::window_title\(&language, "about"\)\)/);
   const labels = JSON.parse(read("../apps/desktop/ui/locales/native.json"));
   assert.equal(labels.ru["RepoTicker Settings"], "Настройки RepoTicker");
-  assert.equal(labels.ru["About RepoTicker"], "О RepoTicker");
+  assert.equal(labels.ru["About RepoTicker"], "О программе");
   assert.equal(labels.pt["RepoTicker Settings"], "Definições do RepoTicker");
   assert.match(tray, /include_str!\("\.\.\/\.\.\/ui\/locales\/native\.json"\)/);
   assert.match(settings, /draft\.language = option\.dataset\.value;\s*\/\/ The selected locale is a draft/);

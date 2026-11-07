@@ -93,7 +93,9 @@ test("settings has a separate entrypoint and card can be dragged", () => {
 
 test("repository drawer disables idle dismissal and drag never survives hiding", () => {
   assert.match(ui, /view !== "compact"/);
-  assert.match(ui, /if \(!cardVisible \|\| view !== "compact" \|\| quotaExpanded \|\|\s*localScanActive \|\| fullMonitorActive\) return/);
+  assert.match(ui, /if \(!cardVisible \|\| view !== "compact" \|\| quotaExpanded \|\|\s*localScanActive\) return/);
+  assert.doesNotMatch(ui, /fullMonitorActive/,
+    "background GitHub checks must not keep the local repository spinner busy");
   assert.match(ui, /"repoticker-card-hidden"/);
   assert.match(ui, /stopDragging\(\)/);
   assert.match(ui, /dragSurface\.setPointerCapture\(event\.pointerId\)/);

@@ -160,3 +160,43 @@ installed KDE/Windows acceptance was executed for this commit.
 - Mode-selection decision documented before source changes: `c8c06a92f4dc07503bd785aafd63874d107d0180`.
 - Native config, GitHub monitor, per-run conclusion tracking, localized option labels and native notification templates, plus related test contracts: `3253bc2d870106c53ad15314fd9d62352ce04f18`.
 - Focused offline validation in the connected ChatGPT JS environment: transformed source syntax parses for the tracker, monitoring, Settings and locale catalog; tracker simulated baseline, both conclusions and deduplication; validated notification templates contain all three placeholders in all 20 locales and option text exists across 18 non-EN/RU locales. This does **not** replace Node test execution or Rust compilation.
+
+## Ubuntu Mode B repair evidence (2026-11-07)
+
+Owner-supplied `c5f5606` log: 561 Node tests, 538 pass and
+23 fail on Node v24.22.2; Rust core 71 unit + 30 Git integration +
+3 remote integration tests pass; Rust native 69 pass; Cargo check
+passes; Rust format check fails with five reported formatting hunks.
+The initial isolated JS evaluation did not replace this real execution.
+
+- `3ee844de69de918953e4ea3e171732ea65f09902`: restored the
+  preexisting Mode B and Settings integration scenarios with the
+  approved four-choice `ci_notification_mode` contract. Preserved
+  failure handling, scope, identity, atomic save/Cancel and test input
+  bounds, including an explicit legacy Boolean `true` fixture which
+  must still default to `off`. The changed recovery invariant
+  requires a silent first snapshot for the previously unavailable repo.
+  Healthy repositories must continue alerting.
+- `9d8db09f56a18d7e321aa3105ce0d4bf443040fa`: updated old Fetch
+  cancellation/percentage source expectations, local-only Repos busy
+  signal, approved Russian Fetch and About text.
+- `70d9749fba2b4ee2ca7e7c2a323fb3cc76cbca87`: adopted the exact
+  Rust formatting shown by the owner's `cargo fmt --all --check`
+  output. No Rust behavior or API change.
+
+Focused diagnostics against the new GitHub source with real production
+JS and injected external I/O: 9 Mode B notification-history scenarios,
+3 Mode B monitor scenarios, 12 Settings integration scenarios passed.
+Static review confirmed six UI invariants. These are **isolated
+tool-environment checks**, not a new Node test runner/Cargo result.
+Real per-platform release acceptance is not performed. There is no
+verified whole-suite green run for the new tip; `main` and published
+artifacts remain untouched.
+
+Next exact-source gate: use Node **26.13.0** as pinned in
+`docs/CI.md` and the Preflight workflow, execute the STABLE Node suite
+once, check `cargo fmt --all --check`, and report results.
+Only rerun relevant Rust tests if subsequent source changes warrant it;
+the owner's Rust tests passed before the test-only/format-only changes.
+Do not infer CI outcomes from push events or query active jobs repeatedly.
+

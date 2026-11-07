@@ -14,7 +14,7 @@ You can enroll your local Git folders, inspect each repository's branch, upstrea
 
 Safe Pull only fast-forwards eligible clean branches. Other synchronization actions respect Git's existing protections: no silent stash, rebase, force-push or conflict resolution. A repository with local changes, a diverged history or a missing upstream stays under your control.
 
-An optional GitHub connection adds Actions workflow and job status, self-hosted runner activity, selected repository monitoring and opt-in failure notifications. You can inspect the activity without leaving the tray. GitHub Device Flow uses the operating system's credential store; RepoTicker does not need a separate developer account.
+An optional GitHub connection adds Actions workflow and job status, self-hosted runner activity, selected repository monitoring and optional system notifications for successful workflow runs, failed runs, both or neither (off by default). You can inspect the activity without leaving the tray. GitHub Device Flow uses the operating system's credential store; RepoTicker does not need a separate developer account.
 
 ## Downloads
 

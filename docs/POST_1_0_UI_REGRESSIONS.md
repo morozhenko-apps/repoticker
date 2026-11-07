@@ -563,3 +563,81 @@ status, plus a markup binding and Russian value check.
 The source test was syntax-parsed by the connected tool
 environment; the new full STABLE Node26 regression gate
 remains unexecuted on the resulting dev tip.
+
+
+## Owner clarification: repository check marks represent GitHub Actions (2026-11-07)
+
+**Mode A — behavior correction**, not an additional CI badge.
+The owner explicitly establishes that the green check in a repository
+row means only a successful GitHub Actions run. Local synchronization
+is indicated by the already existing number (or no number) on
+the Safe Sync button. The current source violates this: `app.mjs`
+computes `✓` from local `dirty/ahead/behind/upstream` while
+native `RepoSummary.ci` is always `None`.
+
+### Corrected user-facing contract
+
+- Same row location, no duplicate status: `✓` (green) for the
+  latest verified **completed** GitHub Actions workflow run with
+  `conclusion=success`; `✕` (red) for `conclusion=failure`.
+- Unknown, offline, rate limited, unauthorized, unmonitored,
+  missing origin, no completed runs, cancelled, skipped,
+  timed out or other conclusions: neutral `—`. Never call these
+  success or failure. Last completed is explicit; an
+  in-progress run is not a concluded outcome.
+- Safe Sync eligibility, commit counts, Fetch cancellation,
+  dirty/upstream tracking and Git operations remain unchanged.
+  Do not use the green check to report a local clean tree.
+- Match local repositories to monitored GitHub repositories only
+  using the exact validated `origin` owner/repo identity
+  (case-insensitive), never a bare folder name. A local
+  repository with no supported GitHub origin gets `—`;
+  do not guess an account, remote or owner.
+- User notifications remain independently opt-in
+  (`off/failures/successes/both`); **status display may poll**
+  for last completed run even when notifications are `off`.
+  It must not enable system alerts or alter notification
+  baselines. Share the existing bounded completed-run collector
+  to avoid doubling API calls when notifications are enabled.
+- Status reads are only for current verified monitor selections
+  after authorization and valid coverage; user logout,
+  scope switch, failed provider reads and stale async results
+  clear previously projected statuses rather than preserve
+  fabricated current outcomes. No credentials in WebView or
+  disk cache. Preserve existing native rate gates,
+  API shape projections and monitor refresh intervals.
+
+### Source diagnosis, plan, and safety
+
+Six candidate causes: wrong `current` conditional, unused
+`RepoSummary.ci`, monitor summary with no completed workflow
+facts, missing verified local-to-GitHub mapping, optional
+notification collection unsuitable as status, and stale monitor
+publication. The source confirms the first five directly; the
+sixth is an important defensive test.
+
+1. Add a nonsecret canonical `github_repo` identity to the local
+   native projection from the Git `origin`, with bounded
+   read-only Git inspection and safe exact GitHub URL parsing.
+2. Build a pure projection of the newest returned completed run
+   to `success/failure/unknown`, keyed only by the verified
+   scope's `owner/repository` strings; preserve separate
+   provider error and no-data semantics.
+3. Share one bounded `collectRecentCompleted` pass for CI
+   status and optional CI notifications; avoid it during
+   runner-only refresh and incomplete/untrusted coverage.
+   Clear statuses on auth/scope changes and API outages;
+   use one generation guard on late results.
+4. Paint the existing row indicator in place without clearing
+   row scroll or rebuilding the whole list. Preserve all four
+   compact action buttons. Use accessible and localized
+   status descriptions where supported.
+5. Add focused tests: success, failure, unknown/other,
+   matching origins, wrong owner, no auth, opt-out status
+   with no alerts, prior-scope late response and outage.
+   Run the full pinned Node26.13.0 and Rust gate once after
+   coherent edits; do not claim installed KDE acceptance.
+
+Rollback: separate atomic native-projection and UI/monitor
+commits; no release, protected branch, credentials, schema,
+cloud deployment or Git mutation changes.

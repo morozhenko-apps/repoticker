@@ -6,7 +6,7 @@ import { cardLocale, cardText, cardNoticeText, metricAccessibleLabel } from "./c
 import { mergeMonitorPresentation, reconcileScanPresentation } from "./monitor-presentation.mjs";
 import { placeRepoMenu } from "./repo-menu.mjs";
 import { localeDirection } from "./locale-catalog.mjs";
-import { createScanRefreshQueue } from "./scan-refresh.mjs";
+import { createScanRefreshQueue, shouldSpinForRepos } from "./scan-refresh.mjs";
 import { disableBrowserContextMenu } from "./browser-context-menu.mjs";
 
 disableBrowserContextMenu(document);
@@ -46,10 +46,13 @@ let idleTimer = null;
 let cardVisible = false;
 let localScanActive = false;
 function updateReposActivity() {
-  const loading = localScanActive;
+  const loading = shouldSpinForRepos(localScanActive, firstSnapshotReady);
   byId("show-repos").setAttribute("aria-busy", String(loading));
+  const status = byId("repo-scan-status");
+  status.hidden = !localScanActive;
+  status.textContent = localScanActive ? cardText(cardLanguage, "refreshing") + "…" : "";
   // Source reads are independent of Fetch/Safe sync and never block Repos.
-  if (loading) cancelAutoHide();
+  if (localScanActive) cancelAutoHide();
   else armAutoHide();
 }
 const IDLE_MS = 15_000;
@@ -455,6 +458,8 @@ function setCardLanguage(language) {
     view === "repos" ? "hideRepos" : "showRepos");
   byId("hide-card").title = cardText(cardLanguage, "hideCard");
   updateActionState();
+  if (localScanActive) byId("repo-scan-status").textContent =
+    cardText(cardLanguage, "refreshing") + "…";
   updateMetricAccessibleNames();
   clearBrowserTooltips();
   if (lastNotice !== null) paintNotice();

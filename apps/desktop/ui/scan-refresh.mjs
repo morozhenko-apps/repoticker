@@ -6,6 +6,11 @@
  * action/config changes aren't lost and older replies cannot rewind the UI.
  * No timers, polling, caches or hidden automatic Git/network mutations.
  */
+// The compact spinner communicates first-snapshot uncertainty, not background work.
+export function shouldSpinForRepos(scanActive, hasCachedSnapshot) {
+  return Boolean(scanActive) && !hasCachedSnapshot;
+}
+
 export function createScanRefreshQueue({ scan, publish, onError,
   onBusyChange = () => {} }) {
   if (typeof scan !== "function" || typeof publish !== "function" ||

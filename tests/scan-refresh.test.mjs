@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { createScanRefreshQueue } from "../apps/desktop/ui/scan-refresh.mjs";
+import { createScanRefreshQueue, shouldSpinForRepos } from "../apps/desktop/ui/scan-refresh.mjs";
 
 function deferred() {
   let resolve, reject;
@@ -142,20 +142,32 @@ test("busy indicator tracks the entire coalesced local scan, including failure",
   assert.deepEqual(states, [true, false, true, false]);
 });
 
-test("Repos spinner follows source work without disabling repository drawer", () => {
+test("Repos spinner is reserved for uncached first snapshot", () => {
+  for (const [active, cached, expected] of [
+    [false, false, false], [true, false, true],
+    [false, true, false], [true, true, false],
+  ]) assert.equal(shouldSpinForRepos(active, cached), expected);
+});
+
+test("Repos spinner follows uncached source work while list shows subsequent refresh", () => {
   const app = readFileSync(new URL("../apps/desktop/ui/app.mjs", import.meta.url), "utf8");
   const css = readFileSync(new URL("../apps/desktop/ui/style.css", import.meta.url), "utf8");
   assert.match(app, /onBusyChange: active => \{\s*localScanActive = active;\s*updateReposActivity\(\)/);
   assert.doesNotMatch(app, /fullMonitorActive/, "remote monitoring must not own the Repos busy state");
-  assert.match(app, /const loading = localScanActive;/);
+  assert.match(app, /const loading = shouldSpinForRepos\(localScanActive, firstSnapshotReady\);/);
   assert.match(app, /if \(kind === "all"\) \{\s*for \(const node/,
     "full GitHub refresh keeps independent metric busy states");
   assert.match(app, /byId\("show-repos"\)\.setAttribute\("aria-busy", String\(loading\)\)/);
-  assert.match(app, /if \(loading\) cancelAutoHide\(\)/);
+  assert.match(app, /if \(localScanActive\) cancelAutoHide\(\)/);
   assert.doesNotMatch(app, /byId\("show-repos"\)\.disabled/);
   assert.match(css, /#show-repos\[aria-busy="true"\] \.repo-spinner/);
   assert.doesNotMatch(css, /#show-repos\[aria-busy="true"\] \.action-icon::after/);
   const html = readFileSync(new URL("../apps/desktop/ui/index.html", import.meta.url), "utf8");
+  assert.match(html, /id="repo-scan-status"[^>]*role="status"[^>]*hidden/);
+  assert.match(app, /status\.hidden = !localScanActive/);
+  assert.match(app, /status\.textContent = localScanActive \? cardText\(cardLanguage, "refreshing"\)/);
+  assert.match(app, /firstSnapshotReady = true/);
+  assert.match(css, /\.repo-scan-status \{[^}]*min-height: 24px/);
   assert.match(html, /class="action-icon repo-glyph"[^>]*><span class="repo-symbol">▤<\/span><svg class="repo-spinner"/);
   assert.match(css, /\.repo-glyph \{ display:grid; place-items:center; width:28px; height:28px/);
   assert.match(css, /\.repo-glyph \.repo-symbol, \.repo-glyph \.repo-spinner \{ grid-area:1\/1; \}/);

@@ -116,9 +116,11 @@ test("Device Flow buttons register and invoke native commands after JS startup",
   mode.disabled = false;
   mode.value = "hybrid";
   handlers.get("github-connection-mode:change")();
-  assert.equal(mode.disabled, true, "No secret or authorization: cannot enable Hybrid");
-  assert.equal(workerRow.hidden, true);
-  assert.equal(workerUrl.disabled, true);
+  // The fixture forcibly sets the disabled select to Hybrid. A visible
+  // URL draft still cannot be committed without a native credential.
+  assert.equal(workerRow.hidden, false);
+  assert.equal(workerUrl.disabled, false);
+  assert.equal(elements.get("apply-settings").disabled, true);
   mode.value = "polling";
   handlers.get("github-connection-mode:change")();
   assert.equal(workerRow.hidden, true);

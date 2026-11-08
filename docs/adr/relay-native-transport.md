@@ -172,3 +172,32 @@ Validation: one final locked build and Rust tests on Linux/Windows,
 with compiler output as the authority. No disabled checks or new
 external dependencies are necessary. Rollback is a single
 transport-source commit.
+
+
+### Cloudflare Worker validation without deployment
+
+The native desktop gate does not compile Cloudflare's `src/index.ts`
+entrypoint, Durable Object migration or Wrangler TOML. Add a separate
+**read-only, no-publishing** GitHub Actions workflow triggered only by
+relay source/configuration or its own workflow file:
+
+1. Check out the exact source SHA with no persisted token.
+2. Install pinned Node 26.13.0 and execute
+   `node --test tests/relay-*.test.mjs`, including actual Node SQLite
+   in-memory journal behavior.
+3. Use **Wrangler 4.158.0**, pinned to the npm release verified
+   November 8, 2026, to run
+   `wrangler deploy --dry-run --outdir <temporary>` from
+   `apps/relay-cloudflare`. This compiles and validates Worker/DO
+   packaging but cannot deploy or create a public endpoint.
+4. Assert the temporary bundle exists and is nonempty, with no
+   uploaded artifacts, operator credentials, Cloudflare API token,
+   webhook registration or live Cloudflare calls.
+5. Fail clearly on package resolution, TypeScript bundling, TOML
+   migration or runtime import errors. Keep desktop gates separate
+   and preserve unpublished artifact cleanup policies.
+
+Rollback: remove the dedicated workflow only; there are no
+persistent resources or data changes. This check is a build-level
+gate, **not** a substitute for the operator's later signed webhook,
+WebSocket authentication, replay, outage and revocation live QA.

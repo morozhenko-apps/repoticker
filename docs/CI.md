@@ -75,3 +75,9 @@ Executed commands (paths are relative to this repository; glob notation abbrevia
 - `node --test 'tests/*.test.mjs'` — exit `0` (STABLE_NODE).
 
 Publication boundary: dev maintenance may be shared with these exact outcomes. Failed gates block completion/release. Main/master, accepted tags, deployment configuration and store identities remain outside this maintenance publication. Rollback uses ordinary reverts of the separate executable commits and this documentation receipt.
+
+## Unpublished desktop bundler diagnostics
+
+Native acceptance is separate from the successful Rust compile and unit-test gates. On Ubuntu 24.04, a Tauri executable and DEB may build while the external AppImage `linuxdeploy` step fails. The dev-only candidate workflow sets `NO_STRIP=true` for the Linux bundling command to avoid a known incompatibility between `linuxdeploy`'s stripping tool and modern ELF relocation sections; it also enables verbose Tauri diagnostics to make future bundling failures actionable. This flag does not disable Cargo release optimization, ABI checks, or artifact integrity verification. A passing bundle still requires installed KDE acceptance.
+
+The Windows NSIS candidate depends on Tauri's verified external NSIS toolchain download. An upstream HTTP 5xx is a packaging dependency failure, not a proven application defect. Preserve Tauri's tool verification, the full NSIS build, required checksums, provenance sidecars, and fail-closed artifact upload conditions. Investigate persistent download failures rather than using unverified mirrors or skipping the packaging gate. Unpublished candidate validation never authorizes publishing or changing release branches.

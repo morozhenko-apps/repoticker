@@ -109,20 +109,20 @@ test("Device Flow buttons register and invoke native commands after JS startup",
   const workerUrl = elements.get("github-worker-url");
   mode.disabled = true;
   mode.value = "polling";
-  handlers.get("github-connection-mode:change")();
+  handlers.get("github-connection-mode:change")({ target: mode });
   assert.equal(workerRow.hidden, true);
   assert.equal(workerUrl.disabled, true);
   // Without a stored OS credential, Hybrid cannot be activated by scripted changes.
   mode.disabled = false;
   mode.value = "hybrid";
-  handlers.get("github-connection-mode:change")();
+  handlers.get("github-connection-mode:change")({ target: mode });
   // The fixture forcibly sets the disabled select to Hybrid. A visible
   // URL draft still cannot be committed without a native credential.
   assert.equal(workerRow.hidden, false);
   assert.equal(workerUrl.disabled, false);
   assert.equal(elements.get("apply-settings").disabled, true);
   mode.value = "polling";
-  handlers.get("github-connection-mode:change")();
+  handlers.get("github-connection-mode:change")({ target: mode });
   assert.equal(workerRow.hidden, true);
   assert.equal(workerUrl.disabled, true);
   for (const button of ["github-connect", "github-copy-code",

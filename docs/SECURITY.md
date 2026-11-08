@@ -10,14 +10,17 @@ The app inspects repositories under explicitly enrolled folders. Fetch must not 
 
 GitHub OAuth access and refresh tokens are handled by the native layer and stored with the operating system's credential service. They are not copied to WebView, saved as plaintext preferences, embedded in URLs or exposed in diagnostic messages.
 
-The optional operator-owned Hybrid relay has a separate OS credential entry.
-The secret is entered using a native password dialog available only from
-Settings; the WebView never receives or submits it. Relay secret changes
-are immediate credential-store operations, independent of Settings
-OK/Cancel. They are never stored in `config.json`, event payloads, URLs
-or logs. Hybrid transport is under native Rust implementation and remains unreleased
-until a reproducible Cargo.lock, locked Linux/Windows builds, physical UI
-acceptance and REST recovery validation are complete.
+The optional operator-owned Hybrid relay has its own OS credential entry,
+separate from GitHub authorization. Its secret is entered exclusively through
+a native password dialog. The WebView receives only a non-revealable mask and
+credential-state flags, never secret bytes. Changes are held in a zeroizing
+native-memory Settings draft and committed to the OS credential store only
+after explicit Settings OK; Cancel and window close discard uncommitted values.
+The secret is never stored in `config.json`, events, URLs or logs. The OS
+credential store and regular configuration are separate persistence systems:
+failed writes must not be presented as a successful Hybrid activation, and
+REST fallback remains available. Native Linux/Windows acceptance and real
+webhook recovery must be verified before enabling Hybrid in a release.
 
 GitHub API input/output is restricted to approved endpoints and bounded data. Permission errors, rate limits and incomplete inventories must not become an authoritative clean status or zero usage. RepoTicker does not require a developer-run login or repository hosting service.
 

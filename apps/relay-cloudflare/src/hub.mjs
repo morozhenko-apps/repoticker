@@ -29,7 +29,7 @@ export class RelayHubController {
   history(after) {
     const now = this.now();
     const newest = this.sql.exec(
-      "SELECT COALESCE(MAX(cursor), 0) AS cursor FROM hints"
+      "SELECT COALESCE(seq, 0) AS cursor FROM sqlite_sequence WHERE name = 'hints'"
     ).toArray()[0]?.cursor ?? 0;
     const oldest = this.sql.exec(
       "SELECT MIN(cursor) AS cursor FROM hints WHERE created_at >= ?", now - HISTORY_AGE_MS
@@ -65,7 +65,7 @@ export class RelayHubController {
         "INSERT INTO rate_budget (minute, admitted) VALUES (?, 1) ON CONFLICT(minute) DO UPDATE SET admitted = admitted + 1",
         minute
       );
-      this.sql.exec("DELETE FROM rate_budget WHERE minute < ?", minute - 1);
+      this.sql.exec("DELETE FROM rate_budget WHERE minute < ?", minute);
       this.sql.exec(
         "INSERT INTO hints (delivery, repository, created_at) VALUES (?, ?, ?)",
         delivery, repository, now

@@ -85,8 +85,12 @@ test("Given verified delivery When stored Then retry is idempotent and cursor ne
 
 test("Given more than 128 webhook deliveries When querying stale cursor Then reset is required", async () => {
   const f = fixture();
-  for (let i = 1; i <= 129; i++)
+  for (let i = 1; i <= 129; i++) {
+    // Capacity is 120 deliveries per minute; test journal retention
+    // across two legitimate minute buckets, never bypass rate limiting.
+    if (i === 121) f.clock.ms += 60_000;
     assert.equal((await f.ingest(i)).status, 202);
+  }
   assert.equal(f.database.prepare("SELECT COUNT(*) AS count FROM hints").get().count, 128);
   const stale = await (await f.changes(0)).json();
   assert.equal(stale.reset, true);
@@ -114,6 +118,9 @@ test("Given old journal and WebSocket cap When replaying Then no unbounded webso
   const f = fixture();
   for (let i = 0; i < 8; i++) assert.equal((await f.stream()).status, 101);
   assert.equal((await f.stream()).status, 429);
+  await f.ingest(1);
+  // All retained rows expire; the durable AUTOINCREMENT high watermark
+  // must survive deletion so an offline client receives reset.
   f.clock.ms += 86_400_001;
   const history = await (await f.changes()).json();
   assert.equal(history.reset, true);
@@ -149,6 +156,7 @@ test("Given excessive signed deliveries in one minute Then hard-cap writes and a
   f.clock.ms += 60_000;
   assert.equal((await f.ingest(121)).status, 202);
   assert.equal(f.database.prepare("SELECT COUNT(*) AS count FROM rate_budget").get().count, 1);
+  assert.equal(f.database.prepare("SELECT COUNT(*) AS count FROM hints").get().count, 121);
 });
 
 test("Given storage failure When inserting Then no success acknowledgment or phantom delivery", async () => {

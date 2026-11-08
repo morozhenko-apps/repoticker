@@ -185,6 +185,11 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
             case "github_open_device_page":
               if (options.openDeviceError) throw Error("Device page launch denied");
               return undefined;
+            case "open_relay_resource":
+              if (!["source", "guide"].includes(args?.resource))
+                throw Error("Invalid relay resource");
+              if (options.relayDocsOpenError) throw Error("Cannot open browser");
+              return undefined;
             case "github_cancel":
               if (!connected) phase = "cancelled";
               return undefined;
@@ -2164,5 +2169,36 @@ test("Previously configured Hybrid can return to Simple when relay keyring is un
     await ui.node("apply-settings").fire("click");
     assert.equal(ui.connectionMode, "polling");
     assert.equal(ui.relayUrl, "https://relay.example.com/");
+  } finally { ui.restore(); }
+});
+
+test("Hybrid setup links open fixed Worker sources and guide only through native browser", async () => {
+  const ui = await fixture("relay-docs-native-links", true);
+  try {
+    await ui.node("relay-worker-source-link").fire("click");
+    await ui.node("relay-worker-guide-link").fire("click");
+    // Native receives only a two-value selector, never a WebView-supplied URL.
+    assert.deepEqual(
+      ui.calls.filter(([command]) => command === "open_relay_resource")
+        .map(([, args]) => args),
+      [{ resource: "source" }, { resource: "guide" }]
+    );
+    assert.equal(ui.calls.filter(([command]) => command === "save_settings").length, 0,
+      "opening documentation does not mutate Settings");
+    assert.equal(ui.calls.filter(([command]) => command === "relay_commit_secret_draft").length, 0,
+      "opening documentation never touches the Keyring");
+  } finally { ui.restore(); }
+});
+
+test("Failed native Worker documentation open reports a redacted localized message", async () => {
+  const ui = await fixture("relay-docs-native-failure", true, [], {
+    relayDocsOpenError: true
+  });
+  try {
+    await ui.node("relay-worker-guide-link").fire("click");
+    await tick();
+    assert.equal(ui.node("message").textContent,
+      "Cannot open Worker documentation.");
+    assert.doesNotMatch(ui.node("message").textContent, /Cannot open browser/);
   } finally { ui.restore(); }
 });

@@ -1,5 +1,6 @@
 :root {font:14px system-ui,"Segoe UI",sans-serif;color-scheme:light dark}
 * {box-sizing:border-box}
+html,body,body * {-webkit-user-select:none;user-select:none}
 body {margin:0;height:100vh;overflow:hidden;background:Canvas;color:CanvasText}
 .about-titlebar {height:34px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 7px 0 12px;background:color-mix(in srgb,CanvasText 7%,Canvas);font-size:12px;font-weight:600;user-select:none;cursor:move}
 .about-titlebar span {flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

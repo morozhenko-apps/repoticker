@@ -1085,6 +1085,56 @@ fn open_project_website() -> Result<(), String> {
     launch_browser("https://morozhenko.com")
 }
 
+/// Open only audited Worker source and setup pages in the system browser.
+/// The WebView supplies an enum-like resource name, never a URL to execute.
+fn trusted_relay_resource_url(resource: &str) -> Option<&'static str> {
+    match resource {
+        // QA source only. Switch both URLs to reviewed main content at release.
+        "source" => Some(
+            "https://github.com/morozhenko-apps/repoticker/tree/dev/apps/relay-cloudflare",
+        ),
+        "guide" => Some(
+            "https://github.com/morozhenko-apps/repoticker/blob/dev/apps/relay-cloudflare/README.md",
+        ),
+        _ => None,
+    }
+}
+
+#[tauri::command]
+fn open_relay_resource(window: tauri::WebviewWindow, resource: String) -> Result<(), String> {
+    if window.label() != "settings" {
+        return Err("Relay resource links are available only in Settings.".into());
+    }
+    let url = trusted_relay_resource_url(&resource)
+        .ok_or_else(|| "Unknown relay documentation resource.".to_owned())?;
+    launch_browser(url)
+}
+
+#[cfg(test)]
+mod relay_resource_links_tests {
+    use super::trusted_relay_resource_url;
+
+    #[test]
+    fn only_fixed_github_source_and_guide_are_allowed() {
+        let source = trusted_relay_resource_url("source").expect("source URL");
+        let guide = trusted_relay_resource_url("guide").expect("guide URL");
+        assert_eq!(
+            source,
+            "https://github.com/morozhenko-apps/repoticker/tree/dev/apps/relay-cloudflare"
+        );
+        assert_eq!(
+            guide,
+            "https://github.com/morozhenko-apps/repoticker/blob/dev/apps/relay-cloudflare/README.md"
+        );
+        for input in [
+            "", "https://attacker.example", "source/../../other",
+            "file:///etc/passwd", "guide?url=other", "../guide",
+        ] {
+            assert!(trusted_relay_resource_url(input).is_none());
+        }
+    }
+}
+
 /// Open an allowlisted GitHub Actions job in the user's web browser.
 #[tauri::command]
 fn open_actions_job(url: String) -> Result<(), String> {
@@ -1931,6 +1981,7 @@ fn main() {
             hide_usage_popup,
             resize_usage_popup,
             open_project_website,
+            open_relay_resource,
             add_root,
             remove_root,
             open_settings,

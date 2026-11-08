@@ -617,6 +617,20 @@ window.addEventListener("focus", () => {
   if (githubPending) void refreshGithub();
 });
 
+// The native Rust command maps only these two IDs to fixed Github-hosted
+// resources. The WebView never supplies an arbitrary URL to the OS opener.
+for (const [id, resource] of [
+  ["relay-worker-source-link", "source"],
+  ["relay-worker-guide-link", "guide"]
+]) {
+  byId(id).addEventListener("click", event => {
+    event.preventDefault();
+    void invoke("open_relay_resource", { resource }).catch(() => {
+      message("Cannot open Worker documentation.", true);
+    });
+  });
+}
+
 byId("github-open-device").addEventListener("click", async () => {
   try { await invoke("github_open_device_page"); }
   catch (error) { githubMessage(String(error), true); }

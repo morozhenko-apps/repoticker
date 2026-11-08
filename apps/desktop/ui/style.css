@@ -4,6 +4,9 @@
   color-scheme: light dark;
 }
 * { box-sizing: border-box; }
+html, body, body * { -webkit-user-select: none; user-select: none; }
+input, textarea { -webkit-user-select: text; user-select: text; }
+
 html, body { margin: 0; height: 100%; overflow: hidden; background: transparent; color: CanvasText; }
 button, input { font: inherit; }
 button { cursor: pointer; background: transparent; color: inherit; border: 0; }

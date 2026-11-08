@@ -107,6 +107,10 @@
         <summary data-i18n="Where to get the relay key">Where to get the relay key</summary>
         <p class="hint" data-i18n="GitHub and RepoTicker do not issue relay keys. Host your own Cloudflare Worker, create RELAY_CLIENT_SECRET and enter the same secret using the native dialog. WEBHOOK_SECRET must be different. Without a deployed Worker URL, use Simple polling.">GitHub and RepoTicker do not issue relay keys. Host your own Cloudflare Worker, create RELAY_CLIENT_SECRET and enter the same secret using the native dialog. WEBHOOK_SECRET must be different. Without a deployed Worker URL, use Simple polling.</p>
         <code class="relay-secret-command" dir="ltr">openssl rand -hex 32</code>
+        <div class="relay-resource-links" role="group" aria-label="Worker resources" data-i18n-aria="Worker resources">
+          <a id="relay-worker-source-link" href="https://github.com/morozhenko-apps/repoticker/tree/dev/apps/relay-cloudflare" target="_blank" rel="noopener noreferrer" data-i18n="Get Worker source">Get Worker source</a>
+          <a id="relay-worker-guide-link" href="https://github.com/morozhenko-apps/repoticker/blob/dev/apps/relay-cloudflare/README.md" target="_blank" rel="noopener noreferrer" data-i18n="Deployment guide">Deployment guide</a>
+        </div>
       </details>
     </div>
     <div class="ci-alert-controls">

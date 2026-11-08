@@ -52,7 +52,8 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
   const calls = [];
   let connected = initiallyConnected;
   let phase = options.authPhase ?? (connected ? "connected" : "idle");
-  let monitorOrg = connected ? "one" : null;
+  let monitorOrg = Object.hasOwn(options, "initialMonitorOrg")
+    ? options.initialMonitorOrg : (connected ? "one" : null);
   let monitorRepositories = [...initialRepositories];
   const persistedIgnored = [...(options.ignoredChildNames || [])];
   let closed = false;
@@ -295,6 +296,80 @@ test("new authorization enables OK, confirms selected Monitor account and refres
     assert.equal(ui.closed, true);
     assert.equal(ui.tokenRemoved, false);
     assert.equal(ui.calls.filter(([name]) => name === "github_set_monitor_org").length, 1);
+  } finally { ui.restore(); }
+});
+
+
+test("Existing single eligible GitHub account shows a readonly account and Disconnect on one row", async () => {
+  const ui = await fixture("single-existing-account", true, [], {
+    installationPages: [[{ id: 1, account: { login: "one" } }]]
+  });
+  try {
+    assert.equal(ui.node("github-monitor-scope-row").hidden, false);
+    assert.equal(ui.node("github-account-name").hidden, false);
+    assert.equal(ui.node("github-account-name").value, "one");
+    assert.equal(ui.node("github-monitor-scope").hidden, true);
+    assert.equal(ui.node("github-monitor-scope").children.length, 1,
+      "one complete eligible installation needs no Choose account placeholder");
+    assert.equal(ui.node("github-monitor-scope").children[0]?.value, "one");
+    assert.equal(ui.node("github-disconnect").hidden, false);
+    assert.equal(ui.node("github-connection-indicator").hidden, true);
+    assert.equal(ui.node("github-auth-message").hidden, true);
+    assert.equal(ui.node("apply-settings").disabled, true,
+      "existing unchanged GitHub authorization is not an OK confirmation");
+    assert.equal(ui.calls.some(([name]) => name === "github_set_monitor_org"), false);
+  } finally { ui.restore(); }
+});
+
+test("Previously authorized unique installation initializes missing scope without an extra OK", async () => {
+  const ui = await fixture("single-autobind-existing", true, [], {
+    initialMonitorOrg: null,
+    installationPages: [[{ id: 1, account: { login: "one" } }]]
+  });
+  try {
+    assert.equal(ui.monitorOrg, "one");
+    assert.equal(ui.node("github-account-name").value, "one");
+    assert.equal(ui.node("github-monitor-scope").hidden, true);
+    assert.equal(ui.node("apply-settings").disabled, true);
+    assert.equal(ui.calls.filter(([name]) => name === "github_set_monitor_org").length, 1);
+    assert.ok(!ui.calls.some(([name]) => name === "save_settings"));
+  } finally { ui.restore(); }
+});
+
+test("New GitHub authorization with one installation keeps Cancel/revocation safe until OK", async () => {
+  const ui = await fixture("single-new-device-flow", false, [], {
+    installationPages: [[{ id: 1, account: { login: "one" } }]]
+  });
+  try {
+    await ui.node("github-connect").fire("click");
+    ui.authConnected();
+    await ui.dispatchAuth();
+    assert.equal(ui.node("github-account-name").value, "one");
+    assert.equal(ui.node("github-monitor-scope").hidden, true);
+    assert.ok(!ui.calls.some(([name]) => name === "github_set_monitor_org"),
+      "a new native token remains provisional until Settings OK");
+    assert.equal(ui.node("apply-settings").disabled, false);
+    await ui.node("cancel-settings").fire("click");
+    assert.equal(ui.tokenRemoved, true, "cancel revokes only the newly authorized token");
+    assert.equal(ui.monitorOrg, null);
+  } finally { ui.restore(); }
+});
+
+test("Single-account automatic scope initialization failure remains retryable and never claims success", async () => {
+  const ui = await fixture("single-autobind-denied", true, [], {
+    initialMonitorOrg: null,
+    scopeWriteError: true,
+    installationPages: [[{ id: 1, account: { login: "one" } }]]
+  });
+  try {
+    assert.equal(ui.monitorOrg, null);
+    assert.equal(ui.node("apply-settings").disabled, false,
+      "explicit OK must be available after a failed unique-scope auto initialization");
+    assert.equal(ui.node("github-auth-message").hidden, false);
+    assert.match(ui.node("github-auth-message").textContent, /Cannot save GitHub monitoring account/);
+    await ui.node("cancel-settings").fire("click");
+    assert.equal(ui.monitorOrg, null);
+    assert.equal(ui.tokenRemoved, false);
   } finally { ui.restore(); }
 });
 
@@ -579,11 +654,11 @@ test("Saved Russian Settings renders native status in Russian and draft EN previ
   const ui = await fixture("locale-ru-cancel", true, [], { language: "ru" });
   try {
     assert.equal(ui.language, "ru");
-    assert.equal(ui.node("github-account-status").value, "Авторизовано");
+    assert.equal(ui.node("github-account-name").value, "one");
     assert.equal(ui.node("language-trigger").firstChild.textContent, "Русский ");
     await ui.languageOption("en").fire("click");
     assert.equal(ui.language, "ru", "Draft selection must not change visible persisted locale");
-    assert.equal(ui.node("github-account-status").value, "Авторизовано");
+    assert.equal(ui.node("github-account-name").value, "one");
     assert.equal(ui.node("apply-settings").disabled, false);
     await ui.node("cancel-settings").fire("click");
     assert.equal(ui.calls.some(([name]) => name === "save_settings"), false);
@@ -596,7 +671,7 @@ test("English saved Settings keeps EN until OK and persists only chosen locale",
     assert.equal(ui.language, "en");
     await ui.languageOption("ru").fire("click");
     assert.equal(ui.language, "en");
-    assert.equal(ui.node("github-account-status").value, "Authorized");
+    assert.equal(ui.node("github-account-name").value, "one");
     await ui.node("apply-settings").fire("click");
     assert.equal(ui.calls.find(([name]) => name === "save_settings")?.[1]?.language, "ru");
     assert.equal(ui.closed, true);

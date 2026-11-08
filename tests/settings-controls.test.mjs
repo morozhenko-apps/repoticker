@@ -100,8 +100,8 @@ test("Device Flow buttons register and invoke native commands after JS startup",
   assert.equal(elements.get("github-connection-indicator").textContent,
     "Checking connection...");
   assert.equal(elements.get("github-connect").hidden, true);
-  assert.equal(elements.get("github-account-status").value,
-    "Checking connection...");
+  assert.equal(elements.get("github-account-name").value, "",
+    "Account identity is pending; redundant Authorized field is removed");
   assert.ok(!calls.some(c => c.command === "get_snapshot"));
   await new Promise(resolve => setImmediate(resolve));
   const mode = elements.get("github-connection-mode");

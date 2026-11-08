@@ -75,6 +75,7 @@ const russian = Object.freeze({
   "; filter to find more": "; используйте поиск для остальных",
   "GitHub installation list incomplete. Some accounts may be unavailable.": "Список подключений GitHub неполный. Некоторые аккаунты могут быть недоступны.",
   "GitHub authorized; cannot list available installations.": "GitHub авторизован, но список подключений недоступен.",
+  "Cannot save GitHub monitoring account.": "Не удалось сохранить аккаунт мониторинга GitHub.",
   "Press OK to confirm the monitoring account.": "Нажмите OK для подтверждения аккаунта.",
   "Copied": "Скопировано",
   "Verification code copied.": "Код подтверждения скопирован.",

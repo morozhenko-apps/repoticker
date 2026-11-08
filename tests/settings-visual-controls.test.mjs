@@ -6,8 +6,14 @@ const html = readFileSync(new URL("../apps/desktop/ui/settings.html", import.met
 const css = readFileSync(new URL("../apps/desktop/ui/settings.css", import.meta.url), "utf8");
 const settings = readFileSync(new URL("../apps/desktop/ui/settings.mjs", import.meta.url), "utf8");
 
-test("KDE monitor selectors share two-column alignment and control height", () => {
-  assert.match(html, /<label id="github-monitor-scope-row" hidden><span data-i18n="Monitor account">Monitor account<\/span>\s*<select id="github-monitor-scope">/);
+test("KDE account row aligns selected GitHub account with Disconnect", () => {
+  assert.match(html, /<div id="github-monitor-scope-row" class="github-account-row" hidden>/);
+  assert.match(html, /id="github-account-name"[^>]*readonly disabled/);
+  assert.match(html, /id="github-monitor-scope"[^>]*hidden/);
+  assert.match(html, /id="github-disconnect"[^>]*hidden/);
+  assert.doesNotMatch(html, /id="github-account-status"/);
+  assert.match(css, /\.github-account-row \{[^}]*display: flex;[^}]*align-items: center/);
+  assert.match(css, /\.github-account-row input, \.github-account-row select \{[^}]*height: 34px/);
   assert.match(html, /<div class="github-repo-heading">[\s\S]*?<label for="github-repo-mode" data-i18n="Monitor repositories">Monitor repositories<\/label>\s*<select id="github-repo-mode">/);
   assert.match(css, /\.github-grid \{[^}]*grid-template-columns: 1fr 1fr;[^}]*gap: 7px 10px/);
   assert.match(css, /\.github-grid input, \.github-grid select \{[^}]*height: 34px/);
@@ -47,7 +53,7 @@ test("KDE alignment fix does not alter settings confirmation or popup geometry",
 });
 
 test("KDE GitHub selects have zero block padding and CSS-owned centered closed controls", () => {
-  const control = css.match(/\.github-grid select,\s*\.github-repo-heading select,\s*\.ci-alert-controls select \{([^}]+)\}/)?.[1];
+  const control = css.match(/\.github-grid select,\s*\.github-account-row select,\s*\.github-repo-heading select,\s*\.ci-alert-controls select \{([^}]+)\}/)?.[1];
   assert.ok(control, "All three visible GitHub selectors share one text-painting contract");
   for (const rule of [
     /-webkit-appearance: none/, /appearance: none/,
@@ -55,7 +61,7 @@ test("KDE GitHub selects have zero block padding and CSS-owned centered closed c
     /padding: 0 32px 0 12px/,
     /background-position: right 11px center/
   ]) assert.match(control, rule);
-  assert.match(css, /\.github-grid select:focus-visible,\s*\.github-repo-heading select:focus-visible,\s*\.ci-alert-controls select:focus-visible/);
+  assert.match(css, /\.github-grid select:focus-visible,\s*\.github-account-row select:focus-visible,\s*\.github-repo-heading select:focus-visible,\s*\.ci-alert-controls select:focus-visible/);
   assert.match(css, /@media \(forced-colors: active\)[\s\S]*\.github-grid select/);
   // Real HTML selects and their native options remain, not a scripted proxy.
   for (const id of ["github-monitor-scope", "github-connection-mode", "github-repo-mode", "ci-notification-mode"]) {

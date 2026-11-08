@@ -71,9 +71,13 @@
   <section class="block github">
     <div class="section-heading"><h2 data-i18n="GitHub &amp; Relay">GitHub &amp; Relay</h2><span id="github-connection-indicator" class="hint">Checking connection...</span></div>
     <div class="github-auth-controls">
+      <div id="github-monitor-scope-row" class="github-account-row" hidden>
+        <input id="github-account-name" type="text" dir="ltr" readonly disabled autocomplete="off" spellcheck="false" aria-label="Monitor account" data-i18n-aria="Monitor account" value="">
+        <select id="github-monitor-scope" dir="ltr" aria-label="Monitor account" data-i18n-aria="Monitor account" hidden><option value="" data-i18n="Choose account">Choose account</option></select>
+        <button id="github-disconnect" type="button" data-i18n="Disconnect" hidden>Disconnect</button>
+      </div>
       <button id="github-connect" type="button" data-i18n="Connect GitHub" hidden>Connect GitHub</button>
-      <button id="github-disconnect" type="button" data-i18n="Disconnect" hidden>Disconnect</button>
-      <span id="github-auth-message" class="hint" role="status" aria-live="polite">Checking GitHub connection...</span>
+      <span id="github-auth-message" class="hint" role="status" aria-live="polite" hidden>Checking GitHub connection...</span>
     </div>
     <div id="github-device-flow" class="github-device-flow" hidden>
       <span data-i18n="Enter this code on GitHub:">Enter this code on GitHub:</span>
@@ -84,10 +88,6 @@
     </div>
 
     <div class="github-grid">
-      <label><span data-i18n="GitHub authorization">GitHub authorization</span><input id="github-account-status" disabled value="Checking connection..."></label>
-      <label id="github-monitor-scope-row" hidden><span data-i18n="Monitor account">Monitor account</span>
-        <select id="github-monitor-scope"><option value="" data-i18n="Choose account">Choose account</option></select>
-      </label>
       <label><span data-i18n="CI event source">CI event source</span><select id="github-connection-mode" disabled>
         <option value="polling" data-i18n="Simple polling">Simple polling</option>
         <option value="hybrid" data-i18n="Hybrid webhook relay">Hybrid webhook relay</option>

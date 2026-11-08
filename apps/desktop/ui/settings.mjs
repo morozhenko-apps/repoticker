@@ -320,6 +320,8 @@ function clearMonitorScopes() {
   repoInventoryReady = false;
   repoInventoryComplete = false;
   byId("github-monitor-scope-row").hidden = true;
+  byId("github-account-name").value = "";
+  byId("github-monitor-scope").hidden = true;
   byId("github-repo-controls").hidden = true;
 }
 
@@ -343,12 +345,47 @@ async function refreshMonitorScopes() {
     const select = byId("github-monitor-scope");
     select.dir = "ltr"; // Account identifiers are not translated UI strings.
     select.replaceChildren();
-    const placeholder = document.createElement("option");
-    placeholder.value = "";
-    placeholder.textContent = t("Choose account");
-    select.append(placeholder);
     availableAccounts = new Map(inventory.items.map(item => [item.name, item.id]));
     const accounts = [...availableAccounts.keys()].sort();
+    if (githubScopeAtOpen === null) githubScopeAtOpen = config || "";
+    const suggestion = config ||
+      (inventory.complete && accounts.length === 1 ? accounts[0] : "");
+    // Respect the provider's canonical casing while preserving a stored
+    // account that is temporarily absent from a partial inventory.
+    const resolved = accounts.find(name => sameGithubIdentity(name, suggestion)) ??
+      suggestion;
+    if (!githubScopeTouched) selectedScope = resolved;
+
+    // An already-authorized user with one *fully enumerated* eligible
+    // installation needs no extra account choice or OK confirmation.
+    // A brand-new Device Flow remains provisional until explicit OK.
+    if (!config && inventory.complete && accounts.length === 1 &&
+        !githubScopeTouched && githubWasConnectedAtOpen &&
+        !githubStartedHere && !disconnectPending) {
+      try {
+        await invoke("github_set_monitor_org", { org: accounts[0], repositories: [] });
+        if (revision !== monitorScopesRevision || !githubConnected) return;
+        githubScopeAtOpen = accounts[0];
+        selectedScope = accounts[0];
+      } catch {
+        if (revision !== monitorScopesRevision || !githubConnected) return;
+        // Failed auto-initialization must stay retryable through explicit OK.
+        githubScopeTouched = true;
+        githubMessage("Cannot save GitHub monitoring account.", true);
+      }
+    }
+    const needsPicker = accounts.length > 1 ||
+      (!inventory.complete && !config) || accounts.length === 0;
+    const display = byId("github-account-name");
+    display.hidden = needsPicker;
+    select.hidden = !needsPicker;
+    display.value = selectedScope || (accounts.length === 1 ? accounts[0] : "");
+    if (needsPicker) {
+      const placeholder = document.createElement("option");
+      placeholder.value = "";
+      placeholder.textContent = t("Choose account");
+      select.append(placeholder);
+    }
     for (const name of accounts) {
       const option = document.createElement("option");
       option.value = name;
@@ -356,19 +393,9 @@ async function refreshMonitorScopes() {
       option.textContent = name;
       select.append(option);
     }
-    if (githubScopeAtOpen === null) githubScopeAtOpen = config || "";
-    const suggestion = config ||
-      (inventory.complete && accounts.length === 1 ? accounts[0] : "");
-    // The persisted login may differ only in case from the provider's
-    // canonical spelling. Resolve it before looking up the installation ID.
-    const resolved = accounts.find(name => sameGithubIdentity(name, suggestion)) ??
-      suggestion;
-    // An explicit draft selection must never be overwritten by a late
-    // refresh; an incomplete listing does not prove a saved account gone.
-    if (!githubScopeTouched) selectedScope = resolved;
     select.value = accounts.includes(selectedScope) ? selectedScope : "";
     if (!inventory.complete) githubMessage(
-      t("GitHub installation list incomplete. Some accounts may be unavailable."), true);
+      "GitHub installation list incomplete. Some accounts may be unavailable.", true);
     await refreshRepoInventory();
     if (revision !== monitorScopesRevision || !githubConnected) return;
     updateApply();
@@ -394,7 +421,9 @@ byId("github-monitor-scope").addEventListener("change", event => {
   selectedRepoNames.clear();
   byId("github-repo-filter").value = "";
   updateRepoDirty();
-  githubMessage("Press OK to confirm the monitoring account.");
+  // An actual change of account is reflected by enabled Settings OK.
+  // Do not suggest reconfirmation of an already connected identity.
+  githubMessage("");
   void refreshRepoInventory();
   updateApply();
 });
@@ -436,6 +465,10 @@ function githubMessage(text, error = false) {
   lastGithubText = String(text);
   const element = byId("github-auth-message");
   element.textContent = t(String(text));
+  // Connected is already expressed by the account row; do not print it twice.
+  element.hidden = !text ||
+    (githubConnected && !githubPending && !disconnectPending &&
+     text === githubPhaseLabels.connected && !error);
   element.classList.toggle("error", error);
 }
 
@@ -451,7 +484,9 @@ function githubButtons() {
     : disconnectPending ? t("Pending disconnect")
     : githubConnected ? t("Authorized") : t("Not connected");
   byId("github-connection-indicator").textContent = status;
-  byId("github-account-status").value = status;
+  // Connected account+Disconnect are the single authoritative visible status.
+  byId("github-connection-indicator").hidden =
+    githubConnected && !disconnectPending && !githubPending && !unknown;
   updateApply();
 }
 

@@ -115,9 +115,16 @@ pub async fn relay_prompt_secret(
     settings_only(&window)?;
     let _lease = enter_prompt(&app)?;
     let secret = prompt_native(&app).await?;
-    let Some(secret) = secret else {
+    let Some(mut secret) = secret else {
         return Ok(false);
     };
+    // Windows Credential UI is owned by a native OS thread and may outlive
+    // its Settings WebView. A canceled/closed Settings session cannot commit
+    // a late password into the system keyring.
+    if !window.is_visible().unwrap_or(false) {
+        wipe(&mut secret);
+        return Err("Settings window is no longer open.".into());
+    }
     tauri::async_runtime::spawn_blocking(move || store_secret(secret))
         .await
         .map_err(|_| "System credential store unavailable.".to_owned())??;

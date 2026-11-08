@@ -1,5 +1,6 @@
-# Manual operator deployment only. Do not place any repository names or secrets here.
-name = "repoticker-personal-relay"
+# Operator-owned Worker; name must match the existing Cloudflare service.
+# Do not place repository names or secrets here.
+name = "repoticker-relay"
 main = "src/index.ts"
 compatibility_date = "2026-11-08"
 

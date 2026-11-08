@@ -22,11 +22,28 @@ export function allowedRepositories(raw) {
   if (names.length < 1 || names.length > 100) return null;
   const authorized = new Set();
   for (const name of names) {
-    const canonical = canonicalRepository(name.trim());
+    const entry = name.trim();
+    // Allow deliberately scoped GitHub owner/*, never a global wildcard.
+    // Keep owner names as strict as canonicalRepository owner components.
+    const isOwnerScope = entry.endsWith("/*");
+    const owner = isOwnerScope ? entry.slice(0, -2) : "";
+    const scoped = isOwnerScope &&
+      owner !== "." && owner !== ".." && REPO_COMPONENT.test(owner)
+      ? owner.toLowerCase() + "/*" : null;
+    const canonical = scoped || canonicalRepository(entry);
     if (!canonical || authorized.has(canonical)) return null;
     authorized.add(canonical);
   }
   return authorized;
+}
+
+export function isAllowedRepository(allowlist, value) {
+  if (!(allowlist instanceof Set)) return false;
+  const repo = canonicalRepository(value);
+  if (!repo) return false;
+  const slash = repo.indexOf("/");
+  return allowlist.has(repo) ||
+    allowlist.has(repo.slice(0, slash) + "/*");
 }
 
 export function validDeliveryId(value) {
@@ -68,7 +85,7 @@ export function validatedWorkflowEvent(payload, eventName, allowlist) {
   if (!Object.hasOwn(statuses, action) ||
       !statuses[action].includes(value.workflow_run?.status)) return null;
   const repository = canonicalRepository(value.repository?.full_name);
-  if (!repository || !allowlist.has(repository)) return null;
+  if (!isAllowedRepository(allowlist, repository)) return null;
   return { kind: "workflow_run." + action, repository };
 }
 

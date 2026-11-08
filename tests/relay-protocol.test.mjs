@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   BODY_LIMIT, HISTORY_LIMIT, HISTORY_AGE_MS, SOCKET_LIMIT, allowedRepositories,
-  canonicalRepository, validDeliveryId, parseCursor, cursorFromUrl,
+  canonicalRepository, isAllowedRepository, validDeliveryId, parseCursor, cursorFromUrl,
   validatedWorkflowEvent, boundedRequestBody, validClientAuthorization
 } from "../apps/relay-cloudflare/src/relay-protocol.mjs";
 
@@ -22,6 +22,23 @@ test("Given operator allowlist When validating names Then only exact unique owne
   for (const input of ["", "a/b,A/B", "a/b,", "a/b,other/../repo", "a".repeat(202),
     Array.from({ length: 101 }, (_, i) => "team/r" + i).join(",")])
     assert.equal(allowedRepositories(input), null, input.slice(0, 25));
+});
+
+test("Given an explicitly allowed owner When verifying repos Then accept only its current and future children", () => {
+  const allowed = allowedRepositories("TeAm/*,other/known");
+  assert.deepEqual([...allowed], ["team/*", "other/known"]);
+  for (const value of ["TEAM/repo", "team/newly-created", "team/.hidden", "other/known"])
+    assert.equal(isAllowedRepository(allowed, value), true, value);
+  for (const value of ["team", "other/new", "another/repo", "team/repo/child",
+    "team/../repo", "team/*", "TEAM/repo?evil", "teamish/repo"])
+    assert.equal(isAllowedRepository(allowed, value), false, value);
+  for (const invalid of ["*", "*/*", "team/**", "team/r*", "team/*/nested",
+    "/ *", "team/*,", "team/*,TEAM/*", "../*", "team/../*",
+    "bad space/*", "team/*,team/*", Array.from({ length: 101 },
+      (_, i) => "team" + i + "/*").join(",")])
+    assert.equal(allowedRepositories(invalid), null, invalid.slice(0, 100));
+  assert.equal(isAllowedRepository(null, "team/repo"), false);
+  assert.equal(isAllowedRepository(new Set(["*"]), "team/repo"), false);
 });
 
 test("Given GitHub delivery identifier and cursor When parsing Then reject replays via strict formats", () => {
@@ -49,6 +66,11 @@ test("Given signed workflow_run event When checking schema Then only supported a
     ), { kind: "workflow_run." + action, repository: "team/repo" });
   }
   assert.deepEqual(validatedWorkflowEvent(bytes("not json"), "ping", allowlist), { kind: "ping" });
+  assert.deepEqual(validatedWorkflowEvent(signedEvent("TEAM/just-created"),
+    "workflow_run", allowedRepositories("team/*")),
+    { kind: "workflow_run.completed", repository: "team/just-created" });
+  assert.equal(validatedWorkflowEvent(signedEvent("other/repo"),
+    "workflow_run", allowedRepositories("team/*")), null);
   for (const [payload, event] of [
     [signedEvent("other/repo"), "workflow_run"],
     [signedEvent("team/repo", "queued"), "workflow_run"],

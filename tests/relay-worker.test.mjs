@@ -39,6 +39,24 @@ test("Given a signed allowed completion When accepted Then enqueue only minimal 
   assert.equal(calls.length, 1);
   assert.deepEqual(await calls[0].json(), { v: 1, delivery, repository: "team/repo" });
 });
+test("Given signed organization webhook When owner scope enabled Then allow newly created repository only", async () => {
+  const body = JSON.stringify({
+    action: "completed", repository: { full_name: "Team/brand-new" },
+    workflow_run: { status: "completed", conclusion: "success" }
+  });
+  const good = fixture(202, "team/*");
+  assert.equal((await handleRelayRequest(request(body), good.env)).status, 202);
+  assert.deepEqual(await good.calls[0].json(),
+    { v: 1, delivery, repository: "team/brand-new" });
+  const denied = fixture(202, "other/*");
+  assert.equal((await handleRelayRequest(request(body), denied.env)).status, 422);
+  assert.equal(denied.calls.length, 0);
+  const forged = fixture(202, "team/*");
+  assert.equal((await handleRelayRequest(request(body, "workflow_run",
+    "sha256=" + "0".repeat(64)), forged.env)).status, 401);
+  assert.equal(forged.calls.length, 0);
+});
+
 test("Given signed requested/in_progress/completed When accepted Then relay only repo hints", async () => {
   for (const [action, status] of [
     ["requested", "queued"], ["in_progress", "in_progress"],

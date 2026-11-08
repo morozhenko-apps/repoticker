@@ -183,3 +183,16 @@ test("Given a repository revoked from allowlist When replaying Then old stored h
   assert.equal(response.cursor, 1);
   assert.deepEqual(response.hints, []);
 });
+
+test("Given owner-scope allowlist When ingesting/replaying Then permit new repo and hide revoked history", async () => {
+  const f = fixture();
+  f.env.ALLOWED_REPOSITORIES = "team/*";
+  assert.equal((await f.ingest(1, "team/new")).status, 202);
+  assert.equal((await f.ingest(2, "other/new")).status, 422);
+  let batch = await (await f.changes()).json();
+  assert.deepEqual(batch.hints.map(h => h.repository), ["team/new"]);
+  f.env.ALLOWED_REPOSITORIES = "team/other";
+  batch = await (await f.changes()).json();
+  assert.deepEqual(batch.hints, [], "revocation also filters durable history");
+  assert.equal((await f.ingest(3, "team/new")).status, 422);
+});

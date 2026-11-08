@@ -1,6 +1,6 @@
 import {
   HISTORY_LIMIT, HISTORY_AGE_MS, SOCKET_LIMIT, allowedRepositories,
-  boundedRequestBody, canonicalRepository, cursorFromUrl,
+  boundedRequestBody, canonicalRepository, cursorFromUrl, isAllowedRepository,
   validClientAuthorization, validDeliveryId
 } from "./relay-protocol.mjs";
 
@@ -43,7 +43,7 @@ export class RelayHubController {
     const allowed = allowedRepositories(this.env.ALLOWED_REPOSITORIES);
     return {
       cursor: newest, reset,
-      hints: rows.filter(row => allowed?.has(row.repository)).map(row => ({
+      hints: rows.filter(row => isAllowedRepository(allowed, row.repository)).map(row => ({
         v: 1, type: "hint", cursor: row.cursor, repository: row.repository
       }))
     };
@@ -108,7 +108,7 @@ export class RelayHubController {
       try { item = JSON.parse(new TextDecoder().decode(raw)); } catch { return fail(400); }
       const repository = canonicalRepository(item?.repository);
       const delivery = validDeliveryId(item?.delivery);
-      if (item?.v !== 1 || !repository || !allowlist.has(repository) || !delivery)
+      if (item?.v !== 1 || !isAllowedRepository(allowlist, repository) || !delivery)
         return fail(422);
       const outcome = this.ingest(delivery, repository);
       if (!outcome.accepted) return fail(429);

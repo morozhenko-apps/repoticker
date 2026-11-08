@@ -16,7 +16,7 @@ pub struct RelayPromptGate(AtomicBool);
 struct PromptLease(Arc<RelayPromptGate>);
 impl Drop for PromptLease {
     fn drop(&mut self) {
-        self.0.0.store(false, Ordering::Release);
+        self.0 .0.store(false, Ordering::Release);
     }
 }
 
@@ -40,13 +40,13 @@ fn entry() -> Result<keyring::Entry, String> {
         .map_err(|_| "System credential store unavailable.".to_owned())
 }
 
-fn read_secret() -> Result<Option<String>, String> {
+fn read_secret() -> Result<Option<SensitiveSecret>, String> {
     match entry()?.get_password() {
-        Ok(mut secret) => {
-            if valid_secret(&secret) {
+        Ok(secret) => {
+            let secret = SensitiveSecret(secret);
+            if valid_secret(&secret.0) {
                 Ok(Some(secret))
             } else {
-                wipe(&mut secret);
                 Err("Stored relay credential is invalid.".into())
             }
         }
@@ -68,17 +68,23 @@ fn wipe(value: &mut String) {
     std::sync::atomic::compiler_fence(Ordering::SeqCst);
 }
 
-fn store_secret(mut secret: String) -> Result<(), String> {
-    if !valid_secret(&secret) {
-        wipe(&mut secret);
+/// Memory custody for both valid and rejected credentials, including early
+/// returns or unwinding from an OS wallet backend.
+struct SensitiveSecret(String);
+
+impl Drop for SensitiveSecret {
+    fn drop(&mut self) {
+        wipe(&mut self.0);
+    }
+}
+
+fn store_secret(raw: String) -> Result<(), String> {
+    let secret = SensitiveSecret(raw);
+    if !valid_secret(&secret.0) {
         return Err("Relay secret must be 32-256 base64url characters.".into());
     }
-    let result = entry().and_then(|item| {
-        item.set_password(&secret)
-            .map_err(|_| "System credential store unavailable.".to_owned())
-    });
-    wipe(&mut secret);
-    result
+    entry()?.set_password(&secret.0)
+        .map_err(|_| "System credential store unavailable.".to_owned())
 }
 
 fn settings_only(window: &tauri::WebviewWindow) -> Result<(), String> {
@@ -92,12 +98,8 @@ fn settings_only(window: &tauri::WebviewWindow) -> Result<(), String> {
 pub async fn relay_secret_status(window: tauri::WebviewWindow) -> Result<bool, String> {
     settings_only(&window)?;
     tauri::async_runtime::spawn_blocking(|| {
-        let mut secret = read_secret()?;
-        let configured = secret.is_some();
-        if let Some(ref mut value) = secret {
-            wipe(value);
-        }
-        Ok(configured)
+        let credential = read_secret()?;
+        Ok(credential.is_some())
     })
     .await
     .map_err(|_| "System credential store unavailable.".to_owned())?

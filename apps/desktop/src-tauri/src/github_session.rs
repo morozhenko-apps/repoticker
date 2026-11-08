@@ -173,6 +173,11 @@ fn publish_with_reason(app: &AppHandle, status: &'static str, reason: Option<&'s
 
 fn publish(app: &AppHandle, status: &'static str) {
     publish_with_reason(app, status, None);
+    // Credential revocation or a new account immediately closes the old
+    // native WSS session. REST monitoring owns its independent auth state.
+    if matches!(status, "connected" | "disconnected") {
+        crate::relay_transport::restart(app);
+    }
 }
 
 pub fn cancel_pending(app: &AppHandle) {

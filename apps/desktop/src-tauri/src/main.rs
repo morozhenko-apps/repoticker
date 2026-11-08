@@ -15,6 +15,7 @@ mod github_session;
 mod monitor_cache;
 mod relay_endpoint;
 mod relay_secret;
+mod relay_transport;
 mod startup_diagnostics;
 mod tray_i18n;
 #[cfg(target_os = "windows")]
@@ -1329,6 +1330,7 @@ fn save_settings(
         refresh_tray_language(&app, &locale);
     }
     if changed {
+        relay_transport::restart(&app);
         let _ = app.emit("repoticker-config-changed", ());
     }
     Ok(())
@@ -1548,6 +1550,7 @@ fn github_set_monitor_org(
     })?;
     app.state::<github_etag_cache::GitHubETagCache>()
         .invalidate();
+    relay_transport::restart(&app);
     let _ = app.emit("repoticker-github-scope-changed", ());
     Ok(())
 }
@@ -1749,6 +1752,7 @@ fn main() {
         .manage(monitor_cache::MonitorCache::default())
         .manage(ci_notifications::DeliveredAlerts::default())
         .manage(std::sync::Arc::new(relay_secret::RelayPromptGate::default()))
+        .manage(relay_transport::RelayTransportState::default())
         .manage(github_rate_gate::GitHubRateGate::default())
         .manage(github_api::GitHubRestClient::default())
         .manage(github_etag_cache::GitHubETagCache::default())
@@ -1756,6 +1760,9 @@ fn main() {
             github_session::GitHubAuthManager::default(),
         ))
         .setup(|app| {
+            // A process-local native WSS supervisor never depends on whether
+            // the tray card or Settings WebView has been opened.
+            relay_transport::restart(app.handle());
             // Explicit per-window icon: the OS titlebar is independent from
             // the tray icon and WebView's About PNG. Without this GTK may
             // fall back to a generic WebView icon even when the DEB icon is
@@ -1882,6 +1889,7 @@ fn main() {
             relay_secret::relay_secret_status,
             relay_secret::relay_prompt_secret,
             relay_secret::relay_clear_secret,
+            relay_transport::relay_connection_status,
             startup_diagnostics::trace_startup_stage,
             github_session::github_auth_status,
             github_session::github_flow_status,

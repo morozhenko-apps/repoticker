@@ -32,6 +32,7 @@ const russian = Object.freeze({
   "Monitor account": "Отслеживаемый аккаунт",
   "Choose account": "Выберите аккаунт",
   "Connection mode": "Режим подключения",
+  "Hybrid webhook relay": "Гибридный режим (вебхуки + REST)",
   "Set relay secret": "Задать секрет ретранслятора",
   "Forget relay secret": "Удалить секрет ретранслятора",
   "Relay secret stored": "Секрет ретранслятора сохранён",

@@ -90,10 +90,10 @@
       </label>
       <label><span data-i18n="Connection mode">Connection mode</span><select id="github-connection-mode" disabled>
         <option value="polling" data-i18n="Simple polling">Simple polling</option>
-        <option value="hybrid" data-i18n="Hybrid webhook relay (not available yet)">Hybrid webhook relay (not available yet)</option>
+        <option value="hybrid" data-i18n="Hybrid webhook relay">Hybrid webhook relay</option>
       </select></label>
       <label id="github-worker-row" class="worker-label" hidden><span data-i18n="Worker URL">Worker URL</span>
-        <input id="github-worker-url" disabled placeholder="https://your-worker.example">
+        <input id="github-worker-url" disabled dir="ltr" maxlength="512" autocomplete="off" spellcheck="false" placeholder="https://your-worker.example">
       </label>
     </div>
     <div class="relay-secret-controls">

@@ -37,7 +37,11 @@ fn canonical_repo(value: &str) -> Option<String> {
     if parts.next().is_some() || !valid_component(owner) || !valid_component(repo) {
         return None;
     }
-    Some(format!("{}/{}", owner.to_ascii_lowercase(), repo.to_ascii_lowercase()))
+    Some(format!(
+        "{}/{}",
+        owner.to_ascii_lowercase(),
+        repo.to_ascii_lowercase()
+    ))
 }
 
 pub fn parse_frame(raw: &[u8]) -> Result<RelayFrame, &'static str> {
@@ -208,10 +212,7 @@ mod tests {
             session.observe(hint(1, "team/repo")),
             RelayDecision::RefreshTasks
         );
-        assert_eq!(
-            session.observe(hint(1, "team/repo")),
-            RelayDecision::Ignore
-        );
+        assert_eq!(session.observe(hint(1, "team/repo")), RelayDecision::Ignore);
         assert_eq!(
             session.observe(hint(2, "team/other")),
             RelayDecision::Ignore

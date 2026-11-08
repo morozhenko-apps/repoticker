@@ -1,9 +1,7 @@
 //! Operator relay secret custody. Secret values never cross WebView IPC or events.
-use std::{
-    sync::{
-        atomic::{AtomicBool, Ordering},
-        Arc,
-    },
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc,
 };
 use tauri::{AppHandle, Manager};
 
@@ -30,9 +28,9 @@ fn enter_prompt(app: &AppHandle) -> Result<PromptLease, String> {
 
 fn valid_secret(value: &str) -> bool {
     (32..=256).contains(&value.len())
-        && value.bytes().all(|byte| {
-            byte.is_ascii_alphanumeric() || byte == b'-' || byte == b'_'
-        })
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-' || byte == b'_')
 }
 
 fn entry() -> Result<keyring::Entry, String> {
@@ -89,7 +87,8 @@ fn store_secret(raw: String) -> Result<(), String> {
     if !valid_secret(&secret.0) {
         return Err("Relay secret must be 32-256 base64url characters.".into());
     }
-    entry()?.set_password(&secret.0)
+    entry()?
+        .set_password(&secret.0)
         .map_err(|_| "System credential store unavailable.".to_owned())
 }
 
@@ -293,10 +292,14 @@ mod win32 {
         // Decode *before* wiping, but delay propagation of any error until
         // all native buffers have been securely cleared.
         let extracted = if outcome == 0 {
-            let len = password.iter().position(|ch| *ch == 0).unwrap_or(password.len());
-            Some(String::from_utf16(&password[..len]).map_err(|_| {
-                "Native secret dialog returned invalid text.".to_owned()
-            }))
+            let len = password
+                .iter()
+                .position(|ch| *ch == 0)
+                .unwrap_or(password.len());
+            Some(
+                String::from_utf16(&password[..len])
+                    .map_err(|_| "Native secret dialog returned invalid text.".to_owned()),
+            )
         } else {
             None
         };
@@ -328,8 +331,13 @@ mod tests {
     #[test]
     fn strict_base64url_secret_policy_does_not_accept_untrusted_bytes() {
         for invalid in [
-            "", "a", "passphrase with spaces", "https://relay.example/token",
-            "a/b", "abcd=1234", "☃",
+            "",
+            "a",
+            "passphrase with spaces",
+            "https://relay.example/token",
+            "a/b",
+            "abcd=1234",
+            "☃",
         ] {
             assert!(!valid_secret(invalid));
         }

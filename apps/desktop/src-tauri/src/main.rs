@@ -1250,8 +1250,12 @@ fn save_settings(
     relay_url: Option<String>,
 ) -> Result<(), String> {
     let canonical_relay = relay_url
-        .map(|url| if url.is_empty() { Ok(None) } else {
-            relay_endpoint::normalize_base_url(&url).map(Some)
+        .map(|url| {
+            if url.is_empty() {
+                Ok(None)
+            } else {
+                relay_endpoint::normalize_base_url(&url).map(Some)
+            }
         })
         .transpose()?;
     if language

@@ -1,12 +1,15 @@
 //! Authenticated native WSS client for the operator-owned personal relay.
 //! WebView receives only a bounded reconcile kind; GitHub REST remains the truth.
-use std::{
-    sync::{atomic::{AtomicU8, Ordering}, Mutex},
-    time::Duration,
-};
 use futures_util::{SinkExt, StreamExt};
 use repoticker_core::relay::{parse_frame, RelayCursor, RelayDecision};
 use serde::Serialize;
+use std::{
+    sync::{
+        atomic::{AtomicU8, Ordering},
+        Mutex,
+    },
+    time::Duration,
+};
 use tauri::{AppHandle, Emitter, Manager};
 use tokio::task::JoinHandle;
 use tokio_tungstenite::{
@@ -18,9 +21,7 @@ use tokio_tungstenite::{
     },
 };
 
-use crate::{
-    github_session, read_config, relay_endpoint, relay_secret, ConnectionMode,
-};
+use crate::{github_session, read_config, relay_endpoint, relay_secret, ConnectionMode};
 
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(15);
 const PING_INTERVAL: Duration = Duration::from_secs(40);
@@ -56,15 +57,22 @@ fn phase_label(code: u8) -> &'static str {
 fn set_phase(app: &AppHandle, code: u8) {
     let state = app.state::<RelayTransportState>();
     if state.phase.swap(code, Ordering::AcqRel) != code {
-        let _ = app.emit("repoticker-relay-state", RelayPhaseEvent {
-            phase: phase_label(code),
-        });
+        let _ = app.emit(
+            "repoticker-relay-state",
+            RelayPhaseEvent {
+                phase: phase_label(code),
+            },
+        );
     }
 }
 
 #[tauri::command]
 pub fn relay_connection_status(app: AppHandle) -> &'static str {
-    phase_label(app.state::<RelayTransportState>().phase.load(Ordering::Acquire))
+    phase_label(
+        app.state::<RelayTransportState>()
+            .phase
+            .load(Ordering::Acquire),
+    )
 }
 
 fn backoff(attempt: u32) -> Duration {
@@ -172,7 +180,8 @@ async fn run(app: AppHandle) {
         let connection = tokio::time::timeout(
             CONNECT_TIMEOUT,
             connect_async_with_config(request, Some(limits), false),
-        ).await;
+        )
+        .await;
         if let Ok(Ok((mut socket, _))) = connection {
             set_phase(&app, 2);
             // On every successful authentication/reconnect, compare the full

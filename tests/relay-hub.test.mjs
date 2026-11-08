@@ -65,7 +65,8 @@ function fixture() {
     hub.fetch(new Request("https://internal.invalid/stream?after=" + after, {
       headers: { ...auth, upgrade: "websocket" }
     }));
-  return { hub, ingest, changes, stream, ctx, sockets, clock, database, get lastServer() { return lastServer; } };
+  return { hub, ingest, changes, stream, ctx, sockets, clock, database, env: hub.env,
+    get lastServer() { return lastServer; } };
 }
 
 test("Given verified delivery When stored Then retry is idempotent and cursor never duplicates", async () => {
@@ -164,4 +165,13 @@ test("Given subscriber with outdated cursor When reconnecting Then report reset 
   assert.equal(response.status, 101);
   assert.deepEqual(f.lastServer.sent.map(frame => frame.type), ["reset", "ready"]);
   assert.equal(f.lastServer.sent[0].cursor, 2);
+});
+
+test("Given a repository revoked from allowlist When replaying Then old stored hints do not leak it", async () => {
+  const f = fixture();
+  await f.ingest(1);
+  f.env.ALLOWED_REPOSITORIES = "team/other";
+  const response = await (await f.changes()).json();
+  assert.equal(response.cursor, 1);
+  assert.deepEqual(response.hints, []);
 });

@@ -40,9 +40,10 @@ export class RelayHubController {
       "SELECT cursor, repository FROM hints WHERE cursor > ? AND created_at >= ? ORDER BY cursor ASC LIMIT ?",
       after, now - HISTORY_AGE_MS, HISTORY_LIMIT
     ).toArray();
+    const allowed = allowedRepositories(this.env.ALLOWED_REPOSITORIES);
     return {
       cursor: newest, reset,
-      hints: rows.map(row => ({
+      hints: rows.filter(row => allowed?.has(row.repository)).map(row => ({
         v: 1, type: "hint", cursor: row.cursor, repository: row.repository
       }))
     };

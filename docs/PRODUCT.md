@@ -4,7 +4,7 @@ RepoTicker lives in the desktop system tray. It provides a compact overview of l
 
 ## Local Git
 
-Users explicitly enroll local folders. RepoTicker shows repository, branch, upstream, local-change and ahead/behind status. Fetch updates remote-tracking references without editing the working tree. Safe synchronization checks Git state and declines operations that would need a merge, rebase, stash, force push or conflict resolution.
+Users explicitly enroll local folders. RepoTicker shows repository, branch, upstream, local-change and ahead/behind status. In the per-repository status cell, nonzero local ahead/behind counts take precedence over the last verified CI outcome; the conservative global Safe Sync counter still counts only eligible operations. Fetch updates remote-tracking references without editing the working tree. Safe synchronization checks Git state and declines operations that would need a merge, rebase, stash, force push or conflict resolution.
 
 The repository list can be expanded and searched. Manual Git actions show progress and an outcome for each repository. The app does not silently schedule unattended repository changes.
 

@@ -56,6 +56,66 @@ continues. Reconnect with capped exponential backoff and a cancel-aware
 task; no polling spin, unbounded buffers, background Git actions or recursive
 reconnect tasks. Never log bearer, payloads, private repository names or URL.
 
+## Local repository priority and transactional relay secret UI (2026-11-08)
+
+### Repository row: local Git first
+
+The local Git snapshot already contains `ahead`, `behind`, upstream and
+`sync_state` per repository. A prior card renderer replaced the single
+per-repository status cell unconditionally with a GitHub CI glyph. Restore the
+local-first priority without conflating CI with Git synchronization:
+
+1. For a repository with an upstream and valid nonnegative integer ahead/behind
+   values, display positive counts: `↑N` for local commits to push, `↓N`
+   for remote commits to pull, or both for a diverged branch. Do not label
+   dirty/diverged branches as safe for automatic sync.
+2. Only when both ahead and behind are zero show the last independently
+   verified CI outcome: success / failure / unknown. If upstream or counts
+   are unavailable, keep Git state unknown rather than guessing a count;
+   CI is a separate result and never implies Git cleanliness.
+3. When GitHub CI status changes asynchronously, re-evaluate the **same**
+   local-first presentation; never overwrite nonzero Git counts. The global
+   Safe Sync indicator remains the conservative count of *eligible* clean
+   operations, so it can intentionally differ from the raw per-repo deltas.
+4. Preserve accessible labels, fixed row layout, locale semantics and the
+   current progress overlay. Cover behind-only, ahead-only, diverged, clean,
+   unknown, dirty, CI-change and locale-change cases with regression tests.
+
+### Relay secret: draft in native memory, commit only on OK
+
+The owner requested a masked, nonrevealable credential status in Settings,
+locked once configured, with a single **Disconnect** action. This is a
+display-only mask (`••••••••`), **not** the actual secret or a WebView
+password input. Entry still uses native GTK3 / Win32 password dialogs.
+
+- A successful native prompt validates the candidate and holds it **only in a
+  Rust-managed volatile Settings draft**, zeroized on replacement, Cancel,
+  window close or process shutdown. No Keyring mutation or relay restart before
+  OK. The WebView receives only boolean staged state, never bytes.
+- The native Disconnect action stages removal (does not immediately delete
+  the OS record); when Hybrid is active, the same Settings draft must switch
+  to Simple polling before a disconnect can be committed. A masked status
+  is noncopyable and cannot be unmasked; Connect/Disconnect are mutually
+  exclusive and follow the configured/staged state.
+- OK saves non-secret configuration and then commits the staged credential
+  to the dedicated OS Keyring. On a failed configuration save, no pending
+  secret is committed. On a failed Keyring write, report a nonsecret error
+  and retain the pending candidate for retry; Hybrid remains fail-closed.
+  The app must never claim atomicity across the filesystem and an external
+  OS keyring. Discard on Cancel and every app-controlled Settings close,
+  and clear orphaned drafts on reopening a hidden dialog.
+- The original GitHub credential and native OAuth device flow remain
+  unaffected. The relay password is never serialized, logged, transferred
+  to WebView or embedded in config. Test race with late dialog completion,
+  native-only caller authentication, discard/reopen and commit ordering.
+  A credential change triggers transport restart **only after** Keyring
+  mutation; polling remains independently usable.
+
+Rollback is by UI/card, native-secret-draft, and documentation commits. Full
+Node/Rust gates and physical Linux/Windows Settings/Keyring acceptance are
+required. No Cloudflare deployment, webhook registration, `main`, R2, release
+or new external credentials are authorized.
+
 ## Event-driven scheduling and lost-delivery recovery (2026-11-08)
 
 ### Motivation and native contract

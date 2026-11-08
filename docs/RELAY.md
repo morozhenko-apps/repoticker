@@ -7,7 +7,7 @@ RepoTicker uses **Simple polling** as the default authoritative GitHub REST moni
 
 The **CI event source** and **CI notification type** are separate settings. Source choices: direct GitHub REST polling (default), or operator-owned Hybrid webhook hints with REST reconciliation. The notification type (off / failures / successes / both) is independent and is not rewritten when source changes. Hybrid only changes the refresh trigger; webhook hints must never become authoritative workflow results.
 
-Settings must permit selecting Hybrid to inspect its setup form **before** credentials exist. Show the HTTPS Worker origin, native OS-Keyring Set/Forget controls and setup guidance only when Hybrid is selected. Never require a secret merely to open the form. Keep **Save disabled** for an incomplete Hybrid draft (missing validated Worker URL, native relay secret, or authorized GitHub monitoring scope); Cancel preserves the persisted mode/URL. Simple polling is always available, even if the relay is unavailable. Secret operations are immediate native keyring changes, independent from the Settings OK/Cancel draft.
+Settings must permit selecting Hybrid to inspect its setup form **before** credentials exist. Show the HTTPS Worker origin, native OS-Keyring Set/Forget controls and setup guidance only when Hybrid is selected. Never require a secret merely to open the form. Keep **Save disabled** for an incomplete Hybrid draft (missing validated Worker URL, native relay secret, or authorized GitHub monitoring scope); Cancel preserves the persisted mode/URL. Simple polling is always available, even if the relay is unavailable. Secret entry and disconnect are staged in volatile native memory; only Settings OK commits the change to the OS Keyring. Cancel discards the draft. The WebView displays a fixed nonrevealing mask, not secret bytes.
 
 No GitHub device authorization code, RepoTicker-issued token or public relay key exists. The **single operator** generates `RELAY_CLIENT_SECRET` locally, supplies it to their own Cloudflare Worker secret binding and enters **the same value** using RepoTicker's native OS secret prompt. On an Ubuntu system with OpenSSL, the operator can generate a 64-character base64url-compatible secret (never check it into source):
 
@@ -205,10 +205,11 @@ The owner selected OS-native secret entry, never a WebView password field.
   Owned secret buffers are volatile-zeroed through a Drop guard even
   on failure; Win32 input buffers are zeroed before returning.
   The native prompt refuses a late write after Settings closes.
-- Settings offers Set/Forget buttons with an accessible stored/
-  not configured/unavailable status. These actions are immediately
-  committed to the OS keyring in the separate native dialog, not to
-  `config.json` or the transactional Settings OK/Cancel draft.
+- Settings displays a non-revealable masked status and mutually exclusive
+  native Set / Disconnect actions. The native password dialog stages a
+  volatile candidate in Rust; Disconnect stages deletion. Both changes
+  persist only when Settings OK is pressed, are discarded on Cancel/close,
+  and never pass secret bytes through the WebView or config file.
   The UI must clearly communicate that distinction.
 - The dev Settings UI conditionally offers Hybrid only after the
   native Keyring reports an available secret and GitHub is connected,

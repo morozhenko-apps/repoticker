@@ -57,6 +57,7 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
   const persistedIgnored = [...(options.ignoredChildNames || [])];
   let closed = false;
   let osAutostart = options.autostartEnabled === true;
+  let relayStored = options.relayStored === true;
   let tokenRemoved = false;
   let releaseInstallations = null;
   const delayedInstallations = options.deferInstallations
@@ -118,6 +119,18 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
               if (options.autostartWriteMismatch) return osAutostart;
               osAutostart = args.enabled;
               return osAutostart;
+            case "relay_secret_status":
+              if (options.relayStatusError) throw Error("PRIVATE_RELAY_STATUS");
+              return relayStored;
+            case "relay_prompt_secret":
+              if (options.relayPromptError) throw Error("PRIVATE_RELAY_PROMPT");
+              if (options.relayPromptCancelled) return false;
+              relayStored = true;
+              return true;
+            case "relay_clear_secret":
+              if (options.relayClearError) throw Error("PRIVATE_RELAY_CLEAR");
+              relayStored = false;
+              return undefined;
             case "github_auth_status":
               if (options.authStatusError)
                 throw Error(options.authStatusErrorText ?? "Credential status unavailable");
@@ -220,6 +233,7 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
     get tokenRemoved() { return tokenRemoved; },
     get monitorOrg() { return monitorOrg; },
     get autostartEnabled() { return osAutostart; },
+    get relayStored() { return relayStored; },
     get monitorRepositories() { return monitorRepositories; },
     releaseInstallations: payload => releaseInstallations?.(payload),
     releaseRepositoryInventory: payload => releaseRepositoryInventory?.(payload),
@@ -1884,5 +1898,60 @@ test("Mode B: adding repository preserves case-equivalent saved subset without d
     assert.deepEqual(ui.monitorRepositories, ["One/docs", "one/core"]);
     assert.equal(new Set(ui.monitorRepositories.map(x => x.toLowerCase())).size, 2);
     assert.equal(ui.calls.filter(([name]) => name === "github_set_monitor_org").length, 1);
+  } finally { ui.restore(); }
+});
+
+test("native relay secret prompt updates the OS vault immediately without WebView credential arguments", async () => {
+  const ui = await fixture("relay-native-save", true);
+  try {
+    assert.equal(ui.node("relay-secret-status").textContent, "Relay secret not configured");
+    assert.equal(ui.node("relay-configure-secret").disabled, false);
+    await ui.node("relay-configure-secret").fire("click");
+    assert.equal(ui.relayStored, true);
+    assert.equal(ui.node("relay-secret-status").textContent, "Relay secret stored");
+    const promptCalls = ui.calls.filter(([command]) => command === "relay_prompt_secret");
+    assert.equal(promptCalls.length, 1);
+    assert.deepEqual(Object.keys(promptCalls[0][1] ?? {}), [],
+      "No secret is ever passed in a WebView invoke argument");
+    await ui.node("cancel-settings").fire("click");
+    assert.equal(ui.relayStored, true, "Native credential Save is explicit and independent of Settings Cancel");
+    assert.equal(ui.calls.filter(([command]) => command === "relay_clear_secret").length, 0);
+  } finally { ui.restore(); }
+});
+
+test("native relay secret removal explicitly clears only the relay credential", async () => {
+  const ui = await fixture("relay-native-forget", true, [], { relayStored: true });
+  try {
+    assert.equal(ui.node("relay-secret-status").textContent, "Relay secret stored");
+    await ui.node("relay-remove-secret").fire("click");
+    assert.equal(ui.relayStored, false);
+    assert.equal(ui.node("relay-secret-status").textContent, "Relay secret not configured");
+    assert.equal(ui.node("relay-remove-secret").disabled, true);
+    assert.equal(ui.calls.filter(([command]) => command === "github_disconnect").length, 0);
+  } finally { ui.restore(); }
+});
+
+test("native relay dialog cancellation leaves the existing OS credential unchanged", async () => {
+  const ui = await fixture("relay-native-cancelled", true, [], {
+    relayStored: true, relayPromptCancelled: true
+  });
+  try {
+    await ui.node("relay-configure-secret").fire("click");
+    assert.equal(ui.relayStored, true);
+    assert.equal(ui.node("relay-secret-status").textContent, "Relay secret stored");
+    assert.equal(ui.node("message").classList.contains?.("error"), undefined);
+  } finally { ui.restore(); }
+});
+
+test("native credential failures never echo secret, credential metadata or provider error into WebView", async () => {
+  const ui = await fixture("relay-native-error", true, [], {
+    relayStored: false, relayPromptError: true
+  });
+  try {
+    await ui.node("relay-configure-secret").fire("click");
+    assert.equal(ui.relayStored, false);
+    assert.equal(ui.node("message").textContent, "Cannot update relay secret.");
+    assert.doesNotMatch(ui.node("message").textContent, /PRIVATE_RELAY|SECRET|token=/);
+    assert.equal(ui.node("relay-secret-status").textContent, "Relay secret unavailable");
   } finally { ui.restore(); }
 });

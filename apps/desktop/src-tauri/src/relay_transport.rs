@@ -10,8 +10,7 @@ use std::{
     },
     time::Duration,
 };
-use tauri::{AppHandle, Emitter, Manager};
-use tokio::task::JoinHandle;
+use tauri::{async_runtime::JoinHandle, AppHandle, Emitter, Manager};
 use tokio_tungstenite::{
     connect_async_with_config,
     tungstenite::{
@@ -35,12 +34,12 @@ pub struct RelayTransportState {
     phase: AtomicU8,
 }
 
-#[derive(Serialize)]
+#[derive(Clone, Serialize)]
 struct ReconcileEvent {
     kind: &'static str,
 }
 
-#[derive(Serialize)]
+#[derive(Clone, Serialize)]
 struct RelayPhaseEvent {
     phase: &'static str,
 }

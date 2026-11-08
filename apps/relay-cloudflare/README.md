@@ -16,11 +16,11 @@ secret for the native client, configures **the same value** as
 enters it using RepoTicker Settings -> **CI event source** -> **Hybrid** ->
 **Set relay secret** (the OS-native password dialog, never a WebView field).
 
-For example, on Ubuntu (prints a new 64-character base64url secret; protect the
+For example, on Ubuntu (prints a new 64-character base64url-compatible secret; protect the
 terminal output and never paste it into tickets or GitHub source):
 
 ```sh
-openssl rand -base64 48 | tr '+/' '-_' | tr -d '=\\n'
+openssl rand -hex 32
 ```
 
 The GitHub webhook uses a **different** `WEBHOOK_SECRET`; also configure

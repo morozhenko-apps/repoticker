@@ -9,10 +9,10 @@ The **CI event source** and **CI notification type** are separate settings. Sour
 
 Settings must permit selecting Hybrid to inspect its setup form **before** credentials exist. Show the HTTPS Worker origin, native OS-Keyring Set/Forget controls and setup guidance only when Hybrid is selected. Never require a secret merely to open the form. Keep **Save disabled** for an incomplete Hybrid draft (missing validated Worker URL, native relay secret, or authorized GitHub monitoring scope); Cancel preserves the persisted mode/URL. Simple polling is always available, even if the relay is unavailable. Secret operations are immediate native keyring changes, independent from the Settings OK/Cancel draft.
 
-No GitHub device authorization code, RepoTicker-issued token or public relay key exists. The **single operator** generates `RELAY_CLIENT_SECRET` locally, supplies it to their own Cloudflare Worker secret binding and enters **the same value** using RepoTicker's native OS secret prompt. On an Ubuntu system with OpenSSL, the operator can generate a 64-character base64url secret (never check it into source):
+No GitHub device authorization code, RepoTicker-issued token or public relay key exists. The **single operator** generates `RELAY_CLIENT_SECRET` locally, supplies it to their own Cloudflare Worker secret binding and enters **the same value** using RepoTicker's native OS secret prompt. On an Ubuntu system with OpenSSL, the operator can generate a 64-character base64url-compatible secret (never check it into source):
 
 ```sh
-openssl rand -base64 48 | tr '+/' '-_' | tr -d '=\\n'
+openssl rand -hex 32
 ```
 
 Use a **different** `WEBHOOK_SECRET` for GitHub's webhook signature, and configure the private `ALLOWED_REPOSITORIES` list. After separately approved Cloudflare deployment, enter the deployed HTTPS Worker origin (not the `/v1/github` path) in Settings. GitHub's `workflow_run` webhook endpoint is `https://YOUR-WORKER-ORIGIN/v1/github`; the native client uses a separate authenticated WSS endpoint. Do not paste either secret into URLs, WebView fields, logs, Issues or git history. The repository contains **no default relay endpoint** and neither installing the desktop app nor choosing Hybrid deploys one. See `apps/relay-cloudflare/README.md` for the operator's requirements.

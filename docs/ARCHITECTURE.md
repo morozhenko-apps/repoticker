@@ -49,6 +49,41 @@ never selectable or revealable. Present relay field placeholders in the
 normal UI font without excessive letter spacing; provide readable
 help text contrast across light, dark and high-contrast themes.
 
+## Relay status and safe Settings locking
+
+The GitHub org webhook and the native authenticated WebSocket are separate
+trust boundaries. A native `relay_connection_status` value of `online`
+only proves that the desktop established its authenticated WSS connection
+to the configured Worker. It **does not prove** GitHub webhook delivery,
+valid `WEBHOOK_SECRET`, or a successful workflow event. Do not show a
+"webhook healthy" indicator based on the native transport phase. Failed
+GitHub webhook deliveries (including ping returning HTTP 401) must be
+diagnosed separately in GitHub's Recent Deliveries and the Worker ingress
+HMAC validation. A stored Keyring bearer or configured URL is not proof
+of a successful connection.
+
+Settings subscribes once to the native `repoticker-relay-state` event and
+reads the initial native status when opened. Ignore any late initial
+read superseded by a newer event, and any result from an older Settings
+open generation. Unknown/missing native IPC must never produce a connected
+state. Display a clearly labeled Worker/WSS transport status in Hybrid
+settings, with an accessible text label. On authenticated `online`
+and when the current draft is exactly the persisted Hybrid URL with a
+confirmed stored bearer, lock both the Worker URL and nonrevealable
+credential mask. Leave the existing explicit Disconnect action available
+(and transactional until OK). If the transport is `connecting`,
+`fallback`, `polling` or unknown, unlock only the Worker URL so a user
+can repair a failed endpoint; never enable viewing or changing a stored
+credential in WebView. Do not auto-save edits or silently disable Simple
+REST fallback.
+
+Add regression tests for startup, transitions, late initial-state IPC,
+draft URL edits, disconnected state and correct button/credential custody.
+Localization must remain complete in all supported Settings locales.
+Review exact-source Preflight and physical KDE/Windows Settings acceptance
+before release. Keep the Worker ingress and client protocol unchanged
+for this presentation-only feature.
+
 ## Distribution
 
 Linux DEB/AppImage and Windows NSIS are assembled by the release workflow. A protected signing process produces Linux APT metadata and checks immutable downloads by byte size and SHA-256. The public application does not require a developer-operated backend to manage local repositories.

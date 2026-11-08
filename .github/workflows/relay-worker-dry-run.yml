@@ -1,0 +1,48 @@
+# Read-only Cloudflare Worker and SQLite Durable Object bundle gate.
+# No Cloudflare account, credential, deploy, Worker route or artifact upload.
+name: Personal relay Worker dry run (no publishing)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [dev]
+    paths:
+      - '.github/workflows/relay-worker-dry-run.yml'
+      - 'apps/relay-cloudflare/**'
+      - 'tests/relay-*.test.mjs'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: repoticker-worker-dry-run-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  bundle:
+    if: github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      CI: 'true'
+      WRANGLER_SEND_METRICS: 'false'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26.13.0
+      - name: Validate actual Node SQLite and relay protocol tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test tests/relay-*.test.mjs
+      - name: Compile Cloudflare Worker and SQLite Durable Object without deployment
+        working-directory: apps/relay-cloudflare
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4.158.0 deploy --dry-run --outdir "$RUNNER_TEMP/repoticker-relay-bundle"
+          test -n "$(find "$RUNNER_TEMP/repoticker-relay-bundle" -type f -name '*.js' -size +0c -print -quit)"
+          printf '%s\n' 'Cloudflare Worker dry run: bundle exists; no deploy, route or upload performed.'

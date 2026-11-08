@@ -136,8 +136,10 @@ test("Arabic selectors mirror only translated controls, keeping technical accoun
 test("Relay keyring custody is native-only, with no secret input or IPC argument", () => {
   const native = readFileSync(new URL("../apps/desktop/src-tauri/src/relay_secret.rs", import.meta.url), "utf8");
   const main = readFileSync(new URL("../apps/desktop/src-tauri/src/main.rs", import.meta.url), "utf8");
-  for (const id of ["relay-configure-secret", "relay-remove-secret", "relay-secret-status"])
+  for (const id of ["relay-secret-mask", "relay-remove-secret", "relay-secret-status"])
     assert.match(html, new RegExp('id="' + id + '"'));
+  assert.match(html, /id="relay-secret-mask"[^>]*readonly[^>]*disabled/);
+  assert.match(html, /id="relay-remove-secret"[^>]*hidden/);
   assert.doesNotMatch(html, /<input[^>]*type="password"/i);
   for (const command of ["relay_prompt_secret", "relay_secret_status", "relay_clear_secret"]) {
     assert.match(settings, new RegExp('invoke\\("' + command + '"\\)'));
@@ -152,6 +154,12 @@ test("Relay keyring custody is native-only, with no secret input or IPC argument
   assert.match(native, /impl Drop for SensitiveSecret/);
   assert.match(native, /window\.gtk_window\(\)\.ok\(\)/);
   assert.match(css, /\.relay-secret-controls \{[^}]*display: flex/);
+  assert.match(native, /RelaySecretDraftState\(Mutex<Option<RelaySecretDraft>>\)/);
+  assert.match(native, /pub async fn relay_commit_secret_draft\(/);
+  assert.match(main, /relay_secret::relay_commit_secret_draft,/);
+  assert.match(settings, /await invoke\("relay_commit_secret_draft"\)/);
+  assert.match(settings, /mask\.value = relaySecretConfigured === true \? "••••••••••••" : ""/);
+  assert.match(settings, /relaySecretTouched = true/);
 });
 
 test("Hybrid setup follows event source, separate from CI notification type", () => {

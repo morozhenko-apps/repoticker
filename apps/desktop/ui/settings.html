@@ -98,11 +98,11 @@
         <input id="github-worker-url" disabled dir="ltr" maxlength="512" autocomplete="off" spellcheck="false" placeholder="https://your-worker.example">
       </label>
       <div class="relay-secret-controls">
-        <span id="relay-secret-status" class="hint" role="status" aria-live="polite">Relay secret unavailable</span>
-        <button id="relay-configure-secret" type="button" data-i18n="Set relay secret" disabled>Set relay secret</button>
-        <button id="relay-remove-secret" type="button" data-i18n="Forget relay secret" disabled>Forget relay secret</button>
+        <input id="relay-secret-mask" type="text" role="button" readonly disabled autocomplete="off" spellcheck="false" aria-label="Relay secret unavailable" placeholder="Set relay secret">
+        <button id="relay-remove-secret" type="button" data-i18n="Disconnect" disabled hidden>Disconnect</button>
+        <span id="relay-secret-status" class="sr-only" role="status" aria-live="polite">Relay secret unavailable</span>
       </div>
-      <p class="hint relay-secret-hint" data-i18n="Relay credential changes are saved immediately in the OS keyring.">Relay credential changes are saved immediately in the OS keyring.</p>
+      <p class="hint relay-secret-hint" data-i18n="Relay credential changes apply after OK. Cancel discards them.">Relay credential changes apply after OK. Cancel discards them.</p>
       <details class="relay-help" open>
         <summary data-i18n="Where to get the relay key">Where to get the relay key</summary>
         <p class="hint" data-i18n="GitHub and RepoTicker do not issue relay keys. Host your own Cloudflare Worker, create RELAY_CLIENT_SECRET and enter the same secret using the native dialog. WEBHOOK_SECRET must be different. Without a deployed Worker URL, use Simple polling.">GitHub and RepoTicker do not issue relay keys. Host your own Cloudflare Worker, create RELAY_CLIENT_SECRET and enter the same secret using the native dialog. WEBHOOK_SECRET must be different. Without a deployed Worker URL, use Simple polling.</p>

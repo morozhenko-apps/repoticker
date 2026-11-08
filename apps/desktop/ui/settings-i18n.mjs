@@ -44,6 +44,7 @@ const russian = Object.freeze({
   "Relay secret updated.": "Секрет ретранслятора обновлён.",
   "Relay credential removed.": "Секрет ретранслятора удалён.",
   "Relay credential changes are saved immediately in the OS keyring.": "Изменения секрета немедленно сохраняются в системном хранилище.",
+  "Relay credential changes apply after OK. Cancel discards them.": "Изменения секрета сохраняются только после OK. Отмена их отменяет.",
   "Cannot update relay secret.": "Не удалось обновить секрет ретранслятора.",
   "Simple polling": "Прямой опрос",
   "Hybrid webhook relay (not available yet)": "Ретрансляция вебхуков (пока недоступна)",

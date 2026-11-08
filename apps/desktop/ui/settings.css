@@ -185,7 +185,7 @@ label { font-size: 12px; }
 [dir="rtl"] #language-options { left: auto; right: 0; text-align: start; }
 [dir="rtl"] .roots-list, [dir="rtl"] .github-repo-choice { unicode-bidi: isolate; }
 
-/* These immediate native keyring actions are separate from Settings OK/Cancel. */
+/* Nonrevealing native credential draft: Keyring mutations occur only at OK. */
 .relay-settings { margin-top: 8px; border: 1px solid color-mix(in srgb, CanvasText 14%, Canvas); border-radius: 6px; padding: 9px; min-width: 0; }
 .relay-settings[hidden], #github-worker-row[hidden] { display: none; }
 .relay-settings .worker-label { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
@@ -195,6 +195,9 @@ label { font-size: 12px; }
 .relay-help .hint { margin: 7px 0; line-height: 1.5; }
 .relay-secret-command { display: block; max-width: 100%; overflow-x: auto; font-size: 12px; direction: ltr; unicode-bidi: isolate; user-select: text; }
 .relay-secret-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; padding-top: 8px; border-top: 1px solid color-mix(in srgb, CanvasText 13%, Canvas); }
-.relay-secret-controls .hint { flex: 1 1 165px; overflow-wrap: anywhere; }
+.relay-secret-controls #relay-secret-mask { flex: 1 1 160px; min-width: 0; height: 34px; user-select: none; -webkit-user-select: none; cursor: pointer; font-family: ui-monospace, monospace; letter-spacing: .14em; }
+.relay-secret-controls #relay-secret-mask:disabled { cursor: default; opacity: .76; }
+.relay-secret-controls #relay-secret-mask:focus-visible { outline: 2px solid #3b82f6; outline-offset: 1px; }
 .relay-secret-controls button { flex: 0 0 auto; font-size: 12px; }
+.relay-secret-controls [hidden] { display: none !important; }
 .relay-secret-hint { margin: 4px 0 0; }

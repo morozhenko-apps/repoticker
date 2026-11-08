@@ -61,6 +61,7 @@ traceStartup("settings.start");
 
 let relaySecretConfigured = null;
 let relaySecretBusy = false;
+let relaySecretTouched = false;
 let original = null;
 let draft = null;
 
@@ -68,10 +69,19 @@ function renderRelaySecretState() {
   const label = relaySecretConfigured === true ? "Relay secret stored" :
     relaySecretConfigured === false ? "Relay secret not configured" :
     "Relay secret unavailable";
+  const mask = byId("relay-secret-mask");
+  // This fixed UI mask is never derived from or equal to the actual credential.
+  // Secret bytes stay in Rust's volatile draft or the OS keyring, never WebView.
+  mask.value = relaySecretConfigured === true ? "••••••••••••" : "";
+  const configured = relaySecretConfigured === true;
+  mask.placeholder = t(relaySecretConfigured === null
+    ? "Relay secret unavailable" : configured ? "Relay secret stored" : "Set relay secret");
+  mask.setAttribute("aria-label", t(configured ? "Relay secret stored" : "Set relay secret"));
+  mask.disabled = relaySecretBusy || settingsLoading || saving || relaySecretConfigured !== false;
   byId("relay-secret-status").textContent = t(label);
-  byId("relay-configure-secret").disabled = relaySecretBusy || settingsLoading || saving;
+  byId("relay-remove-secret").hidden = !configured;
   byId("relay-remove-secret").disabled =
-    relaySecretBusy || settingsLoading || saving || relaySecretConfigured !== true;
+    relaySecretBusy || settingsLoading || saving || !configured;
 }
 async function refreshRelaySecretStatus(revision = settingsRefreshRevision) {
   try {
@@ -85,7 +95,7 @@ async function refreshRelaySecretStatus(revision = settingsRefreshRevision) {
   renderRelaySecretState();
   updateApply();
 }
-byId("relay-configure-secret").addEventListener("click", async () => {
+byId("relay-secret-mask").addEventListener("click", async () => {
   if (relaySecretBusy || settingsLoading || saving) return;
   relaySecretBusy = true;
   renderRelaySecretState();
@@ -93,7 +103,8 @@ byId("relay-configure-secret").addEventListener("click", async () => {
     const saved = await invoke("relay_prompt_secret");
     if (saved === true) {
       relaySecretConfigured = true;
-      message("Relay secret updated.");
+      relaySecretTouched = true;
+      message("");
     } else {
       await refreshRelaySecretStatus();
     }
@@ -106,6 +117,11 @@ byId("relay-configure-secret").addEventListener("click", async () => {
     updateApply();
   }
 });
+byId("relay-secret-mask").addEventListener("keydown", event => {
+  if (!["Enter", " "].includes(event.key) || byId("relay-secret-mask").disabled) return;
+  event.preventDefault();
+  byId("relay-secret-mask").click();
+});
 byId("relay-remove-secret").addEventListener("click", async () => {
   if (relaySecretBusy || settingsLoading || saving || relaySecretConfigured !== true) return;
   relaySecretBusy = true;
@@ -113,7 +129,14 @@ byId("relay-remove-secret").addEventListener("click", async () => {
   try {
     await invoke("relay_clear_secret");
     relaySecretConfigured = false;
-    message("Relay credential removed.");
+    relaySecretTouched = true;
+    // Never persist Hybrid without its required native bearer.
+    if (draft?.connectionMode === "hybrid") {
+      draft.connectionMode = "polling";
+      byId("github-connection-mode").value = "polling";
+      syncWorkerControls();
+    }
+    message("");
   } catch {
     relaySecretConfigured = null;
     message("Cannot update relay secret.", true);
@@ -635,7 +658,8 @@ function syncConnectionAvailability() {
 }
 function isDirty() {
   if (!original || !draft) return false;
-  return original.connectionMode !== draft.connectionMode ||
+  return relaySecretTouched ||
+    original.connectionMode !== draft.connectionMode ||
     original.relayUrl !== draft.relayUrl ||
     original.language !== draft.language ||
     (original.autostartEnabled !== null &&
@@ -785,6 +809,8 @@ async function refresh() {
       relayUrl: typeof snapshot.relay_url === "string" ? snapshot.relay_url : "",
       autostartEnabled: typeof autostartState === "boolean" ? autostartState : null
     };
+    relaySecretTouched = false;
+    relaySecretConfigured = null;
     draft = {
       roots: [...original.roots],
       language: original.language,
@@ -1073,6 +1099,12 @@ byId("apply-settings").addEventListener("click", async () => {
     if (disconnectPending) {
       await invoke("github_disconnect");
       disconnectPending = false;
+    }
+    // Keyring changes are committed only by this explicit OK path.
+    // Failures retain the native draft for a retry and keep Settings open.
+    if (relaySecretTouched) {
+      await invoke("relay_commit_secret_draft");
+      relaySecretTouched = false;
     }
     githubStartedHere = false;
     await invoke("close_settings");

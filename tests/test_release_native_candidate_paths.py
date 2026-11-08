@@ -66,7 +66,12 @@ class NativeAcceptancePaths(unittest.TestCase):
         self.assertIn("cargo test --locked -p repoticker --bin repoticker", workflow)
         self.assertIn("cargo test --locked -p repoticker-core windows_git_process_tests", workflow)
         self.assertIn("cargo tauri build --bundles nsis -- --locked", workflow)
-        self.assertIn("cargo tauri build --bundles deb,appimage -- --locked", workflow)
+        linux_job = workflow.split("\n  windows:\n", 1)[0]
+        self.assertIn("NO_STRIP: 'true'", linux_job)
+        self.assertIn(
+            "run: cargo tauri build --verbose --bundles deb,appimage -- --locked",
+            linux_job,
+        )
         self.assertIn("name: Windows acceptance NSIS candidate", workflow)
         self.assertIn("name: KDE candidate DEB and AppImage", workflow)
         self.assertNotIn("environment: apt-release", workflow)

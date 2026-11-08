@@ -57,11 +57,19 @@ export function validatedWorkflowEvent(payload, eventName, allowlist) {
   } catch {
     return null;
   }
-  if (value?.action !== "completed" || !value.workflow_run ||
-      value.workflow_run.status !== "completed") return null;
+  // GitHub's queued workflow_run transition is called "requested", not "queued".
+  // All accepted activities are advisory hints; none is a trusted CI result.
+  const statuses = {
+    requested: ["requested", "queued", "pending", "waiting"],
+    in_progress: ["in_progress"],
+    completed: ["completed"]
+  };
+  const action = value?.action;
+  if (!Object.hasOwn(statuses, action) ||
+      !statuses[action].includes(value.workflow_run?.status)) return null;
   const repository = canonicalRepository(value.repository?.full_name);
   if (!repository || !allowlist.has(repository)) return null;
-  return { kind: "workflow_run.completed", repository };
+  return { kind: "workflow_run." + action, repository };
 }
 
 export async function boundedRequestBody(request, limit = BODY_LIMIT) {

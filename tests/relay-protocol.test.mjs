@@ -8,9 +8,10 @@ import {
 
 const allowlist = allowedRepositories("Team/Repo,owner/second");
 const bytes = value => new TextEncoder().encode(value);
-const signedEvent = (repository = "TEAM/Repo", action = "completed") =>
+const signedEvent = (repository = "TEAM/Repo", action = "completed",
+  status = action === "requested" ? "queued" : action) =>
   bytes(JSON.stringify({ action, repository: { full_name: repository },
-    workflow_run: { status: "completed" } }));
+    workflow_run: { status } }));
 
 test("Given operator allowlist When validating names Then only exact unique owner/repos pass", () => {
   assert.deepEqual([...allowlist], ["team/repo", "owner/second"]);
@@ -37,13 +38,26 @@ test("Given GitHub delivery identifier and cursor When parsing Then reject repla
     assert.equal(cursorFromUrl(url), null, url);
 });
 
-test("Given signed workflow_run event When checking schema Then only completed allowlisted run hints pass", () => {
-  assert.deepEqual(validatedWorkflowEvent(signedEvent(), "workflow_run", allowlist),
-    { kind: "workflow_run.completed", repository: "team/repo" });
+test("Given signed workflow_run event When checking schema Then only supported allowlisted run hints pass", () => {
+  for (const [action, status] of [
+    ["requested", "requested"], ["requested", "queued"],
+    ["requested", "pending"], ["requested", "waiting"],
+    ["in_progress", "in_progress"], ["completed", "completed"]
+  ]) {
+    assert.deepEqual(validatedWorkflowEvent(
+      signedEvent("TEAM/Repo", action, status), "workflow_run", allowlist
+    ), { kind: "workflow_run." + action, repository: "team/repo" });
+  }
   assert.deepEqual(validatedWorkflowEvent(bytes("not json"), "ping", allowlist), { kind: "ping" });
   for (const [payload, event] of [
     [signedEvent("other/repo"), "workflow_run"],
-    [signedEvent("team/repo", "requested"), "workflow_run"],
+    [signedEvent("team/repo", "queued"), "workflow_run"],
+    [signedEvent("team/repo", "cancelled"), "workflow_run"],
+    [signedEvent("team/repo", "in_progress", "completed"), "workflow_run"],
+    [signedEvent("team/repo", "completed", "in_progress"), "workflow_run"],
+    [signedEvent("team/repo", "requested", "completed"), "workflow_run"],
+    [signedEvent("team/repo", "requested", null), "workflow_run"],
+    [signedEvent("team/repo", null), "workflow_run"],
     [signedEvent(), "workflow_job"], [bytes("not json"), "workflow_run"],
     [bytes('{"action":"completed","repository":{"full_name":"team/repo"}}'), "workflow_run"],
     [bytes('{"action":"completed","workflow_run":{"status":"queued"},"repository":{"full_name":"team/repo"}}'), "workflow_run"],

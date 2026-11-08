@@ -39,6 +39,26 @@ test("Given a signed allowed completion When accepted Then enqueue only minimal 
   assert.equal(calls.length, 1);
   assert.deepEqual(await calls[0].json(), { v: 1, delivery, repository: "team/repo" });
 });
+test("Given signed requested/in_progress/completed When accepted Then relay only repo hints", async () => {
+  for (const [action, status] of [
+    ["requested", "queued"], ["in_progress", "in_progress"],
+    ["completed", "completed"]
+  ]) {
+    const body = JSON.stringify({
+      action, repository: { full_name: "Team/Repo" },
+      workflow_run: { status, conclusion: "success", name: "secret-workflow" }
+    });
+    const { env, calls } = fixture();
+    assert.equal((await handleRelayRequest(request(body), env)).status, 202);
+    assert.equal(calls.length, 1);
+    const hint = await calls[0].json();
+    assert.deepEqual(hint, { v: 1, delivery, repository: "team/repo" });
+    assert.ok(!Object.hasOwn(hint, "action"));
+    assert.ok(!Object.hasOwn(hint, "status"));
+    assert.ok(!Object.hasOwn(hint, "conclusion"));
+  }
+});
+
 test("Given invalid signature, schema, ID or owner When received Then reject before persistence", async () => {
   for (const [body, event, signature, id, allowed, code] of [
     [payload(), "workflow_run", "sha256=" + "0".repeat(64), delivery, "team/repo", 401],

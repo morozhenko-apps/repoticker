@@ -1411,7 +1411,12 @@ mod concurrent_git_tests {
 
         git(
             &checkout.root,
-            &["remote", "set-url", "origin", "git@github.com:Team/Repo.git"],
+            &[
+                "remote",
+                "set-url",
+                "origin",
+                "git@github.com:Team/Repo.git",
+            ],
         );
         assert_eq!(
             super::inspect(&checkout.root).unwrap().github_repo,
@@ -1420,7 +1425,12 @@ mod concurrent_git_tests {
 
         git(
             &checkout.root,
-            &["remote", "set-url", "origin", "https://example.invalid/Team/Repo.git"],
+            &[
+                "remote",
+                "set-url",
+                "origin",
+                "https://example.invalid/Team/Repo.git",
+            ],
         );
         assert_eq!(super::inspect(&checkout.root).unwrap().github_repo, None);
         // Unsupported CI remotes must not invalidate the legitimate Git snapshot.

@@ -1016,6 +1016,11 @@ fn show_compact_card(app: &AppHandle) {
 
 fn show_settings(app: &AppHandle) {
     if let Some(window) = app.get_webview_window("settings") {
+        // Reopening an OS-hidden window must never resurrect an abandoned
+        // credential draft from a prior Settings session.
+        if !window.is_visible().unwrap_or(false) {
+            relay_secret::discard_draft(app);
+        }
         let language = read_config(app)
             .map(|config| config.language)
             .unwrap_or_else(|_| "en".to_owned());
@@ -1343,6 +1348,7 @@ fn save_settings(
 #[tauri::command]
 fn close_settings(app: AppHandle) -> Result<(), String> {
     github_session::cancel_pending(&app);
+    relay_secret::discard_draft(&app);
     let window = app
         .get_webview_window("settings")
         .ok_or_else(|| "Settings window is unavailable".to_owned())?;
@@ -1756,6 +1762,7 @@ fn main() {
         .manage(monitor_cache::MonitorCache::default())
         .manage(ci_notifications::DeliveredAlerts::default())
         .manage(std::sync::Arc::new(relay_secret::RelayPromptGate::default()))
+        .manage(relay_secret::RelaySecretDraftState::default())
         .manage(relay_transport::RelayTransportState::default())
         .manage(github_rate_gate::GitHubRateGate::default())
         .manage(github_api::GitHubRestClient::default())
@@ -1857,6 +1864,9 @@ fn main() {
                     return;
                 }
                 if window.label() == "settings" || window.label() == "about" {
+                    if window.label() == "settings" {
+                        relay_secret::discard_draft(window.app_handle());
+                    }
                     let _ = window.hide();
                     return;
                 }
@@ -1893,6 +1903,7 @@ fn main() {
             relay_secret::relay_secret_status,
             relay_secret::relay_prompt_secret,
             relay_secret::relay_clear_secret,
+            relay_secret::relay_commit_secret_draft,
             relay_transport::relay_connection_status,
             startup_diagnostics::trace_startup_stage,
             github_session::github_auth_status,

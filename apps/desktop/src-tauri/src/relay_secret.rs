@@ -1,7 +1,7 @@
 //! Operator relay secret custody. Secret values never cross WebView IPC or events.
 use std::sync::{
     atomic::{AtomicBool, Ordering},
-    Arc,
+    Arc, Mutex,
 };
 use tauri::{AppHandle, Manager};
 
@@ -10,6 +10,27 @@ const ACCOUNT: &str = "personal-hybrid-client-v1";
 
 #[derive(Default)]
 pub struct RelayPromptGate(AtomicBool);
+
+// A Settings-only native draft. No secret is serialized or exposed to WebView.
+// Replacing or dropping a draft zeroizes any owned credential buffer.
+#[derive(Default)]
+pub struct RelaySecretDraftState(Mutex<Option<RelaySecretDraft>>);
+
+enum RelaySecretDraft {
+    Set(SensitiveSecret),
+    Remove,
+}
+
+fn lock_draft(
+    state: &RelaySecretDraftState,
+) -> std::sync::MutexGuard<'_, Option<RelaySecretDraft>> {
+    state.0.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
+}
+
+pub(crate) fn discard_draft(app: &AppHandle) {
+    let state = app.state::<RelaySecretDraftState>();
+    let _discarded = lock_draft(&state).take();
+}
 
 struct PromptLease(Arc<RelayPromptGate>);
 impl Drop for PromptLease {
@@ -82,14 +103,20 @@ impl Drop for SensitiveSecret {
     }
 }
 
-fn store_secret(raw: String) -> Result<(), String> {
-    let secret = SensitiveSecret(raw);
-    if !valid_secret(&secret.0) {
+fn store_secret(secret: &SensitiveSecret) -> Result<(), String> {
+    if !valid_secret(secret.as_str()) {
         return Err("Relay secret must be 32-256 base64url characters.".into());
     }
     entry()?
-        .set_password(&secret.0)
+        .set_password(secret.as_str())
         .map_err(|_| "System credential store unavailable.".to_owned())
+}
+
+fn remove_secret() -> Result<(), String> {
+    match entry()?.delete_credential() {
+        Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
+        Err(_) => Err("System credential store unavailable.".to_owned()),
+    }
 }
 
 fn settings_only(window: &tauri::WebviewWindow) -> Result<(), String> {
@@ -102,6 +129,13 @@ fn settings_only(window: &tauri::WebviewWindow) -> Result<(), String> {
 #[tauri::command]
 pub async fn relay_secret_status(window: tauri::WebviewWindow) -> Result<bool, String> {
     settings_only(&window)?;
+    if let Some(value) = {
+        let app = window.app_handle();
+        let state = app.state::<RelaySecretDraftState>();
+        lock_draft(&state).as_ref().map(|change| matches!(change, RelaySecretDraft::Set(_)))
+    } {
+        return Ok(value);
+    }
     tauri::async_runtime::spawn_blocking(|| {
         let credential = read_secret()?;
         Ok(credential.is_some())
@@ -110,8 +144,8 @@ pub async fn relay_secret_status(window: tauri::WebviewWindow) -> Result<bool, S
     .map_err(|_| "System credential store unavailable.".to_owned())?
 }
 
-/// The command has deliberately no WebView-supplied secret argument.
-/// It returns only true (saved) / false (canceled), never the password.
+/// This command deliberately accepts no WebView-supplied secret argument.
+/// A completed native dialog only stages a volatile secret; OK commits it.
 #[tauri::command]
 pub async fn relay_prompt_secret(
     app: AppHandle,
@@ -120,23 +154,23 @@ pub async fn relay_prompt_secret(
     settings_only(&window)?;
     let _lease = enter_prompt(&app)?;
     let secret = prompt_native(&app).await?;
-    let Some(mut secret) = secret else {
+    let Some(secret) = secret else {
         return Ok(false);
     };
-    // Windows Credential UI is owned by a native OS thread and may outlive
-    // its Settings WebView. A canceled/closed Settings session cannot commit
-    // a late password into the system keyring.
+    let candidate = SensitiveSecret(secret);
+    if !valid_secret(candidate.as_str()) {
+        return Err("Relay secret must be 32-256 base64url characters.".into());
+    }
+    // A late OS prompt must not stage a candidate after Settings was closed.
     if !window.is_visible().unwrap_or(false) {
-        wipe(&mut secret);
         return Err("Settings window is no longer open.".into());
     }
-    tauri::async_runtime::spawn_blocking(move || store_secret(secret))
-        .await
-        .map_err(|_| "System credential store unavailable.".to_owned())??;
-    crate::relay_transport::restart(&app);
+    let state = app.state::<RelaySecretDraftState>();
+    *lock_draft(&state) = Some(RelaySecretDraft::Set(candidate));
     Ok(true)
 }
 
+/// Disconnect is a reversible Settings change until the owner presses OK.
 #[tauri::command]
 pub async fn relay_clear_secret(
     app: AppHandle,
@@ -144,15 +178,42 @@ pub async fn relay_clear_secret(
 ) -> Result<(), String> {
     settings_only(&window)?;
     let _lease = enter_prompt(&app)?;
-    tauri::async_runtime::spawn_blocking(|| {
-        let item = entry()?;
-        match item.delete_credential() {
-            Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
-            Err(_) => Err("System credential store unavailable.".to_owned()),
-        }
+    let state = app.state::<RelaySecretDraftState>();
+    *lock_draft(&state) = Some(RelaySecretDraft::Remove);
+    Ok(())
+}
+
+/// Apply the native draft only after nonsecret Settings validation/save succeeds.
+/// On Keyring failure, keep the in-memory candidate for another explicit OK.
+#[tauri::command]
+pub async fn relay_commit_secret_draft(
+    app: AppHandle,
+    window: tauri::WebviewWindow,
+) -> Result<(), String> {
+    settings_only(&window)?;
+    let _lease = enter_prompt(&app)?;
+    let change = {
+        let state = app.state::<RelaySecretDraftState>();
+        lock_draft(&state).take()
+    };
+    let Some(change) = change else { return Ok(()); };
+    let (outcome, candidate) = tauri::async_runtime::spawn_blocking(move || {
+        let result = match &change {
+            RelaySecretDraft::Set(secret) => store_secret(secret),
+            RelaySecretDraft::Remove => remove_secret(),
+        };
+        (result, change)
     })
     .await
-    .map_err(|_| "System credential store unavailable.".to_owned())??;
+    .map_err(|_| "System credential store unavailable.".to_owned())?;
+    if let Err(error) = outcome {
+        let state = app.state::<RelaySecretDraftState>();
+        *lock_draft(&state) = Some(candidate);
+        return Err(error);
+    }
+    // Dropping the candidate wipes plaintext. A successful Keyring operation
+    // is the only reason the native transport is restarted.
+    drop(candidate);
     crate::relay_transport::restart(&app);
     Ok(())
 }
@@ -345,6 +406,19 @@ mod tests {
         assert!(valid_secret(&"A".repeat(32)));
         assert!(valid_secret(&"z".repeat(256)));
         assert!(!valid_secret(&"x".repeat(257)));
+    }
+
+    #[test]
+    fn replacing_draft_wipes_candidate_without_keyring_write() {
+        let state = RelaySecretDraftState::default();
+        *lock_draft(&state) = Some(RelaySecretDraft::Set(
+            SensitiveSecret("A".repeat(32))
+        ));
+        assert!(matches!(lock_draft(&state).as_ref(), Some(RelaySecretDraft::Set(_))));
+        *lock_draft(&state) = Some(RelaySecretDraft::Remove);
+        assert!(matches!(lock_draft(&state).as_ref(), Some(RelaySecretDraft::Remove)));
+        assert!(lock_draft(&state).take().is_some());
+        assert!(lock_draft(&state).is_none());
     }
 
     #[test]

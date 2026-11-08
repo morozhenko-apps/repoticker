@@ -27,18 +27,58 @@ function applySettingsLanguage(value) {
   if (draft) byId("autostart-status").textContent = draft.autostartEnabled === null
     ? t("Autostart unavailable") : "";
   renderRelaySecretState();
+  syncWorkerControls();
 }
 
 
 /** Hybrid endpoint edits remain a Settings draft. The native OS keyring
  * owns the credential and no WebView operation ever reads the bearer. */
+// Native WSS online proves only the Worker transport, never webhook delivery.
+// A stored password or configured URL cannot make the connection "online".
+let relayPhase = "unknown";
+let relayPhaseRevision = 0;
+const RELAY_PHASES = new Set(["polling", "connecting", "online", "fallback"]);
+
+function confirmedRelayConnection() {
+  return relayPhase === "online" &&
+    original?.connectionMode === "hybrid" &&
+    draft?.connectionMode === "hybrid" &&
+    draft.relayUrl === original.relayUrl &&
+    relaySecretConfigured === true && !relaySecretTouched;
+}
 function syncWorkerControls() {
   const mode = byId("github-connection-mode");
   const worker = byId("github-worker-url");
   const hybridSelected = mode.value === "hybrid";
+  const connected = confirmedRelayConnection();
   byId("relay-settings").hidden = !hybridSelected;
   byId("github-worker-row").hidden = !hybridSelected;
-  worker.disabled = mode.disabled || !hybridSelected;
+  worker.disabled = mode.disabled || !hybridSelected || connected;
+  const state = byId("relay-connection-state");
+  state.hidden = !hybridSelected;
+  state.title = t("Worker connection does not verify GitHub webhook deliveries.");
+  const isPersistedHybrid = original?.connectionMode === "hybrid";
+  let label = "Worker: not connected";
+  let phase = "inactive";
+  if (connected) {
+    label = "Worker: connected (WebSocket)";
+    phase = "online";
+  } else if (isPersistedHybrid && relayPhase === "connecting") {
+    label = "Worker: connecting";
+    phase = "connecting";
+  } else if (isPersistedHybrid && relayPhase === "fallback") {
+    label = "Worker: unavailable, REST fallback active";
+    phase = "fallback";
+  } else if (isPersistedHybrid && relayPhase === "unknown") {
+    label = "Worker: checking connection";
+    phase = "unknown";
+  }
+  state.dataset.state = phase;
+  byId("relay-connection-text").textContent = t(label);
+}
+function applyRelayPhase(phase) {
+  relayPhase = RELAY_PHASES.has(phase) ? phase : "unknown";
+  syncWorkerControls();
 }
 byId("github-connection-mode").addEventListener("change", event => {
   syncWorkerControls();
@@ -47,11 +87,10 @@ byId("github-connection-mode").addEventListener("change", event => {
   updateApply();
 });
 byId("github-worker-url").addEventListener("input", event => {
-  if (!draft || saving) return;
+  if (!draft || saving || byId("github-worker-url").disabled) return;
   draft.relayUrl = event.target.value;
   updateApply();
 });
-syncWorkerControls();
 const invoke = (command, args = {}) => window.__TAURI__?.core?.invoke(command, args) ??
   Promise.reject(new Error("Open settings in RepoTicker."));
 const traceStartup = stage => {
@@ -64,6 +103,7 @@ let relaySecretBusy = false;
 let relaySecretTouched = false;
 let original = null;
 let draft = null;
+syncWorkerControls();
 
 function renderRelaySecretState() {
   const label = relaySecretConfigured === true ? "Relay secret stored" :
@@ -96,7 +136,8 @@ async function refreshRelaySecretStatus(revision = settingsRefreshRevision) {
   updateApply();
 }
 byId("relay-secret-mask").addEventListener("click", async () => {
-  if (relaySecretBusy || settingsLoading || saving) return;
+  if (byId("relay-secret-mask").disabled ||
+      relaySecretBusy || settingsLoading || saving) return;
   relaySecretBusy = true;
   renderRelaySecretState();
   try {
@@ -154,6 +195,28 @@ let githubCheckFailed = false;
 let settingsLoading = false;
 let settingsInitFailed = false;
 let settingsRefreshRevision = 0;
+// Listen once, then read a native snapshot on every Settings open. An event
+// received after the read began always wins over the older response.
+const relayListenerReady = Promise.resolve(
+  window.__TAURI__?.event?.listen?.("repoticker-relay-state", event => {
+    relayPhaseRevision++;
+    applyRelayPhase(event?.payload?.phase);
+  })
+).catch(() => {});
+async function refreshRelayConnectionStatus(revision = settingsRefreshRevision) {
+  const observedPhaseRevision = relayPhaseRevision;
+  await relayListenerReady;
+  try {
+    const phase = await invoke("relay_connection_status");
+    if (revision !== settingsRefreshRevision ||
+        observedPhaseRevision !== relayPhaseRevision) return;
+    applyRelayPhase(phase);
+  } catch {
+    if (revision !== settingsRefreshRevision ||
+        observedPhaseRevision !== relayPhaseRevision) return;
+    applyRelayPhase("unknown");
+  }
+}
 let githubStatusTimer = null;
 let githubStatusBusy = false;
 let selectedScope = null;
@@ -860,6 +923,7 @@ async function refresh() {
     };
     relaySecretTouched = false;
     relaySecretConfigured = null;
+    applyRelayPhase("unknown");
     draft = {
       roots: [...original.roots],
       language: original.language,
@@ -885,6 +949,7 @@ async function refresh() {
     message("");
     updateApply();
     void refreshRelaySecretStatus(revision);
+    void refreshRelayConnectionStatus(revision);
     await refreshGithub(authAtOpen);
   } catch {
     // Only the newest initialization attempt may change the dialog.

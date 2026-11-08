@@ -207,6 +207,19 @@ label { font-size: 12px; }
 .relay-settings[hidden], #github-worker-row[hidden] { display: none; }
 .relay-settings .worker-label { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .relay-settings .worker-label input { min-width: 0; width: 100%; height: 34px; }
+.relay-settings #github-worker-url:disabled { opacity: 1; color: CanvasText; -webkit-text-fill-color: CanvasText; cursor: default; }
+.relay-connection-state { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 12px; color: color-mix(in srgb, CanvasText 78%, Canvas); }
+.relay-connection-state[hidden] { display: none !important; }
+.relay-connection-dot { display: inline-block; width: 7px; height: 7px; flex: 0 0 7px; border-radius: 50%; background: currentColor; }
+.relay-connection-state[data-state="online"] { color: #25714d; }
+.relay-connection-state[data-state="fallback"] { color: #925300; }
+@media (prefers-color-scheme: dark) {
+  .relay-connection-state[data-state="online"] { color: #91dbb5; }
+  .relay-connection-state[data-state="fallback"] { color: #ffca73; }
+}
+@media (forced-colors: active) {
+  .relay-connection-state { color: CanvasText !important; }
+}
 .relay-help { margin-top: 8px; }
 .relay-help summary { cursor: pointer; font-size: 12px; }
 .relay-help .hint { margin: 7px 0; line-height: 1.5; color: color-mix(in srgb, CanvasText 85%, Canvas); opacity: 1; }

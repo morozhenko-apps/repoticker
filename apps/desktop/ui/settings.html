@@ -97,6 +97,10 @@
       <label id="github-worker-row" class="worker-label" hidden><span data-i18n="Worker URL">Worker URL</span>
         <input id="github-worker-url" disabled dir="ltr" maxlength="512" autocomplete="off" spellcheck="false" placeholder="https://your-worker.example">
       </label>
+      <div id="relay-connection-state" class="relay-connection-state" role="status" aria-live="polite" data-state="unknown" hidden title="">
+        <span class="relay-connection-dot" aria-hidden="true"></span>
+        <span id="relay-connection-text"></span>
+      </div>
       <div class="relay-secret-controls">
         <input id="relay-secret-mask" type="text" role="button" readonly disabled autocomplete="off" spellcheck="false" aria-label="Relay secret unavailable" placeholder="Set relay secret">
         <button id="relay-remove-secret" type="button" data-i18n="Disconnect" disabled hidden>Disconnect</button>

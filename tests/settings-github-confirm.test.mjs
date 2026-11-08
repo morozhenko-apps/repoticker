@@ -63,6 +63,10 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
   let relayStored = options.relayStored === true;
   // Mirror native Rust: password dialogs stage only, Keyring mutates on OK.
   let relayPending = null;
+  let relayTransportPhase = options.relayTransportPhase ?? "polling";
+  let releaseRelayTransportStatus = null;
+  const delayedRelayTransportStatus = options.deferRelayTransportStatus
+    ? new Promise(resolve => { releaseRelayTransportStatus = resolve; }) : null;
   let tokenRemoved = false;
   let releaseInstallations = null;
   const delayedInstallations = options.deferInstallations
@@ -129,6 +133,9 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
             case "relay_secret_status":
               if (options.relayStatusError) throw Error("PRIVATE_RELAY_STATUS");
               return relayPending === null ? relayStored : relayPending === "set";
+            case "relay_connection_status":
+              if (options.relayTransportStatusError) throw Error("PRIVATE_RELAY_PHASE");
+              return delayedRelayTransportStatus ?? relayTransportPhase;
             case "relay_prompt_secret":
               if (options.relayPromptError) throw Error("PRIVATE_RELAY_PROMPT");
               if (options.relayPromptCancelled) return false;
@@ -259,6 +266,11 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
     get relayStored() { return relayStored; },
     get relayPending() { return relayPending; },
     get connectionMode() { return persistedConnectionMode; },
+    dispatchRelayPhase(phase) {
+      relayTransportPhase = phase;
+      listeners.get("repoticker-relay-state")?.({ payload: { phase } });
+    },
+    releaseRelayTransportStatus: phase => releaseRelayTransportStatus?.(phase),
     get relayUrl() { return persistedRelayUrl; },
     get monitorRepositories() { return monitorRepositories; },
     releaseInstallations: payload => releaseInstallations?.(payload),
@@ -2200,5 +2212,98 @@ test("Failed native Worker documentation open reports a redacted localized messa
     assert.equal(ui.node("message").textContent,
       "Cannot open Worker documentation.");
     assert.doesNotMatch(ui.node("message").textContent, /Cannot open browser/);
+  } finally { ui.restore(); }
+});
+
+test("Connected native Worker locks URL and mask but leaves the native Disconnect action", async () => {
+  const ui = await fixture("relay-online-lock", true, [], {
+    relayStored: true, connectionMode: "hybrid",
+    relayUrl: "https://worker.example.com", relayTransportPhase: "online"
+  });
+  try {
+    assert.equal(ui.node("relay-connection-state").hidden, false);
+    assert.equal(ui.node("relay-connection-state").dataset.state, "online");
+    assert.match(ui.node("relay-connection-text").textContent, /connected \(WebSocket\)/);
+    assert.equal(ui.node("github-worker-url").disabled, true);
+    assert.equal(ui.node("relay-secret-mask").disabled, true);
+    assert.equal(ui.node("relay-remove-secret").disabled, false);
+    assert.equal(ui.node("relay-remove-secret").hidden, false);
+    assert.match(ui.node("relay-connection-state").title, /does not verify GitHub webhook deliveries/);
+    ui.node("github-worker-url").value = "https://forged.example.com";
+    await ui.node("github-worker-url").fire("input");
+    assert.equal(ui.node("apply-settings").disabled, true,
+      "disabled URL cannot mutate native Settings draft");
+  } finally { ui.restore(); }
+});
+
+test("Native fallback unlocks Worker URL and never masquerades as a healthy webhook", async () => {
+  const ui = await fixture("relay-online-fallback", true, [], {
+    relayStored: true, connectionMode: "hybrid",
+    relayUrl: "https://worker.example.com", relayTransportPhase: "online"
+  });
+  try {
+    assert.equal(ui.node("github-worker-url").disabled, true);
+    ui.dispatchRelayPhase("fallback");
+    assert.equal(ui.node("github-worker-url").disabled, false);
+    assert.equal(ui.node("relay-connection-state").dataset.state, "fallback");
+    assert.match(ui.node("relay-connection-text").textContent, /REST fallback active/);
+    assert.equal(ui.node("relay-secret-mask").disabled, true);
+    assert.equal(ui.node("relay-remove-secret").disabled, false);
+    ui.node("github-worker-url").value = "https://repaired.example.com";
+    await ui.node("github-worker-url").fire("input");
+    assert.equal(ui.node("apply-settings").disabled, false,
+      "fallback must allow a new Worker endpoint to be saved");
+    ui.dispatchRelayPhase("online");
+    assert.equal(ui.node("github-worker-url").disabled, false,
+      "online status for old persisted URL cannot lock a different draft URL");
+    assert.notEqual(ui.node("relay-connection-state").dataset.state, "online");
+  } finally { ui.restore(); }
+});
+
+test("Missing native phase or unconfigured secret cannot lock Worker URL", async () => {
+  for (const [label, opts] of [
+    ["no-secret", { relayStored: false, relayTransportPhase: "online" }],
+    ["unavailable", { relayStored: true, relayTransportStatusError: true }],
+    ["connecting", { relayStored: true, relayTransportPhase: "connecting" }]
+  ]) {
+    const ui = await fixture("relay-phase-" + label, true, [], {
+      connectionMode: "hybrid", relayUrl: "https://worker.example.com", ...opts
+    });
+    try {
+      assert.equal(ui.node("github-worker-url").disabled, false, label);
+      assert.notEqual(ui.node("relay-connection-state").dataset.state, "online");
+      assert.equal(ui.node("relay-remove-secret").hidden, !opts.relayStored);
+    } finally { ui.restore(); }
+  }
+});
+
+test("Late native status read cannot override a newer WebSocket transition", async () => {
+  const ui = await fixture("relay-late-initial-phase", true, [], {
+    relayStored: true, connectionMode: "hybrid",
+    relayUrl: "https://worker.example.com",
+    deferRelayTransportStatus: true
+  });
+  try {
+    ui.dispatchRelayPhase("fallback");
+    assert.equal(ui.node("github-worker-url").disabled, false);
+    ui.releaseRelayTransportStatus("online");
+    await tick();
+    assert.equal(ui.node("relay-connection-state").dataset.state, "fallback");
+    assert.equal(ui.node("github-worker-url").disabled, false);
+    ui.dispatchRelayPhase("online");
+    assert.equal(ui.node("github-worker-url").disabled, true);
+  } finally { ui.restore(); }
+});
+
+test("Simple polling hides Worker status regardless of native event", async () => {
+  const ui = await fixture("relay-simple-hidden", true, [], {
+    relayStored: true, connectionMode: "polling", relayTransportPhase: "online"
+  });
+  try {
+    assert.equal(ui.node("relay-settings").hidden, true);
+    assert.equal(ui.node("relay-connection-state").hidden, true);
+    ui.dispatchRelayPhase("fallback");
+    assert.equal(ui.node("relay-settings").hidden, true);
+    assert.equal(ui.node("relay-connection-state").hidden, true);
   } finally { ui.restore(); }
 });

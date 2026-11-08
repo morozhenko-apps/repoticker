@@ -1,6 +1,6 @@
 # Optional Hybrid relay: implementation boundary
 
-RepoTicker currently supports **Simple polling** through the native read-only GitHub REST client. The Settings connection-mode selector does **not** activate Hybrid; Worker URL is unavailable in Simple polling. The Cloudflare Worker entrypoint returns HTTP 501, and the generic Docker/VPS adapter is not yet implemented. These are deliberate fail-closed boundaries.
+RepoTicker currently ships **Simple polling** through the native read-only GitHub REST client. Source for a personal Cloudflare Worker, signed webhook ingress, bounded SQLite Durable Object, WebSocket hibernation and replay exists on `dev`; it is **not deployed** and not yet connected to a native desktop WebSocket client. The Settings connection-mode selector still does **not** activate Hybrid, and Worker URL remains unavailable. The generic Docker/VPS adapter is not implemented.
 
 ## Agreed high-level path
 
@@ -10,20 +10,46 @@ RepoTicker currently supports **Simple polling** through the native read-only Gi
 - Native REST polling remains an independently usable fallback and reconciles after reconnect. Webhooks do not execute local Git Fetch, Safe Sync, pull or push.
 - The first supported adapter targets Cloudflare Worker + Durable Object; a generic self-hosted Docker/VPS adapter can share the protocol once its security model is fixed.
 
-## Current isolated implementation
+## Implemented source, not yet an enabled desktop mode
 
-`apps/relay-cloudflare/src/webhook-verify.mjs` exports a pure WebCrypto HMAC-SHA256 verifier over `Uint8Array` bytes. It rejects missing secrets, wrong bodies, malformed/missing headers and mismatched signatures; no network, storage, body logging, or persistence is involved. Deterministic tests reside in `tests/relay-webhook-signature.test.mjs`. This function is **not wired to the HTTP endpoint**. The worker still returns 501 for all requests, and no deployment or credential collection is configured.
+- `src/webhook-verify.mjs` verifies HMAC-SHA256 on the original raw body.
+- `src/relay-protocol.mjs` restricts repository identities, allowlists,
+  JSON event shapes, UUID delivery IDs, cursor bounds, bearer authentication
+  and streaming body size.
+- `src/worker.mjs` implements authenticated ingress and replay/stream
+  routing. Only signed allowlisted completed workflow events enter storage;
+  signed GitHub ping is acknowledged without a hint.
+- `src/hub.mjs` implements a single SQLite Durable Object, duplicate
+  suppression, max 128 retained hints, 24-hour replay horizon, max 8
+  WebSocket clients, max 120 admitted deliveries per minute and replay reset
+  signaling. Existing retained hints for a removed repository are filtered.
+  WebSockets use Cloudflare hibernation.
+- `src/index.ts` and `wrangler.toml` define the Worker and SQLite DO
+  binding. No secret values, operator repository lists, external routes,
+  CI deployment or production Worker have been configured.
+- `crates/repoticker-core/src/relay.rs` parses minimal native protocol
+  frames and yields *read-only REST reconciliation* decisions. It is not
+  yet wired to a native WebSocket transport or live Settings.
+- Node tests are in `tests/relay-{protocol,worker,hub,webhook-signature}.test.mjs`;
+  the Rust core module contains protocol and scope tests. Tests are
+  **committed, but a full pinned Node/Rust gate on these changes has not
+  yet been reported**.
 
-## Security decision required before public transport
+The old Worker HTTP 501 placeholder is replaced in source; this must not
+be interpreted as permission to deploy or as a functioning Hybrid desktop
+connection.
 
-Two sound rollout contracts remain possible:
+## Trust-domain decision and remaining security work
+
+The owner selected **Option A, one operator**, for this implementation. Option B
+remains explicitly out of scope:
 
 - **A. One operator / one relay trust domain.** Separate webhook and authenticated WebSocket client secrets provisioned by the operator, with the client secret stored in the OS credential vault. The relay serves only that operator's explicitly configured repositories. Simpler to audit and deploy on either Cloudflare or self-hosted infrastructure; each operator manages their own installation and key rotation.
 - **B. Multi-tenant shared relay.** A versioned client authentication and account-binding protocol, tenant-scoped authorization at every message/store access, per-tenant quotas and revocation. Allows shared hosting but requires substantially more security infrastructure, abuse protection and operational testing.
 
 Before either mode can be enabled, implement and test: bounded raw-body reads, signature error handling, event allowlist and schema validation, delivery deduplication, authenticated TLS WebSocket upgrades with replay bounds, tenant separation, cursor durability, reconnection, API reconciliation, offline fallback, credential provisioning/rotation and transport abuse limits. Test forged events, wrong-tenant subscriptions, duplicate IDs, expired credentials, malformed frames, replay windows, rate limits and provider outages.
 
-**No public Hybrid endpoint, persistence schema, WebView credential handling or deployment may be introduced without approval of the authentication/trust-domain contract.**
+**No hosted deployment, real Webhook URL, Worker secrets or public rollout is authorized by a source-code implementation request.** Native WebSocket transport, OS credential provisioning and revocation, Settings transactions, managed REST fallback, full Node/Rust gates, Wrangler bundling, operator security review and physical KDE/Windows validation are mandatory before Hybrid can be enabled. Secrets must never enter WebView, local plaintext preferences, GitHub Issues or repository history.
 
 
 ## Personal Cloudflare relay implementation plan (2026-11-08)
@@ -107,3 +133,20 @@ unavailable in Settings.
 REST client, Git synchronization, and published releases. Revert
 one milestone commit at a time; no deployment or credential migration
 should be necessary for unshipped code.
+
+### Development commits and recovery boundary
+
+- `fb213506`: documentation-first selected personal trust model and stages.
+- `bf08d2ab`: pure bounded input and client-auth contract with Node tests.
+- `7c3313fd`: HTTP webhook ingress, signed ping, private Durable Object bridge.
+- `527b9bad`: bounded SQLite journal, WebSocket hibernation and cursors.
+- `0ae8c9b6`: operator-only Wrangler configuration and DO/SQLite regression tests.
+- `807a30b0`: strict native Rust frame parser and REST-reconciliation decisions.
+- `13998145`: replay filtering after operator revokes an allowlisted repository.
+
+Milestones **1 and 2 are implemented in source, not externally accepted**.
+Milestone 3 has only the pure native protocol validation implemented.
+Milestones 3 (secure native connection), 4 (Settings and fallback),
+5 (full CI/native acceptance and deployment) remain open. Do not claim
+Hybrid enabled or publish a new desktop candidate until the native
+transport dependency and lockfile are resolved.

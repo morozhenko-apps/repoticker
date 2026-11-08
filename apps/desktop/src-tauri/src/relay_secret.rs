@@ -24,7 +24,10 @@ enum RelaySecretDraft {
 fn lock_draft(
     state: &RelaySecretDraftState,
 ) -> std::sync::MutexGuard<'_, Option<RelaySecretDraft>> {
-    state.0.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
+    state
+        .0
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
 }
 
 pub(crate) fn discard_draft(app: &AppHandle) {
@@ -139,7 +142,9 @@ pub async fn relay_secret_status(window: tauri::WebviewWindow) -> Result<bool, S
         let app = window.app_handle();
         let state = app.state::<RelaySecretDraftState>();
         let draft = lock_draft(&state);
-        draft.as_ref().map(|change| matches!(change, RelaySecretDraft::Set(_)))
+        draft
+            .as_ref()
+            .map(|change| matches!(change, RelaySecretDraft::Set(_)))
     } {
         return Ok(value);
     }
@@ -204,9 +209,14 @@ pub async fn relay_commit_secret_draft(
     }
     let change = {
         let state = app.state::<RelaySecretDraftState>();
-        lock_draft(&state).take()
+        // Drop the lock guard before dropping the app-managed state handle.
+        // This also prevents E0597 on both Linux and Windows.
+        let pending = lock_draft(&state).take();
+        pending
     };
-    let Some(change) = change else { return Ok(()); };
+    let Some(change) = change else {
+        return Ok(());
+    };
     let (outcome, candidate) = tauri::async_runtime::spawn_blocking(move || {
         let result = match &change {
             RelaySecretDraft::Set(secret) => store_secret(secret),
@@ -421,12 +431,16 @@ mod tests {
     #[test]
     fn replacing_draft_wipes_candidate_without_keyring_write() {
         let state = RelaySecretDraftState::default();
-        *lock_draft(&state) = Some(RelaySecretDraft::Set(
-            SensitiveSecret("A".repeat(32))
+        *lock_draft(&state) = Some(RelaySecretDraft::Set(SensitiveSecret("A".repeat(32))));
+        assert!(matches!(
+            lock_draft(&state).as_ref(),
+            Some(RelaySecretDraft::Set(_))
         ));
-        assert!(matches!(lock_draft(&state).as_ref(), Some(RelaySecretDraft::Set(_))));
         *lock_draft(&state) = Some(RelaySecretDraft::Remove);
-        assert!(matches!(lock_draft(&state).as_ref(), Some(RelaySecretDraft::Remove)));
+        assert!(matches!(
+            lock_draft(&state).as_ref(),
+            Some(RelaySecretDraft::Remove)
+        ));
         assert!(lock_draft(&state).take().is_some());
         assert!(lock_draft(&state).is_none());
     }

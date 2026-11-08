@@ -147,10 +147,17 @@ async fn prompt_native(app: &AppHandle) -> Result<Option<String>, String> {
     use gtk::prelude::*;
 
     let (sender, receiver) = tokio::sync::oneshot::channel();
+    let app_for_dialog = app.clone();
     app.run_on_main_thread(move || {
+        // GTK windows must only be accessed from the main thread. Make the
+        // system prompt transient to Settings so Wayland keeps its modal
+        // focus and stacking owned by the correct application window.
+        let parent = app_for_dialog
+            .get_webview_window("settings")
+            .and_then(|window| window.gtk_window().ok());
         let dialog = gtk::Dialog::with_buttons(
             Some("RepoTicker relay secret"),
-            None::<&gtk::Window>,
+            parent.as_ref(),
             gtk::DialogFlags::MODAL,
             &[
                 ("Cancel", gtk::ResponseType::Cancel),

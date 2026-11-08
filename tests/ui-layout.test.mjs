@@ -225,8 +225,11 @@ test("only status hovers use help cursor and compact metric row cannot change ca
 
 test("CI checkmark and cross depend only on resolved GitHub Actions outcomes", () => {
   assert.match(ui, /ciOutcomeForRepo\(repo, ciStatuses\)/);
-  assert.match(ui, /outcome === "success" \? "✓"/);
-  assert.match(ui, /outcome === "failure" \? "✕"/);
+  assert.match(ui, /repoRowIndicator\(repo, outcome\)/);
+  const indicator = readFileSync(new URL("../apps/desktop/ui/repo-row-indicator.mjs", import.meta.url), "utf8");
+  assert.match(indicator, /outcome === "success" \? "✓"/);
+  assert.match(indicator, /outcome === "failure" \? "✕"/);
+  assert.match(indicator, /if \(ahead > 0 \|\| behind > 0\)/);
   assert.match(ui, /"ciUnknown"/);
   assert.match(ui, /onCiStatus: updateCiStatuses/);
   assert.match(ui, /document\.querySelectorAll\("\.repo-row"\)\.forEach/);

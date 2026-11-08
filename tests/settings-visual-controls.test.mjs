@@ -130,7 +130,7 @@ test("Arabic selectors mirror only translated controls, keeping technical accoun
   assert.match(source, /padding: 0 12px 0 32px/);
   assert.match(source, /background-position: left 11px center/);
   assert.match(source, /text-align: right/);
-  const defaultSelect = css.match(/\.github-grid select,\s*\.github-repo-heading select,\s*\.ci-alert-controls select \{([^}]+)\}/)?.[1] ?? "";
+  const defaultSelect = css.match(/\.github-grid select,\s*\.github-account-row select,\s*\.github-repo-heading select,\s*\.ci-alert-controls select \{([^}]+)\}/)?.[1] ?? "";
   assert.match(defaultSelect, /padding: 0 32px 0 12px/);
   assert.match(defaultSelect, /background-position: right 11px center/);
   assert.match(settings, /select\.dir = "ltr";/);
@@ -171,7 +171,7 @@ test("Relay keyring custody is native-only, with no secret input or IPC argument
 test("Hybrid setup follows event source, separate from CI notification type", () => {
   assert.match(html, /data-i18n="CI event source">CI event source/);
   assert.match(html, /id="relay-settings" class="relay-settings" hidden/);
-  assert.match(html, /id="relay-settings"[\s\S]*?id="relay-configure-secret"[\s\S]*?class="relay-help"/);
+  assert.match(html, /id="relay-settings"[\s\S]*?id="relay-secret-mask"[\s\S]*?class="relay-help"/);
   assert.match(html, /id="ci-notification-mode"/);
   assert.match(html, /data-i18n="Where to get the relay key"/);
   assert.match(html, /openssl rand -hex 32/);

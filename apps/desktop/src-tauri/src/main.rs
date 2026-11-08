@@ -1127,8 +1127,12 @@ mod relay_resource_links_tests {
             "https://github.com/morozhenko-apps/repoticker/blob/dev/apps/relay-cloudflare/README.md"
         );
         for input in [
-            "", "https://attacker.example", "source/../../other",
-            "file:///etc/passwd", "guide?url=other", "../guide",
+            "",
+            "https://attacker.example",
+            "source/../../other",
+            "file:///etc/passwd",
+            "guide?url=other",
+            "../guide",
         ] {
             assert!(trusted_relay_resource_url(input).is_none());
         }

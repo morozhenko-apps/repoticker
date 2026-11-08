@@ -773,3 +773,47 @@ localization, package generation or Git change.
 Rollback: revert each isolated test/formatting commit if a
 strict contract is unintentionally weakened. Preserve the
 earlier CI-only row-indicator behavior and Hybrid boundaries.
+
+
+### Exact owner-gate correction receipt (2026-11-08)
+
+Docs-first plan: `fcc70e600c145bccb029163b9785c7262fa086db`.
+
+- `08f3d98c03d47bdbaeec4a2f750f6d900c8d5fe3`:
+  updates **only** `tests/localization-20.test.mjs`
+  and `tests/package-identity.test.mjs`.
+  The former adds `ciSuccess`, `ciFailure`,
+  `ciUnknown` to the exact expected key list;
+  all 18 extended locale dictionaries have precisely the
+  26 expected keys. The latter replaces the obsolete
+  `0.2.0` assertion with strict runtime
+  `scripts/release_version.py`, exact
+  `repoticker_${VERSION}_amd64.deb` filename, Debian
+  `Package=repoticker`, `Version=${VERSION}` and
+  `Architecture=amd64` assertions, plus stale-pin refusal.
+- `fc6bb22cd9c13e123208f645eff0df58cfeaee61`:
+  applies **exactly** the two multiline array wraps
+  requested by the owner's rustfmt diff, restricted to
+  the `local_ci_identity_comes_only_from_a_supported_github_origin`
+  Rust test fixture. No production semantics changed.
+- Focused connected-tool checks completed:
+  18 locale dictionaries compared against the exact 26
+  source-key roster, six actual current installer
+  regex-contract assertions, test syntax validation
+  and textual match against the owner's two rustfmt hunks.
+  This is **not** the new full Node26.13.0 or cargo fmt gate.
+- The owner's prior Rust run on `37bef487`
+  demonstrated 72 core unit + 30 Git integration + 3
+  GitHub remote + 69 desktop unit passed. The above
+  commit only modifies formatting, so this evidence
+  remains valid for substantive Rust behavior, but
+  **no post-commit Rust gate was executed here**.
+
+**Remaining:** owner pulls the updated dev and executes
+one final pinned `node --test tests/*.test.mjs`
+plus `cargo fmt --all --check` together under
+`set -euo pipefail`; report exact pass counts and exit
+status. Do not claim KDE Wayland physical acceptance or
+a published bundle based on the passing test suite.
+No workflow run, new candidate or protected branch
+action was dispatched by the agent.

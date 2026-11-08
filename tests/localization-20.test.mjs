@@ -141,7 +141,8 @@ test("dynamic Git card templates preserve placeholders and untranslated values",
     "addRoot", "gitOperations", "gitOperationsFor", "showRepos",
     "hideRepos", "hideCard", "fetchTitle", "fetchCancel", "syncTitle",
     "syncReady", "syncUnavailable", "refreshRunners", "refreshTasks",
-    "billing", "refresh", "refreshing", "cannotResize", "gitErrors", "total"
+    "billing", "refresh", "refreshing", "ciSuccess", "ciFailure",
+    "ciUnknown", "cannotResize", "gitErrors", "total"
   ];
   for (const code of expected.slice(2)) {
     assert.deepEqual(Object.keys(CARD_TERMS[code]).sort(), [...expectedKeys].sort());

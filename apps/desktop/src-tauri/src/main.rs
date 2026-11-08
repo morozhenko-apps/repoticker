@@ -13,6 +13,7 @@ mod github_oauth_wire;
 mod github_rate_gate;
 mod github_session;
 mod monitor_cache;
+mod relay_secret;
 mod startup_diagnostics;
 mod tray_i18n;
 #[cfg(target_os = "windows")]
@@ -1702,6 +1703,7 @@ fn main() {
         .manage(JsonStore::default())
         .manage(monitor_cache::MonitorCache::default())
         .manage(ci_notifications::DeliveredAlerts::default())
+        .manage(std::sync::Arc::new(relay_secret::RelayPromptGate::default()))
         .manage(github_rate_gate::GitHubRateGate::default())
         .manage(github_api::GitHubRestClient::default())
         .manage(github_etag_cache::GitHubETagCache::default())
@@ -1832,6 +1834,9 @@ fn main() {
             autostart::autostart_is_enabled,
             autostart::autostart_set_enabled,
             ci_notifications::ci_run_notify,
+            relay_secret::relay_secret_status,
+            relay_secret::relay_prompt_secret,
+            relay_secret::relay_clear_secret,
             startup_diagnostics::trace_startup_stage,
             github_session::github_auth_status,
             github_session::github_flow_status,

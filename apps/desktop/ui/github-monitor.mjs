@@ -372,6 +372,17 @@ export function startGithubMonitoring({ invoke, event, onError = () => {},
     // Invalidate old authorized observations before the next config-only read.
     invalidatePresentation("Checking GitHub connection...");
   });
+  // Native Hybrid receives only scope-checked, credential-free reconciliation
+  // triggers. Never accept a run conclusion or invoke local Git operations.
+  const lastRelay = { tasks: -Infinity, all: -Infinity };
+  event?.listen?.("repoticker-relay-reconcile", evt => {
+    const kind = evt?.payload?.kind;
+    if (kind !== "tasks" && kind !== "all") return;
+    const timestamp = now();
+    if (timestamp - lastRelay[kind] < 15_000) return;
+    lastRelay[kind] = timestamp;
+    void refresh(true, kind);
+  });
   // Refresh only while the application is running, never an API request
   // per hover, mouse movement or local Git scan.
   schedule(() => { void refresh(); }, REFRESH_MS);

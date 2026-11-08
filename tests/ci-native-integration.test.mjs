@@ -9,7 +9,7 @@ const tick = async () => {
 const run = id => ({
   id, run_attempt: 1, conclusion: "failure", updated_at: "2026-10-24T19:00:00Z"
 });
-function fixture(mode, { showCiStatus = false } = {}) {
+function fixture(mode, { showCiStatus = false, clock = null } = {}) {
   let authorized = true;
   const ciStatuses = [];
   const calls = [];
@@ -43,11 +43,15 @@ function fixture(mode, { showCiStatus = false } = {}) {
     event: { listen(name, callback) { listeners.set(name, callback); } },
     schedule() {},
     onCiStatus: showCiStatus ? value => ciStatuses.push(value) : null,
+    now: clock ? () => clock.value : () => Date.now(),
     collect: async () => ({ state: structuredClone(state), repositoryCount: 1,
       failure: collectionFailure, reason: null })
   });
   return {
     calls, refresh, ciStatuses,
+    relay(kind) {
+      listeners.get("repoticker-relay-reconcile")?.({ payload: { kind } });
+    },
     async ready() { await tick(); },
     setRuns(values) { runs = values; },
     setReadFailure(value) { readFailure = value; },
@@ -309,4 +313,30 @@ test("Given incomplete job coverage When CI status would otherwise be present Th
   assert.equal(app.calls.filter(call => call.command === "github_api_get").length, previous);
   assert.equal(app.ciStatuses.at(-1), null);
   assert.equal(app.calls.filter(call => call.command === "ci_run_notify").length, 0);
+});
+
+test("Given native Hybrid hint When received Then only read-only tasks reconcile and bursts coalesce", async () => {
+  const clock = { value: 100_000 };
+  const app = fixture("off", { showCiStatus: true, clock });
+  await app.ready();
+  const readCount = () => app.calls.filter(x => x.command === "github_api_get").length;
+  const base = readCount();
+  app.relay("tasks");
+  await app.ready();
+  assert.equal(readCount(), base + 1);
+  app.relay("tasks");
+  await app.ready();
+  assert.equal(readCount(), base + 1, "duplicate burst must not spend more REST calls");
+  app.relay("invalid");
+  await app.ready();
+  assert.equal(readCount(), base + 1);
+  app.relay("all");
+  await app.ready();
+  assert.equal(readCount(), base + 2, "reset escalation is independent of task cooldown");
+  clock.value += 15_000;
+  app.relay("tasks");
+  await app.ready();
+  assert.equal(readCount(), base + 3);
+  assert.equal(app.calls.filter(x => x.command === "ci_run_notify").length, 0);
+  assert.ok(app.calls.every(x => !["run_git_operation", "safe_pull", "safe_push", "fetch_all"].includes(x.command)));
 });

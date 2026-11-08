@@ -45,9 +45,14 @@ test("Given invalid verifier input When verifying Then no provider secret or del
     assert.equal(await verifyGithubWebhookSignature(body, valid, key), false);
 });
 
-test("Given an incomplete Hybrid endpoint When building Then no webhook is acknowledged", () => {
-  const endpoint = readFileSync(new URL(
+test("Given the new Hybrid worker When packaged Then it routes through the signed front door", () => {
+  const entry = readFileSync(new URL(
     "../apps/relay-cloudflare/src/index.ts", import.meta.url), "utf8");
-  assert.match(endpoint, /status: 501/);
-  assert.doesNotMatch(endpoint, /status: 200|status: 202/);
+  const ingress = readFileSync(new URL(
+    "../apps/relay-cloudflare/src/worker.mjs", import.meta.url), "utf8");
+  assert.match(entry, /handleRelayRequest/);
+  assert.match(entry, /RelayHub extends DurableObject/);
+  assert.match(ingress, /verifyGithubWebhookSignature/);
+  assert.match(ingress, /boundedRequestBody/);
+  assert.doesNotMatch(ingress, /console\.log|console\.error|access_token/);
 });

@@ -26,6 +26,7 @@ function applySettingsLanguage(value) {
   byId("message").textContent = t(lastFormText);
   if (draft) byId("autostart-status").textContent = draft.autostartEnabled === null
     ? t("Autostart unavailable") : "";
+  renderRelaySecretState();
 }
 
 
@@ -48,8 +49,67 @@ const traceStartup = stage => {
 };
 traceStartup("settings.start");
 
+let relaySecretConfigured = null;
+let relaySecretBusy = false;
 let original = null;
 let draft = null;
+
+function renderRelaySecretState() {
+  const label = relaySecretConfigured === true ? "Relay secret stored" :
+    relaySecretConfigured === false ? "Relay secret not configured" :
+    "Relay secret unavailable";
+  byId("relay-secret-status").textContent = t(label);
+  byId("relay-configure-secret").disabled = relaySecretBusy || settingsLoading || saving;
+  byId("relay-remove-secret").disabled =
+    relaySecretBusy || settingsLoading || saving || relaySecretConfigured !== true;
+}
+async function refreshRelaySecretStatus(revision = settingsRefreshRevision) {
+  try {
+    const result = await invoke("relay_secret_status");
+    if (revision !== settingsRefreshRevision) return;
+    relaySecretConfigured = typeof result === "boolean" ? result : null;
+  } catch {
+    if (revision !== settingsRefreshRevision) return;
+    relaySecretConfigured = null;
+  }
+  renderRelaySecretState();
+}
+byId("relay-configure-secret").addEventListener("click", async () => {
+  if (relaySecretBusy || settingsLoading || saving) return;
+  relaySecretBusy = true;
+  renderRelaySecretState();
+  try {
+    const saved = await invoke("relay_prompt_secret");
+    if (saved === true) {
+      relaySecretConfigured = true;
+      message("Relay secret updated.");
+    } else {
+      await refreshRelaySecretStatus();
+    }
+  } catch {
+    relaySecretConfigured = null;
+    message("Cannot update relay secret.", true);
+  } finally {
+    relaySecretBusy = false;
+    renderRelaySecretState();
+  }
+});
+byId("relay-remove-secret").addEventListener("click", async () => {
+  if (relaySecretBusy || settingsLoading || saving || relaySecretConfigured !== true) return;
+  relaySecretBusy = true;
+  renderRelaySecretState();
+  try {
+    await invoke("relay_clear_secret");
+    relaySecretConfigured = false;
+    message("Relay credential removed.");
+  } catch {
+    relaySecretConfigured = null;
+    message("Cannot update relay secret.", true);
+  } finally {
+    relaySecretBusy = false;
+    renderRelaySecretState();
+  }
+});
 let saving = false;
 let githubPending = false;
 let githubConnected = false;
@@ -693,6 +753,7 @@ async function refresh() {
     byId("ignored-child-name").value = "";
     message("");
     updateApply();
+    void refreshRelaySecretStatus(revision);
     await refreshGithub(authAtOpen);
   } catch {
     // Only the newest initialization attempt may change the dialog.

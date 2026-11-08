@@ -96,6 +96,12 @@
         <input id="github-worker-url" disabled placeholder="https://your-worker.example">
       </label>
     </div>
+    <div class="relay-secret-controls">
+      <span id="relay-secret-status" class="hint" role="status" aria-live="polite">Relay secret unavailable</span>
+      <button id="relay-configure-secret" type="button" data-i18n="Set relay secret" disabled>Set relay secret</button>
+      <button id="relay-remove-secret" type="button" data-i18n="Forget relay secret" disabled>Forget relay secret</button>
+    </div>
+    <p class="hint relay-secret-hint" data-i18n="Relay credential changes are saved immediately in the OS keyring.">Relay credential changes are saved immediately in the OS keyring.</p>
     <div class="ci-alert-controls">
       <label for="ci-notification-mode">
         <span data-i18n="CI notifications">CI notifications</span>

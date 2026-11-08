@@ -132,3 +132,19 @@ test("Arabic selectors mirror only translated controls, keeping technical accoun
   assert.match(html, /id="github-repo-mode"/);
   assert.match(css, /\.github-grid \[hidden\] \{ display: none; \}/);
 });
+
+test("Relay keyring custody is native-only, with no secret input or IPC argument", () => {
+  const native = readFileSync(new URL("../apps/desktop/src-tauri/src/relay_secret.rs", import.meta.url), "utf8");
+  const main = readFileSync(new URL("../apps/desktop/src-tauri/src/main.rs", import.meta.url), "utf8");
+  for (const id of ["relay-configure-secret", "relay-remove-secret", "relay-secret-status"])
+    assert.match(html, new RegExp('id="' + id + '"'));
+  assert.doesNotMatch(html, /<input[^>]*type="password"/i);
+  for (const command of ["relay_prompt_secret", "relay_secret_status", "relay_clear_secret"]) {
+    assert.match(settings, new RegExp('invoke\\("' + command + '"\\)'));
+    assert.match(main, new RegExp('relay_secret::' + command + ','));
+  }
+  assert.doesNotMatch(settings, /invoke\("relay_prompt_secret",\s*\{/);
+  assert.match(native, /entry\.set_visibility\(false\)/);
+  assert.match(native, /CREDUI_FLAGS_DO_NOT_PERSIST/);
+  assert.match(css, /\.relay-secret-controls \{[^}]*display: flex/);
+});

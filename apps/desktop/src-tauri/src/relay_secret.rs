@@ -40,7 +40,7 @@ fn entry() -> Result<keyring::Entry, String> {
         .map_err(|_| "System credential store unavailable.".to_owned())
 }
 
-fn read_secret() -> Result<Option<SensitiveSecret>, String> {
+pub(crate) fn read_secret() -> Result<Option<SensitiveSecret>, String> {
     match entry()?.get_password() {
         Ok(secret) => {
             let secret = SensitiveSecret(secret);
@@ -57,7 +57,7 @@ fn read_secret() -> Result<Option<SensitiveSecret>, String> {
 
 /// Wipe the application's owned ASCII buffer after the keyring write.
 /// The OS credential backend manages its separate copy.
-fn wipe(value: &mut String) {
+pub(crate) fn wipe(value: &mut String) {
     // SAFETY: valid_secret restricts input to ASCII. All replacements are ASCII
     // zero bytes and cannot violate String's UTF-8 invariant.
     unsafe {
@@ -70,7 +70,13 @@ fn wipe(value: &mut String) {
 
 /// Memory custody for both valid and rejected credentials, including early
 /// returns or unwinding from an OS wallet backend.
-struct SensitiveSecret(String);
+pub(crate) struct SensitiveSecret(String);
+
+impl SensitiveSecret {
+    pub(crate) fn as_str(&self) -> &str {
+        &self.0
+    }
+}
 
 impl Drop for SensitiveSecret {
     fn drop(&mut self) {
@@ -128,6 +134,7 @@ pub async fn relay_prompt_secret(
     tauri::async_runtime::spawn_blocking(move || store_secret(secret))
         .await
         .map_err(|_| "System credential store unavailable.".to_owned())??;
+    crate::relay_transport::restart(&app);
     Ok(true)
 }
 
@@ -146,7 +153,9 @@ pub async fn relay_clear_secret(
         }
     })
     .await
-    .map_err(|_| "System credential store unavailable.".to_owned())?
+    .map_err(|_| "System credential store unavailable.".to_owned())??;
+    crate::relay_transport::restart(&app);
+    Ok(())
 }
 
 #[cfg(target_os = "linux")]

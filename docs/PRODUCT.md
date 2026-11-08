@@ -12,7 +12,7 @@ The repository list can be expanded and searched. Manual Git actions show progre
 
 An optional GitHub Device Flow connection can show authorized workflow jobs, self-hosted runners, account/repository scopes and usage summaries. Incomplete provider data remains unavailable or unknown rather than a fabricated zero. Users can select native notifications for newly observed successful runs, failed runs, both or neither (off by default); the first successful monitor snapshot establishes a silent baseline, including after a provider outage.
 
-GitHub access requires account permission and a network connection. RepoTicker does not host CI jobs or change GitHub repository permissions.
+GitHub access requires account permission and a network connection. Settings shows the authorized monitoring account and a Disconnect action on one row. A complete inventory containing one eligible account needs no redundant account picker or reconfirmation; multiple accounts require an explicit selection before changing the monitoring scope. An already authorized and unchanged connection must not need OK. RepoTicker does not host CI jobs or change GitHub repository permissions.
 
 ## Platforms and preferences
 

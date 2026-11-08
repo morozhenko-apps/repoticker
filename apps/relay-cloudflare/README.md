@@ -35,6 +35,72 @@ by installing RepoTicker. Until the Worker is deployed and verified, keep
 No Cloudflare deployment, secret upload, webhook registration or shared R2
 changes are authorized by this document.
 
+
+## Get Worker source and deploy with Cloudflare's GitHub integration
+
+A RepoTicker DEB/AppImage/NSIS installation does **not** install or host
+a Worker. The desktop's Hybrid help includes direct, external-browser links:
+
+- [Worker source code](https://github.com/morozhenko-apps/repoticker/tree/dev/apps/relay-cloudflare)
+- [Worker deployment instructions](https://github.com/morozhenko-apps/repoticker/blob/dev/apps/relay-cloudflare/README.md)
+
+These links use `dev` **during pre-release QA**. Before a public release,
+include the reviewed Worker in `main` and change both desktop links to the
+stable released source, never an unreviewed moving development revision.
+The repository source link and the operator's deployed HTTPS Worker URL are
+different concepts.
+
+In Cloudflare **Workers & Pages → Create application → GitHub**, select
+`morozhenko-apps/repoticker`. Cloudflare Workers Builds supports a
+subdirectory as the root of this monorepo:
+
+| Field | Setting |
+| --- | --- |
+| Worker name | `repoticker-personal-relay` (same as Wrangler) |
+| Git repository | `morozhenko-apps/repoticker` |
+| Root directory | `apps/relay-cloudflare` |
+| Production branch | A reviewed, separately controlled deployment branch; **not** the continuously updated `dev` |
+| Build command | Leave blank |
+| Deploy command | `npx wrangler@4.158.0 deploy` |
+| Worker entry point | `src/index.ts` (already in `wrangler.toml`) |
+| Durable Object binding | `RELAY_HUB`, class `RelayHub` |
+| SQLite migration | `v1`, `new_sqlite_classes = ["RelayHub"]` |
+| Worker URL | The operator-owned `https://<name>.<account>.workers.dev` or HTTPS custom domain |
+
+A Git-linked Worker deploys automatically on updates to its configured
+production branch. Keep reviewed staging and user releases separate; disable
+unused preview deployments and check Durable Object quota and migration
+support before selecting Save and Deploy. This guide does not authorize
+mutations to any operator's Cloudflare resources.
+
+After Worker creation, configure **runtime Secret bindings**, not build
+environment variables, under **Worker → Settings → Variables and Secrets**:
+
+- `RELAY_CLIENT_SECRET`: generate a unique `openssl rand -hex 32` value;
+  enter the **same** secret through RepoTicker's OS-native relay prompt.
+- `WEBHOOK_SECRET`: generate a **different** `openssl rand -hex 32` value;
+  use it as GitHub's webhook signing secret.
+- `ALLOWED_REPOSITORIES`: comma-separated exact `owner/repo` names of
+  repositories explicitly monitored by this relay, maximum 100. Treat the
+  list as a secret if repository identities are private.
+
+For each monitored GitHub repository, or an appropriately scoped
+organization-level webhook, create a webhook with **Content type:
+application/json**, **Payload URL:**
+`https://<your-worker-origin>/v1/github`, and the matching
+`WEBHOOK_SECRET`. Subscribe to **Workflow runs** (`workflow_run`);
+the relay accepts `requested`, `in_progress` and `completed`.
+Do not paste `/v1/github` into RepoTicker Settings: enter the bare
+`https://<your-worker-origin>` and the separately generated client secret.
+
+A signed `ping` should return 204, and an accepted signed, allowlisted
+workflow run delivery should return 202. Validate the native WSS connection,
+GitHub REST reconciliation, overload/fallback and API-cooldown behavior before
+declaring Hybrid accepted. GitHub does **not** automatically retry a failed
+webhook. The current ingress rejects bodies larger than 64 KiB, so real
+payload sizes require a separate security review. This Worker requires
+neither the shared R2 bucket nor a GitHub admin token inside RepoTicker.
+
 ## Secrets and permitted repositories
 
 Provide all three bindings as operator-owned Cloudflare **secrets**, never

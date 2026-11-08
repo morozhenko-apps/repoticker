@@ -16,6 +16,24 @@ GitHub Device Flow, token handling, HTTPS requests, response validation, permiss
 
 Settings separates the GitHub credential from the selected monitoring installation. A complete one-account installation inventory may initialize an absent monitoring scope automatically only for a previously authenticated session; an in-progress new Device Flow remains provisional until Settings OK so Cancel can revoke its new credential. Existing matching scopes are never rewritten on open. Multiple or incomplete inventories cannot be treated as proof of a unique account; an explicit scope change remains a draft until OK. Account data and Disconnect occupy one row; avoid duplicate authorized-status fields. Late inventory responses and failed account writes must not fabricate an active monitoring scope.
 
+
+## Operator-owned Hybrid source and UI contract
+
+Installed desktop clients must show where to obtain their optional
+Cloudflare Worker, not imply that the Worker is bundled with a DEB.
+Settings shows **fixed** links to the exact GitHub Worker source directory
+and deployment guide, opened in the system browser through a settings-only
+native allowlist, never via a WebView-provided arbitrary URL.
+During QA these links point to `dev`; switch to the reviewed `main`
+source and verify them before shipping Hybrid publicly.
+
+Settings is nonselectable except text-entry fields, the displayed
+`openssl rand -hex 32` command, and the GitHub Device Flow code whose
+manual copy fallback must remain usable. The relay credential mask is
+never selectable or revealable. Present relay field placeholders in the
+normal UI font without excessive letter spacing; provide readable
+help text contrast across light, dark and high-contrast themes.
+
 ## Distribution
 
 Linux DEB/AppImage and Windows NSIS are assembled by the release workflow. A protected signing process produces Linux APT metadata and checks immutable downloads by byte size and SHA-256. The public application does not require a developer-operated backend to manage local repositories.

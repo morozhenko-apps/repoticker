@@ -8,6 +8,7 @@ import { placeRepoMenu } from "./repo-menu.mjs";
 import { localeDirection } from "./locale-catalog.mjs";
 import { createScanRefreshQueue, shouldSpinForRepos } from "./scan-refresh.mjs";
 import { ciOutcomeForRepo } from "./ci-status.mjs";
+import { repoRowIndicator } from "./repo-row-indicator.mjs";
 import { disableBrowserContextMenu } from "./browser-context-menu.mjs";
 
 disableBrowserContextMenu(document);
@@ -213,15 +214,19 @@ window.addEventListener("resize", () => hideRepoMenus());
 
 function paintCiIndicator(row, repo) {
   const outcome = ciOutcomeForRepo(repo, ciStatuses);
+  const indicatorState = repoRowIndicator(repo, outcome);
   const indicator = row.querySelector(".repo-delta");
+  indicator.textContent = indicatorState.text;
   const statusKey = outcome === "success" ? "ciSuccess" :
     outcome === "failure" ? "ciFailure" : "ciUnknown";
-  indicator.textContent = outcome === "success" ? "✓" :
-    outcome === "failure" ? "✕" : "—";
-  indicator.title = cardText(cardLanguage, statusKey);
-  indicator.setAttribute("aria-label", cardText(cardLanguage, statusKey));
-  indicator.classList.toggle("is-ci-success", outcome === "success");
-  indicator.classList.toggle("is-ci-failed", outcome === "failure");
+  const label = indicatorState.kind === "git" ? indicatorState.text :
+    indicatorState.kind === "unknown" ? cardText(cardLanguage, "unknown") :
+    cardText(cardLanguage, statusKey);
+  indicator.title = label;
+  indicator.setAttribute("aria-label", label);
+  indicator.classList.toggle("is-git-pending", indicatorState.kind === "git");
+  indicator.classList.toggle("is-ci-success", indicatorState.kind === "ci" && outcome === "success");
+  indicator.classList.toggle("is-ci-failed", indicatorState.kind === "ci" && outcome === "failure");
 }
 
 function updateCiStatuses(next) {

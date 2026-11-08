@@ -201,3 +201,52 @@ Rollback: remove the dedicated workflow only; there are no
 persistent resources or data changes. This check is a build-level
 gate, **not** a substitute for the operator's later signed webhook,
 WebSocket authentication, replay, outage and revocation live QA.
+
+
+## Automated acceptance receipt (2026-11-08)
+
+### Completed
+
+- Native Rust Tauri event-contract repair
+  [`98f229db9`](https://github.com/morozhenko-apps/repoticker/commit/98f229db91624ac2e67eeb1cdba626a1af152a0c)
+  resolves the actual `E0277` (two `Serialize + Clone`
+  event payloads) and `E0308` (Tauri task handle) diagnostics.
+- [Preflight `42474725172`](https://github.com/morozhenko-apps/repoticker/actions/runs/42474725172)
+  on exact native source `98f229db91624ac2e67eeb1cdba626a1af152a0c`
+  **passed all applicable jobs**. Evidence: pinned Node26
+  **609/609** tests; Rust core **77/77** unit,
+  **30/30** Git integration, **3/3** remote;
+  desktop Linux **76/76** native unit; `cargo fmt
+  --all --check`, locked core Clippy `-D warnings`,
+  and `cargo check --locked -p repoticker` succeeded.
+- Worker source gate
+  [`35c7a0ee`](https://github.com/morozhenko-apps/repoticker/commit/35c7a0ee5accfb758e7e369fab1d50436aa4706a)
+  includes a standalone GitHub Actions workflow with
+  **contents:read**, pinned Node26/Wrangler 4.158.0,
+  no operator secrets and **no deployment**.
+  [Run `42475220430`](https://github.com/morozhenko-apps/repoticker/actions/runs/42475220430)
+  passed 25/25 focused relay/SQLite tests and
+  `wrangler deploy --dry-run`, producing a temporary
+  bundle of **15.65 KiB** (no uploaded artifact).
+- Source code on both paths retains read-only GitHub REST
+  as authority; the relay never supplies CI conclusions
+  and does not execute local Git operations.
+
+### Remaining (do not mark release ready)
+
+- [Native acceptance `42474725125`](https://github.com/morozhenko-apps/repoticker/actions/runs/42474725125)
+  on source `98f229db9` is **still in progress at
+  the last observation**: Linux DEB/AppImage bundling
+  and Windows NSIS. Both are unpublished QA artifacts;
+  their uploads set `retention-days: 7`.
+  A successful preflight is **not** proof these
+  bundles were created.
+- Check each job conclusion and verify artifact
+  `SOURCE_SHA.txt`, checksums and `NOT_A_RELEASE.txt`
+  before directing any installation.
+- Physical KDE Wayland and Windows native
+  Settings/prompt/Keyring/reconnect/offline tests,
+  GitHub webhook integration and Cloudflare operator
+  deployment remain independently unverified.
+- No `main` merge, tag, release, Cloudflare secret,
+  R2 bucket or webhook changes are authorized.

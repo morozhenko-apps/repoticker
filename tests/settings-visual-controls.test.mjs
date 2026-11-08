@@ -146,5 +146,10 @@ test("Relay keyring custody is native-only, with no secret input or IPC argument
   assert.doesNotMatch(settings, /invoke\("relay_prompt_secret",\s*\{/);
   assert.match(native, /entry\.set_visibility\(false\)/);
   assert.match(native, /CREDUI_FLAGS_DO_NOT_PERSIST/);
+  assert.match(native, /CREDUI_FLAGS_PASSWORD_ONLY_OK/);
+  assert.match(native, /fn settings_only\(window: &tauri::WebviewWindow\)/);
+  assert.match(native, /window\.label\(\) != "settings"/);
+  assert.match(native, /impl Drop for SensitiveSecret/);
+  assert.match(native, /window\.gtk_window\(\)\.ok\(\)/);
   assert.match(css, /\.relay-secret-controls \{[^}]*display: flex/);
 });

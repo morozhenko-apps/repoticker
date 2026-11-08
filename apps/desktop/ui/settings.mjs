@@ -30,9 +30,8 @@ function applySettingsLanguage(value) {
 }
 
 
-/** Hybrid relay has no native transport or persistence in v0.2.
- * Its URL input is irrelevant to simple polling and cannot be enabled
- * until a supported connection mode is available in a future release. */
+/** Hybrid endpoint edits remain a Settings draft. The native OS keyring
+ * owns the credential and no WebView operation ever reads the bearer. */
 function syncWorkerControls() {
   const mode = byId("github-connection-mode");
   const worker = byId("github-worker-url");
@@ -40,7 +39,17 @@ function syncWorkerControls() {
   byId("github-worker-row").hidden = !available;
   worker.disabled = !available;
 }
-byId("github-connection-mode").addEventListener("change", syncWorkerControls);
+byId("github-connection-mode").addEventListener("change", event => {
+  syncWorkerControls();
+  if (!draft || saving) return;
+  draft.connectionMode = event.target.value;
+  updateApply();
+});
+byId("github-worker-url").addEventListener("input", event => {
+  if (!draft || saving) return;
+  draft.relayUrl = event.target.value;
+  updateApply();
+});
 syncWorkerControls();
 const invoke = (command, args = {}) => window.__TAURI__?.core?.invoke(command, args) ??
   Promise.reject(new Error("Open settings in RepoTicker."));
@@ -73,6 +82,7 @@ async function refreshRelaySecretStatus(revision = settingsRefreshRevision) {
     relaySecretConfigured = null;
   }
   renderRelaySecretState();
+  updateApply();
 }
 byId("relay-configure-secret").addEventListener("click", async () => {
   if (relaySecretBusy || settingsLoading || saving) return;
@@ -92,6 +102,7 @@ byId("relay-configure-secret").addEventListener("click", async () => {
   } finally {
     relaySecretBusy = false;
     renderRelaySecretState();
+    updateApply();
   }
 });
 byId("relay-remove-secret").addEventListener("click", async () => {
@@ -108,6 +119,7 @@ byId("relay-remove-secret").addEventListener("click", async () => {
   } finally {
     relaySecretBusy = false;
     renderRelaySecretState();
+    updateApply();
   }
 });
 let saving = false;
@@ -586,9 +598,46 @@ function message(text, error = false) {
   byId("message").textContent = t(String(text));
   byId("message").classList.toggle("error", error);
 }
+function validRelayUrl(value) {
+  if (value === "") return true;
+  if (typeof value !== "string" || value.length > 512 ||
+      !value.startsWith("https://") || value.trim() !== value ||
+      value.includes("\\")) return false;
+  try {
+    const parsed = new URL(value);
+    const host = parsed.hostname.toLowerCase();
+    return parsed.protocol === "https:" && parsed.username === "" &&
+      parsed.password === "" && parsed.pathname === "/" &&
+      parsed.search === "" && parsed.hash === "" &&
+      (parsed.port === "" || parsed.port === "443") &&
+      host.includes(".") && !/^(?:\d+\.){3}\d+$/.test(host) &&
+      !host.startsWith("[") &&
+      !["localhost", "local", "internal", "invalid", "test"].some(end =>
+        host === end || host.endsWith("." + end));
+  } catch {
+    return false;
+  }
+}
+function validRelayDraft() {
+  if (!draft || !validRelayUrl(draft.relayUrl)) return false;
+  if (draft.connectionMode !== "hybrid") return true;
+  return relaySecretConfigured === true && githubConnected &&
+    !disconnectPending && !!selectedScope && draft.relayUrl !== "";
+}
+function syncConnectionAvailability() {
+  const mode = byId("github-connection-mode");
+  const canReturnToPolling = draft?.connectionMode === "hybrid" ||
+    original?.connectionMode === "hybrid";
+  mode.disabled = saving || settingsLoading ||
+    (!canReturnToPolling && (relaySecretConfigured !== true ||
+      !githubConnected || disconnectPending));
+  syncWorkerControls();
+}
 function isDirty() {
   if (!original || !draft) return false;
-  return original.language !== draft.language ||
+  return original.connectionMode !== draft.connectionMode ||
+    original.relayUrl !== draft.relayUrl ||
+    original.language !== draft.language ||
     (original.autostartEnabled !== null &&
      original.autostartEnabled !== draft.autostartEnabled) ||
     original.ciNotificationMode !== draft.ciNotificationMode ||
@@ -596,10 +645,11 @@ function isDirty() {
     JSON.stringify(original.ignoredChildNames) !== JSON.stringify(draft.ignoredChildNames);
 }
 function updateApply() {
+  syncConnectionAvailability();
   const authNeedsConfirmation = (githubConnected && githubStartedHere) || disconnectPending;
   byId("apply-settings").disabled =
     saving || settingsLoading || settingsInitFailed || githubCheckFailed ||
-    githubStarting || githubPending || !repoChoiceValid() ||
+    githubStarting || githubPending || !repoChoiceValid() || !validRelayDraft() ||
     (githubScopeTouched && !!selectedScope && !availableAccounts.has(selectedScope)) ||
     !(isDirty() || authNeedsConfirmation || githubScopeTouched || repoChoiceTouched);
 }
@@ -731,6 +781,8 @@ async function refresh() {
       ignoredChildNames: [...(snapshot.ignored_child_names || [])].sort(),
       ciNotificationMode: ["off", "failures", "successes", "both"].includes(snapshot.ci_notification_mode)
          ? snapshot.ci_notification_mode : "off",
+      connectionMode: snapshot.connection_mode === "hybrid" ? "hybrid" : "polling",
+      relayUrl: typeof snapshot.relay_url === "string" ? snapshot.relay_url : "",
       autostartEnabled: typeof autostartState === "boolean" ? autostartState : null
     };
     draft = {
@@ -738,9 +790,13 @@ async function refresh() {
       language: original.language,
       ignoredChildNames: [...original.ignoredChildNames],
       ciNotificationMode: original.ciNotificationMode,
+      connectionMode: original.connectionMode,
+      relayUrl: original.relayUrl,
       autostartEnabled: original.autostartEnabled
     };
     byId("ci-notification-mode").value = draft.ciNotificationMode;
+    byId("github-connection-mode").value = draft.connectionMode;
+    byId("github-worker-url").value = draft.relayUrl;
     byId("autostart-enabled").checked = draft.autostartEnabled === true;
     byId("autostart-enabled").disabled = draft.autostartEnabled === null;
     byId("autostart-status").textContent = draft.autostartEnabled === null
@@ -966,7 +1022,7 @@ byId("cancel-settings").addEventListener("click", async () => {
 });
 byId("apply-settings").addEventListener("click", async () => {
   if (saving || settingsLoading || settingsInitFailed || githubCheckFailed ||
-      githubPending || githubStarting || !repoChoiceValid() ||
+      githubPending || githubStarting || !repoChoiceValid() || !validRelayDraft() ||
       (githubScopeTouched && !!selectedScope && !availableAccounts.has(selectedScope)) ||
       !(isDirty() || githubScopeTouched || repoChoiceTouched ||
         (githubConnected && githubStartedHere) || disconnectPending)) return;
@@ -980,6 +1036,10 @@ byId("apply-settings").addEventListener("click", async () => {
       configChanges.language = draft.language;
     if (original.ciNotificationMode !== draft.ciNotificationMode)
       configChanges.ciNotificationMode = draft.ciNotificationMode;
+    if (original.connectionMode !== draft.connectionMode)
+      configChanges.connectionMode = draft.connectionMode;
+    if (original.relayUrl !== draft.relayUrl)
+      configChanges.relayUrl = draft.relayUrl;
     if (JSON.stringify(original.roots) !== JSON.stringify(draft.roots))
       configChanges.roots = [...draft.roots];
     if (JSON.stringify(original.ignoredChildNames) !== JSON.stringify(draft.ignoredChildNames))

@@ -145,8 +145,19 @@ should be necessary for unshipped code.
 - `13998145`: replay filtering after operator revokes an allowlisted repository.
 
 Milestones **1 and 2 are implemented in source, not externally accepted**.
-Milestone 3 has only the pure native protocol validation implemented.
+Milestone 3 has the pure native protocol validation and the credential-free
+`repoticker-relay-reconcile` bridge implemented: the current GitHub monitor
+accepts only `tasks`/`all` native reconciliation triggers, rate-limits
+them independently to one per kind per 15 seconds, and routes them only
+through the existing authenticated GitHub REST collection. It never
+accepts GitHub conclusions from relay events or dispatches local Git.
+The secure native network connection and credential provisioning remain
+unimplemented.
 Milestones 3 (secure native connection), 4 (Settings and fallback),
 5 (full CI/native acceptance and deployment) remain open. Do not claim
 Hybrid enabled or publish a new desktop candidate until the native
 transport dependency and lockfile are resolved.
+
+- `efa0a948`: bounded, credential-free native reconcile signal bridge to
+  the existing GitHub monitor, with a deterministic burst, reset and
+  notification-opt-out regression.

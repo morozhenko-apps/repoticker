@@ -78,8 +78,9 @@ Do not change the versioned hint frame, Durable Object journal or stored config.
   full REST polling schedule. A transport failure after a confirmed online
   period immediately schedules a guarded full reconciliation.
 - Native `online` Hybrid: CI task snapshots are refreshed by scope-checked
-  relay hints (`tasks`), and a full REST reconciliation still runs at least
-  every 15 minutes to catch missed deliveries or cursor gaps. The separate
+  relay hints (`tasks`), and a full REST reconciliation is scheduled on a
+  15-minute safety interval to catch missed deliveries or cursor gaps,
+  subject to network availability and the existing GitHub API cooldown. The separate
   runner capacity metric refresh remains at the existing adaptive cadence.
   Use independent last-full and last-runner clocks so frequent task hints
   cannot indefinitely starve either periodic check. Preserve the native

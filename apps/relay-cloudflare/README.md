@@ -27,7 +27,8 @@ The GitHub webhook uses a **different** `WEBHOOK_SECRET`; also configure
 `ALLOWED_REPOSITORIES`. Once **separately approved** and deployed, enter your
 Worker HTTPS origin in Settings (for example `https://your-worker.example`).
 The webhook target on GitHub is `https://your-worker.example/v1/github` with
-`workflow_run` completed events. These values are not supplied automatically
+`workflow_run` events (activities `requested`, `in_progress`, and `completed`).
+GitHub uses `requested`, not an action named `queued`, for a newly requested run. These values are not supplied automatically
 by installing RepoTicker. Until the Worker is deployed and verified, keep
 **Simple polling**. The selected CI notification type remains independent.
 

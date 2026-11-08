@@ -81,8 +81,16 @@ fn store_secret(mut secret: String) -> Result<(), String> {
     result
 }
 
+fn settings_only(window: &tauri::WebviewWindow) -> Result<(), String> {
+    if window.label() != "settings" {
+        return Err("Relay credentials can only be managed in Settings.".into());
+    }
+    Ok(())
+}
+
 #[tauri::command]
-pub async fn relay_secret_status() -> Result<bool, String> {
+pub async fn relay_secret_status(window: tauri::WebviewWindow) -> Result<bool, String> {
+    settings_only(&window)?;
     tauri::async_runtime::spawn_blocking(|| {
         let mut secret = read_secret()?;
         let configured = secret.is_some();
@@ -98,7 +106,11 @@ pub async fn relay_secret_status() -> Result<bool, String> {
 /// The command has deliberately no WebView-supplied secret argument.
 /// It returns only true (saved) / false (canceled), never the password.
 #[tauri::command]
-pub async fn relay_prompt_secret(app: AppHandle) -> Result<bool, String> {
+pub async fn relay_prompt_secret(
+    app: AppHandle,
+    window: tauri::WebviewWindow,
+) -> Result<bool, String> {
+    settings_only(&window)?;
     let _lease = enter_prompt(&app)?;
     let secret = prompt_native(&app).await?;
     let Some(secret) = secret else {
@@ -111,7 +123,11 @@ pub async fn relay_prompt_secret(app: AppHandle) -> Result<bool, String> {
 }
 
 #[tauri::command]
-pub async fn relay_clear_secret(app: AppHandle) -> Result<(), String> {
+pub async fn relay_clear_secret(
+    app: AppHandle,
+    window: tauri::WebviewWindow,
+) -> Result<(), String> {
+    settings_only(&window)?;
     let _lease = enter_prompt(&app)?;
     tauri::async_runtime::spawn_blocking(|| {
         let item = entry()?;

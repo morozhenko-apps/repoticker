@@ -144,3 +144,31 @@ defects. CI reports exact lines; none of this justifies weakening
 Rollback commits are isolated by category: lock, formatting,
 localization, relay replay/rate test, Settings fixture. Fail-closed
 Simple polling and CI status provenance are not changed.
+
+
+### Rust compile diagnosis from native CI
+
+Run `42474351491` (source `dac843c`) passed the full JS job
+but failed desktop compile with exactly three Rust type errors:
+
+- `E0277` on `RelayPhaseEvent` and `ReconcileEvent`: Tauri
+  `Emitter::emit<S: Serialize + Clone>` requires Clone.
+- `E0308`: `tauri::async_runtime::spawn` returns Tauri's
+  runtime handle enum, not `tokio::task::JoinHandle<()>`,
+  even though both expose an `abort()` operation.
+
+Five considered compile hypotheses: missing `Clone` on event payloads,
+handle wrapper mismatch, missing Cargo dependency, wrong Tokio runtime
+entry, and failed platform-specific GTK feature configuration.
+The compiler directly identifies the **first two**, while the
+dependency graph resolved and source checking progressed to
+`repoticker` itself. Fix by deriving Clone on the two
+secret-free immutable payload structs and storing the exact
+`tauri::async_runtime::JoinHandle<()>` returned by Tauri.
+This retains task cancellation from the GUI setup thread;
+switching to unscoped `tokio::spawn` is not justified.
+
+Validation: one final locked build and Rust tests on Linux/Windows,
+with compiler output as the authority. No disabled checks or new
+external dependencies are necessary. Rollback is a single
+transport-source commit.

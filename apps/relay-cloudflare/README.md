@@ -73,6 +73,13 @@ unused preview deployments and check Durable Object quota and migration
 support before selecting Save and Deploy. This guide does not authorize
 mutations to any operator's Cloudflare resources.
 
+Cloudflare's automatically generated Workers Builds deployment token may
+include permissions for R2 even though this Worker does **not** use R2.
+Review its effective scope before approving the Git integration; prefer a
+separately reviewed least-privilege token where the account setup supports
+it. Root-directory selection restricts which source gets built, **not** what
+Cloudflare resources a powerful deployment credential can access.
+
 After Worker creation, configure **runtime Secret bindings**, not build
 environment variables, under **Worker → Settings → Variables and Secrets**:
 

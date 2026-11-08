@@ -81,3 +81,66 @@ CI provenance: native acceptance builders require `cargo --locked`.
 If Cargo is unavailable in the authoring runtime, the dependency+manifest
 commit must be followed by a reproducible runner-generated lockfile before
 acceptance is considered valid; document and stop, not claim success.
+
+
+## CI gate triage and remediation (2026-11-08)
+
+**Mode B.** The read-only lock resolver completed successfully as run
+[`42472887846`](https://github.com/morozhenko-apps/repoticker/actions/runs/42472887846)
+from exact source `33a7479f70e535a6dde650317c2de4836d4055c7`.
+The downloaded seven-file artifact contains `Cargo.lock`, a
+`RELAY_CARGO_LOCK_DIFF.patch`, `RELAY_RUSTFMT_DIFF.patch`,
+source SHA, SHA256 checksum, changed file manifest, and a no-release
+marker. `Cargo.lock` SHA256 verified:
+`36ad49adbcff67e5077f1342b515c1531c167199f4c51c61d5458781a2935cc3`.
+Its Git blob SHA is `80ee9e38627cbb29e3cc4e64aae12d233a4c1c69`.
+The lock diff includes `tokio-tungstenite 0.30.0` and its exact
+registry checksums. It is valid lock evidence, not a pass for
+`cargo check --locked` or a build artifact.
+
+Owner's CI runs `42472887767`, `42472887792`, and `42473056655`
+independently confirm:
+- Linux/Windows locked Rust compilation fails because the committed
+  `Cargo.lock` lacks new native WSS dependencies.
+- The Rust format gate requires the exact upstream rustfmt delta.
+- JS preflight fails in five cases: missing 10 new Settings translations
+  per non-EN/RU language (starting with ES); three RelayHub tests
+  contradictory with rate budget, wiped cursors and minute ledger
+  behavior; one Settings controls fixture invokes a new event handler
+  without its required event argument.
+
+Six investigated causes (test/log backed): (1) missing manifest/lock
+sync; (2) rustfmt formatting drift; (3) new UI strings missing from
+the 18 extended languages; (4) snapshot tests exceeding the intended
+120 deliveries/minute; (5) relay replay high-watermark erased when
+the history table expires; (6) stale fixture invocation and minute
+retention expectations. The most urgent independent blockers are
+(1) native dependency lock drift and (3–6) JS source/test contract
+defects. CI reports exact lines; none of this justifies weakening
+`--locked`, locale parity, rate limits, or auth controls.
+
+**Repair plan / rollback:**
+
+1. Verify the artifact's source SHA and checksum, compare lock patch
+   against the actual `dev` manifest and lockfile; commit the exact
+   generated lock bytes, never substitute a guessed version.
+2. Apply only the trusted rustfmt diff from the same generated artifact
+   to still-matching Rust source paths. Stop if a hunk has drifted.
+3. Fill 10 missing UI translations in each of the 18 extended locale
+   dictionaries (preserve existing keys and RTL semantics).
+4. Keep rate limiter at 120 new deliveries/minute. Spread the 129
+   retention test events over two minute buckets instead of
+   weakening capacity checks; persist the actual SQLite AUTOINCREMENT
+   high watermark for replay reset after all rows expire; bound minute
+   rate-budget rows by cleaning the previous minute.
+5. Fix only the Settings fixture's synthetic event to pass a target,
+   preserving production handler semantics and native Keyring gate.
+6. Execute a single complete final Node26 and Rust locked
+   format/core/desktop test gate. If results identify new real
+   defects, capture logs, fix with regression coverage and repeat
+   affected gates. Only after a green gate prepare unpublished
+   Linux/Windows candidates. No `main`, tags, hosted service changes.
+
+Rollback commits are isolated by category: lock, formatting,
+localization, relay replay/rate test, Settings fixture. Fail-closed
+Simple polling and CI status provenance are not changed.

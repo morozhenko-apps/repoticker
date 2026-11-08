@@ -13,6 +13,7 @@ mod github_oauth_wire;
 mod github_rate_gate;
 mod github_session;
 mod monitor_cache;
+mod relay_endpoint;
 mod relay_secret;
 mod startup_diagnostics;
 mod tray_i18n;
@@ -79,6 +80,10 @@ struct Config {
     github_monitor_repositories: Vec<String>,
     #[serde(default)]
     ci_notification_mode: CiNotificationMode,
+    #[serde(default)]
+    connection_mode: ConnectionMode,
+    #[serde(default)]
+    relay_url: Option<String>,
 }
 
 // Configs written by previous versions contain no notification mode.
@@ -91,6 +96,16 @@ enum CiNotificationMode {
     Failures,
     Successes,
     Both,
+}
+
+/// Connection choice is a nonsecret local preference; GitHub REST remains
+/// the authoritative source of workflow status in both modes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+enum ConnectionMode {
+    #[default]
+    Polling,
+    Hybrid,
 }
 
 impl CiNotificationMode {
@@ -193,6 +208,8 @@ fn default_config() -> Config {
         github_monitor_org: None,
         github_monitor_repositories: Vec::new(),
         ci_notification_mode: CiNotificationMode::Off,
+        connection_mode: ConnectionMode::Polling,
+        relay_url: None,
     }
 }
 
@@ -524,6 +541,8 @@ struct SettingsConfig {
     github_monitor_repositories: Vec<String>,
     ignored_child_names: Vec<String>,
     ci_notification_mode: CiNotificationMode,
+    connection_mode: ConnectionMode,
+    relay_url: Option<String>,
 }
 
 #[tauri::command]
@@ -537,6 +556,8 @@ fn get_settings_config(app: AppHandle) -> Result<SettingsConfig, String> {
         github_monitor_repositories: config.github_monitor_repositories,
         ignored_child_names: config.ignored_child_names,
         ci_notification_mode: config.ci_notification_mode,
+        connection_mode: config.connection_mode,
+        relay_url: config.relay_url,
     })
 }
 
@@ -1224,7 +1245,14 @@ fn save_settings(
     language: Option<String>,
     ignored_child_names: Option<Vec<String>>,
     ci_notification_mode: Option<CiNotificationMode>,
+    connection_mode: Option<ConnectionMode>,
+    relay_url: Option<String>,
 ) -> Result<(), String> {
+    let canonical_relay = relay_url
+        .map(|url| if url.is_empty() { Ok(None) } else {
+            relay_endpoint::normalize_base_url(&url).map(Some)
+        })
+        .transpose()?;
     if language
         .as_deref()
         .is_some_and(|locale| !tray_i18n::is_supported_locale(locale))
@@ -1279,6 +1307,21 @@ fn save_settings(
                 config.ignored_child_names = ignored;
                 changed = true;
             }
+        }
+        if let Some(mode) = connection_mode {
+            if config.connection_mode != mode {
+                config.connection_mode = mode;
+                changed = true;
+            }
+        }
+        if let Some(url) = canonical_relay {
+            if config.relay_url != url {
+                config.relay_url = url;
+                changed = true;
+            }
+        }
+        if config.connection_mode == ConnectionMode::Hybrid && config.relay_url.is_none() {
+            return Err("Hybrid requires a valid relay HTTPS URL.".into());
         }
         Ok((changed, changed))
     })?;
@@ -1382,6 +1425,8 @@ mod monitor_selection_tests {
         assert!(config.github_monitor_repositories.is_empty());
         assert!(config.ignored_child_names.is_empty());
         assert_eq!(config.ci_notification_mode, CiNotificationMode::Off);
+        assert_eq!(config.connection_mode, ConnectionMode::Polling);
+        assert!(config.relay_url.is_none());
     }
 
     #[test]

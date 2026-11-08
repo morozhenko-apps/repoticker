@@ -1,6 +1,6 @@
 # Optional Hybrid relay: implementation boundary
 
-RepoTicker currently ships **Simple polling** through the native read-only GitHub REST client. Source for a personal Cloudflare Worker, signed webhook ingress, bounded SQLite Durable Object, WebSocket hibernation and replay exists on `dev`; it is **not deployed** and not yet connected to a native desktop WebSocket client. The Settings connection-mode selector still does **not** activate Hybrid, and Worker URL remains unavailable. The generic Docker/VPS adapter is not implemented.
+RepoTicker ships **Simple polling** as the default authoritative GitHub REST monitor. The `dev` branch now includes a source-level native TLS WebSocket client, personal Cloudflare Worker / SQLite Durable Object, bounded signed webhook relay, native OS Keyring credential entry and transactional Settings mode/URL selection. This implementation is **not an accepted or released Hybrid mode**: the native Cargo dependency lock must first be generated and reviewed on a trusted Cargo runner, followed by pinned Node/Rust gates, Linux/Windows bundles, physical acceptance and operator-authorized deployment. No Cloudflare account, secrets or hosted routes have been changed. A generic Docker/VPS adapter remains outside this phase.
 
 ## Agreed high-level path
 
@@ -27,9 +27,15 @@ RepoTicker currently ships **Simple polling** through the native read-only GitHu
 - `src/index.ts` and `wrangler.toml` define the Worker and SQLite DO
   binding. No secret values, operator repository lists, external routes,
   CI deployment or production Worker have been configured.
-- `crates/repoticker-core/src/relay.rs` parses minimal native protocol
-  frames and yields *read-only REST reconciliation* decisions. It is not
-  yet wired to a native WebSocket transport or live Settings.
+- `crates/repoticker-core/src/relay.rs` validates native protocol frames
+  and scopes. `apps/desktop/src-tauri/src/relay_transport.rs` connects
+  to a validated `wss://` origin with native Rustls and a separate
+  OS-Keyring bearer, handling cursor replay, keepalive, bounded reconnect
+  and read-only REST reconciliation. `relay_endpoint.rs` rejects
+  non-HTTPS or credential-bearing Worker URL input; Settings persists
+  only mode and nonsecret URL through the atomic config transaction.
+  The native transport remains uncompiled/unaccepted until the
+  Cargo.lock handoff and full native acceptance gate pass.
 - Node tests are in `tests/relay-{protocol,worker,hub,webhook-signature}.test.mjs`;
   the Rust core module contains protocol and scope tests. Tests are
   **committed, but a full pinned Node/Rust gate on these changes has not
@@ -187,11 +193,12 @@ The owner selected OS-native secret entry, never a WebView password field.
   committed to the OS keyring in the separate native dialog, not to
   `config.json` or the transactional Settings OK/Cancel draft.
   The UI must clearly communicate that distinction.
-- This layer does **not** enable Hybrid. The Simple mode remains
-  the only enabled connection; the Worker URL remains unavailable
-  until the audited native WSS TLS dependency is resolved with a
-  correct Cargo.lock, securely reconnects and reconciles through
-  existing read-only GitHub REST, and passes Linux/Windows acceptance.
+- The dev Settings UI conditionally offers Hybrid only after the
+  native Keyring reports an available secret and GitHub is connected,
+  while always allowing rollback to polling. This is **source under
+  test**, not a supported deployed mode. No official release until
+  the genuine Cargo.lock, Linux/Windows compilation and installed
+  acceptance pass.
   No secret-bearing WebView transport or unverified manual fallback.
 
 Rollback: revert the focused native credential and Settings commits

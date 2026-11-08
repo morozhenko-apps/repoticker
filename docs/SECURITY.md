@@ -15,8 +15,9 @@ The secret is entered using a native password dialog available only from
 Settings; the WebView never receives or submits it. Relay secret changes
 are immediate credential-store operations, independent of Settings
 OK/Cancel. They are never stored in `config.json`, event payloads, URLs
-or logs. Hybrid transport remains disabled until native authenticated WSS
-and REST recovery are validated.
+or logs. Hybrid transport is under native Rust implementation and remains unreleased
+until a reproducible Cargo.lock, locked Linux/Windows builds, physical UI
+acceptance and REST recovery validation are complete.
 
 GitHub API input/output is restricted to approved endpoints and bounded data. Permission errors, rate limits and incomplete inventories must not become an authoritative clean status or zero usage. RepoTicker does not require a developer-run login or repository hosting service.
 

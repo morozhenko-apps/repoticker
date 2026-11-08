@@ -132,7 +132,8 @@ pub async fn relay_secret_status(window: tauri::WebviewWindow) -> Result<bool, S
     if let Some(value) = {
         let app = window.app_handle();
         let state = app.state::<RelaySecretDraftState>();
-        lock_draft(&state).as_ref().map(|change| matches!(change, RelaySecretDraft::Set(_)))
+        let draft = lock_draft(&state);
+        draft.as_ref().map(|change| matches!(change, RelaySecretDraft::Set(_)))
     } {
         return Ok(value);
     }
@@ -192,6 +193,9 @@ pub async fn relay_commit_secret_draft(
 ) -> Result<(), String> {
     settings_only(&window)?;
     let _lease = enter_prompt(&app)?;
+    if !window.is_visible().unwrap_or(false) {
+        return Err("Settings window is no longer open.".into());
+    }
     let change = {
         let state = app.state::<RelaySecretDraftState>();
         lock_draft(&state).take()

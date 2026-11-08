@@ -88,20 +88,27 @@
       <label id="github-monitor-scope-row" hidden><span data-i18n="Monitor account">Monitor account</span>
         <select id="github-monitor-scope"><option value="" data-i18n="Choose account">Choose account</option></select>
       </label>
-      <label><span data-i18n="Connection mode">Connection mode</span><select id="github-connection-mode" disabled>
+      <label><span data-i18n="CI event source">CI event source</span><select id="github-connection-mode" disabled>
         <option value="polling" data-i18n="Simple polling">Simple polling</option>
         <option value="hybrid" data-i18n="Hybrid webhook relay">Hybrid webhook relay</option>
       </select></label>
+    </div>
+    <div id="relay-settings" class="relay-settings" hidden>
       <label id="github-worker-row" class="worker-label" hidden><span data-i18n="Worker URL">Worker URL</span>
         <input id="github-worker-url" disabled dir="ltr" maxlength="512" autocomplete="off" spellcheck="false" placeholder="https://your-worker.example">
       </label>
+      <div class="relay-secret-controls">
+        <span id="relay-secret-status" class="hint" role="status" aria-live="polite">Relay secret unavailable</span>
+        <button id="relay-configure-secret" type="button" data-i18n="Set relay secret" disabled>Set relay secret</button>
+        <button id="relay-remove-secret" type="button" data-i18n="Forget relay secret" disabled>Forget relay secret</button>
+      </div>
+      <p class="hint relay-secret-hint" data-i18n="Relay credential changes are saved immediately in the OS keyring.">Relay credential changes are saved immediately in the OS keyring.</p>
+      <details class="relay-help" open>
+        <summary data-i18n="Where to get the relay key">Where to get the relay key</summary>
+        <p class="hint" data-i18n="GitHub and RepoTicker do not issue relay keys. Host your own Cloudflare Worker, create RELAY_CLIENT_SECRET and enter the same secret using the native dialog. WEBHOOK_SECRET must be different. Without a deployed Worker URL, use Simple polling.">GitHub and RepoTicker do not issue relay keys. Host your own Cloudflare Worker, create RELAY_CLIENT_SECRET and enter the same secret using the native dialog. WEBHOOK_SECRET must be different. Without a deployed Worker URL, use Simple polling.</p>
+        <code class="relay-secret-command" dir="ltr">openssl rand -hex 32</code>
+      </details>
     </div>
-    <div class="relay-secret-controls">
-      <span id="relay-secret-status" class="hint" role="status" aria-live="polite">Relay secret unavailable</span>
-      <button id="relay-configure-secret" type="button" data-i18n="Set relay secret" disabled>Set relay secret</button>
-      <button id="relay-remove-secret" type="button" data-i18n="Forget relay secret" disabled>Forget relay secret</button>
-    </div>
-    <p class="hint relay-secret-hint" data-i18n="Relay credential changes are saved immediately in the OS keyring.">Relay credential changes are saved immediately in the OS keyring.</p>
     <div class="ci-alert-controls">
       <label for="ci-notification-mode">
         <span data-i18n="CI notifications">CI notifications</span>

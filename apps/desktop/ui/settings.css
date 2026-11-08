@@ -126,7 +126,7 @@ label { font-size: 12px; }
 .autostart-controls .hint { margin-left: auto; }
 
 /* One native, keyboard-accessible CI result selection; no extra controls. */
-.ci-alert-controls { margin-top: 8px; }
+.ci-alert-controls { margin-top: 8px; padding-top: 8px; border-top: 1px solid color-mix(in srgb, CanvasText 13%, Canvas); }
 .ci-alert-controls label { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 10px; align-items: center; cursor: pointer; }
 .ci-alert-controls label > span { min-width: 0; }
 .ci-alert-controls select { min-width: 0; width: 100%; height: 34px; }
@@ -186,6 +186,14 @@ label { font-size: 12px; }
 [dir="rtl"] .roots-list, [dir="rtl"] .github-repo-choice { unicode-bidi: isolate; }
 
 /* These immediate native keyring actions are separate from Settings OK/Cancel. */
+.relay-settings { margin-top: 8px; border: 1px solid color-mix(in srgb, CanvasText 14%, Canvas); border-radius: 6px; padding: 9px; min-width: 0; }
+.relay-settings[hidden], #github-worker-row[hidden] { display: none; }
+.relay-settings .worker-label { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.relay-settings .worker-label input { min-width: 0; width: 100%; height: 34px; }
+.relay-help { margin-top: 8px; }
+.relay-help summary { cursor: pointer; font-size: 12px; }
+.relay-help .hint { margin: 7px 0; line-height: 1.5; }
+.relay-secret-command { display: block; max-width: 100%; overflow-x: auto; font-size: 12px; direction: ltr; unicode-bidi: isolate; user-select: text; }
 .relay-secret-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; padding-top: 8px; border-top: 1px solid color-mix(in srgb, CanvasText 13%, Canvas); }
 .relay-secret-controls .hint { flex: 1 1 165px; overflow-wrap: anywhere; }
 .relay-secret-controls button { flex: 0 0 auto; font-size: 12px; }

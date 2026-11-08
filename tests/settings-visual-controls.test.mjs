@@ -153,3 +153,18 @@ test("Relay keyring custody is native-only, with no secret input or IPC argument
   assert.match(native, /window\.gtk_window\(\)\.ok\(\)/);
   assert.match(css, /\.relay-secret-controls \{[^}]*display: flex/);
 });
+
+test("Hybrid setup follows event source, separate from CI notification type", () => {
+  assert.match(html, /data-i18n="CI event source">CI event source/);
+  assert.match(html, /id="relay-settings" class="relay-settings" hidden/);
+  assert.match(html, /id="relay-settings"[\s\S]*?id="relay-configure-secret"[\s\S]*?class="relay-help"/);
+  assert.match(html, /id="ci-notification-mode"/);
+  assert.match(html, /data-i18n="Where to get the relay key"/);
+  assert.match(html, /openssl rand -hex 32/);
+  assert.match(css, /\.relay-settings\[hidden\], #github-worker-row\[hidden\] \{ display: none; \}/);
+  assert.match(settings, /mode\.disabled = saving \|\| settingsLoading \|\| settingsInitFailed;/);
+  assert.match(settings, /byId\("relay-settings"\)\.hidden = !hybridSelected/);
+  assert.match(settings, /if \(draft\.connectionMode !== "hybrid"\) return true;/);
+  assert.doesNotMatch(settings, /invoke\("relay_prompt_secret",\s*\{/);
+  assert.doesNotMatch(html, /<input[^>]+type="password"/);
+});

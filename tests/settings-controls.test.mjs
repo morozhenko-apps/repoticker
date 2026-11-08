@@ -107,24 +107,34 @@ test("Device Flow buttons register and invoke native commands after JS startup",
   const mode = elements.get("github-connection-mode");
   const workerRow = elements.get("github-worker-row");
   const workerUrl = elements.get("github-worker-url");
+  const relaySection = elements.get("relay-settings");
+  const notificationMode = elements.get("ci-notification-mode");
+  assert.equal(mode.disabled, false,
+    "Hybrid setup must be selectable before a relay key exists");
+  assert.equal(notificationMode.value, "off");
   mode.disabled = true;
   mode.value = "polling";
   handlers.get("github-connection-mode:change")({ target: mode });
   assert.equal(workerRow.hidden, true);
   assert.equal(workerUrl.disabled, true);
-  // Without a stored OS credential, Hybrid cannot be activated by scripted changes.
+  assert.equal(relaySection.hidden, true);
+  // Expose Hybrid setup first; a credential is needed only to commit.
   mode.disabled = false;
   mode.value = "hybrid";
   handlers.get("github-connection-mode:change")({ target: mode });
-  // The fixture forcibly sets the disabled select to Hybrid. A visible
-  // URL draft still cannot be committed without a native credential.
+  assert.equal(relaySection.hidden, false);
   assert.equal(workerRow.hidden, false);
   assert.equal(workerUrl.disabled, false);
-  assert.equal(elements.get("apply-settings").disabled, true);
+  assert.equal(notificationMode.value, "off",
+    "source selection must not rewrite CI notification types");
+  assert.equal(elements.get("apply-settings").disabled, true,
+    "incomplete Hybrid must not be persisted without native credentials");
   mode.value = "polling";
   handlers.get("github-connection-mode:change")({ target: mode });
   assert.equal(workerRow.hidden, true);
   assert.equal(workerUrl.disabled, true);
+  assert.equal(relaySection.hidden, true);
+  assert.equal(notificationMode.value, "off");
   for (const button of ["github-connect", "github-copy-code",
     "github-open-device", "github-cancel-device"]) {
     assert.equal(typeof handlers.get(button + ":click"), "function",
@@ -152,10 +162,11 @@ test("Device Flow buttons register and invoke native commands after JS startup",
   assert.equal(elements.get("github-copy-code").textContent, "Copy code");
 });
 
-test("Simple polling remains default and Hybrid requires native credential readiness", () => {
+test("Simple polling remains default and Hybrid saving requires native credential readiness", () => {
   assert.match(html, /id="github-connection-mode" disabled/);
   assert.match(html, /value="polling" data-i18n="Simple polling">Simple polling/);
   assert.match(html, /value="hybrid" data-i18n="Hybrid webhook relay">Hybrid webhook relay/);
+  assert.match(html, /id="relay-settings"[^>]*hidden/);
   assert.match(html, /id="github-worker-row"[^>]*hidden/);
   assert.match(html, /id="github-worker-url" disabled/);
   assert.match(js, /configChanges\.connectionMode = draft\.connectionMode/);

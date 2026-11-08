@@ -35,9 +35,10 @@ function applySettingsLanguage(value) {
 function syncWorkerControls() {
   const mode = byId("github-connection-mode");
   const worker = byId("github-worker-url");
-  const available = !mode.disabled && mode.value === "hybrid";
-  byId("github-worker-row").hidden = !available;
-  worker.disabled = !available;
+  const hybridSelected = mode.value === "hybrid";
+  byId("relay-settings").hidden = !hybridSelected;
+  byId("github-worker-row").hidden = !hybridSelected;
+  worker.disabled = mode.disabled || !hybridSelected;
 }
 byId("github-connection-mode").addEventListener("change", event => {
   syncWorkerControls();
@@ -619,18 +620,17 @@ function validRelayUrl(value) {
   }
 }
 function validRelayDraft() {
-  if (!draft || !validRelayUrl(draft.relayUrl)) return false;
+  if (!draft) return false;
+  // An unused relay URL must never block independent CI or polling settings.
   if (draft.connectionMode !== "hybrid") return true;
-  return relaySecretConfigured === true && githubConnected &&
-    !disconnectPending && !!selectedScope && draft.relayUrl !== "";
+  return validRelayUrl(draft.relayUrl) && draft.relayUrl !== "" &&
+    relaySecretConfigured === true && githubConnected &&
+    !disconnectPending && !!selectedScope;
 }
 function syncConnectionAvailability() {
   const mode = byId("github-connection-mode");
-  const canReturnToPolling = draft?.connectionMode === "hybrid" ||
-    original?.connectionMode === "hybrid";
-  mode.disabled = saving || settingsLoading ||
-    (!canReturnToPolling && (relaySecretConfigured !== true ||
-      !githubConnected || disconnectPending));
+  // Selecting Hybrid exposes setup; committing it still requires credentials.
+  mode.disabled = saving || settingsLoading || settingsInitFailed;
   syncWorkerControls();
 }
 function isDirty() {

@@ -713,3 +713,63 @@ repoticker-core`, and `cargo test --locked -p
 repoticker --bin repoticker`. Do not publish or merge
 to main before the actual results and installed UI
 acceptance.
+
+
+## Owner full STABLE Node26/Rust gate: stale contracts and rustfmt (2026-11-08)
+
+**Mode B: regression-test maintenance, no application behavior change.**
+
+Owner terminal receipt on `dev` at exact SHA
+`37bef4871602ea8b82fdd1e10767b1036cb5ae18`:
+pinned Node `26.13.0` executed `node --test tests/*.test.mjs`
+with **579 tests / 577 passed / 2 failed** (zero skipped).
+`cargo fmt --all --check` failed on two array literal
+line wraps inside the newly added
+`local_ci_identity_comes_only_from_a_supported_github_origin`
+Rust test. Despite that nonzero fmt result, the user's
+separate Cargo commands executed, reporting
+`repoticker-core` 72 unit + 30 Git integration + 3
+GitHub remote pass and native desktop 69 unit pass.
+
+Five considered causes: broken CI outcome production semantics,
+missing translation keys, stale localization fixture roster,
+stale DEB version pin in a packaging contract, and Rust
+source format drift. Exact AssertionError diffs and the
+`rustfmt` patch confirm the **last three**. The
+localization source contains the three required translations
+in all 18 non-EN/RU dictionaries and the EN/RU dictionary.
+The QA installer derives the version from
+`scripts/release_version.py` and enforces matching exact
+Debian filename, `Package`, `Version`, `Architecture`.
+There is no evidence in this gate of a broken runtime
+localization, package generation or Git change.
+
+**Fix plan / rollback points**:
+
+1. Update only the explicit expected card-key roster in
+   `tests/localization-20.test.mjs` for
+   `ciSuccess`, `ciFailure`, `ciUnknown`. Keep exact
+   twenty-locale parity, placeholder, RTL and source
+   assertions. No broad allowlist or weakened check.
+2. Update only `tests/package-identity.test.mjs`
+   to require dynamic `release_version.py`, exact
+   `repoticker_${VERSION}_amd64.deb` filename and
+   strict version, package and architecture checks.
+   Reject the stale `0.2.0` artifact pin.
+3. Apply exactly the two `rustfmt` suggestions in
+   `crates/repoticker-core/src/git.rs` without behavior
+   changes.
+4. Make isolated commits (test fixture alignment,
+   Rust formatting), then record a separate evidence receipt.
+   No new production code or API edits.
+5. Because no tool here can execute the owner's Rust
+   desktop environment, ask the owner for one final
+   pinned Node26 STABLE gate and `cargo fmt --all --check`.
+   Existing Rust suite pass evidence is valid for the
+   tested source except the rustfmt-only change; do not
+   fabricate a new post-change Rust pass. No release or
+   candidate build until final gate passes.
+
+Rollback: revert each isolated test/formatting commit if a
+strict contract is unintentionally weakened. Preserve the
+earlier CI-only row-indicator behavior and Hybrid boundaries.

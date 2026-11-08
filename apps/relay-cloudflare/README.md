@@ -2,8 +2,37 @@
 
 RepoTicker's optional Hybrid relay is implemented as a Cloudflare Worker plus
 SQLite Durable Object with WebSocket hibernation. This is **not** a shared SaaS
-service. The desktop native client and Settings Hybrid activation remain a
-separate unfinished milestone; do not deploy this relay as an app feature yet.
+service. Native desktop source and unpublished builds exist on `dev`, but
+physical native acceptance and operator deployment are still pending. This is
+not a ready-to-use hosted relay; do not deploy it as an app feature yet.
+
+
+## Where to get the relay secret
+
+**There is no GitHub code to obtain and no RepoTicker relay account.** This is
+a *self-hosted, single-operator* relay. The operator generates an independent
+secret for the native client, configures **the same value** as
+`RELAY_CLIENT_SECRET` in their own Cloudflare Worker secret binding, and
+enters it using RepoTicker Settings -> **CI event source** -> **Hybrid** ->
+**Set relay secret** (the OS-native password dialog, never a WebView field).
+
+For example, on Ubuntu (prints a new 64-character base64url secret; protect the
+terminal output and never paste it into tickets or GitHub source):
+
+```sh
+openssl rand -base64 48 | tr '+/' '-_' | tr -d '=\\n'
+```
+
+The GitHub webhook uses a **different** `WEBHOOK_SECRET`; also configure
+`ALLOWED_REPOSITORIES`. Once **separately approved** and deployed, enter your
+Worker HTTPS origin in Settings (for example `https://your-worker.example`).
+The webhook target on GitHub is `https://your-worker.example/v1/github` with
+`workflow_run` completed events. These values are not supplied automatically
+by installing RepoTicker. Until the Worker is deployed and verified, keep
+**Simple polling**. The selected CI notification type remains independent.
+
+No Cloudflare deployment, secret upload, webhook registration or shared R2
+changes are authorized by this document.
 
 ## Secrets and permitted repositories
 

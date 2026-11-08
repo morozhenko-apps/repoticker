@@ -1,6 +1,23 @@
 # Optional Hybrid relay: implementation boundary
 
-RepoTicker ships **Simple polling** as the default authoritative GitHub REST monitor. The `dev` branch now includes a source-level native TLS WebSocket client, personal Cloudflare Worker / SQLite Durable Object, bounded signed webhook relay, native OS Keyring credential entry and transactional Settings mode/URL selection. This implementation is **not an accepted or released Hybrid mode**: the native Cargo dependency lock must first be generated and reviewed on a trusted Cargo runner, followed by pinned Node/Rust gates, Linux/Windows bundles, physical acceptance and operator-authorized deployment. No Cloudflare account, secrets or hosted routes have been changed. A generic Docker/VPS adapter remains outside this phase.
+RepoTicker uses **Simple polling** as the default authoritative GitHub REST monitor. The `dev` branch has a native TLS WebSocket client, a personal Cloudflare Worker / SQLite Durable Object, OS Keyring secret entry and transactional Hybrid Settings. The native Cargo lock is committed and unpublished Linux/Windows acceptance bundles were built, but physical acceptance and operator-authorized deployment are still pending. **Hybrid is not a hosted RepoTicker service or a released feature.** No Cloudflare account, secrets, hosted routes or GitHub webhooks have been changed. A generic Docker/VPS adapter remains outside this phase.
+
+
+## Hybrid Settings and operator provisioning
+
+The **CI event source** and **CI notification type** are separate settings. Source choices: direct GitHub REST polling (default), or operator-owned Hybrid webhook hints with REST reconciliation. The notification type (off / failures / successes / both) is independent and is not rewritten when source changes. Hybrid only changes the refresh trigger; webhook hints must never become authoritative workflow results.
+
+Settings must permit selecting Hybrid to inspect its setup form **before** credentials exist. Show the HTTPS Worker origin, native OS-Keyring Set/Forget controls and setup guidance only when Hybrid is selected. Never require a secret merely to open the form. Keep **Save disabled** for an incomplete Hybrid draft (missing validated Worker URL, native relay secret, or authorized GitHub monitoring scope); Cancel preserves the persisted mode/URL. Simple polling is always available, even if the relay is unavailable. Secret operations are immediate native keyring changes, independent from the Settings OK/Cancel draft.
+
+No GitHub device authorization code, RepoTicker-issued token or public relay key exists. The **single operator** generates `RELAY_CLIENT_SECRET` locally, supplies it to their own Cloudflare Worker secret binding and enters **the same value** using RepoTicker's native OS secret prompt. On an Ubuntu system with OpenSSL, the operator can generate a 64-character base64url secret (never check it into source):
+
+```sh
+openssl rand -base64 48 | tr '+/' '-_' | tr -d '=\\n'
+```
+
+Use a **different** `WEBHOOK_SECRET` for GitHub's webhook signature, and configure the private `ALLOWED_REPOSITORIES` list. After separately approved Cloudflare deployment, enter the deployed HTTPS Worker origin (not the `/v1/github` path) in Settings. GitHub's `workflow_run` webhook endpoint is `https://YOUR-WORKER-ORIGIN/v1/github`; the native client uses a separate authenticated WSS endpoint. Do not paste either secret into URLs, WebView fields, logs, Issues or git history. The repository contains **no default relay endpoint** and neither installing the desktop app nor choosing Hybrid deploys one. See `apps/relay-cloudflare/README.md` for the operator's requirements.
+
+This is documented configuration guidance, **not authorization to deploy**, create Cloudflare resources, upload secrets, register a GitHub webhook, alter the shared R2 bucket or change `main`. Validation must cover pre-credential reveal, notification/source independence, the guarded Save, Keyring-only custody, 20 locales, fallback and installed KDE/Windows behavior.
 
 ## Agreed high-level path
 

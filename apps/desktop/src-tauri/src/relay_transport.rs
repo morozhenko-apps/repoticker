@@ -133,6 +133,10 @@ async fn run(app: AppHandle) {
             return;
         }
     };
+    // rustls may have more than one provider enabled by transitive crates.
+    // Install a deterministic provider, or reuse the already installed one.
+    // Never disable TLS certificate or hostname verification.
+    let _ = rustls::crypto::ring::default_provider().install_default();
     let mut attempt = 0;
     loop {
         set_phase(&app, 1);

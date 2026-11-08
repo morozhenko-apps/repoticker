@@ -24,9 +24,10 @@ The secret stays exclusively in the existing native Keyring entry
 `com.morozhenko.repoticker.relay / personal-hybrid-client-v1`.
 
 Selecting Hybrid requires a nonempty monitored GitHub account and a validated
-origin URL. The UI can only enable it after confirming a stored native relay
-secret. Cancel leaves the config unchanged; Save writes mode and URL together
-as one config transaction. If credentials, network, scope or WebSocket are
+origin URL. The UI can reveal Hybrid setup before a secret exists, while Save remains
+blocked until a validated URL, connected GitHub account, selected scope and
+stored native relay secret are confirmed. Cancel leaves the config unchanged;
+Save writes mode and URL together as one config transaction. If credentials, network, scope or WebSocket are
 unavailable, keep REST polling functional, surface nonsecret availability,
 and do not retain or fabricate CI status.
 
@@ -54,6 +55,75 @@ errors terminate the stream; the independently scheduled REST monitor
 continues. Reconnect with capped exponential backoff and a cancel-aware
 task; no polling spin, unbounded buffers, background Git actions or recursive
 reconnect tasks. Never log bearer, payloads, private repository names or URL.
+
+## Event-driven scheduling and lost-delivery recovery (2026-11-08)
+
+### Motivation and native contract
+
+The previous monitor used the same 2–7 minute full REST cycle in Simple and Hybrid,
+regardless of an online WebSocket. Webhook-triggered REST calls therefore increased
+GitHub API consumption without replacing any routine collection. The one
+`lastAttempt` timestamp also risked postponing independent safety checks when
+task hints arrived frequently. The relay admitted only `workflow_run.completed`,
+so queued/running transitions relied entirely on polling.
+
+Hybrid is a **source of early invalidation hints**, never a source of CI
+conclusions or an alternative credential endpoint. GitHub REST remains the
+authoritative read, including queued/running status and completed conclusions.
+Keep one GitHub OAuth credential in the native vault; keep relay bearer distinct.
+Do not change the versioned hint frame, Durable Object journal or stored config.
+
+- Simple polling, native `polling`, `connecting`, `fallback`, missing or
+  unknown transport status: retain the established adaptive 2–7 minute
+  full REST polling schedule. A transport failure after a confirmed online
+  period immediately schedules a guarded full reconciliation.
+- Native `online` Hybrid: CI task snapshots are refreshed by scope-checked
+  relay hints (`tasks`), and a full REST reconciliation still runs at least
+  every 15 minutes to catch missed deliveries or cursor gaps. The separate
+  runner capacity metric refresh remains at the existing adaptive cadence.
+  Use independent last-full and last-runner clocks so frequent task hints
+  cannot indefinitely starve either periodic check. Preserve the native
+  rate-limit cooldown gate and existing single-flight coalescing.
+- The UI must obtain the initial native-only `relay_connection_status`
+  without trusting user-supplied connection state; `repoticker-relay-state`
+  events update scheduling on transitions. Discard stale asynchronous
+  initial status reads after newer state events. Unknown state fails open
+  to **more REST reconciliation**, not to false CI success.
+- Accept signed, allowlisted GitHub `workflow_run` activity
+  `requested`, `in_progress` and `completed` with an appropriate
+  underlying workflow run status. GitHub's queued transition is reported
+  as `requested`, **not** an action named `queued`. The relay sends
+  identical minimal repository-only hints for all three; never forward
+  action/status/conclusion, workflow logs, OAuth or repository content.
+- GitHub does **not automatically redeliver failed webhooks**. A 503
+  signals failure but must not be treated as guaranteed retry. Native
+  15-minute full REST reconciliation is the bounded eventual recovery
+  for failed, rejected, oversized, throttled or missed webhook deliveries
+  while the client is online; disconnected clients retain shorter polling.
+  Manual/API redelivery is an operator maintenance action requiring
+  separate authorization. Do not add GitHub admin credentials to the Worker.
+- Retain fail-closed HMAC checks on original raw bytes, the operator
+  allowlist, deduplication, 64-KiB body ceiling, SQLite 128-hint/24-hour
+  bounds, 8 sockets, 120 admitted deliveries/minute and 15-second native
+  hint burst gate. Oversized real payloads remain a known acceptance risk:
+  changing the ceiling requires separate traffic-size evidence and security
+  review; do not silently weaken it.
+
+### Validation, rollback and admission
+
+Add deterministic fake-clock tests for Simple vs online Hybrid scheduling,
+transitions through connecting/fallback, runner-only refresh, sustained
+hint load without starving a full reconciliation, failed and late state IPC
+reads, GitHub cooldown, webhook requested/in_progress/completed schemas,
+unknown action/invalid status, and signature/delivery id/allowlist safety.
+Use unchanged transport frames to retain backward compatibility with
+accepted clients and Durable Object data. A remote Node/Rust CI success
+does not establish physical KDE/Windows or deployed Cloudflare acceptance.
+
+Rollback executable changes independently: (1) webhook activity allowlist
+and its tests, (2) monitor scheduling and its tests. No production
+deployment, secret provisioning, webhook registration, `main`, tags or
+shared R2 changes are authorized.
 
 ## Validation and rollback
 

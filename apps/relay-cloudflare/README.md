@@ -52,8 +52,9 @@ secrets, routes or operator credentials. Deployment is deliberately manual.
 ## Protocol v1
 
 HTTPS POST /v1/github checks GitHub's HMAC-SHA256 signature over the untouched
-request bytes before any parsing. Signed workflow_run.completed events produce
-only a bounded repository invalidation hint. GitHub signed ping returns 204.
+request bytes before any parsing. Signed workflow_run activities `requested`,
+`in_progress`, and `completed` produce only a bounded repository invalidation
+hint. GitHub signed ping returns 204.
 Malformed/forged, unsupported and out-of-scope events are rejected.
 
 Authenticated GET /v1/changes?after=<cursor> returns a bounded JSON replay
@@ -61,7 +62,11 @@ Authenticated GET /v1/changes?after=<cursor> returns a bounded JSON replay
 Authenticated WSS /v1/stream?after=<cursor> yields hint, reset and ready
 frames. Clients pass the relay secret ONLY via Authorization: Bearer,
 never URL query, cookies or WebView. The relay emits no workflow conclusions.
-Clients must reconcile in GitHub REST. The journal contains at most 128
+Clients must reconcile in GitHub REST. While the native WebSocket is online,
+the desktop still performs a full reconciliation at least every 15 minutes;
+runner capacity uses its established adaptive cadence. When disconnected,
+normal 2–7 minute direct polling resumes. GitHub does not automatically
+redeliver failed webhooks; HTTP 503 is not a retry guarantee. The journal contains at most 128
 hints and 24h of active history; gaps require full REST reconciliation.
 At most 8 simultaneous sockets and 120 new deliveries per minute are accepted
 per personal relay.

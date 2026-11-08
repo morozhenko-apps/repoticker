@@ -10,6 +10,14 @@ The app inspects repositories under explicitly enrolled folders. Fetch must not 
 
 GitHub OAuth access and refresh tokens are handled by the native layer and stored with the operating system's credential service. They are not copied to WebView, saved as plaintext preferences, embedded in URLs or exposed in diagnostic messages.
 
+The optional operator-owned Hybrid relay has a separate OS credential entry.
+The secret is entered using a native password dialog available only from
+Settings; the WebView never receives or submits it. Relay secret changes
+are immediate credential-store operations, independent of Settings
+OK/Cancel. They are never stored in `config.json`, event payloads, URLs
+or logs. Hybrid transport remains disabled until native authenticated WSS
+and REST recovery are validated.
+
 GitHub API input/output is restricted to approved endpoints and bounded data. Permission errors, rate limits and incomplete inventories must not become an authoritative clean status or zero usage. RepoTicker does not require a developer-run login or repository hosting service.
 
 ## Local state and external services

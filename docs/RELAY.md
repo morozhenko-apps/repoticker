@@ -163,57 +163,36 @@ transport dependency and lockfile are resolved.
   notification-opt-out regression.
 
 
-## Native secret-dialog decision (2026-11-08)
+## Native relay secret custody
 
-**Mode A, owner-approved architecture.** The user selected a native
-system secret-entry dialog, not a WebView input and not manual
-credential provisioning. This is distinct from the existing GitHub
-OAuth token. It remains single-operator and does not authorize a
-shared relay service, a production deployment or a protected-branch
-release.
+The owner selected OS-native secret entry, never a WebView password field.
 
-**Plan and invariants:**
+- `relay_secret.rs` uses GTK 3's hidden password dialog on Linux,
+  transient to the Settings GTK window; on Windows it uses Win32
+  Credential UI with password-only input and `DO_NOT_PERSIST`.
+  The native dialog is single-flight.
+- Only invocations originating from the trusted Settings WebviewWindow
+  are admitted. Native commands have no WebView-provided `secret` argument:
+  they return a boolean credential status, an accepted/cancelled result,
+  or a fixed redacted failure. They never return credential bytes.
+- Relay credentials use a separate Keyring service/account
+  (`com.morozhenko.repoticker.relay`,
+  `personal-hybrid-client-v1`), isolated from GitHub OAuth.
+  Values are validated as base64url ASCII of length 32–256.
+  Owned secret buffers are volatile-zeroed through a Drop guard even
+  on failure; Win32 input buffers are zeroed before returning.
+  The native prompt refuses a late write after Settings closes.
+- Settings offers Set/Forget buttons with an accessible stored/
+  not configured/unavailable status. These actions are immediately
+  committed to the OS keyring in the separate native dialog, not to
+  `config.json` or the transactional Settings OK/Cancel draft.
+  The UI must clearly communicate that distinction.
+- This layer does **not** enable Hybrid. The Simple mode remains
+  the only enabled connection; the Worker URL remains unavailable
+  until the audited native WSS TLS dependency is resolved with a
+  correct Cargo.lock, securely reconnects and reconciles through
+  existing read-only GitHub REST, and passes Linux/Windows acceptance.
+  No secret-bearing WebView transport or unverified manual fallback.
 
-1. Define a separate native `RelaySecretStore` with a unique
-   Keyring service/account identifier (not the GitHub OAuth entry).
-   Only the native process may read, save, replace or clear the secret.
-   A canceled dialog changes nothing. Validate base64url ASCII
-   32–256 characters and fail closed on vault errors. Use fixed,
-   redacted error categories, never strings containing the secret.
-2. Provide native-only secret entry using GTK password input on
-   Linux and Win32 Credential UI on Windows. Neither dialog, its
-   value nor an inter-process IPC argument is WebView-controlled.
-   Native async IPC returns only `configured` or a fixed failure.
-   Dialog request is a single-flight native operation to prevent
-   overlapping prompts. Do not log, persist or emit the secret.
-3. Add Settings controls for `Configure secret` and a boolean
-   `Stored / Not configured / Unavailable` status, without
-   a WebView password box. Keep the current disabled Hybrid mode
-   and URL gate until native TLS WebSocket and failover exist.
-   All existing Save/Cancel and GitHub OAuth operations remain
-   unchanged. A credential replacement is a separate explicit
-   native action, not a transaction committed via Settings OK.
-4. Add Rust tests for keyring identity and strict validation,
-   source/UI contract tests against secret-free IPC and the
-   existing Settings layout. Keep source and documentation commits
-   separate. Test at the end in the user's pinned Node26 and
-   Linux/Windows Rust CI.
-5. Finish audited native WSS client and reconnect/OS-keyring
-   integration, update Cargo.toml and **Cargo.lock together**, then
-   enable the stored Hybrid selection and URL only after native
-   REST fallback and physical acceptance. No WebView-owned socket
-   or query-string token workaround.
-
-**Environment constraints:** The connector can commit repo source
-and inspect GitHub Actions but this runtime currently has no
-`cargo`, `rustc`, external DNS or installed Cargo registry;
-it cannot regenerate an accurate `Cargo.lock` for new WebSocket
-dependencies or run native GUI compilation. Do not ship a broken
-`--locked` Cargo package or invent a lockfile. This restriction
-does not prevent implementing/test-scoping the dependency-free
-native dialog/keyring seam first. The full Hybrid mode stays
-unavailable until the native transport is verified.
-
-**Rollback**: revert the focused native dialog/keyring and
-Settings wiring commits; the existing Simple polling, provider
-session and OS credential entry for GitHub are unaffected.
+Rollback: revert the focused native credential and Settings commits
+without affecting the GitHub OAuth keyring entry or Simple polling.

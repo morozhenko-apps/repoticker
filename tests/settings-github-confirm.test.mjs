@@ -57,6 +57,8 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
   const persistedIgnored = [...(options.ignoredChildNames || [])];
   let closed = false;
   let osAutostart = options.autostartEnabled === true;
+  let persistedConnectionMode = options.connectionMode || "polling";
+  let persistedRelayUrl = options.relayUrl || null;
   let relayStored = options.relayStored === true;
   let tokenRemoved = false;
   let releaseInstallations = null;
@@ -98,6 +100,8 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
                 github_monitor_org: monitorOrg,
                 github_monitor_repositories: monitorRepositories,
                 ignored_child_names: persistedIgnored,
+                connection_mode: persistedConnectionMode,
+                relay_url: persistedRelayUrl,
                 // Deliberately omit the enum in legacy-format fixtures.
                 ...(options.legacyCiFailureNotifications === true
                   ? { ci_failure_notifications: true }
@@ -192,6 +196,8 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
               return options.folderPath ?? null;
             case "save_settings":
               if (options.saveSettingsError) throw Error("Settings write denied");
+              if (args.connectionMode) persistedConnectionMode = args.connectionMode;
+              if (Object.hasOwn(args, "relayUrl")) persistedRelayUrl = args.relayUrl;
               return undefined;
             case "close_settings": closed = true; return undefined;
             default: throw Error("Unexpected IPC " + command);
@@ -234,6 +240,8 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
     get monitorOrg() { return monitorOrg; },
     get autostartEnabled() { return osAutostart; },
     get relayStored() { return relayStored; },
+    get connectionMode() { return persistedConnectionMode; },
+    get relayUrl() { return persistedRelayUrl; },
     get monitorRepositories() { return monitorRepositories; },
     releaseInstallations: payload => releaseInstallations?.(payload),
     releaseRepositoryInventory: payload => releaseRepositoryInventory?.(payload),
@@ -1953,5 +1961,75 @@ test("native credential failures never echo secret, credential metadata or provi
     assert.equal(ui.node("message").textContent, "Cannot update relay secret.");
     assert.doesNotMatch(ui.node("message").textContent, /PRIVATE_RELAY|SECRET|token=/);
     assert.equal(ui.node("relay-secret-status").textContent, "Relay secret unavailable");
+  } finally { ui.restore(); }
+});
+
+test("Hybrid mode and URL are committed together only after Settings OK", async () => {
+  const ui = await fixture("hybrid-confirm", true, [], { relayStored: true });
+  try {
+    assert.equal(ui.node("github-connection-mode").disabled, false);
+    ui.node("github-connection-mode").value = "hybrid";
+    await ui.node("github-connection-mode").fire("change");
+    ui.node("github-worker-url").value = "https://relay.example.com/";
+    await ui.node("github-worker-url").fire("input");
+    assert.equal(ui.node("apply-settings").disabled, false);
+    assert.equal(ui.connectionMode, "polling");
+    await ui.node("apply-settings").fire("click");
+    assert.equal(ui.connectionMode, "hybrid");
+    assert.equal(ui.relayUrl, "https://relay.example.com/");
+    const last = ui.calls.filter(([command]) => command === "save_settings").at(-1);
+    assert.equal(last[1].connectionMode, "hybrid");
+    assert.equal(last[1].relayUrl, "https://relay.example.com/");
+    assert.equal(ui.calls.filter(([command]) => command === "relay_prompt_secret").length, 0);
+  } finally { ui.restore(); }
+});
+
+test("Hybrid edits are discarded on Settings Cancel without a config or keyring write", async () => {
+  const ui = await fixture("hybrid-cancel", true, [], { relayStored: true });
+  try {
+    ui.node("github-connection-mode").value = "hybrid";
+    await ui.node("github-connection-mode").fire("change");
+    ui.node("github-worker-url").value = "https://relay.example.com";
+    await ui.node("github-worker-url").fire("input");
+    await ui.node("cancel-settings").fire("click");
+    assert.equal(ui.connectionMode, "polling");
+    assert.equal(ui.relayUrl, null);
+    assert.equal(ui.calls.filter(([command]) => command === "save_settings").length, 0);
+    assert.equal(ui.calls.filter(([command]) => command === "relay_prompt_secret").length, 0);
+  } finally { ui.restore(); }
+});
+
+test("Hybrid validates URL and rejects insecure origin before Settings can persist", async () => {
+  const ui = await fixture("hybrid-url-deny", true, [], { relayStored: true });
+  try {
+    ui.node("github-connection-mode").value = "hybrid";
+    await ui.node("github-connection-mode").fire("change");
+    for (const invalid of [
+      "", "http://relay.example.com", "https://127.0.0.1",
+      "https://relay.example.com/path", "https://user:pass@relay.example.com/",
+      "https://relay.example.com/?token=secret"
+    ]) {
+      ui.node("github-worker-url").value = invalid;
+      await ui.node("github-worker-url").fire("input");
+      assert.equal(ui.node("apply-settings").disabled, true, invalid);
+    }
+    assert.equal(ui.calls.filter(([command]) => command === "save_settings").length, 0);
+  } finally { ui.restore(); }
+});
+
+test("Previously configured Hybrid can return to Simple when relay keyring is unavailable", async () => {
+  const ui = await fixture("hybrid-rollback", true, [], {
+    connectionMode: "hybrid",
+    relayUrl: "https://relay.example.com/",
+    relayStatusError: true
+  });
+  try {
+    assert.equal(ui.node("github-connection-mode").disabled, false);
+    ui.node("github-connection-mode").value = "polling";
+    await ui.node("github-connection-mode").fire("change");
+    assert.equal(ui.node("apply-settings").disabled, false);
+    await ui.node("apply-settings").fire("click");
+    assert.equal(ui.connectionMode, "polling");
+    assert.equal(ui.relayUrl, "https://relay.example.com/");
   } finally { ui.restore(); }
 });

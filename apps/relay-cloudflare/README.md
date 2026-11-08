@@ -56,7 +56,7 @@ subdirectory as the root of this monorepo:
 
 | Field | Setting |
 | --- | --- |
-| Worker name | `repoticker-personal-relay` (same as Wrangler) |
+| Worker name | `repoticker-relay` (same as the existing Cloudflare Worker and Wrangler) |
 | Git repository | `morozhenko-apps/repoticker` |
 | Root directory | `apps/relay-cloudflare` |
 | Production branch | A reviewed, separately controlled deployment branch; **not** the continuously updated `dev` |
@@ -66,6 +66,20 @@ subdirectory as the root of this monorepo:
 | Durable Object binding | `RELAY_HUB`, class `RelayHub` |
 | SQLite migration | `v1`, `new_sqlite_classes = ["RelayHub"]` |
 | Worker URL | The operator-owned `https://<name>.<account>.workers.dev` or HTTPS custom domain |
+
+In Cloudflare Workers Builds → **Build watch paths**, replace the default
+Include `*` with `apps/relay-cloudflare/*`; leave Exclude empty.
+These paths are relative to the Git repository root even when the Worker
+root directory is `apps/relay-cloudflare`. An empty push or an exceptionally
+large push can bypass watch-path filtering. No need to make empty commits
+to trigger deployment once a real Worker file changes.
+
+Cloudflare's **Configured API token unavailable** state must be repaired in
+Worker → Settings → Builds → API token before any new commit can deploy.
+A retry may also surface other issues. Check **Deployments → View build**
+for the exact failure. Workers Builds' auto-generated token can include
+broad R2 write privileges even though this relay uses no R2; review and
+limit token permissions where supported.
 
 A Git-linked Worker deploys automatically on updates to its configured
 production branch. Keep reviewed staging and user releases separate; disable
@@ -87,13 +101,17 @@ environment variables, under **Worker → Settings → Variables and Secrets**:
   enter the **same** secret through RepoTicker's OS-native relay prompt.
 - `WEBHOOK_SECRET`: generate a **different** `openssl rand -hex 32` value;
   use it as GitHub's webhook signing secret.
-- `ALLOWED_REPOSITORIES`: comma-separated exact `owner/repo` names of
-  repositories explicitly monitored by this relay, maximum 100. Treat the
-  list as a secret if repository identities are private.
+- `ALLOWED_REPOSITORIES`: comma-separated exact repository identities
+  (`owner/repo`) and/or explicitly authorized owner scopes (`owner/*`).
+  For one operator's whole GitHub organization, use a single `owner/*`
+  entry instead of editing the secret when a repository is created.
+  A standalone `*` is never accepted; at most 100 entries are allowed.
+  Treat nonpublic scopes as secrets.
 
-For each monitored GitHub repository, or an appropriately scoped
-organization-level webhook, create a webhook with **Content type:
-application/json**, **Payload URL:**
+For the entire organization, configure **one organization webhook** under
+GitHub **Organization → Settings → Webhooks**, rather than one webhook per
+repository. Organization hooks cover current and future organization
+repositories. Select **Content type: application/json**, **Payload URL:**
 `https://<your-worker-origin>/v1/github`, and the matching
 `WEBHOOK_SECRET`. Subscribe to **Workflow runs** (`workflow_run`);
 the relay accepts `requested`, `in_progress` and `completed`.
@@ -117,8 +135,13 @@ commit them and never pass them as command-line arguments or store in the UI:
   GitHub's webhook secret.
 - RELAY_CLIENT_SECRET: independent base64url-like (A-Z, a-z, 0-9, _ or -),
   length 32-256. Intended for native OS credential storage on the desktop.
-- ALLOWED_REPOSITORIES: a comma-separated exact allowlist of up to 100
-  GitHub "owner/repo" identities. These may be private; do not commit them.
+- ALLOWED_REPOSITORIES: a comma-separated allowlist (maximum 100
+  entries) of exact `owner/repo` identities and/or explicitly selected
+  GitHub account/organization patterns `owner/*`. The owner pattern
+  authorizes **all** repositories under that owner, including repositories
+  created later. The global `*`, nested wildcards and malformed identities
+  are rejected. A HMAC-valid webhook for another owner still fails closed.
+  These identities may be private; do not commit them.
 
 Wrangler config declares a single SQLite Durable Object, with no populated
 secrets, routes or operator credentials. Deployment is deliberately manual.

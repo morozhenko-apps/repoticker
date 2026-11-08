@@ -17,6 +17,21 @@ GitHub Device Flow, token handling, HTTPS requests, response validation, permiss
 Settings separates the GitHub credential from the selected monitoring installation. A complete one-account installation inventory may initialize an absent monitoring scope automatically only for a previously authenticated session; an in-progress new Device Flow remains provisional until Settings OK so Cancel can revoke its new credential. Existing matching scopes are never rewritten on open. Multiple or incomplete inventories cannot be treated as proof of a unique account; an explicit scope change remains a draft until OK. Account data and Disconnect occupy one row; avoid duplicate authorized-status fields. Late inventory responses and failed account writes must not fabricate an active monitoring scope.
 
 
+## Relay authorization scope
+
+The operator's `ALLOWED_REPOSITORIES` secret accepts exact GitHub
+`owner/repo` entries or a deliberate `owner/*` entry for one GitHub
+account/organization. There is no global wildcard. All paths are
+canonicalized and bounded; signed webhook HMAC and raw-body validation
+remain mandatory, and Worker/DO ingress, historic replay and broadcast
+must use the same authorization predicate. An owner-level entry explicitly
+trusts **all** current and future repositories owned by that account;
+it is not equivalent to the user's narrower desktop monitoring selection.
+The desktop still verifies scope through GitHub REST. A single
+organization-level `workflow_run` webhook can cover future repos
+without GitHub credentials, org repo inventory or automated webhook
+management in the Worker.
+
 ## Operator-owned Hybrid source and UI contract
 
 Installed desktop clients must show where to obtain their optional

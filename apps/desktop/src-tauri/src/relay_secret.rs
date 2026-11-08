@@ -16,7 +16,7 @@ pub struct RelayPromptGate(AtomicBool);
 struct PromptLease(Arc<RelayPromptGate>);
 impl Drop for PromptLease {
     fn drop(&mut self) {
-        self.0 .0.store(false, Ordering::Release);
+        self.0.0.store(false, Ordering::Release);
     }
 }
 
@@ -42,8 +42,14 @@ fn entry() -> Result<keyring::Entry, String> {
 
 fn read_secret() -> Result<Option<String>, String> {
     match entry()?.get_password() {
-        Ok(secret) if valid_secret(&secret) => Ok(Some(secret)),
-        Ok(_) => Err("Stored relay credential is invalid.".into()),
+        Ok(mut secret) => {
+            if valid_secret(&secret) {
+                Ok(Some(secret))
+            } else {
+                wipe(&mut secret);
+                Err("Stored relay credential is invalid.".into())
+            }
+        }
         Err(keyring::Error::NoEntry) => Ok(None),
         Err(_) => Err("System credential store unavailable.".into()),
     }
@@ -203,6 +209,7 @@ mod win32 {
     const CREDUI_FLAGS_DO_NOT_PERSIST: u32 = 0x0000_0002;
     const CREDUI_FLAGS_ALWAYS_SHOW_UI: u32 = 0x0000_0080;
     const CREDUI_FLAGS_GENERIC_CREDENTIALS: u32 = 0x0004_0000;
+    const CREDUI_FLAGS_PASSWORD_ONLY_OK: u32 = 0x0000_0200;
     const ERROR_CANCELLED: u32 = 1223;
 
     fn wide(text: &str) -> Vec<u16> {
@@ -238,14 +245,17 @@ mod win32 {
                 &mut save,
                 CREDUI_FLAGS_DO_NOT_PERSIST
                     | CREDUI_FLAGS_ALWAYS_SHOW_UI
-                    | CREDUI_FLAGS_GENERIC_CREDENTIALS,
+                    | CREDUI_FLAGS_GENERIC_CREDENTIALS
+                    | CREDUI_FLAGS_PASSWORD_ONLY_OK,
             )
         };
+        // Decode *before* wiping, but delay propagation of any error until
+        // all native buffers have been securely cleared.
         let extracted = if outcome == 0 {
             let len = password.iter().position(|ch| *ch == 0).unwrap_or(password.len());
             Some(String::from_utf16(&password[..len]).map_err(|_| {
                 "Native secret dialog returned invalid text.".to_owned()
-            })?)
+            }))
         } else {
             None
         };
@@ -257,7 +267,7 @@ mod win32 {
         }
         std::sync::atomic::compiler_fence(std::sync::atomic::Ordering::SeqCst);
         match outcome {
-            0 => Ok(extracted),
+            0 => extracted.transpose(),
             ERROR_CANCELLED => Ok(None),
             _ => Err("Native secret dialog unavailable.".into()),
         }

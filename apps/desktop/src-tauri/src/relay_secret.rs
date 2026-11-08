@@ -32,6 +32,12 @@ pub(crate) fn discard_draft(app: &AppHandle) {
     let _discarded = lock_draft(&state).take();
 }
 
+pub(crate) fn has_pending_draft(app: &AppHandle) -> bool {
+    let state = app.state::<RelaySecretDraftState>();
+    let draft = lock_draft(&state);
+    draft.is_some()
+}
+
 struct PromptLease(Arc<RelayPromptGate>);
 impl Drop for PromptLease {
     fn drop(&mut self) {

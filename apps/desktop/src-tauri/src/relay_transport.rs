@@ -112,6 +112,13 @@ async fn run(app: AppHandle) {
         set_phase(&app, 0);
         return;
     }
+    // A Settings draft may be changing both relay origin and native Keyring
+    // credential. Never handshake to a newly saved URL using an old bearer.
+    // Rest fallback is independent and stays available until explicit OK.
+    if relay_secret::has_pending_draft(&app) {
+        set_phase(&app, 3);
+        return;
+    }
     let Some(base_url) = config.relay_url.as_deref() else {
         set_phase(&app, 3);
         return;

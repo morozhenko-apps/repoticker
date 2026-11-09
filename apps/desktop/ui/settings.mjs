@@ -36,8 +36,28 @@ function applySettingsLanguage(value) {
 // Native WSS online proves only the Worker transport, never webhook delivery.
 // A stored password or configured URL cannot make the connection "online".
 let relayPhase = "unknown";
+let relayReason = "none";
 let relayPhaseRevision = 0;
 const RELAY_PHASES = new Set(["polling", "connecting", "online", "fallback"]);
+const RELAY_FAILURE_DETAILS = Object.freeze({
+  configuration: "Relay configuration is unavailable.",
+  scope: "GitHub monitoring account is not configured.",
+  github: "GitHub authorization is unavailable.",
+  missing_secret: "No relay secret is stored. REST monitoring is active.",
+  credential_store: "Cannot access the OS credential store.",
+  invalid_url: "Worker URL is invalid.",
+  http_401: "Worker rejected the client secret (HTTP 401).",
+  http_403: "WebSocket upgrade blocked (HTTP 403).",
+  http_endpoint: "Worker WebSocket endpoint refused the upgrade.",
+  http_service: "Worker failed the WebSocket upgrade (HTTP 5xx).",
+  timeout: "Worker WebSocket connection timed out.",
+  network: "Network connection to Worker failed.",
+  tls: "TLS handshake with Worker failed.",
+  protocol: "WebSocket protocol error.",
+  closed: "WebSocket closed. Reconnecting.",
+  pending_changes: "Relay changes are pending confirmation.",
+  unavailable: "Relay unavailable. REST monitoring is active."
+});
 
 function confirmedRelayConnection() {
   return relayPhase === "online" &&
@@ -56,7 +76,8 @@ function syncWorkerControls() {
   worker.disabled = mode.disabled || !hybridSelected || connected;
   const state = byId("relay-connection-state");
   state.hidden = !hybridSelected;
-  state.title = t("Worker connection does not verify GitHub webhook deliveries.");
+  // The reason is displayed in context; no redundant hover-only tooltip.
+  state.title = "";
   const isPersistedHybrid = original?.connectionMode === "hybrid";
   let label = "Worker: not connected";
   let phase = "inactive";
@@ -75,9 +96,18 @@ function syncWorkerControls() {
   }
   state.dataset.state = phase;
   byId("relay-connection-text").textContent = t(label);
+  const detail = byId("relay-connection-detail");
+  const reason = RELAY_FAILURE_DETAILS[relayReason];
+  const showReason = hybridSelected && isPersistedHybrid &&
+    relayPhase === "fallback" && !connected;
+  detail.hidden = !showReason;
+  detail.textContent = showReason ? t(reason || RELAY_FAILURE_DETAILS.unavailable) : "";
 }
-function applyRelayPhase(phase) {
+function applyRelayPhase(status) {
+  const phase = typeof status === "string" ? status : status?.phase;
+  const reason = typeof status === "object" ? status?.reason : "none";
   relayPhase = RELAY_PHASES.has(phase) ? phase : "unknown";
+  relayReason = Object.hasOwn(RELAY_FAILURE_DETAILS, reason) ? reason : "none";
   syncWorkerControls();
 }
 byId("github-connection-mode").addEventListener("change", event => {
@@ -93,6 +123,11 @@ byId("github-worker-url").addEventListener("input", event => {
 });
 const invoke = (command, args = {}) => window.__TAURI__?.core?.invoke(command, args) ??
   Promise.reject(new Error("Open settings in RepoTicker."));
+// A single explicit Close action replaces OS-level minimize/maximize controls.
+byId("settings-titlebar").addEventListener("mousedown", event => {
+  if (event.button !== 0 || event.target?.id === "settings-close") return;
+  void invoke("start_settings_drag").catch(() => {});
+});
 const traceStartup = stage => {
   void invoke("trace_startup_stage", { stage }).catch(() => {});
 };
@@ -128,7 +163,7 @@ function renderRelaySecretState() {
   byId("relay-secret-status").textContent = t(label);
   byId("relay-remove-secret").hidden = !configured;
   byId("relay-remove-secret").disabled =
-    relaySecretBusy || settingsLoading || saving || !configured;
+    relaySecretBusy || saving || !configured;
 }
 async function refreshRelaySecretStatus(revision = settingsRefreshRevision) {
   try {
@@ -148,7 +183,7 @@ byId("relay-secret-mask").addEventListener("input", () => {
   updateApply();
 });
 byId("relay-remove-secret").addEventListener("click", async () => {
-  if (relaySecretBusy || settingsLoading || saving || relaySecretConfigured !== true) return;
+  if (relaySecretBusy || saving || relaySecretConfigured !== true) return;
   relaySecretBusy = true;
   renderRelaySecretState();
   try {
@@ -180,14 +215,14 @@ let settingsRefreshRevision = 0;
 const relayListenerReady = Promise.resolve(
   window.__TAURI__?.event?.listen?.("repoticker-relay-state", event => {
     relayPhaseRevision++;
-    applyRelayPhase(event?.payload?.phase);
+    applyRelayPhase(event?.payload);
   })
 ).catch(() => {});
 async function refreshRelayConnectionStatus(revision = settingsRefreshRevision) {
   const observedPhaseRevision = relayPhaseRevision;
   await relayListenerReady;
   try {
-    const phase = await invoke("relay_connection_status");
+    const phase = await invoke("relay_connection_diagnostics");
     if (revision !== settingsRefreshRevision ||
         observedPhaseRevision !== relayPhaseRevision) return;
     applyRelayPhase(phase);
@@ -1113,7 +1148,7 @@ document.addEventListener("keydown", event => {
     closeLanguagePicker(true);
   }
 });
-byId("cancel-settings").addEventListener("click", async () => {
+const cancelSettings = async () => {
   if (saving) return;
   // Invalidate pending challenge continuations before the first await.
   ++githubBeginRevision;
@@ -1143,7 +1178,9 @@ byId("cancel-settings").addEventListener("click", async () => {
     saving = false;
     updateApply();
   }
-});
+};
+byId("cancel-settings").addEventListener("click", cancelSettings);
+byId("settings-close").addEventListener("click", cancelSettings);
 byId("apply-settings").addEventListener("click", async () => {
   if (saving || settingsLoading || settingsInitFailed || githubCheckFailed ||
       githubPending || githubStarting || !repoChoiceValid() || !validRelayDraft() ||

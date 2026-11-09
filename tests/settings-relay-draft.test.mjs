@@ -39,8 +39,8 @@ test("new secrets use native validation and are never saved as regular settings"
 });
 
 test("Cancel clears WebView candidate without writing Keyring", () => {
-  const cancel = source.split('byId("cancel-settings").addEventListener("click"')[1]
-    .split('byId("apply-settings").addEventListener("click"')[0];
+  const cancel = source.split('const cancelSettings = async () => {')[1]
+    .split('byId("cancel-settings").addEventListener("click", cancelSettings);')[0];
   assert.match(cancel, /byId\("relay-secret-mask"\)\.value = ""/);
   assert.match(cancel, /await invoke\("close_settings"\)/);
   assert.doesNotMatch(cancel, /relay_stage_secret|relay_commit_secret_draft/);

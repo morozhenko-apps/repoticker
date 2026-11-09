@@ -7,6 +7,10 @@
   <script type="module" src="./settings.mjs"></script>
 </head>
 <body>
+<header id="settings-titlebar" class="settings-titlebar">
+  <span id="settings-window-title" data-i18n="Settings">Settings</span>
+  <button id="settings-close" type="button" aria-label="Close" data-i18n-aria="Close">×</button>
+</header>
 <main class="settings-shell">
   <section class="block general">
     <h2 data-i18n="General">General</h2>
@@ -121,6 +125,7 @@
       <div id="relay-connection-state" class="relay-connection-state" role="status" aria-live="polite" data-state="unknown" hidden title="">
         <span class="relay-connection-dot" aria-hidden="true"></span>
         <span id="relay-connection-text"></span>
+        <span id="relay-connection-detail" class="relay-connection-detail" hidden></span>
       </div>
       <p class="relay-resource-links"><a id="relay-worker-guide-link" href="https://github.com/morozhenko-apps/repoticker/blob/dev/apps/relay-cloudflare/README.md" target="_blank" rel="noopener noreferrer" data-i18n="Deployment guide">Deployment guide</a></p>
     </div>

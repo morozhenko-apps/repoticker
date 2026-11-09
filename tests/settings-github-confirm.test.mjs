@@ -64,6 +64,7 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
   // Mirror native Rust: password dialogs stage only, Keyring mutates on OK.
   let relayPending = null;
   let relayTransportPhase = options.relayTransportPhase ?? "polling";
+  let relayTransportReason = options.relayTransportReason ?? "none";
   let releaseRelayTransportStatus = null;
   const delayedRelayTransportStatus = options.deferRelayTransportStatus
     ? new Promise(resolve => { releaseRelayTransportStatus = resolve; }) : null;
@@ -133,9 +134,11 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
             case "relay_secret_status":
               if (options.relayStatusError) throw Error("PRIVATE_RELAY_STATUS");
               return relayPending === null ? relayStored : relayPending === "set";
-            case "relay_connection_status":
+            case "relay_connection_diagnostics":
               if (options.relayTransportStatusError) throw Error("PRIVATE_RELAY_PHASE");
-              return delayedRelayTransportStatus ?? relayTransportPhase;
+              return delayedRelayTransportStatus ?? {
+                phase: relayTransportPhase, reason: relayTransportReason
+              };
             case "relay_stage_secret":
               if (options.relayStageError) throw Error("Invalid relay credential.");
               if (typeof args.secret !== "string" ||
@@ -269,9 +272,10 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
     get relayStored() { return relayStored; },
     get relayPending() { return relayPending; },
     get connectionMode() { return persistedConnectionMode; },
-    dispatchRelayPhase(phase) {
+    dispatchRelayPhase(phase, reason = "none") {
       relayTransportPhase = phase;
-      listeners.get("repoticker-relay-state")?.({ payload: { phase } });
+      relayTransportReason = reason;
+      listeners.get("repoticker-relay-state")?.({ payload: { phase, reason } });
     },
     releaseRelayTransportStatus: phase => releaseRelayTransportStatus?.(phase),
     get relayUrl() { return persistedRelayUrl; },
@@ -2221,7 +2225,8 @@ test("Connected native Worker locks URL and mask but leaves the native Disconnec
     assert.equal(ui.node("relay-secret-mask").disabled, true);
     assert.equal(ui.node("relay-remove-secret").disabled, false);
     assert.equal(ui.node("relay-remove-secret").hidden, false);
-    assert.match(ui.node("relay-connection-state").title, /does not verify GitHub webhook deliveries/);
+    assert.equal(ui.node("relay-connection-state").title, "");
+    assert.equal(ui.node("relay-connection-detail").hidden, true);
     ui.node("github-worker-url").value = "https://forged.example.com";
     await ui.node("github-worker-url").fire("input");
     assert.equal(ui.node("apply-settings").disabled, true,
@@ -2298,5 +2303,45 @@ test("Simple polling hides Worker status regardless of native event", async () =
     ui.dispatchRelayPhase("fallback");
     assert.equal(ui.node("relay-settings").hidden, true);
     assert.equal(ui.node("relay-connection-state").hidden, true);
+  } finally { ui.restore(); }
+});
+
+test("Native failure reason identifies the failing WSS stage without leaking raw errors", async () => {
+  const ui = await fixture("relay-specific-reasons", true, [], {
+    relayStored: true, connectionMode: "hybrid", relayTransportPhase: "fallback",
+    relayTransportReason: "http_403", relayUrl: "https://worker.example.com"
+  });
+  try {
+    assert.equal(ui.node("relay-connection-state").dataset.state, "fallback");
+    assert.equal(ui.node("relay-connection-detail").hidden, false);
+    assert.match(ui.node("relay-connection-detail").textContent, /HTTP 403/);
+    assert.equal(ui.node("relay-connection-state").title, "");
+    ui.dispatchRelayPhase("fallback", "http_401");
+    assert.match(ui.node("relay-connection-detail").textContent, /HTTP 401/);
+    ui.dispatchRelayPhase("fallback", "missing_secret");
+    assert.match(ui.node("relay-connection-detail").textContent, /No relay secret/);
+    ui.dispatchRelayPhase("fallback", "credential_store");
+    assert.match(ui.node("relay-connection-detail").textContent, /credential store/);
+    ui.dispatchRelayPhase("online");
+    assert.equal(ui.node("relay-connection-detail").hidden, true);
+    assert.equal(ui.node("github-worker-url").disabled, true);
+  } finally { ui.restore(); }
+});
+
+test("Disconnect stays available when WSS is offline, and custom Close behaves as Cancel", async () => {
+  const ui = await fixture("relay-custom-close", true, [], {
+    relayStored: true, connectionMode: "hybrid",
+    relayUrl: "https://worker.example.com",
+    relayTransportPhase: "fallback", relayTransportReason: "http_403"
+  });
+  try {
+    assert.equal(ui.node("relay-remove-secret").disabled, false);
+    await ui.node("relay-remove-secret").fire("click");
+    assert.equal(ui.relayPending, "remove");
+    assert.equal(ui.node("github-connection-mode").value, "hybrid");
+    await ui.node("settings-close").fire("click");
+    assert.equal(ui.closed, true);
+    assert.equal(ui.relayStored, true);
+    assert.equal(ui.relayPending, null);
   } finally { ui.restore(); }
 });

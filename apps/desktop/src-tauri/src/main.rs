@@ -1025,6 +1025,13 @@ fn show_settings(app: &AppHandle) {
             .map(|config| config.language)
             .unwrap_or_else(|_| "en".to_owned());
         let _ = window.set_title(tray_i18n::window_title(&language, "settings"));
+        let monitor = window.current_monitor().ok().flatten()
+            .or_else(|| window.primary_monitor().ok().flatten());
+        if let Some(monitor) = monitor {
+            let available = f64::from(monitor.size().height) / monitor.scale_factor() - 90.0;
+            let height = available.clamp(600.0, 800.0);
+            let _ = window.set_size(tauri::LogicalSize::new(660.0, height));
+        }
         let _ = window.show();
         let _ = window.set_focus();
         let _ = app.emit("repoticker-settings-opened", ());
@@ -1265,6 +1272,13 @@ async fn stop_card_drag(app: AppHandle) -> Result<(), String> {
 #[tauri::command]
 fn open_settings(app: AppHandle) {
     show_settings(&app);
+}
+
+#[tauri::command]
+fn start_settings_drag(app: AppHandle) -> Result<(), String> {
+    let window = app.get_webview_window("settings")
+        .ok_or_else(|| "Settings window is unavailable".to_owned())?;
+    window.start_dragging().map_err(|_| "Cannot drag Settings window.".to_owned())
 }
 
 #[tauri::command]
@@ -1953,6 +1967,7 @@ fn main() {
             relay_secret::relay_clear_secret,
             relay_secret::relay_commit_secret_draft,
             relay_transport::relay_connection_status,
+            relay_transport::relay_connection_diagnostics,
             startup_diagnostics::trace_startup_stage,
             github_session::github_auth_status,
             github_session::github_flow_status,
@@ -1983,6 +1998,7 @@ fn main() {
             add_root,
             remove_root,
             open_settings,
+            start_settings_drag,
             set_language,
             save_settings,
             select_repository_root,

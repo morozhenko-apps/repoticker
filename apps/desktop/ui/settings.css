@@ -263,3 +263,21 @@ label { font-size: 13px; }
 .relay-secret-controls #relay-secret-mask[type="password"] { letter-spacing: normal; }
 .relay-secret-controls #relay-secret-mask[type="text"]:disabled { font-family: ui-monospace, monospace; letter-spacing: .12em; }
 #github-repo-filter { height: 34px; }
+
+/* Explicit titlebar: the compositor cannot add an unexpected minimize button. */
+body { display: flex; flex-direction: column; }
+.settings-titlebar { flex: 0 0 30px; height: 30px; display: flex; align-items: center;
+  justify-content: space-between; background: color-mix(in srgb, CanvasText 8%, Canvas);
+  border-bottom: 1px solid color-mix(in srgb, CanvasText 14%, Canvas);
+  padding: 0 4px 0 12px; cursor: move; font-size: 12px; }
+.settings-titlebar #settings-window-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.settings-titlebar #settings-close { flex: 0 0 30px; width: 30px; height: 26px; min-height: 26px;
+  padding: 0; border: 0; background: transparent; border-radius: 4px;
+  cursor: pointer; font-size: 20px; line-height: 1; }
+.settings-titlebar #settings-close:hover { color: white; background: #b62935; }
+.settings-titlebar #settings-close:focus-visible { outline: 2px solid Highlight; outline-offset: -2px; }
+.settings-shell { height: auto; flex: 1 1 auto; min-height: 0; width: 100%; }
+.relay-connection-state { flex-wrap: wrap; row-gap: 3px; }
+.relay-connection-detail { flex-basis: 100%; padding-inline-start: 13px;
+  font-size: 12px; line-height: 1.4; color: CanvasText; }
+.relay-connection-detail[hidden] { display: none !important; }

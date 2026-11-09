@@ -77,7 +77,12 @@ test("Settings scrolls vertically when repository selections expand beyond the w
   const win = conf.app.windows.find(w => w.label === "settings");
   assert.ok(win, "Settings window exists");
   assert.deepEqual([win.width, win.minWidth, win.maxWidth], [660, 660, 660]);
-  assert.deepEqual([win.height, win.minHeight, win.maxHeight], [720, 720, 720]);
+  assert.deepEqual([win.height, win.minHeight, win.maxHeight], [780, 600, 800]);
+  assert.equal(win.decorations, false, "custom header removes KDE minimization control");
+  assert.match(html, /id="settings-titlebar"/);
+  assert.match(html, /id="settings-close"/);
+  assert.match(settings, /start_settings_drag/);
+  assert.match(settings, /byId\("settings-close"\).addEventListener\("click", cancelSettings\)/);
   assert.equal(win.resizable, false);
   assert.match(css, /\.settings-shell \{[^}]*height: 100%;[^}]*overflow-y: auto;/);
   assert.match(css, /\.settings-footer \{[^}]*position: sticky;[^}]*bottom:/);

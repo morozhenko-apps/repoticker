@@ -188,7 +188,12 @@ transport dependency and lockfile are resolved.
 
 ## Native relay secret custody
 
-The owner selected OS-native secret entry, never a WebView password field.
+The owner later explicitly requested inline masked password entry with no
+secondary dialog. This supersedes native-only input and moves one new
+credential candidate briefly through the trusted Settings WebView and a
+Settings-only IPC command. JavaScript memory cannot be reliably zeroized.
+The input is cleared immediately after staging, and only native Rust owns
+the pending draft and OS Keyring persistence after OK.
 
 - `relay_secret.rs` uses GTK 3's hidden password dialog on Linux,
   transient to the Settings GTK window; on Windows it uses Win32

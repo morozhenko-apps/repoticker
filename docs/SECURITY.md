@@ -11,9 +11,13 @@ The app inspects repositories under explicitly enrolled folders. Fetch must not 
 GitHub OAuth access and refresh tokens are handled by the native layer and stored with the operating system's credential service. They are not copied to WebView, saved as plaintext preferences, embedded in URLs or exposed in diagnostic messages.
 
 The optional operator-owned Hybrid relay has its own OS credential entry,
-separate from GitHub authorization. Its secret is entered exclusively through
-a native password dialog. The WebView receives only a non-revealable mask and
-credential-state flags, never secret bytes. Changes are held in a zeroizing
+separate from GitHub authorization. The owner explicitly requested inline
+secret entry instead of a separate native password dialog. A new secret
+briefly resides in the trusted Settings WebView and crosses an allowlisted
+Settings-only IPC call on explicit OK. This weakens the previous native-only
+boundary; JavaScript memory cannot be reliably zeroized. Neither the
+candidate nor the real stored secret may be revealed, logged, sent to a
+URL or persisted in browser storage. The saved credential remains OS-only. Changes are held in a zeroizing
 native-memory Settings draft and committed to the OS credential store only
 after explicit Settings OK; Cancel and window close discard uncommitted values.
 The secret is never stored in `config.json`, events, URLs or logs. The OS

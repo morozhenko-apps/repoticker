@@ -106,13 +106,19 @@ need to expose only bounded non-sensitive receipt metadata, authenticated
 with the existing bearer. The UI must distinguish unknown/unavailable from
 verified, and degrade to REST without hiding the selected Hybrid mode.
 
-The previously specified native-only relay credential entry is a deliberate
-WebView/OS trust boundary (see `docs/SECURITY.md` and `docs/RELAY.md`).
-Replacing it with an inline password field is a material security change:
-the secret would enter the WebView and IPC instead of only native Rust.
-Do not silently implement that change as a cosmetic CSS adjustment;
-document and validate the selected custody model before replacing the
-native command or its regression tests.
+The owner explicitly selected inline masked relay-secret entry instead of a
+second native dialog, superseding the native-only WebView boundary. One
+candidate may reside briefly in the trusted Settings WebView and cross a
+Settings-only IPC boundary exactly once at explicit OK. This is a conscious
+confidentiality tradeoff: JavaScript memory cannot be wiped as reliably as
+Rust-owned native buffers. Never send the candidate in events, URLs, logs,
+browser storage, diagnostics or responses. Clear the input immediately after
+staging; the Rust draft retains OS Keyring-only persistence and zeroization.
+
+The deployed Worker currently exposes no authenticated receipt-health
+metadata. Until a new authenticated health contract is reviewed and deployed,
+desktop must report webhook verification as unknown, not infer it from an
+online WebSocket.
 
 ## Distribution
 

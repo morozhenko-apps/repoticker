@@ -1089,10 +1089,7 @@ fn open_project_website() -> Result<(), String> {
 /// The WebView supplies an enum-like resource name, never a URL to execute.
 fn trusted_relay_resource_url(resource: &str) -> Option<&'static str> {
     match resource {
-        // QA source only. Switch both URLs to reviewed main content at release.
-        "source" => Some(
-            "https://github.com/morozhenko-apps/repoticker/tree/dev/apps/relay-cloudflare",
-        ),
+        // This QA link must target stable reviewed documentation at release.
         "guide" => Some(
             "https://github.com/morozhenko-apps/repoticker/blob/dev/apps/relay-cloudflare/README.md",
         ),
@@ -1115,13 +1112,9 @@ mod relay_resource_links_tests {
     use super::trusted_relay_resource_url;
 
     #[test]
-    fn only_fixed_github_source_and_guide_are_allowed() {
-        let source = trusted_relay_resource_url("source").expect("source URL");
+    fn only_fixed_deployment_guide_is_allowed() {
         let guide = trusted_relay_resource_url("guide").expect("guide URL");
-        assert_eq!(
-            source,
-            "https://github.com/morozhenko-apps/repoticker/tree/dev/apps/relay-cloudflare"
-        );
+        assert!(trusted_relay_resource_url("source").is_none());
         assert_eq!(
             guide,
             "https://github.com/morozhenko-apps/repoticker/blob/dev/apps/relay-cloudflare/README.md"
@@ -1956,6 +1949,7 @@ fn main() {
             ci_notifications::ci_run_notify,
             relay_secret::relay_secret_status,
             relay_secret::relay_prompt_secret,
+            relay_secret::relay_stage_secret,
             relay_secret::relay_clear_secret,
             relay_secret::relay_commit_secret_draft,
             relay_transport::relay_connection_status,

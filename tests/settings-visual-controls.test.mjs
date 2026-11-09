@@ -139,46 +139,34 @@ test("Arabic selectors mirror only translated controls, keeping technical accoun
   assert.match(css, /\.github-grid \[hidden\] \{ display: none; \}/);
 });
 
-test("Relay keyring custody is native-only, with no secret input or IPC argument", () => {
+test("Inline relay field is a single Settings form control with native Keyring-only persistence", () => {
   const native = readFileSync(new URL("../apps/desktop/src-tauri/src/relay_secret.rs", import.meta.url), "utf8");
   const main = readFileSync(new URL("../apps/desktop/src-tauri/src/main.rs", import.meta.url), "utf8");
-  for (const id of ["relay-secret-mask", "relay-remove-secret", "relay-secret-status"])
-    assert.match(html, new RegExp('id="' + id + '"'));
-  assert.match(html, /id="relay-secret-mask"[^>]*readonly[^>]*disabled/);
+  assert.match(html, /id="relay-secret-mask" type="password"/);
   assert.match(html, /id="relay-remove-secret"[^>]*hidden/);
-  assert.doesNotMatch(html, /<input[^>]*type="password"/i);
-  for (const command of ["relay_prompt_secret", "relay_secret_status", "relay_clear_secret"]) {
-    assert.match(settings, new RegExp('invoke\\("' + command + '"\\)'));
-    assert.match(main, new RegExp('relay_secret::' + command + ','));
-  }
-  assert.doesNotMatch(settings, /invoke\("relay_prompt_secret",\s*\{/);
-  assert.match(native, /entry\.set_visibility\(false\)/);
-  assert.match(native, /CREDUI_FLAGS_DO_NOT_PERSIST/);
-  assert.match(native, /CREDUI_FLAGS_PASSWORD_ONLY_OK/);
-  assert.match(native, /fn settings_only\(window: &tauri::WebviewWindow\)/);
-  assert.match(native, /window\.label\(\) != "settings"/);
+  assert.match(settings, /await invoke\("relay_stage_secret", \{ secret: field\.value \}\)/);
+  assert.match(main, /relay_secret::relay_stage_secret,/);
+  assert.match(native, /pub async fn relay_stage_secret\(/);
   assert.match(native, /impl Drop for SensitiveSecret/);
-  assert.match(native, /window\.gtk_window\(\)\.ok\(\)/);
-  assert.match(css, /\.relay-secret-controls \{[^}]*display: flex/);
-  assert.match(native, /RelaySecretDraftState\(Mutex<Option<RelaySecretDraft>>\)/);
-  assert.match(native, /pub async fn relay_commit_secret_draft\(/);
-  assert.match(main, /relay_secret::relay_commit_secret_draft,/);
+  assert.match(native, /fn settings_only\(window: &tauri::WebviewWindow\)/);
   assert.match(settings, /await invoke\("relay_commit_secret_draft"\)/);
-  assert.match(settings, /mask\.value = relaySecretConfigured === true \? "••••••••••••" : ""/);
-  assert.match(settings, /relaySecretTouched = true/);
 });
 
-test("Hybrid setup follows event source, separate from CI notification type", () => {
-  assert.match(html, /data-i18n="CI event source">CI event source/);
-  assert.match(html, /id="relay-settings" class="relay-settings" hidden/);
-  assert.match(html, /id="relay-settings"[\s\S]*?id="relay-secret-mask"[\s\S]*?class="relay-help"/);
-  assert.match(html, /id="ci-notification-mode"/);
-  assert.match(html, /data-i18n="Where to get the relay key"/);
-  assert.match(html, /openssl rand -hex 32/);
-  assert.match(css, /\.relay-settings\[hidden\], #github-worker-row\[hidden\] \{ display: none; \}/);
-  assert.match(settings, /mode\.disabled = saving \|\| settingsLoading \|\| settingsInitFailed;/);
+test("Delivery controls have one purpose-ordered section with a single guide link", () => {
+  const github = html.indexOf('<section class="block github">');
+  const delivery = html.indexOf('<section class="block delivery">');
+  assert.ok(github > 0 && delivery > github);
+  assert.ok(html.indexOf('id="github-repo-controls"') < delivery);
+  const mode = html.indexOf('id="github-connection-mode"');
+  const worker = html.indexOf('id="github-worker-url"');
+  const secret = html.indexOf('id="relay-secret-mask"');
+  const status = html.indexOf('id="relay-connection-state"');
+  const notice = html.indexOf('id="ci-notification-mode"');
+  assert.ok(mode < worker && worker < secret && secret < status && status < notice);
+  assert.match(html, /id="relay-worker-guide-link"/);
+  assert.doesNotMatch(html, /relay-worker-source-link|relay-help|relay-secret-hint|openssl rand -hex 32/);
+  assert.match(css, /\.relay-settings \{ margin-top: 10px; padding: 0; min-width: 0; \}/);
+  assert.match(css, /\.settings-shell \{ gap: 0;/);
   assert.match(settings, /byId\("relay-settings"\)\.hidden = !hybridSelected/);
-  assert.match(settings, /if \(draft\.connectionMode !== "hybrid"\) return true;/);
-  assert.doesNotMatch(settings, /invoke\("relay_prompt_secret",\s*\{/);
-  assert.doesNotMatch(html, /<input[^>]+type="password"/);
+  assert.doesNotMatch(settings, /invoke\("relay_prompt_secret"/);
 });

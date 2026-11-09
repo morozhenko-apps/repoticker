@@ -2,7 +2,7 @@
 /* Keep the Settings surface unselectable without interfering with typing,
    keyboard text fields, explicit shell command copying, or device code fallback. */
 html, body, body * { -webkit-user-select: none; user-select: none; }
-input:not(#relay-secret-mask), textarea, .relay-secret-command, .github-user-code {
+input, textarea, .github-user-code {
   -webkit-user-select: text;
   user-select: text;
 }
@@ -29,13 +29,13 @@ label { font-size: 12px; }
 .roots-list { margin-top: 5px; max-height: 60px; min-height: 26px; overflow-y: auto; }
 .root { display: flex; justify-content: space-between; align-items: center; gap: 10px; min-height: 30px; padding: 2px 0; }
 .root span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
-.root button { flex-shrink: 0; height: 28px; padding: 3px 7px; font-size: 12px; }
+.root button { flex-shrink: 0; height: 34px; padding: 6px 9px; font-size: 13px; }
 .github-auth-controls { display: flex; flex-direction: column; align-items: stretch; gap: 5px; margin-bottom: 9px; }
 .github-auth-controls button { white-space: nowrap; }
 .github-account-row { display: flex; align-items: center; gap: 8px; width: 100%; min-width: 0; }
 .github-account-row input, .github-account-row select { flex: 1 1 auto; min-width: 0; width: 100%; height: 34px; font-size: 13px; }
 .github-account-row input:disabled { opacity: 1; color: CanvasText; -webkit-text-fill-color: CanvasText; }
-.github-account-row button { flex: 0 0 auto; font-size: 12px; }
+.github-account-row button { flex: 0 0 auto; font-size: 13px; }
 .github-account-row[hidden], .github-account-row [hidden] { display: none !important; }
 #github-auth-message { display: block; min-width: 0; line-height: 1.35; overflow-wrap: anywhere; }
 #github-auth-message[hidden], #github-connection-indicator[hidden] { display: none !important; }
@@ -70,7 +70,7 @@ label { font-size: 12px; }
 
 /* The GitHub block is fully visible in the taller fixed Settings window. */
 .block.github { flex-shrink: 0; overflow: visible; }
-.github-repo-controls { margin-top: 8px; border-top: 1px solid color-mix(in srgb, CanvasText 13%, Canvas); padding-top: 8px; }
+.github-repo-controls { margin-top: 10px; padding-top: 4px; }
 .github-repo-controls[hidden], .github-repo-list[hidden], #github-repo-filter[hidden] { display: none; }
 /* Repository subset controls remain independent from the GitHub account row. */
 .github-repo-heading { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 10px; align-items: center; }
@@ -143,7 +143,7 @@ label { font-size: 12px; }
 .autostart-controls .hint { margin-left: auto; }
 
 /* One native, keyboard-accessible CI result selection; no extra controls. */
-.ci-alert-controls { margin-top: 8px; padding-top: 8px; border-top: 1px solid color-mix(in srgb, CanvasText 13%, Canvas); }
+.ci-alert-controls { margin-top: 12px; padding-top: 12px; border-top: 1px solid color-mix(in srgb, CanvasText 13%, Canvas); }
 .ci-alert-controls label { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 10px; align-items: center; cursor: pointer; }
 .ci-alert-controls label > span { min-width: 0; }
 .ci-alert-controls select { min-width: 0; width: 100%; height: 34px; }
@@ -203,7 +203,7 @@ label { font-size: 12px; }
 [dir="rtl"] .roots-list, [dir="rtl"] .github-repo-choice { unicode-bidi: isolate; }
 
 /* Nonrevealing native credential draft: Keyring mutations occur only at OK. */
-.relay-settings { margin-top: 8px; border: 1px solid color-mix(in srgb, CanvasText 14%, Canvas); border-radius: 6px; padding: 9px; min-width: 0; }
+.relay-settings { margin-top: 10px; padding: 0; min-width: 0; }
 .relay-settings[hidden], #github-worker-row[hidden] { display: none; }
 .relay-settings .worker-label { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .relay-settings .worker-label input { min-width: 0; width: 100%; height: 34px; }
@@ -237,12 +237,29 @@ label { font-size: 12px; }
 }
 
 .relay-secret-command { display: block; max-width: 100%; overflow-x: auto; font-size: 12px; direction: ltr; unicode-bidi: isolate; user-select: text; }
-.relay-secret-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; padding-top: 8px; border-top: 1px solid color-mix(in srgb, CanvasText 13%, Canvas); }
-.relay-secret-controls #relay-secret-mask { flex: 1 1 160px; min-width: 0; height: 34px; user-select: none; -webkit-user-select: none; cursor: pointer; font-family: inherit; letter-spacing: normal; }
+.relay-secret-controls { display: flex; flex-wrap: nowrap; gap: 8px; align-items: center; margin-top: 4px; }
+.relay-secret-controls #relay-secret-mask { flex: 1 1 160px; min-width: 0; height: 34px; user-select: text; -webkit-user-select: text; font-family: inherit; letter-spacing: normal; }
 .relay-secret-controls #relay-secret-mask:not(:placeholder-shown) { font-family: ui-monospace, monospace; letter-spacing: .14em; }
 .relay-secret-controls #relay-secret-mask::placeholder { font-family: inherit; font-size: 13px; letter-spacing: normal; color: color-mix(in srgb, CanvasText 75%, Canvas); opacity: 1; }
-.relay-secret-controls #relay-secret-mask:disabled { cursor: default; opacity: .94; }
+.relay-secret-controls #relay-secret-mask:disabled { cursor: default; opacity: .94; user-select: none; -webkit-user-select: none; }
 .relay-secret-controls #relay-secret-mask:focus-visible { outline: 2px solid #3b82f6; outline-offset: 1px; }
-.relay-secret-controls button { flex: 0 0 auto; font-size: 12px; }
+.relay-secret-controls button { flex: 0 0 auto; font-size: 13px; }
 .relay-secret-controls [hidden] { display: none !important; }
 .relay-secret-hint { margin: 4px 0 0; }
+
+/* Shared settings geometry: section separators instead of nested islands. */
+.settings-shell { gap: 0; padding: 12px 20px 6px; }
+.block { border: 0; border-bottom: 1px solid color-mix(in srgb, CanvasText 16%, Canvas);
+  border-radius: 0; padding: 13px 4px 15px; }
+.block:last-of-type { border-bottom: 0; }
+.block h2 { margin-bottom: 11px; font-size: 14px; }
+button, input, select { font-size: 13px; min-height: 34px; }
+label { font-size: 13px; }
+.github-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.relay-secret-label { display: block; margin-top: 8px; font-size: 13px; }
+.relay-connection-state { margin-top: 8px; }
+.relay-resource-links { margin: 8px 0 0; }
+.relay-resource-links a { font-size: 13px; }
+.relay-secret-controls #relay-secret-mask[type="password"] { letter-spacing: normal; }
+.relay-secret-controls #relay-secret-mask[type="text"]:disabled { font-family: ui-monospace, monospace; letter-spacing: .12em; }
+#github-repo-filter { height: 34px; }

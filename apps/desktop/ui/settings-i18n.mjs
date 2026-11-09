@@ -41,6 +41,7 @@ const russian = Object.freeze({
   "GitHub and RepoTicker do not issue relay keys. Host your own Cloudflare Worker, create RELAY_CLIENT_SECRET and enter the same secret using the native dialog. WEBHOOK_SECRET must be different. Without a deployed Worker URL, use Simple polling.": "GitHub и RepoTicker не выдают ключи ретранслятора. Разверните собственный Cloudflare Worker, создайте RELAY_CLIENT_SECRET и введите тот же секрет через нативный диалог. WEBHOOK_SECRET для GitHub должен отличаться. Без развернутого Worker используйте прямой опрос.",
   "Hybrid webhook relay": "Гибридный режим (вебхуки + REST)",
   "Set relay secret": "Задать секрет ретранслятора",
+  "Relay secret": "Секрет ретранслятора",
   "Forget relay secret": "Удалить секрет ретранслятора",
   "Relay secret stored": "Секрет ретранслятора сохранён",
   "Relay secret not configured": "Секрет ретранслятора не задан",

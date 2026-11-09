@@ -136,11 +136,14 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
             case "relay_connection_status":
               if (options.relayTransportStatusError) throw Error("PRIVATE_RELAY_PHASE");
               return delayedRelayTransportStatus ?? relayTransportPhase;
-            case "relay_prompt_secret":
-              if (options.relayPromptError) throw Error("PRIVATE_RELAY_PROMPT");
-              if (options.relayPromptCancelled) return false;
+            case "relay_stage_secret":
+              if (options.relayStageError) throw Error("Invalid relay credential.");
+              if (typeof args.secret !== "string" ||
+                  args.secret.length < 32 || args.secret.length > 256 ||
+                  !/^[A-Za-z0-9_-]+$/.test(args.secret))
+                throw Error("Relay secret must be 32-256 base64url characters.");
               relayPending = "set";
-              return true;
+              return undefined;
             case "relay_clear_secret":
               if (options.relayClearError) throw Error("PRIVATE_RELAY_CLEAR");
               relayPending = "remove";
@@ -2013,104 +2016,95 @@ test("Mode B: adding repository preserves case-equivalent saved subset without d
   } finally { ui.restore(); }
 });
 
-test("native relay secret prompt stages without WebView arguments and Cancel preserves Keyring", async () => {
-  const ui = await fixture("relay-native-stage-cancel", true);
+test("Inline relay secret remains a Settings draft and Cancel never calls Keyring", async () => {
+  const ui = await fixture("inline-relay-cancel", true, [], {
+    connectionMode: "hybrid", relayUrl: "https://relay.example.com/"
+  });
   try {
-    assert.equal(ui.node("relay-secret-status").textContent, "Relay secret not configured");
-    assert.equal(ui.node("relay-secret-mask").disabled, false);
-    await ui.node("relay-secret-mask").fire("click");
-    assert.equal(ui.relayStored, false, "native prompt must not write Keyring");
-    assert.equal(ui.relayPending, "set");
-    assert.equal(ui.node("relay-secret-mask").value, "••••••••••••");
-    assert.equal(ui.node("relay-secret-mask").disabled, true);
-    assert.equal(ui.node("relay-secret-status").textContent, "Relay secret stored");
-    const promptCalls = ui.calls.filter(([command]) => command === "relay_prompt_secret");
-    assert.equal(promptCalls.length, 1);
-    assert.deepEqual(Object.keys(promptCalls[0][1] ?? {}), [],
-      "No password is ever passed to/from WebView IPC");
-    assert.equal(ui.calls.filter(([command]) => command === "relay_commit_secret_draft").length, 0);
+    const field = ui.node("relay-secret-mask");
+    assert.equal(field.type, "password");
+    assert.equal(field.disabled, false);
+    field.value = "A".repeat(64);
+    await field.fire("input");
+    assert.equal(ui.node("apply-settings").disabled, false);
+    assert.equal(ui.calls.some(([name]) => name === "relay_stage_secret"), false);
     await ui.node("cancel-settings").fire("click");
+    assert.equal(field.value, "");
     assert.equal(ui.relayStored, false);
     assert.equal(ui.relayPending, null);
-    assert.equal(ui.calls.filter(([command]) => command === "github_disconnect").length, 0);
+    assert.ok(!ui.calls.some(([name]) => name === "relay_commit_secret_draft"));
   } finally { ui.restore(); }
 });
 
-test("native relay prompt commits the staged credential on Settings OK only", async () => {
-  const ui = await fixture("relay-native-stage-ok", true);
+test("Inline password is staged exactly once on OK and cleared before OS Keyring commit", async () => {
+  const ui = await fixture("inline-relay-ok", true, [], {
+    connectionMode: "hybrid", relayUrl: "https://relay.example.com/"
+  });
   try {
-    await ui.node("relay-secret-mask").fire("click");
+    const field = ui.node("relay-secret-mask");
+    field.value = "B".repeat(64);
+    await field.fire("input");
     assert.equal(ui.relayStored, false);
-    assert.equal(ui.relayPending, "set");
-    assert.equal(ui.node("apply-settings").disabled, false);
+    assert.equal(ui.relayPending, null);
     await ui.node("apply-settings").fire("click");
     assert.equal(ui.relayStored, true);
     assert.equal(ui.relayPending, null);
     assert.equal(ui.closed, true);
-    const commands = ui.calls.map(([name]) => name);
-    assert.ok(commands.indexOf("relay_commit_secret_draft") < commands.lastIndexOf("close_settings"));
+    const names = ui.calls.map(([name]) => name);
+    const stage = names.indexOf("relay_stage_secret");
+    const commit = names.indexOf("relay_commit_secret_draft");
+    assert.ok(stage >= 0 && commit > stage);
+    assert.ok(names.lastIndexOf("close_settings") > commit);
+    assert.equal(field.value, "••••••••••••", "only fixed nonrevealing mask remains");
   } finally { ui.restore(); }
 });
 
-test("native relay Disconnect stages removal without changing GitHub or OS Keyring until OK", async () => {
-  const ui = await fixture("relay-native-disconnect-stage", true, [], { relayStored: true });
+test("Inline secret validation rejects too-short inputs before any IPC", async () => {
+  const ui = await fixture("inline-relay-invalid", true, [], {
+    connectionMode: "hybrid", relayUrl: "https://relay.example.com/"
+  });
+  try {
+    const field = ui.node("relay-secret-mask");
+    field.value = "short";
+    await field.fire("input");
+    assert.equal(ui.node("apply-settings").disabled, true);
+    assert.ok(!ui.calls.some(([name]) => name === "relay_stage_secret"));
+  } finally { ui.restore(); }
+});
+
+test("Relay Disconnect preserves selected Hybrid mode and commits removal only on OK", async () => {
+  const ui = await fixture("inline-relay-disconnect", true, [], {
+    connectionMode: "hybrid", relayUrl: "https://relay.example.com/",
+    relayStored: true
+  });
   try {
     assert.equal(ui.node("relay-secret-mask").disabled, true);
-    assert.equal(ui.node("relay-secret-status").textContent, "Relay secret stored");
     await ui.node("relay-remove-secret").fire("click");
-    assert.equal(ui.relayStored, true, "pending Disconnect must not change OS Keyring");
+    assert.equal(ui.relayStored, true);
     assert.equal(ui.relayPending, "remove");
-    assert.equal(ui.node("relay-secret-status").textContent, "Relay secret not configured");
-    assert.equal(ui.node("relay-remove-secret").hidden, true);
-    assert.equal(ui.calls.filter(([command]) => command === "github_disconnect").length, 0);
+    assert.equal(ui.node("github-connection-mode").value, "hybrid");
+    assert.equal(ui.node("apply-settings").disabled, false);
     await ui.node("apply-settings").fire("click");
     assert.equal(ui.relayStored, false);
+    assert.equal(ui.connectionMode, "hybrid");
     assert.equal(ui.relayPending, null);
-    assert.equal(ui.closed, true);
   } finally { ui.restore(); }
 });
 
-test("native relay password dialog cancellation leaves no staged key and does not touch stored credential", async () => {
-  const ui = await fixture("relay-native-cancelled", true, [], {
-    relayStored: false, relayPromptCancelled: true
-  });
-  try {
-    await ui.node("relay-secret-mask").fire("click");
-    assert.equal(ui.relayStored, false);
-    assert.equal(ui.relayPending, null);
-    assert.equal(ui.node("relay-secret-status").textContent, "Relay secret not configured");
-    assert.equal(ui.node("relay-secret-mask").value, "");
-    assert.equal(ui.node("apply-settings").disabled, true);
-  } finally { ui.restore(); }
-});
-
-test("native password failures never echo secret, credential metadata or provider error into WebView", async () => {
-  const ui = await fixture("relay-native-error", true, [], {
-    relayStored: false, relayPromptError: true
-  });
-  try {
-    await ui.node("relay-secret-mask").fire("click");
-    assert.equal(ui.relayStored, false);
-    assert.equal(ui.relayPending, null);
-    assert.equal(ui.node("message").textContent, "Cannot update relay secret.");
-    assert.doesNotMatch(ui.node("message").textContent, /PRIVATE_RELAY|SECRET|token=/);
-    assert.equal(ui.node("relay-secret-status").textContent, "Relay secret unavailable");
-  } finally { ui.restore(); }
-});
-
-test("failed native Keyring commit keeps Settings open with a retryable nonsecret state", async () => {
-  const ui = await fixture("relay-native-commit-error", true, [], {
+test("Failed Keyring commit retains retryable staged secret without closing Settings", async () => {
+  const ui = await fixture("inline-relay-commit-error", true, [], {
+    connectionMode: "hybrid", relayUrl: "https://relay.example.com/",
     relayCommitError: true
   });
   try {
-    await ui.node("relay-secret-mask").fire("click");
-    assert.equal(ui.relayPending, "set");
+    ui.node("relay-secret-mask").value = "C".repeat(64);
+    await ui.node("relay-secret-mask").fire("input");
     await ui.node("apply-settings").fire("click");
-    assert.equal(ui.closed, false, "failed commit must not falsely close Settings");
+    assert.equal(ui.closed, false);
     assert.equal(ui.relayStored, false);
     assert.equal(ui.relayPending, "set");
-    assert.equal(ui.node("apply-settings").disabled, false, "pending candidate can retry");
-    assert.doesNotMatch(ui.node("message").textContent, /PRIVATE_RELAY|token=/);
+    assert.equal(ui.node("apply-settings").disabled, false);
+    assert.doesNotMatch(ui.node("message").textContent, /C{32}|token=/);
   } finally { ui.restore(); }
 });
 
@@ -2130,7 +2124,7 @@ test("Hybrid mode and URL are committed together only after Settings OK", async 
     const last = ui.calls.filter(([command]) => command === "save_settings").at(-1);
     assert.equal(last[1].connectionMode, "hybrid");
     assert.equal(last[1].relayUrl, "https://relay.example.com/");
-    assert.equal(ui.calls.filter(([command]) => command === "relay_prompt_secret").length, 0);
+    assert.equal(ui.calls.filter(([command]) => command === "relay_stage_secret").length, 0);
   } finally { ui.restore(); }
 });
 
@@ -2145,7 +2139,7 @@ test("Hybrid edits are discarded on Settings Cancel without a config or keyring 
     assert.equal(ui.connectionMode, "polling");
     assert.equal(ui.relayUrl, null);
     assert.equal(ui.calls.filter(([command]) => command === "save_settings").length, 0);
-    assert.equal(ui.calls.filter(([command]) => command === "relay_prompt_secret").length, 0);
+    assert.equal(ui.calls.filter(([command]) => command === "relay_stage_secret").length, 0);
   } finally { ui.restore(); }
 });
 
@@ -2184,16 +2178,15 @@ test("Previously configured Hybrid can return to Simple when relay keyring is un
   } finally { ui.restore(); }
 });
 
-test("Hybrid setup links open fixed Worker sources and guide only through native browser", async () => {
+test("Hybrid setup provides one native-browser deployment guide link", async () => {
   const ui = await fixture("relay-docs-native-links", true);
   try {
-    await ui.node("relay-worker-source-link").fire("click");
     await ui.node("relay-worker-guide-link").fire("click");
     // Native receives only a two-value selector, never a WebView-supplied URL.
     assert.deepEqual(
       ui.calls.filter(([command]) => command === "open_relay_resource")
         .map(([, args]) => args),
-      [{ resource: "source" }, { resource: "guide" }]
+      [{ resource: "guide" }]
     );
     assert.equal(ui.calls.filter(([command]) => command === "save_settings").length, 0,
       "opening documentation does not mutate Settings");

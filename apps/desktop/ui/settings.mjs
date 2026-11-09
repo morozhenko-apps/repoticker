@@ -110,13 +110,20 @@ function renderRelaySecretState() {
     relaySecretConfigured === false ? "Relay secret not configured" :
     "Relay secret unavailable";
   const mask = byId("relay-secret-mask");
-  // This fixed UI mask is never derived from or equal to the actual credential.
-  // Secret bytes stay in Rust's volatile draft or the OS keyring, never WebView.
-  mask.value = relaySecretConfigured === true ? "••••••••••••" : "";
   const configured = relaySecretConfigured === true;
+  // Only a fixed, non-revealable mask represents the stored Keyring value.
+  if (configured) {
+    mask.type = "text";
+    mask.value = "••••••••••••";
+    mask.readOnly = true;
+  } else {
+    if (mask.type !== "password") mask.value = "";
+    mask.type = "password";
+    mask.readOnly = false;
+  }
   mask.placeholder = t(relaySecretConfigured === null
     ? "Relay secret unavailable" : configured ? "Relay secret stored" : "Set relay secret");
-  mask.setAttribute("aria-label", t(configured ? "Relay secret stored" : "Set relay secret"));
+  mask.setAttribute("aria-label", t("Relay secret"));
   mask.disabled = relaySecretBusy || settingsLoading || saving || relaySecretConfigured !== false;
   byId("relay-secret-status").textContent = t(label);
   byId("relay-remove-secret").hidden = !configured;
@@ -135,33 +142,10 @@ async function refreshRelaySecretStatus(revision = settingsRefreshRevision) {
   renderRelaySecretState();
   updateApply();
 }
-byId("relay-secret-mask").addEventListener("click", async () => {
-  if (byId("relay-secret-mask").disabled ||
-      relaySecretBusy || settingsLoading || saving) return;
-  relaySecretBusy = true;
-  renderRelaySecretState();
-  try {
-    const saved = await invoke("relay_prompt_secret");
-    if (saved === true) {
-      relaySecretConfigured = true;
-      relaySecretTouched = true;
-      message("");
-    } else {
-      await refreshRelaySecretStatus();
-    }
-  } catch {
-    relaySecretConfigured = null;
-    message("Cannot update relay secret.", true);
-  } finally {
-    relaySecretBusy = false;
-    renderRelaySecretState();
-    updateApply();
-  }
-});
-byId("relay-secret-mask").addEventListener("keydown", event => {
-  if (!["Enter", " "].includes(event.key) || byId("relay-secret-mask").disabled) return;
-  event.preventDefault();
-  byId("relay-secret-mask").click();
+// New candidate remains only in this masked field until explicit OK.
+byId("relay-secret-mask").addEventListener("input", () => {
+  if (saving || settingsLoading || byId("relay-secret-mask").disabled) return;
+  updateApply();
 });
 byId("relay-remove-secret").addEventListener("click", async () => {
   if (relaySecretBusy || settingsLoading || saving || relaySecretConfigured !== true) return;
@@ -171,12 +155,8 @@ byId("relay-remove-secret").addEventListener("click", async () => {
     await invoke("relay_clear_secret");
     relaySecretConfigured = false;
     relaySecretTouched = true;
-    // Never persist Hybrid without its required native bearer.
-    if (draft?.connectionMode === "hybrid") {
-      draft.connectionMode = "polling";
-      byId("github-connection-mode").value = "polling";
-      syncWorkerControls();
-    }
+    byId("relay-secret-mask").value = "";
+    // Preserve Hybrid selection; the transport fails over to REST.
     message("");
   } catch {
     relaySecretConfigured = null;
@@ -680,19 +660,13 @@ window.addEventListener("focus", () => {
   if (githubPending) void refreshGithub();
 });
 
-// The native Rust command maps only these two IDs to fixed Github-hosted
-// resources. The WebView never supplies an arbitrary URL to the OS opener.
-for (const [id, resource] of [
-  ["relay-worker-source-link", "source"],
-  ["relay-worker-guide-link", "guide"]
-]) {
-  byId(id).addEventListener("click", event => {
-    event.preventDefault();
-    void invoke("open_relay_resource", { resource }).catch(() => {
-      message("Cannot open Worker documentation.", true);
-    });
+// Open only the audited deployment guide through a fixed native allowlist.
+byId("relay-worker-guide-link").addEventListener("click", event => {
+  event.preventDefault();
+  void invoke("open_relay_resource", { resource: "guide" }).catch(() => {
+    message("Cannot open Worker documentation.", true);
   });
-}
+});
 
 byId("github-open-device").addEventListener("click", async () => {
   try { await invoke("github_open_device_page"); }
@@ -758,9 +732,14 @@ function validRelayDraft() {
   if (!draft) return false;
   // An unused relay URL must never block independent CI or polling settings.
   if (draft.connectionMode !== "hybrid") return true;
+  const field = byId("relay-secret-mask");
+  const candidate = field.type === "password" ? field.value : "";
+  const candidateValid = (32 <= candidate.length && candidate.length <= 256) &&
+    /^[A-Za-z0-9_-]+$/.test(candidate);
+  const secretReady = relaySecretConfigured === true || candidateValid ||
+    (relaySecretTouched && relaySecretConfigured === false);
   return validRelayUrl(draft.relayUrl) && draft.relayUrl !== "" &&
-    relaySecretConfigured === true && githubConnected &&
-    !disconnectPending && !!selectedScope;
+    secretReady && githubConnected && !disconnectPending && !!selectedScope;
 }
 function syncConnectionAvailability() {
   const mode = byId("github-connection-mode");
@@ -771,6 +750,8 @@ function syncConnectionAvailability() {
 function isDirty() {
   if (!original || !draft) return false;
   return relaySecretTouched ||
+    (byId("relay-secret-mask").type === "password" &&
+     byId("relay-secret-mask").value.length > 0) ||
     original.connectionMode !== draft.connectionMode ||
     original.relayUrl !== draft.relayUrl ||
     original.language !== draft.language ||
@@ -923,6 +904,8 @@ async function refresh() {
     };
     relaySecretTouched = false;
     relaySecretConfigured = null;
+    byId("relay-secret-mask").type = "password";
+    byId("relay-secret-mask").value = "";
     applyRelayPhase("unknown");
     draft = {
       roots: [...original.roots],
@@ -1152,6 +1135,7 @@ byId("cancel-settings").addEventListener("click", async () => {
     githubPending = false;
     githubConnected = githubWasConnectedAtOpen && !githubStartedHere;
     byId("github-user-code").textContent = "";
+    byId("relay-secret-mask").value = "";
     await invoke("close_settings");
   } catch (error) {
     message(String(error), true);
@@ -1169,6 +1153,16 @@ byId("apply-settings").addEventListener("click", async () => {
   saving = true;
   updateApply();
   try {
+    const field = byId("relay-secret-mask");
+    if (field.type === "password" && field.value) {
+      // Single Settings-only IPC carrying a new candidate on explicit OK.
+      // Rust validates and zeroizes the native-owned value.
+      await invoke("relay_stage_secret", { secret: field.value });
+      field.value = "";
+      relaySecretConfigured = true;
+      relaySecretTouched = true;
+      renderRelaySecretState();
+    }
     const autostartChanged = original.autostartEnabled !== null &&
       draft.autostartEnabled !== original.autostartEnabled;
     const configChanges = {};

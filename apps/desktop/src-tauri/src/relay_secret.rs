@@ -182,6 +182,29 @@ pub async fn relay_prompt_secret(
     Ok(true)
 }
 
+/// An explicitly submitted Settings password candidate is staged in native
+/// volatile memory. Unlike the previous OS-native dialog, this tradeoff allows
+/// a plaintext candidate to cross the constrained Settings WebView IPC once.
+#[tauri::command]
+pub async fn relay_stage_secret(
+    app: AppHandle,
+    window: tauri::WebviewWindow,
+    secret: String,
+) -> Result<(), String> {
+    settings_only(&window)?;
+    let _lease = enter_prompt(&app)?;
+    let candidate = SensitiveSecret(secret);
+    if !valid_secret(candidate.as_str()) {
+        return Err("Relay secret must be 32-256 base64url characters.".into());
+    }
+    if !window.is_visible().unwrap_or(false) {
+        return Err("Settings window is no longer open.".into());
+    }
+    let state = app.state::<RelaySecretDraftState>();
+    *lock_draft(&state) = Some(RelaySecretDraft::Set(candidate));
+    Ok(())
+}
+
 /// Disconnect is a reversible Settings change until the owner presses OK.
 #[tauri::command]
 pub async fn relay_clear_secret(

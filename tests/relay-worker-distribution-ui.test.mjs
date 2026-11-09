@@ -14,27 +14,20 @@ const quota = read("../apps/desktop/ui/quota.css");
 const rust = read("../apps/desktop/src-tauri/src/main.rs");
 const guide = read("../apps/relay-cloudflare/README.md");
 
-test("desktop links directly to both public Worker source and deployment guide", () => {
+test("the desktop links to one deployment guide and keeps setup out of Settings", () => {
   const root = "https://github.com/morozhenko-apps/repoticker";
-  assert.ok(html.includes('id="relay-worker-source-link" href="' + root +
-    '/tree/dev/apps/relay-cloudflare"'));
   assert.ok(html.includes('id="relay-worker-guide-link" href="' + root +
     '/blob/dev/apps/relay-cloudflare/README.md"'));
-  for (const id of ["relay-worker-source-link", "relay-worker-guide-link"]) {
-    assert.match(html, new RegExp('id="' + id + '"[^>]*target="_blank"'));
-    assert.match(html, new RegExp('id="' + id + '"[^>]*rel="noopener noreferrer"'));
-  }
-  assert.match(guide, /\[Worker source code\]\(https:\/\/github.com\//);
-  assert.match(guide, /\[Worker deployment instructions\]\(https:\/\/github.com\//);
-  assert.ok(guide.includes("Root directory |"));
+  assert.doesNotMatch(html, /id="relay-worker-source-link"|openssl rand -hex 32|relay-help/);
   assert.ok(guide.includes("apps/relay-cloudflare"));
+  assert.ok(!guide.includes("rquickshare") && !guide.includes("cfvigil"));
+  assert.ok(!guide.includes("morozhenko-apps/repoticker"));
 });
 
 test("native browser opening admits only two fixed settings-only URL resources", () => {
-  assert.match(js, /event\.preventDefault\(\);\s*void invoke\("open_relay_resource", \{ resource \}\)/);
+  assert.match(js, /event\.preventDefault\(\);\s*void invoke\("open_relay_resource", \{ resource: "guide" \}\)/);
   assert.doesNotMatch(js, /invoke\("open_relay_resource", \{\s*url/);
   assert.match(rust, /fn trusted_relay_resource_url\(resource: &str\) -> Option<&'static str>/);
-  assert.match(rust, /"source" => Some\(/);
   assert.match(rust, /"guide" => Some\(/);
   assert.match(rust, /_ => None/);
   assert.match(rust, /fn open_relay_resource\(window: tauri::WebviewWindow, resource: String\)/);
@@ -60,7 +53,7 @@ test("masked password placeholder has normal tracking and readable help contrast
   assert.match(css, /#relay-secret-mask \{[^}]*font-family: inherit; letter-spacing: normal/);
   assert.match(css, /#relay-secret-mask:not\(:placeholder-shown\) \{[^}]*font-family: ui-monospace/);
   assert.match(css, /#relay-secret-mask::placeholder \{[^}]*letter-spacing: normal;[^}]*opacity: 1/);
-  assert.match(css, /\.relay-help \.hint \{[^}]*color: color-mix\(in srgb, CanvasText 85%, Canvas\); opacity: 1/);
+  assert.match(css, /\.relay-resource-links a \{[^}]*text-decoration: underline/);
   assert.match(css, /\.relay-resource-links a:focus-visible \{[^}]*outline: 2px/);
   assert.match(css, /@media \(forced-colors: active\)[\s\S]*?\.relay-resource-links a \{ color: LinkText; \}/);
 });
@@ -68,8 +61,8 @@ test("masked password placeholder has normal tracking and readable help contrast
 test("each desktop window disables incidental text selection with safe exceptions", () => {
   for (const source of [css, card, about, quota])
     assert.match(source, /html,\s*body,\s*body \* \{[^}]*-webkit-user-select:\s*none;[^}]*user-select:\s*none/);
-  assert.match(css, /input:not\(#relay-secret-mask\), textarea, \.relay-secret-command, \.github-user-code \{[^}]*user-select: text/);
-  assert.match(css, /\.relay-secret-command \{[^}]*user-select: text/);
-  assert.match(css, /#relay-secret-mask \{[^}]*user-select: none/);
+  assert.match(css, /input, textarea, \.github-user-code \{[^}]*user-select: text/);
+  assert.match(css, /#relay-secret-mask \{[^}]*user-select: text/);
+  assert.match(css, /#relay-secret-mask:disabled \{[^}]*user-select: none/);
   assert.match(card, /input, textarea \{[^}]*user-select: text/);
 });

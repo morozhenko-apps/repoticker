@@ -120,6 +120,14 @@ fn set_phase(app: &AppHandle, code: u8) {
         );
     }
     if state.phase.swap(code, Ordering::AcqRel) != code {
+        // Opt-in lifecycle diagnostics expose only finite phase/reason labels.
+        if std::env::var_os("REPOTICKER_RELAY_DEBUG").is_some() {
+            eprintln!(
+                "RepoTicker relay diagnostic: phase={} reason={}",
+                phase_label(code),
+                reason_label(code)
+            );
+        }
         let _ = app.emit("repoticker-relay-state", snapshot(code));
     }
 }

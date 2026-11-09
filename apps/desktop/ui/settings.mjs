@@ -79,29 +79,44 @@ function syncWorkerControls() {
   // The reason is displayed in context; no redundant hover-only tooltip.
   state.title = "";
   const isPersistedHybrid = original?.connectionMode === "hybrid";
+  const secretField = byId("relay-secret-mask");
+  const pendingHybridChanges = hybridSelected &&
+    (!isPersistedHybrid || draft?.relayUrl !== original?.relayUrl ||
+      relaySecretTouched ||
+      (secretField.type === "password" && secretField.value.length > 0));
   let label = "Worker: not connected";
   let phase = "inactive";
-  if (connected) {
+  if (!pendingHybridChanges && connected) {
     label = "Worker: connected (WebSocket)";
     phase = "online";
-  } else if (isPersistedHybrid && relayPhase === "connecting") {
+  } else if (!pendingHybridChanges && isPersistedHybrid &&
+             relayPhase === "connecting") {
     label = "Worker: connecting";
     phase = "connecting";
-  } else if (isPersistedHybrid && relayPhase === "fallback") {
+  } else if (!pendingHybridChanges && isPersistedHybrid &&
+             relayPhase === "fallback") {
     label = "Worker: unavailable, REST fallback active";
     phase = "fallback";
-  } else if (isPersistedHybrid && relayPhase === "unknown") {
+  } else if (!pendingHybridChanges && isPersistedHybrid &&
+             (relayPhase === "unknown" || relayPhase === "online")) {
     label = "Worker: checking connection";
     phase = "unknown";
   }
   state.dataset.state = phase;
   byId("relay-connection-text").textContent = t(label);
   const detail = byId("relay-connection-detail");
-  const reason = RELAY_FAILURE_DETAILS[relayReason];
-  const showReason = hybridSelected && isPersistedHybrid &&
-    relayPhase === "fallback" && !connected;
-  detail.hidden = !showReason;
-  detail.textContent = showReason ? t(reason || RELAY_FAILURE_DETAILS.unavailable) : "";
+  let detailKey = "";
+  if (pendingHybridChanges) {
+    detailKey = RELAY_FAILURE_DETAILS.pending_changes;
+  } else if (hybridSelected && isPersistedHybrid && relayPhase === "fallback") {
+    detailKey = RELAY_FAILURE_DETAILS[relayReason] || RELAY_FAILURE_DETAILS.unavailable;
+  } else if (hybridSelected && isPersistedHybrid &&
+             (relayPhase === "polling" ||
+              (relayPhase === "unknown" && relayReason === "unavailable"))) {
+    detailKey = RELAY_FAILURE_DETAILS.unavailable;
+  }
+  detail.hidden = !detailKey;
+  detail.textContent = detailKey ? t(detailKey) : "";
 }
 function applyRelayPhase(status) {
   const phase = typeof status === "string" ? status : status?.phase;
@@ -229,7 +244,7 @@ async function refreshRelayConnectionStatus(revision = settingsRefreshRevision) 
   } catch {
     if (revision !== settingsRefreshRevision ||
         observedPhaseRevision !== relayPhaseRevision) return;
-    applyRelayPhase("unknown");
+    applyRelayPhase({ phase: "unknown", reason: "unavailable" });
   }
 }
 let githubStatusTimer = null;
@@ -1159,6 +1174,7 @@ const cancelSettings = async () => {
   ++githubBeginRevision;
   githubStarting = false;
   saving = true;
+  renderRelaySecretState();
   updateApply();
   try {
     // A new Device Flow is provisional until OK. Cancel invalidates
@@ -1181,6 +1197,7 @@ const cancelSettings = async () => {
     message(String(error), true);
   } finally {
     saving = false;
+    renderRelaySecretState();
     updateApply();
   }
 };
@@ -1193,6 +1210,7 @@ byId("apply-settings").addEventListener("click", async () => {
       !(isDirty() || githubScopeTouched || repoChoiceTouched ||
         (githubConnected && githubStartedHere) || disconnectPending)) return;
   saving = true;
+  renderRelaySecretState();
   updateApply();
   try {
     const field = byId("relay-secret-mask");
@@ -1273,6 +1291,7 @@ byId("apply-settings").addEventListener("click", async () => {
     message(String(error), true);
   } finally {
     saving = false;
+    renderRelaySecretState();
     updateApply();
   }
 });

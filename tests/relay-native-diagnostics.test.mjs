@@ -40,7 +40,8 @@ test("WSS upgrade has explicit generic user agent and never disables TLS checks"
 test("failure detail is visible inline and has no redundant tooltip", () => {
   assert.match(html, /id="relay-connection-detail"[^>]*hidden/);
   assert.match(js, /state\.title = ""/);
-  assert.match(js, /detail\.textContent = showReason \? t\(reason/);
+  assert.match(js, /detail\.textContent = detailKey \? t\(detailKey\) : ""/);
+  assert.match(js, /if \(pendingHybridChanges\)/);
   assert.match(js, /relayPhase === "fallback"/);
   assert.match(css, /\.relay-connection-detail \{[^}]*font-size: 12px/);
   assert.doesNotMatch(js, /state\.title = t\("Worker connection does not verify/);

@@ -73,6 +73,14 @@ test("Simple polling deletion is staged and the native config erases Worker orig
   assert.ok(main.includes('changed |= clear_relay_url_for_polling(config);'));
 });
 
+test("opt-in native Relay tracing cannot serialize secrets or endpoint origins", () => {
+  const transport = read("../apps/desktop/src-tauri/src/relay_transport.rs");
+  assert.ok(transport.includes('var_os("REPOTICKER_RELAY_DEBUG")'));
+  assert.ok(transport.includes('phase_label(code)'));
+  assert.ok(transport.includes('reason_label(code)'));
+  assert.doesNotMatch(transport, /eprintln!\([^;]*(?:secret\.as_str|base_url|endpoint\.as_str)/i);
+});
+
 test("the separate popup is no longer invoked by the Settings UI", () => {
   assert.doesNotMatch(source, /relay_prompt_secret/);
   assert.match(html, /id="relay-worker-guide-link"/);

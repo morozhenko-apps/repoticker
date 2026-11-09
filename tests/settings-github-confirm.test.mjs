@@ -2109,6 +2109,8 @@ test("Failed Keyring commit retains retryable staged secret without closing Sett
     assert.equal(ui.relayStored, false);
     assert.equal(ui.relayPending, "set");
     assert.equal(ui.node("apply-settings").disabled, false);
+    assert.equal(ui.node("relay-remove-secret").disabled, false,
+      "failed save must not strand the staged credential control");
     assert.doesNotMatch(ui.node("message").textContent, /C{32}|token=/);
   } finally { ui.restore(); }
 });
@@ -2464,6 +2466,79 @@ test("Simple polling hides Worker status regardless of native event", async () =
     ui.dispatchRelayPhase("fallback");
     assert.equal(ui.node("relay-settings").hidden, true);
     assert.equal(ui.node("relay-connection-state").hidden, true);
+  } finally { ui.restore(); }
+});
+
+test("New Hybrid selection displays pending confirmation before native handshake", async () => {
+  const ui = await fixture("relay-pending", true, [], {
+    connectionMode: "polling", relayTransportPhase: "fallback",
+    relayTransportReason: "http_401"
+  });
+  try {
+    ui.node("github-connection-mode").value = "hybrid";
+    await ui.node("github-connection-mode").fire("change");
+    assert.equal(ui.node("relay-connection-state").hidden, false);
+    assert.equal(ui.node("relay-connection-state").dataset.state, "inactive");
+    assert.equal(ui.node("relay-connection-detail").hidden, false);
+    assert.match(ui.node("relay-connection-detail").textContent, /pending confirmation/);
+    assert.doesNotMatch(ui.node("relay-connection-detail").textContent, /HTTP 401/);
+  } finally { ui.restore(); }
+});
+
+test("Edited Hybrid endpoint cannot inherit old Worker fallback failure", async () => {
+  const ui = await fixture("relay-pending-endpoint", true, [], {
+    connectionMode: "hybrid", relayStored: true,
+    relayUrl: "https://old.example.com/", relayTransportPhase: "fallback",
+    relayTransportReason: "http_403"
+  });
+  try {
+    assert.match(ui.node("relay-connection-detail").textContent, /HTTP 403/);
+    ui.node("github-worker-url").value = "https://new.example.com/";
+    await ui.node("github-worker-url").fire("input");
+    assert.equal(ui.node("relay-connection-state").dataset.state, "inactive");
+    assert.match(ui.node("relay-connection-detail").textContent, /pending confirmation/);
+    assert.doesNotMatch(ui.node("relay-connection-detail").textContent, /HTTP 403/);
+    assert.equal(ui.node("relay-remove-secret").disabled, false);
+  } finally { ui.restore(); }
+});
+
+test("Persisted Hybrid in native polling phase explains inactive transport", async () => {
+  const ui = await fixture("relay-persisted-polling", true, [], {
+    connectionMode: "hybrid", relayStored: true,
+    relayUrl: "https://worker.example.com/", relayTransportPhase: "polling"
+  });
+  try {
+    assert.equal(ui.node("relay-connection-state").dataset.state, "inactive");
+    assert.equal(ui.node("relay-connection-detail").hidden, false);
+    assert.match(ui.node("relay-connection-detail").textContent, /REST monitoring is active/);
+    assert.equal(ui.node("relay-remove-secret").disabled, false);
+  } finally { ui.restore(); }
+});
+
+test("Unavailable native Relay IPC uses finite redacted unavailable reason", async () => {
+  const ui = await fixture("relay-status-ipc-error", true, [], {
+    connectionMode: "hybrid", relayStored: true,
+    relayUrl: "https://worker.example.com/", relayTransportStatusError: true
+  });
+  try {
+    assert.equal(ui.node("relay-connection-state").dataset.state, "unknown");
+    assert.equal(ui.node("relay-connection-detail").hidden, false);
+    assert.match(ui.node("relay-connection-detail").textContent, /REST monitoring is active/);
+    assert.doesNotMatch(ui.node("relay-connection-detail").textContent, /PRIVATE_RELAY_PHASE/);
+  } finally { ui.restore(); }
+});
+
+test("Reopening persisted Hybrid restores enabled Disconnect and native failure", async () => {
+  const ui = await fixture("relay-settings-reopen", true, [], {
+    connectionMode: "hybrid", relayStored: true, relayTransportPhase: "fallback",
+    relayTransportReason: "network", relayUrl: "https://worker.example.com/"
+  });
+  try {
+    await ui.node("cancel-settings").fire("click");
+    await ui.dispatchOpened();
+    assert.equal(ui.node("relay-remove-secret").disabled, false);
+    assert.equal(ui.node("relay-remove-secret").hidden, false);
+    assert.match(ui.node("relay-connection-detail").textContent, /Network connection/);
   } finally { ui.restore(); }
 });
 

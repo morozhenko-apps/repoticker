@@ -11,6 +11,17 @@ RepoTicker uses targeted tests during development and a complete stable gate for
 
 A passing CI build does not prove an installed application's native UI or lifecycle. That requires platform acceptance of the behaviors relevant to the release.
 
+
+## Shared Settings localization contract
+
+The custom Settings titlebar reuses the canonical `Settings` label already
+provided by `CORE_TERMS` for all 20 supported locales. Feature-specific
+`EXTENDED_TERMS` must not shadow this label: conflicting values cause
+inconsistent WebView labels even when each translation is nonempty.
+Preserve the exact locale-parity assertion and a dedicated no-shadowing
+regression check. Formatting-only Rust repairs must preserve native
+window behavior and pass the normal Preflight gate.
+
 ## Release evidence
 
 Use the exact checked source revision, real test outcomes and verified package checksums. Never represent skipped, missing, canceled or failed checks as passed. Keep diagnostics free of credentials and private repository information. One stable test pass is the normal gate; repeat tests only to investigate an evidenced failure or instability.

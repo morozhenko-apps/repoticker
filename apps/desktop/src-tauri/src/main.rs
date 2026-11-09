@@ -1025,7 +1025,10 @@ fn show_settings(app: &AppHandle) {
             .map(|config| config.language)
             .unwrap_or_else(|_| "en".to_owned());
         let _ = window.set_title(tray_i18n::window_title(&language, "settings"));
-        let monitor = window.current_monitor().ok().flatten()
+        let monitor = window
+            .current_monitor()
+            .ok()
+            .flatten()
             .or_else(|| window.primary_monitor().ok().flatten());
         if let Some(monitor) = monitor {
             let available = f64::from(monitor.size().height) / monitor.scale_factor() - 90.0;
@@ -1276,9 +1279,12 @@ fn open_settings(app: AppHandle) {
 
 #[tauri::command]
 fn start_settings_drag(app: AppHandle) -> Result<(), String> {
-    let window = app.get_webview_window("settings")
+    let window = app
+        .get_webview_window("settings")
         .ok_or_else(|| "Settings window is unavailable".to_owned())?;
-    window.start_dragging().map_err(|_| "Cannot drag Settings window.".to_owned())
+    window
+        .start_dragging()
+        .map_err(|_| "Cannot drag Settings window.".to_owned())
 }
 
 #[tauri::command]

@@ -13,8 +13,8 @@ not a ready-to-use hosted relay; do not deploy it as an app feature yet.
 a *self-hosted, single-operator* relay. The operator generates an independent
 secret for the native client, configures **the same value** as
 `RELAY_CLIENT_SECRET` in their own Cloudflare Worker secret binding, and
-enters it using RepoTicker Settings -> **CI event source** -> **Hybrid** ->
-**Set relay secret** (the OS-native password dialog, never a WebView field).
+enters the same secret in RepoTicker Settings. The secret must not be
+included in a URL, repository file, screenshot or diagnostic log.
 
 For example, on Ubuntu (prints a new 64-character base64url-compatible secret; protect the
 terminal output and never paste it into tickets or GitHub source):
@@ -32,8 +32,8 @@ GitHub uses `requested`, not an action named `queued`, for a newly requested run
 by installing RepoTicker. Until the Worker is deployed and verified, keep
 **Simple polling**. The selected CI notification type remains independent.
 
-No Cloudflare deployment, secret upload, webhook registration or shared R2
-changes are authorized by this document.
+No Cloudflare deployment, secret upload, webhook registration or modification
+of other cloud resources is authorized by this document.
 
 
 ## Get Worker source and deploy with Cloudflare's GitHub integration
@@ -41,23 +41,21 @@ changes are authorized by this document.
 A RepoTicker DEB/AppImage/NSIS installation does **not** install or host
 a Worker. The desktop's Hybrid help includes direct, external-browser links:
 
-- [Worker source code](https://github.com/morozhenko-apps/repoticker/tree/dev/apps/relay-cloudflare)
-- [Worker deployment instructions](https://github.com/morozhenko-apps/repoticker/blob/dev/apps/relay-cloudflare/README.md)
+- Worker source is located in this `apps/relay-cloudflare` directory.
+- This README is the deployment guide. Use a tagged or otherwise reviewed source revision.
 
-These links use `dev` **during pre-release QA**. Before a public release,
-include the reviewed Worker in `main` and change both desktop links to the
-stable released source, never an unreviewed moving development revision.
-The repository source link and the operator's deployed HTTPS Worker URL are
-different concepts.
+Choose a reviewed source revision before deployment. The Worker source tree
+and your own deployed HTTPS Worker URL are separate things. Do not infer
+production readiness from a development branch name.
 
 In Cloudflare **Workers & Pages → Create application → GitHub**, select
-`morozhenko-apps/repoticker`. Cloudflare Workers Builds supports a
+`<your-github-namespace>/repoticker`. Cloudflare Workers Builds supports a
 subdirectory as the root of this monorepo:
 
 | Field | Setting |
 | --- | --- |
 | Worker name | `repoticker-relay` (same as the existing Cloudflare Worker and Wrangler) |
-| Git repository | `morozhenko-apps/repoticker` |
+| Git repository | `<your-github-namespace>/repoticker` |
 | Root directory | `apps/relay-cloudflare` |
 | Production branch | A reviewed, separately controlled deployment branch; **not** the continuously updated `dev` |
 | Build command | Leave blank |
@@ -98,7 +96,7 @@ After Worker creation, configure **runtime Secret bindings**, not build
 environment variables, under **Worker → Settings → Variables and Secrets**:
 
 - `RELAY_CLIENT_SECRET`: generate a unique `openssl rand -hex 32` value;
-  enter the **same** secret through RepoTicker's OS-native relay prompt.
+  enter the **same** secret through RepoTicker Settings.
 - `WEBHOOK_SECRET`: generate a **different** `openssl rand -hex 32` value;
   use it as GitHub's webhook signing secret.
 - `ALLOWED_REPOSITORIES`: comma-separated exact repository identities
@@ -124,7 +122,7 @@ GitHub REST reconciliation, overload/fallback and API-cooldown behavior before
 declaring Hybrid accepted. GitHub does **not** automatically retry a failed
 webhook. The current ingress rejects bodies larger than 64 KiB, so real
 payload sizes require a separate security review. This Worker requires
-neither the shared R2 bucket nor a GitHub admin token inside RepoTicker.
+neither R2 storage nor a GitHub admin token inside RepoTicker.
 
 ## Secrets and permitted repositories
 
@@ -179,6 +177,6 @@ built-in in-memory SQLite via a Durable Object API adapter, not a remote
 Cloudflare account. Before any real deployment, require Wrangler
 typecheck/bundle validation and operator-reviewed Cloudflare DO quota,
 secret rotation, WAF rate-limiting, webhook redelivery behavior and network
-failover. Do not modify the shared rquickshare/repoticker/cfvigil R2 bucket.
+failover. The Worker does not require R2 or storage credentials for any other application.
 
 See docs/RELAY.md for staged acceptance and explicit trust boundaries.

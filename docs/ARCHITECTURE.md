@@ -84,6 +84,36 @@ Review exact-source Preflight and physical KDE/Windows Settings acceptance
 before release. Keep the Worker ingress and client protocol unchanged
 for this presentation-only feature.
 
+## Settings information architecture and acceptance criteria
+
+Settings must prioritize direct tasks, use consistent field/control dimensions,
+and avoid redundant explanatory text, duplicated authorization widgets and nested
+card borders. Organize settings by purpose: General, Local repositories, GitHub
+monitoring, Event delivery and CI notifications. Conditional Worker configuration
+belongs inside Event delivery, not inside a nested GitHub credential panel.
+A single external deployment-guide link is sufficient. Source retrieval and
+credential generation belong in that guide, not inside the application.
+Labels are visible and concise; help is supplied only when a user must
+complete an unfamiliar external step. All interactive controls remain
+keyboard accessible, properly labelled, and contrast-safe.
+
+Use separate facts for the two relay legs: authenticated client-to-Worker WSS
+and verified GitHub-to-Worker event delivery. Do **not** display a combined
+healthy state from an online WebSocket alone, a stored bearer, or the
+existence of past history. A quiet organization with no recent workflow
+events is *unverified*, not necessarily broken. A health endpoint would
+need to expose only bounded non-sensitive receipt metadata, authenticated
+with the existing bearer. The UI must distinguish unknown/unavailable from
+verified, and degrade to REST without hiding the selected Hybrid mode.
+
+The previously specified native-only relay credential entry is a deliberate
+WebView/OS trust boundary (see `docs/SECURITY.md` and `docs/RELAY.md`).
+Replacing it with an inline password field is a material security change:
+the secret would enter the WebView and IPC instead of only native Rust.
+Do not silently implement that change as a cosmetic CSS adjustment;
+document and validate the selected custody model before replacing the
+native command or its regression tests.
+
 ## Distribution
 
 Linux DEB/AppImage and Windows NSIS are assembled by the release workflow. A protected signing process produces Linux APT metadata and checks immutable downloads by byte size and SHA-256. The public application does not require a developer-operated backend to manage local repositories.

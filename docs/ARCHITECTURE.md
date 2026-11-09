@@ -84,6 +84,44 @@ Review exact-source Preflight and physical KDE/Windows Settings acceptance
 before release. Keep the Worker ingress and client protocol unchanged
 for this presentation-only feature.
 
+## Relay failure classification and native Settings window
+
+Relay transport must report only a closed set of non-sensitive failure reasons,
+not raw HTTP bodies, URLs, bearer tokens, private repository names, headers
+or provider error messages. Its native event and one initial status snapshot
+should carry a synchronized phase and reason. Distinguish missing bearer,
+Keyring failure, invalid endpoint, missing GitHub authorization/monitor scope,
+HTTP 401/403/404/426/5xx, timeout/TLS/network and malformed WebSocket frames.
+Use the HTTP response status from a failed WSS upgrade when available.
+Record a single stable, non-secret diagnostic log line on a state/reason
+transition, rather than emitting repeated logs for reconnection attempts.
+Use an explicit generic desktop User-Agent for the native WebSocket handshake
+so infrastructure does not classify it as an unidentified automation client.
+Do not claim any particular class is the cause without native evidence.
+
+The Settings status conveys which leg failed: desktop to Worker transport,
+not GitHub webhook delivery. Remove the unrelated tooltip that only tells
+users that a successful WebSocket cannot validate GitHub webhooks. A missing
+Keyring secret must be distinguishable from an HTTP 401 rejection, and a
+Cloudflare-side service health screenshot does not prove WSS success.
+Keep independent REST CI polling fully available in Hybrid mode.
+
+Stored Keyring credentials and current UI drafts remain distinct.
+The Disconnect action must stay available whenever a stored secret exists,
+regardless of transport health or source selection, and must only stage
+removal until explicit Settings OK. A cancelled Settings session retains
+the prior saved credential. Pending removal must never silently switch
+the user's selected Hybrid source to Polling.
+
+On desktops where the KDE server-side titlebar still displays window-manager
+minimize controls despite Tauri minimizable=false, use a small application
+titlebar with only a Close control, native authenticated window drag, and
+Cancel-equivalent semantics for closing. Retain keyboard accessibility,
+screen-reader labels and drafts-on-close cleanup. Size the Settings window
+to show the whole normal form on common desktop work areas while clamping
+to the monitor height on smaller screens; scrolling remains the fallback.
+Do not make the window impossible to reposition or close on Wayland.
+
 ## Settings information architecture and acceptance criteria
 
 Settings must prioritize direct tasks, use consistent field/control dimensions,

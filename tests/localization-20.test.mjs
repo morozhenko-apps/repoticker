@@ -74,6 +74,15 @@ test("all legacy static UI labels are present in every additional locale", () =>
   }
 });
 
+test("shared Settings titlebar labels cannot shadow canonical core translations", () => {
+  for (const code of expected.slice(2)) {
+    assert.ok(Object.hasOwn(CORE_TERMS[code], "Settings"), code + " missing core Settings");
+    assert.equal(Object.hasOwn(EXTENDED_TERMS[code], "Settings"), false,
+      code + " redefines the canonical Settings label");
+    assert.equal(coreText(code, "Settings"), CORE_TERMS[code].Settings);
+  }
+});
+
 test("native catalog uses the identical seven fixed menu/title keys", () => {
   const keys = ["Open card", "Settings", "Fetch", "Sync", "About RepoTicker",
     "Quit", "RepoTicker Settings"].sort();

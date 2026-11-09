@@ -9,6 +9,34 @@ The **CI event source** and **CI notification type** are separate settings. Sour
 
 Settings must permit selecting Hybrid to inspect its setup form **before** credentials exist. Show the HTTPS Worker origin, native OS-Keyring Set/Forget controls and setup guidance only when Hybrid is selected. Never require a secret merely to open the form. Keep **Save disabled** for an incomplete Hybrid draft (missing validated Worker URL, native relay secret, or authorized GitHub monitoring scope); Cancel preserves the persisted mode/URL. Simple polling is always available, even if the relay is unavailable. Secret entry and disconnect are staged in volatile native memory; only Settings OK commits the change to the OS Keyring. Cancel discards the draft. The WebView displays a fixed nonrevealing mask, not secret bytes.
 
+### Settings connection state and credential control
+
+A Hybrid selection in an unsaved Settings draft must say that changes are
+pending confirmation; it must not imply that WebSocket has already attempted
+to connect to the draft endpoint. Editing a saved Hybrid URL or staging a
+different credential also keeps the status explicitly pending until OK.
+
+For an unchanged, persisted Hybrid setup, the native transport state owns
+the connection claim. Only the native `online` phase with matching saved
+settings may show Connected; `connecting` is in progress, and `fallback`
+displays its fixed, redacted failure reason. An unexpected `polling` phase
+with persisted Hybrid or an unavailable native diagnostic must not silently
+look connected or imply that the new endpoint was tested. The existing
+independent REST monitor remains the fallback.
+
+After every Settings save/cancel completion or failure, the visual and
+accessible enabled/disabled states of the native relay secret control must
+be recomputed from current `saving`, credential and draft state. A failed
+Keyring commit must keep the dialog usable for an explicit retry. Never
+log raw provider errors, credentials, URL origins, repository identifiers
+or GitHub tokens. Optional `REPOTICKER_RELAY_DEBUG=1` may log only fixed
+native transport phase/reason enums to assist installed-platform diagnosis.
+
+Test the source and transactional UI through simulated pending saves, failed
+Keyring writes, reopening, pending Hybrid selection, unexpected polling,
+unavailable diagnostics and native fallback transitions. Physical KDE/Windows
+acceptance and actual Worker authentication remain separate gates.
+
 ### Simple polling confirmation and relay cleanup
 
 Selecting Simple polling is a **draft**, not an immediate reset. On explicit

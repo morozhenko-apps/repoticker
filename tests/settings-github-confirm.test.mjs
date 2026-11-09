@@ -285,6 +285,7 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
     releaseInitialConfig: payload => resolveInitialConfig?.(payload),
     rejectInitialConfig: error => rejectInitialConfig?.(error),
     setConfigReadError: value => { options.configReadError = value; },
+    setRelayCommitError: value => { options.relayCommitError = value; },
     setAuthStatusError: value => { options.authStatusError = value; },
     setAuthStatusErrorText: value => { options.authStatusErrorText = value; },
     setLanguage: value => { options.language = value; },
@@ -2165,7 +2166,7 @@ test("Hybrid validates URL and rejects insecure origin before Settings can persi
   } finally { ui.restore(); }
 });
 
-test("Previously configured Hybrid can return to Simple when relay keyring is unavailable", async () => {
+test("Hybrid returns to Simple when Keyring status read fails but removal works", async () => {
   const ui = await fixture("hybrid-rollback", true, [], {
     connectionMode: "hybrid",
     relayUrl: "https://relay.example.com/",
@@ -2178,7 +2179,167 @@ test("Previously configured Hybrid can return to Simple when relay keyring is un
     assert.equal(ui.node("apply-settings").disabled, false);
     await ui.node("apply-settings").fire("click");
     assert.equal(ui.connectionMode, "polling");
-    assert.equal(ui.relayUrl, "https://relay.example.com/");
+    assert.equal(ui.relayUrl, "");
+    assert.equal(ui.relayStored, false);
+  } finally { ui.restore(); }
+});
+
+test("Hybrid to Simple polling OK permanently clears Worker URL and Keyring secret", async () => {
+  const ui = await fixture("simple-confirm-deletion", true, [], {
+    connectionMode: "hybrid", relayUrl: "https://worker.example.com/", relayStored: true
+  });
+  try {
+    ui.node("github-connection-mode").value = "polling";
+    await ui.node("github-connection-mode").fire("change");
+    assert.equal(ui.connectionMode, "hybrid", "mode change must remain a draft");
+    assert.equal(ui.relayStored, true);
+    await ui.node("apply-settings").fire("click");
+    assert.equal(ui.closed, true);
+    assert.equal(ui.connectionMode, "polling");
+    assert.equal(ui.relayUrl, "");
+    assert.equal(ui.relayStored, false);
+    const names = ui.calls.map(([name]) => name);
+    const stage = names.lastIndexOf("relay_clear_secret");
+    const save = names.lastIndexOf("save_settings");
+    const commit = names.lastIndexOf("relay_commit_secret_draft");
+    assert.ok(stage >= 0 && stage < save && save < commit);
+    assert.ok(commit < names.lastIndexOf("close_settings"));
+    const write = ui.calls.findLast(([name]) => name === "save_settings")[1];
+    assert.equal(write.connectionMode, "polling");
+    assert.equal(write.relayUrl, "");
+    await ui.dispatchOpened();
+    assert.equal(ui.node("github-worker-url").value, "");
+    assert.equal(ui.node("relay-secret-mask").type, "password");
+  } finally { ui.restore(); }
+});
+
+test("Cancel after choosing Simple polling preserves Worker URL and Keyring secret", async () => {
+  const ui = await fixture("simple-cancel-deletion", true, [], {
+    connectionMode: "hybrid", relayUrl: "https://worker.example.com/", relayStored: true
+  });
+  try {
+    ui.node("github-connection-mode").value = "polling";
+    await ui.node("github-connection-mode").fire("change");
+    await ui.node("cancel-settings").fire("click");
+    assert.equal(ui.connectionMode, "hybrid");
+    assert.equal(ui.relayUrl, "https://worker.example.com/");
+    assert.equal(ui.relayStored, true);
+    assert.equal(ui.calls.some(([name]) => [
+      "relay_clear_secret", "relay_commit_secret_draft", "save_settings"
+    ].includes(name)), false);
+  } finally { ui.restore(); }
+});
+
+test("Previously retained polling secret can be explicitly cleared without URL", async () => {
+  const ui = await fixture("simple-legacy-secret", true, [], {
+    connectionMode: "polling", relayStored: true
+  });
+  try {
+    assert.equal(ui.node("apply-settings").disabled, false);
+    await ui.node("apply-settings").fire("click");
+    assert.equal(ui.closed, true);
+    assert.equal(ui.relayStored, false);
+    assert.equal(ui.relayUrl, null);
+    assert.equal(ui.calls.filter(([name]) => name === "relay_clear_secret").length, 1);
+    assert.equal(ui.calls.filter(([name]) => name === "relay_commit_secret_draft").length, 1);
+  } finally { ui.restore(); }
+});
+
+test("Previously retained polling URL is cleared even if Keyring status read fails", async () => {
+  const ui = await fixture("simple-legacy-url", true, [], {
+    connectionMode: "polling", relayUrl: "https://worker.example.com/",
+    relayStatusError: true
+  });
+  try {
+    assert.equal(ui.node("apply-settings").disabled, false);
+    await ui.node("apply-settings").fire("click");
+    assert.equal(ui.closed, true);
+    assert.equal(ui.relayUrl, "");
+    assert.ok(ui.calls.some(([name]) => name === "relay_clear_secret"));
+  } finally { ui.restore(); }
+});
+
+test("Failed Settings write retains relay credential and Cancel drops staged removal", async () => {
+  const ui = await fixture("simple-config-write-failure", true, [], {
+    connectionMode: "hybrid", relayUrl: "https://worker.example.com/",
+    relayStored: true, saveSettingsError: true
+  });
+  try {
+    ui.node("github-connection-mode").value = "polling";
+    await ui.node("github-connection-mode").fire("change");
+    await ui.node("apply-settings").fire("click");
+    assert.equal(ui.closed, false);
+    assert.equal(ui.connectionMode, "hybrid");
+    assert.equal(ui.relayStored, true);
+    assert.equal(ui.relayPending, "remove");
+    assert.equal(ui.calls.some(([name]) => name === "relay_commit_secret_draft"), false);
+    await ui.node("cancel-settings").fire("click");
+    assert.equal(ui.relayPending, null);
+    assert.equal(ui.relayStored, true);
+    assert.equal(ui.relayUrl, "https://worker.example.com/");
+  } finally { ui.restore(); }
+});
+
+test("Failed Keyring removal never closes Settings and retries without replaying secret", async () => {
+  const ui = await fixture("simple-keyring-write-failure", true, [], {
+    connectionMode: "hybrid", relayUrl: "https://worker.example.com/",
+    relayStored: true, relayCommitError: true
+  });
+  try {
+    ui.node("github-connection-mode").value = "polling";
+    await ui.node("github-connection-mode").fire("change");
+    await ui.node("apply-settings").fire("click");
+    assert.equal(ui.closed, false);
+    assert.equal(ui.connectionMode, "polling", "independent config and Keyring writes");
+    assert.equal(ui.relayUrl, "");
+    assert.equal(ui.relayStored, true);
+    assert.equal(ui.relayPending, "remove");
+    assert.match(ui.node("message").textContent, /credential store unavailable/);
+    assert.equal(ui.node("apply-settings").disabled, false);
+    ui.setRelayCommitError(false);
+    await ui.node("apply-settings").fire("click");
+    assert.equal(ui.closed, true);
+    assert.equal(ui.relayStored, false);
+    assert.equal(ui.relayPending, null);
+  } finally { ui.restore(); }
+});
+
+test("Secret typed into an abandoned Hybrid draft cannot persist on Simple OK", async () => {
+  const ui = await fixture("simple-abandoned-hybrid-draft", true);
+  try {
+    ui.node("github-connection-mode").value = "hybrid";
+    await ui.node("github-connection-mode").fire("change");
+    ui.node("github-worker-url").value = "https://worker.example.com/";
+    await ui.node("github-worker-url").fire("input");
+    const field = ui.node("relay-secret-mask");
+    field.value = "X".repeat(64);
+    await field.fire("input");
+    ui.node("github-connection-mode").value = "polling";
+    await ui.node("github-connection-mode").fire("change");
+    await ui.node("apply-settings").fire("click");
+    assert.equal(ui.closed, true);
+    assert.equal(field.value, "");
+    assert.equal(ui.relayStored, false);
+    assert.equal(ui.relayUrl, null);
+    assert.equal(ui.calls.some(([name]) => [
+      "relay_stage_secret", "relay_commit_secret_draft"
+    ].includes(name)), false);
+  } finally { ui.restore(); }
+});
+
+test("Simple polling unrelated Settings remain usable when Keyring is unavailable", async () => {
+  const ui = await fixture("simple-without-keyring", true, [], {
+    connectionMode: "polling", relayStatusError: true
+  });
+  try {
+    ui.node("ci-notification-mode").value = "failures";
+    await ui.node("ci-notification-mode").fire("change");
+    assert.equal(ui.node("apply-settings").disabled, false);
+    await ui.node("apply-settings").fire("click");
+    assert.equal(ui.closed, true);
+    assert.equal(ui.calls.some(([name]) => [
+      "relay_clear_secret", "relay_commit_secret_draft"
+    ].includes(name)), false);
   } finally { ui.restore(); }
 });
 

@@ -1311,6 +1311,15 @@ async fn select_repository_root(app: AppHandle) -> Result<Option<String>, String
     }
 }
 
+/// Persisted polling mode must not retain an old Worker origin.
+fn clear_relay_url_for_polling(config: &mut Config) -> bool {
+    if config.connection_mode == ConnectionMode::Polling {
+        config.relay_url.take().is_some()
+    } else {
+        false
+    }
+}
+
 #[tauri::command]
 fn save_settings(
     app: AppHandle,
@@ -1391,7 +1400,9 @@ fn save_settings(
                 changed = true;
             }
         }
-        if let Some(url) = canonical_relay {
+        if config.connection_mode == ConnectionMode::Polling {
+            changed |= clear_relay_url_for_polling(config);
+        } else if let Some(url) = canonical_relay {
             if config.relay_url != url {
                 config.relay_url = url;
                 changed = true;
@@ -1506,6 +1517,27 @@ mod monitor_selection_tests {
         assert_eq!(config.ci_notification_mode, CiNotificationMode::Off);
         assert_eq!(config.connection_mode, ConnectionMode::Polling);
         assert!(config.relay_url.is_none());
+    }
+
+    #[test]
+    fn saved_polling_clears_legacy_relay_origin_without_changing_hybrid() {
+        for (mode, expected) in [("polling", true), ("hybrid", false)] {
+            let mut config: Config = serde_json::from_value(serde_json::json!({
+                "roots": [],
+                "language": "en",
+                "connection_mode": mode,
+                "relay_url": "https://relay.example.com/"
+            }))
+            .unwrap();
+            assert_eq!(clear_relay_url_for_polling(&mut config), expected);
+            assert_eq!(config.relay_url.is_none(), expected);
+            assert!(!clear_relay_url_for_polling(&mut config));
+        }
+        let mut empty: Config = serde_json::from_value(serde_json::json!({
+            "roots": [], "connection_mode": "polling"
+        }))
+        .unwrap();
+        assert!(!clear_relay_url_for_polling(&mut empty));
     }
 
     #[test]

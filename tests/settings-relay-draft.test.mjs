@@ -64,6 +64,15 @@ test("disconnect preserves the explicit Hybrid choice and stages Keyring removal
   assert.match(source, /if \(draft\.connectionMode !== "hybrid"\) return true/);
 });
 
+test("Simple polling deletion is staged and the native config erases Worker origin", () => {
+  assert.ok(source.includes('function pollingNeedsRelayCleanup()'));
+  assert.ok(source.includes('await invoke("relay_clear_secret")'));
+  assert.ok(source.includes('const relayUrlForSave = simpleSelected ? "" : draft.relayUrl'));
+  assert.ok(source.includes('if (simpleSelected) relaySecretConfigured = false'));
+  assert.ok(main.includes('fn clear_relay_url_for_polling(config: &mut Config) -> bool'));
+  assert.ok(main.includes('changed |= clear_relay_url_for_polling(config);'));
+});
+
 test("the separate popup is no longer invoked by the Settings UI", () => {
   assert.doesNotMatch(source, /relay_prompt_secret/);
   assert.match(html, /id="relay-worker-guide-link"/);

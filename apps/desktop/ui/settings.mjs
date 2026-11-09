@@ -782,9 +782,14 @@ function syncConnectionAvailability() {
   mode.disabled = saving || settingsLoading || settingsInitFailed;
   syncWorkerControls();
 }
+function pollingNeedsRelayCleanup() {
+  return draft?.connectionMode === "polling" &&
+    (original?.relayUrl !== "" || relaySecretConfigured === true ||
+      relaySecretTouched);
+}
 function isDirty() {
   if (!original || !draft) return false;
-  return relaySecretTouched ||
+  return pollingNeedsRelayCleanup() || relaySecretTouched ||
     (byId("relay-secret-mask").type === "password" &&
      byId("relay-secret-mask").value.length > 0) ||
     original.connectionMode !== draft.connectionMode ||
@@ -1191,15 +1196,23 @@ byId("apply-settings").addEventListener("click", async () => {
   updateApply();
   try {
     const field = byId("relay-secret-mask");
-    if (field.type === "password" && field.value) {
-      // Single Settings-only IPC carrying a new candidate on explicit OK.
-      // Rust validates and zeroizes the native-owned value.
+    const simpleSelected = draft.connectionMode === "polling";
+    const clearRelay = simpleSelected &&
+      (original.connectionMode === "hybrid" || original.relayUrl !== "" ||
+        relaySecretConfigured === true || relaySecretTouched);
+    if (clearRelay) {
+      // Prepare native removal before config writes; a failed write or
+      // Cancel can discard this draft without deleting the credential.
+      await invoke("relay_clear_secret");
+      relaySecretTouched = true;
+    } else if (!simpleSelected && field.type === "password" && field.value) {
       await invoke("relay_stage_secret", { secret: field.value });
-      field.value = "";
       relaySecretConfigured = true;
       relaySecretTouched = true;
       renderRelaySecretState();
     }
+    // Discard uncommitted WebView candidate on any explicit confirmation.
+    if (simpleSelected || field.type === "password") field.value = "";
     const autostartChanged = original.autostartEnabled !== null &&
       draft.autostartEnabled !== original.autostartEnabled;
     const configChanges = {};
@@ -1209,8 +1222,10 @@ byId("apply-settings").addEventListener("click", async () => {
       configChanges.ciNotificationMode = draft.ciNotificationMode;
     if (original.connectionMode !== draft.connectionMode)
       configChanges.connectionMode = draft.connectionMode;
-    if (original.relayUrl !== draft.relayUrl)
-      configChanges.relayUrl = draft.relayUrl;
+    // Simple polling never carries a remembered Worker origin.
+    const relayUrlForSave = simpleSelected ? "" : draft.relayUrl;
+    if (original.relayUrl !== relayUrlForSave)
+      configChanges.relayUrl = relayUrlForSave;
     if (JSON.stringify(original.roots) !== JSON.stringify(draft.roots))
       configChanges.roots = [...draft.roots];
     if (JSON.stringify(original.ignoredChildNames) !== JSON.stringify(draft.ignoredChildNames))
@@ -1250,6 +1265,7 @@ byId("apply-settings").addEventListener("click", async () => {
     if (relaySecretTouched) {
       await invoke("relay_commit_secret_draft");
       relaySecretTouched = false;
+      if (simpleSelected) relaySecretConfigured = false;
     }
     githubStartedHere = false;
     await invoke("close_settings");

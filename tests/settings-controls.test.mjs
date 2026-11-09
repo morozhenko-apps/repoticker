@@ -163,7 +163,7 @@ test("Device Flow buttons register and invoke native commands after JS startup",
 });
 
 test("Simple polling remains default and Hybrid saving requires native credential readiness", () => {
-  assert.match(html, /id="github-connection-mode" disabled/);
+  assert.match(html, /id="github-connection-mode"[^>]*\bdisabled\b/);
   assert.match(html, /value="polling" data-i18n="Simple polling">Simple polling/);
   assert.match(html, /value="hybrid" data-i18n="Hybrid webhook relay">Hybrid webhook relay/);
   assert.match(html, /id="relay-settings"[^>]*hidden/);

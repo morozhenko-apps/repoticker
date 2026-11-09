@@ -23,7 +23,13 @@ after explicit Settings OK; Cancel and window close discard uncommitted values.
 The secret is never stored in `config.json`, events, URLs or logs. The OS
 credential store and regular configuration are separate persistence systems:
 failed writes must not be presented as a successful Hybrid activation, and
-REST fallback remains available. Native Linux/Windows acceptance and real
+REST fallback remains available. Explicit OK with Simple polling selected
+removes the saved Worker origin and the separate relay Keyring credential;
+Cancel does not. Since the config store and Keyring are independent,
+failure to delete the credential after switching to polling must keep
+Settings open for an explicit retry, never report successful cleanup and
+never reconnect the relay. GitHub OAuth credentials are not affected.
+Native Linux/Windows acceptance and real
 webhook recovery must be verified before enabling Hybrid in a release.
 
 GitHub API input/output is restricted to approved endpoints and bounded data. Permission errors, rate limits and incomplete inventories must not become an authoritative clean status or zero usage. RepoTicker does not require a developer-run login or repository hosting service.

@@ -9,6 +9,40 @@ The **CI event source** and **CI notification type** are separate settings. Sour
 
 Settings must permit selecting Hybrid to inspect its setup form **before** credentials exist. Show the HTTPS Worker origin, native OS-Keyring Set/Forget controls and setup guidance only when Hybrid is selected. Never require a secret merely to open the form. Keep **Save disabled** for an incomplete Hybrid draft (missing validated Worker URL, native relay secret, or authorized GitHub monitoring scope); Cancel preserves the persisted mode/URL. Simple polling is always available, even if the relay is unavailable. Secret entry and disconnect are staged in volatile native memory; only Settings OK commits the change to the OS Keyring. Cancel discards the draft. The WebView displays a fixed nonrevealing mask, not secret bytes.
 
+### Simple polling confirmation and relay cleanup
+
+Selecting Simple polling is a **draft**, not an immediate reset. On explicit
+Settings OK, RepoTicker must clear the persisted Worker origin and delete the
+personal relay credential from the OS Keyring. Reopening Settings and
+reselecting Hybrid must show an empty Worker URL and require a newly entered
+secret. The rule also applies to a legacy polling configuration retaining
+either a Worker origin or a detectable relay credential.
+
+Cancel and closing Settings without OK preserve the existing persisted origin
+and credential. GitHub authorization, monitor selection, enrolled repositories,
+CI notification preferences and other Settings data are unaffected. Native
+Settings persistence must not retain a Worker origin while the saved mode is
+polling, even when a caller omits the URL field.
+
+Stage credential removal before applying changed configuration; commit Keyring
+removal only after other Settings writes succeed. Ordinary polling Settings
+must remain usable when the Keyring is unavailable and no previous relay
+configuration is known. Config JSON and the OS Keyring are not a shared
+transaction: if credential removal fails after the mode/URL were saved, leave
+Settings open, report the failure without secret/provider details and allow
+explicit retry. Never display success for that incomplete cleanup. The
+disabled relay must not reconnect with the leftover credential.
+
+Regression acceptance: Hybrid-to-polling OK and Cancel; stale URL/Keyring
+cleanup when polling is already saved; uncommitted secret draft; failed config
+write; failed Keyring removal and retry; unrelated polling preferences without
+relay setup; re-entry into Hybrid requiring fresh setup. Full Node/Rust/Python
+CI and installed KDE/Windows acceptance are separate final gates.
+
+Rollback: revert the implementation and its tests as an atomic executable
+change, then revert this documentation commit separately. No external Worker,
+webhook, GitHub credential or release change is authorized.
+
 No GitHub device authorization code, RepoTicker-issued token or public relay key exists. The **single operator** generates `RELAY_CLIENT_SECRET` locally, supplies it to their own Cloudflare Worker secret binding and enters **the same value** using RepoTicker's native OS secret prompt. On an Ubuntu system with OpenSSL, the operator can generate a 64-character base64url-compatible secret (never check it into source):
 
 ```sh

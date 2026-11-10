@@ -3,6 +3,44 @@
 RepoTicker uses **Simple polling** as the default authoritative GitHub REST monitor. The `dev` branch has a native TLS WebSocket client, a personal Cloudflare Worker / SQLite Durable Object, OS Keyring secret entry and transactional Hybrid Settings. The native Cargo lock is committed and unpublished Linux/Windows acceptance bundles were built, but physical acceptance and operator-authorized deployment are still pending. **Hybrid is not a hosted RepoTicker service or a released feature.** No Cloudflare account, secrets, hosted routes or GitHub webhooks have been changed. A generic Docker/VPS adapter remains outside this phase.
 
 
+## Live Worker HTTP 5xx triage
+
+The native `http_service` fallback indicates HTTP 500–599 from a WebSocket
+upgrade. GitHub REST continues independently; this is not evidence of a
+Keyring failure. On the current operator-owned Cloudflare implementation,
+`handleRelayRequest` returns HTTP 503 for absent/invalid
+`RELAY_CLIENT_SECRET`, `ALLOWED_REPOSITORIES` or `RELAY_HUB` runtime
+bindings, as well as caught relay hub failures. An incorrect client secret
+normally fails with HTTP 401, not 5xx.
+
+The operator can check the exact deployed Worker origin without exposing
+any credential:
+
+```sh
+ORIGIN="https://YOUR-WORKER.workers.dev"
+curl --silent --show-error --output /dev/null --write-out 'HTTP %{http_code}\n' "$ORIGIN/"
+```
+
+For the exact Worker code in this repository, `GET /` responds with HTTP
+404 **after** its global runtime configuration validation passes, or
+generally HTTP 503 if it fails. A 404 does **not** check the Durable
+Object/WebSocket. Any other response may indicate a different deployed
+revision, routing configuration or Cloudflare-level failure.
+
+If the root responds 503, check the presence (not values) of the runtime
+bindings and current deployed version in the Cloudflare dashboard. If the
+root responds 404 but native `/v1/stream` handshakes still receive 5xx,
+inspect Cloudflare **Worker → Logs → Live** and Durable Object errors,
+verify the `RELAY_HUB` binding to `RelayHub` and the SQLite migration
+`v1`. No app reinstall, secret rotation, webhook change or deployment
+should be attempted until the actual failing stage is established.
+
+Never print URL credentials, bearer headers, secret values, repository
+inventories, request headers or provider error payloads in diagnostic logs.
+The CI dry run is not evidence of a deployed Worker or healthy Durable
+Object. Deployment and hosted configuration changes require explicit owner
+authorization.
+
 ## Hybrid Settings and operator provisioning
 
 The **CI event source** and **CI notification type** are separate settings. Source choices: direct GitHub REST polling (default), or operator-owned Hybrid webhook hints with REST reconciliation. The notification type (off / failures / successes / both) is independent and is not rewritten when source changes. Hybrid only changes the refresh trigger; webhook hints must never become authoritative workflow results.

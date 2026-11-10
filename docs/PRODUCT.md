@@ -16,4 +16,11 @@ GitHub access requires account permission and a network connection. Settings sho
 
 ## Platforms and preferences
 
+The undecorated Settings and About windows must remain visually separable
+from similarly colored backgrounds in light, dark, and high-contrast themes.
+Both use one shared theme-aware, one-pixel inside-viewport perimeter, without
+resizing the windows, adding an OS titlebar, changing scroll geometry or
+intercepting pointer events. Titlebar dragging, Close and keyboard behavior
+remain unchanged.
+
 Linux DEB/AppImage and Windows NSIS are supported distribution formats. The Windows installer is unsigned. Preferences are stored locally; GitHub credentials remain in the operating system's credential service. The product is free and open source under Apache 2.0.

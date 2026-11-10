@@ -2336,13 +2336,26 @@ test("Secret typed into an abandoned Hybrid draft cannot persist on Simple OK", 
     await field.fire("input");
     ui.node("github-connection-mode").value = "polling";
     await ui.node("github-connection-mode").fire("change");
+    assert.equal(field.value, "", "abandoned secret is removed from the WebView");
+    assert.equal(ui.node("github-worker-url").value, "", "abandoned Worker origin is cleared");
+    assert.equal(ui.node("apply-settings").disabled, true,
+      "reverting an unsaved draft is a no-op, not a reason to enable OK");
+    // Independently save a real preference change while polling: the
+    // abandoned Hybrid credential must never be staged or committed.
+    ui.node("ci-notification-mode").value = "failures";
+    await ui.node("ci-notification-mode").fire("change");
+    assert.equal(ui.node("apply-settings").disabled, false);
     await ui.node("apply-settings").fire("click");
     assert.equal(ui.closed, true);
     assert.equal(field.value, "");
     assert.equal(ui.relayStored, false);
     assert.equal(ui.relayUrl, null);
+    const saves = ui.calls.filter(([name]) => name === "save_settings");
+    assert.equal(saves.length, 1);
+    assert.equal(saves[0][1].ciNotificationMode, "failures");
+    assert.ok(!Object.hasOwn(saves[0][1], "relayUrl"));
     assert.equal(ui.calls.some(([name]) => [
-      "relay_stage_secret", "relay_commit_secret_draft"
+      "relay_stage_secret", "relay_clear_secret", "relay_commit_secret_draft"
     ].includes(name)), false);
   } finally { ui.restore(); }
 });

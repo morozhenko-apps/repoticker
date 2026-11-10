@@ -157,6 +157,12 @@ fn backoff(attempt: u32) -> Duration {
 /// Always abort the previous task before publishing its replacement.
 /// This cancels pending TLS handshakes, heartbeat timers and old-scope reads.
 pub fn restart(app: &AppHandle) {
+    if std::env::var("REPOTICKER_RELAY_DEBUG").as_deref() == Ok("1") {
+        eprintln!(
+            "RepoTicker relay supervisor: restarting pending_credential_draft={}",
+            relay_secret::has_pending_draft(app)
+        );
+    }
     let state = app.state::<RelayTransportState>();
     let mut slot = state.job.lock().unwrap_or_else(|err| err.into_inner());
     if let Some(previous) = slot.take() {

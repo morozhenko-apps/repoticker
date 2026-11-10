@@ -256,7 +256,14 @@ pub async fn relay_commit_secret_draft(
     }
     // Dropping the candidate wipes plaintext. A successful Keyring operation
     // is the only reason the native transport is restarted.
+    let operation = match &candidate {
+        RelaySecretDraft::Set(_) => "set",
+        RelaySecretDraft::Remove => "remove",
+    };
     drop(candidate);
+    if std::env::var("REPOTICKER_RELAY_DEBUG").as_deref() == Ok("1") {
+        eprintln!("RepoTicker relay credential: operation={operation} result=committed");
+    }
     crate::relay_transport::restart(&app);
     Ok(())
 }

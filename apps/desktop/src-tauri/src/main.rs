@@ -1416,6 +1416,23 @@ fn save_settings(
     if let Some(locale) = saved_locale {
         refresh_tray_language(&app, &locale);
     }
+    // Optional on-device diagnostic: re-read persisted state, never the
+    // origin or Keyring credential bytes. A diagnostic failure cannot fail
+    // an already committed Settings transaction.
+    if std::env::var("REPOTICKER_RELAY_DEBUG").as_deref() == Ok("1") {
+        match read_config(&app) {
+            Ok(saved) => eprintln!(
+                "RepoTicker relay config: mode={} origin_configured={}",
+                if saved.connection_mode == ConnectionMode::Hybrid {
+                    "hybrid"
+                } else {
+                    "polling"
+                },
+                saved.relay_url.is_some()
+            ),
+            Err(_) => eprintln!("RepoTicker relay config: state=unavailable"),
+        }
+    }
     if changed {
         relay_transport::restart(&app);
         let _ = app.emit("repoticker-config-changed", ());

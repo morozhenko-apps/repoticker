@@ -41,6 +41,30 @@ The CI dry run is not evidence of a deployed Worker or healthy Durable
 Object. Deployment and hosted configuration changes require explicit owner
 authorization.
 
+## Mode switching, credential cleanup and reconnect diagnostics
+
+Selecting Simple polling clears the Worker origin in the Settings draft.
+Only OK persists that choice and clears the OS Keyring relay credential;
+Cancel retains the previously stored Hybrid configuration. After an
+explicit Simple confirmation, the UI must verify the persisted mode,
+absent Worker origin and absent Keyring secret before closing. An
+unverifiable cleanup must keep Settings open with a non-sensitive error
+rather than report that disconnection succeeded. Switching back to
+Hybrid requires entering a new origin and credential.
+
+Hybrid reconnection must use the persisted configuration and the
+committed Keyring credential. Native restart logs (when
+`REPOTICKER_RELAY_DEBUG=1`) can report only fixed phase codes,
+presence flags and redacted operation outcomes. The Settings window
+must reconcile against the native phase on reopen/focus, without
+depending solely on delivery of an event while the window was hidden.
+
+The Settings footer, including Cancel and OK, is outside the scrollable
+form and stays completely visible at short window heights and when
+the ignored folder list expands. The shared Settings/About border is
+painted inside the WebView viewport, preserving the native window
+size, scroll geometry and pointer handling.
+
 ## Hybrid Settings and operator provisioning
 
 The **CI event source** and **CI notification type** are separate settings. Source choices: direct GitHub REST polling (default), or operator-owned Hybrid webhook hints with REST reconciliation. The notification type (off / failures / successes / both) is independent and is not rewritten when source changes. Hybrid only changes the refresh trigger; webhook hints must never become authoritative workflow results.

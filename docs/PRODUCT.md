@@ -14,6 +14,12 @@ An optional GitHub Device Flow connection can show authorized workflow jobs, sel
 
 GitHub access requires account permission and a network connection. Settings shows the authorized monitoring account and a Disconnect action on one row. A complete inventory containing one eligible account needs no redundant account picker or reconfirmation; multiple accounts require an explicit selection before changing the monitoring scope. An already authorized and unchanged connection must not need OK. RepoTicker does not host CI jobs or change GitHub repository permissions.
 
+Settings maintains a persistent footer outside the scrollable form so
+the confirmation and cancellation controls remain visible when sections
+expand or the available window height is restricted. A switch to Simple
+polling is committed only after the Worker origin and its Keyring
+credential are verifiably cleared; Cancel does not modify them.
+
 ## Platforms and preferences
 
 The undecorated Settings and About windows must remain visually separable

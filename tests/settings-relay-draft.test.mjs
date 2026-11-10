@@ -20,7 +20,12 @@ test("one inline password field stages only on explicit OK", () => {
   assert.doesNotMatch(html, /relay-configure-secret|relay-help|relay-secret-hint|relay-worker-source-link/);
   assert.match(source, /byId\("relay-secret-mask"\)\.addEventListener\("input"/);
   assert.match(source, /await invoke\("relay_stage_secret", \{ secret: field\.value \}\)/);
-  assert.match(source, /field\.value = "";\s*relaySecretConfigured = true/);
+  const saveFlow = source.split('byId("apply-settings").addEventListener("click", async () => {')[1];
+  assert.ok(saveFlow);
+  const stage = saveFlow.indexOf('await invoke("relay_stage_secret", { secret: field.value });');
+  const wipe = saveFlow.indexOf('if (simpleSelected || field.type === "password") field.value = "";');
+  assert.ok(stage >= 0 && wipe > stage, "plaintext candidate must be cleared after staging");
+  assert.match(saveFlow, /else if \(!simpleSelected && field\.type === "password" && field\.value\)/);
   assert.doesNotMatch(source, /invoke\("relay_prompt_secret"/);
   assert.match(native, /pub async fn relay_stage_secret\(/);
   assert.match(main, /relay_secret::relay_stage_secret,/);
@@ -33,7 +38,9 @@ test("new secrets use native validation and are never saved as regular settings"
   assert.match(native, /Some\(RelaySecretDraft::Set\(candidate\)\)/);
   assert.match(native, /impl Drop for SensitiveSecret/);
   assert.match(source, /await invoke\("relay_commit_secret_draft"\)/);
-  assert.match(source, /if \(field\.type === "password" && field\.value\)/);
+  // A pending password is staged only for Hybrid; Simple drops it without storage.
+  assert.match(source, /else if \(!simpleSelected && field\.type === "password" && field\.value\)/);
+  assert.match(source, /if \(simpleSelected \|\| field\.type === "password"\) field\.value = ""/);
   assert.doesNotMatch(source, /configChanges\.(?:secret|token|relaySecret)/);
   assert.match(main, /fn close_settings\([\s\S]*?relay_secret::discard_draft\(&app\)/);
 });

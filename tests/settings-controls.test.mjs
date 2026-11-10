@@ -170,7 +170,10 @@ test("Simple polling remains default and Hybrid saving requires native credentia
   assert.match(html, /id="github-worker-row"[^>]*hidden/);
   assert.match(html, /id="github-worker-url" disabled/);
   assert.match(js, /configChanges\.connectionMode = draft\.connectionMode/);
-  assert.match(js, /configChanges\.relayUrl = draft\.relayUrl/);
+  // The confirmed mode now determines whether the relay URL is persisted or cleared.
+  assert.match(js, /const relayUrlForSave = simpleSelected \? "" : draft\.relayUrl/);
+  assert.match(js, /configChanges\.relayUrl = relayUrlForSave/);
+  assert.match(js, /await invoke\("relay_clear_secret"\)/);
   assert.match(js, /validRelayDraft\(\)/);
   assert.match(js, /relaySecretConfigured === true/);
 });

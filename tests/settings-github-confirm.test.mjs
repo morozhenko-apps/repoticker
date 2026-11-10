@@ -2684,3 +2684,97 @@ test("Settings focus re-reads native WebSocket state when previous event was mis
     assert.equal(ui.node("github-worker-url").disabled, true);
   } finally { ui.restore(); }
 });
+
+test("Missed Settings-opened event reloads saved Hybrid and online status on focus", async () => {
+  const ui = await fixture("hybrid-saved-missed-open-event", true);
+  try {
+    const mode = ui.node("github-connection-mode");
+    const url = ui.node("github-worker-url");
+    const field = ui.node("relay-secret-mask");
+    mode.value = "hybrid";
+    await mode.fire("change");
+    url.value = "https://worker.example.com/";
+    await url.fire("input");
+    field.value = "A".repeat(64);
+    await field.fire("input");
+    assert.equal(ui.node("apply-settings").disabled, false);
+    await ui.node("apply-settings").fire("click");
+    assert.equal(ui.closed, true);
+    assert.equal(ui.relayStored, true);
+    assert.equal(ui.connectionMode, "hybrid");
+    const configReadsBefore = ui.calls.filter(([name]) => name === "get_settings_config").length;
+    // Mimic the native transport becoming online while the WebView is hidden.
+    // The normal repoticker-settings-opened notification is intentionally lost.
+    ui.setRelayPhaseWithoutEvent("online");
+    await ui.dispatchFocus();
+    assert.ok(ui.calls.filter(([name]) => name === "get_settings_config").length >
+      configReadsBefore, "a new session must refresh config, not only phase");
+    assert.equal(mode.value, "hybrid");
+    assert.equal(url.value, "https://worker.example.com/");
+    assert.equal(field.value, "••••••••••••");
+    assert.equal(ui.node("relay-connection-state").dataset.state, "online");
+    assert.equal(ui.node("relay-remove-secret").disabled, false);
+  } finally { ui.restore(); }
+});
+
+test("Disconnecting only Hybrid credential never silently selects Simple on reopen", async () => {
+  const ui = await fixture("hybrid-credential-only-reopen", true, [], {
+    connectionMode: "hybrid", relayUrl: "https://worker.example.com/",
+    relayStored: true, relayTransportPhase: "online"
+  });
+  try {
+    await ui.node("relay-remove-secret").fire("click");
+    assert.equal(ui.node("github-connection-mode").value, "hybrid");
+    await ui.node("apply-settings").fire("click");
+    assert.equal(ui.closed, true);
+    assert.equal(ui.connectionMode, "hybrid");
+    assert.equal(ui.relayStored, false);
+    assert.equal(ui.calls.some(([name]) => name === "save_settings"), false);
+    const readsBefore = ui.calls.filter(([name]) => name === "get_settings_config").length;
+    ui.setRelayPhaseWithoutEvent("fallback", "missing_secret");
+    await ui.dispatchFocus(); // No repoticker-settings-opened event.
+    assert.ok(ui.calls.filter(([name]) => name === "get_settings_config").length > readsBefore);
+    assert.equal(ui.node("github-connection-mode").value, "hybrid");
+    assert.equal(ui.node("github-worker-url").value, "https://worker.example.com/");
+    assert.equal(ui.node("relay-secret-mask").type, "password");
+    assert.equal(ui.node("relay-secret-mask").value, "");
+    assert.equal(ui.node("relay-connection-state").dataset.state, "fallback");
+    assert.match(ui.node("relay-connection-detail").textContent, /No relay secret is stored/);
+  } finally { ui.restore(); }
+});
+
+test("Cancel with missed reopened event restores prior Hybrid draft", async () => {
+  const ui = await fixture("hybrid-cancel-missed-open-event", true, [], {
+    connectionMode: "hybrid", relayUrl: "https://worker.example.com/",
+    relayStored: true
+  });
+  try {
+    ui.node("github-connection-mode").value = "polling";
+    await ui.node("github-connection-mode").fire("change");
+    assert.equal(ui.node("github-worker-url").value, "");
+    await ui.node("cancel-settings").fire("click");
+    await ui.dispatchFocus();
+    assert.equal(ui.node("github-connection-mode").value, "hybrid");
+    assert.equal(ui.node("github-worker-url").value, "https://worker.example.com/");
+    assert.equal(ui.relayStored, true);
+  } finally { ui.restore(); }
+});
+
+test("Ordinary focus within an editing session retains unsaved Relay changes", async () => {
+  const ui = await fixture("hybrid-edit-preserve-focus", true, [], {
+    connectionMode: "hybrid", relayUrl: "https://worker.example.com/",
+    relayStored: true, relayTransportPhase: "fallback"
+  });
+  try {
+    const url = ui.node("github-worker-url");
+    url.value = "https://replacement.example.com/";
+    await url.fire("input");
+    assert.equal(ui.node("apply-settings").disabled, false);
+    const readsBefore = ui.calls.filter(([name]) => name === "get_settings_config").length;
+    await ui.dispatchFocus();
+    assert.equal(url.value, "https://replacement.example.com/");
+    assert.equal(ui.node("apply-settings").disabled, false);
+    assert.equal(ui.calls.filter(([name]) => name === "get_settings_config").length,
+      readsBefore, "focus while editing must not reload persistent settings");
+  } finally { ui.restore(); }
+});

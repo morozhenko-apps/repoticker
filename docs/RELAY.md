@@ -58,6 +58,14 @@ committed Keyring credential. Native restart logs (when
 presence flags and redacted operation outcomes. The Settings window
 must reconcile against the native phase on reopen/focus, without
 depending solely on delivery of an event while the window was hidden.
+After successful OK or Cancel, reopening the same hidden WebView must
+reinitialize the complete persisted configuration and Keyring status, not
+just the transport phase. A missed native open event must be recovered
+on the next window focus; an ordinary focus change inside an already
+open editing session must never discard unsaved drafts. Removing only
+the Hybrid credential must not rewrite the selected connection mode,
+and reloading Settings must show the persisted Hybrid choice even when
+that credential is now absent.
 
 The Settings footer, including Cancel and OK, is outside the scrollable
 form and stays completely visible at short window heights and when

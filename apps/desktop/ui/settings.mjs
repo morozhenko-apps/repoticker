@@ -126,9 +126,16 @@ function applyRelayPhase(status) {
   syncWorkerControls();
 }
 byId("github-connection-mode").addEventListener("change", event => {
-  syncWorkerControls();
   if (!draft || saving) return;
   draft.connectionMode = event.target.value;
+  if (draft.connectionMode === "polling") {
+    // A Simple draft must not revive the previous Worker origin if Hybrid
+    // is selected again. Cancel still preserves the persisted configuration.
+    draft.relayUrl = "";
+    byId("github-worker-url").value = "";
+    const secretField = byId("relay-secret-mask");
+    if (secretField.type === "password") secretField.value = "";
+  }
   updateApply();
 });
 byId("github-worker-url").addEventListener("input", event => {
@@ -708,6 +715,10 @@ byId("github-copy-code").addEventListener("click", async () => {
 
 window.addEventListener("focus", () => {
   if (githubPending) void refreshGithub();
+  // Native transport can advance while this WebView is hidden or unfocused.
+  if (draft && !saving && !settingsLoading) {
+    void refreshRelayConnectionStatus();
+  }
 });
 
 // Open only the audited deployment guide through a fixed native allowlist.
@@ -1284,6 +1295,20 @@ byId("apply-settings").addEventListener("click", async () => {
       await invoke("relay_commit_secret_draft");
       relaySecretTouched = false;
       if (simpleSelected) relaySecretConfigured = false;
+    }
+    if (simpleSelected && clearRelay) {
+      // Do not report a successful disconnect based only on IPC completion.
+      // Both independent persistence layers must confirm that the old
+      // endpoint and credential are actually gone before closing Settings.
+      const [persisted, credentialStored] = await Promise.all([
+        invoke("get_settings_config"),
+        invoke("relay_secret_status")
+      ]);
+      if (persisted?.connection_mode !== "polling" ||
+          (typeof persisted.relay_url === "string" && persisted.relay_url !== "") ||
+          credentialStored !== false) {
+        throw Error("Relay cleanup could not be verified.");
+      }
     }
     githubStartedHere = false;
     await invoke("close_settings");

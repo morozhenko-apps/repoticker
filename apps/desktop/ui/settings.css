@@ -48,7 +48,7 @@ label { font-size: 12px; }
 .github-grid input, .github-grid select { min-width: 0; width: 100%; height: 34px; }
 .worker-label { grid-column: 1/-1; }
 .github-grid :disabled { opacity: .58; }
-.settings-footer { position: sticky; bottom: -12px; z-index: 20; background: Canvas; margin-top: auto; padding: 8px 0 4px; display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 48px; flex-shrink: 0; }
+.settings-footer { position: relative; z-index: 20; background: Canvas; margin-top: 0; padding: 8px 20px 12px; display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 58px; flex: 0 0 auto; border-top: 1px solid color-mix(in srgb, CanvasText 16%, Canvas); }
 .footer-buttons { display: flex; gap: 8px; flex: 0 0 auto; }
 .footer-buttons button { min-width: 80px; }
 .footer-buttons .primary:not(:disabled) { border-color: #529acb; background: #d4eafa; color: #173e56; }
@@ -248,7 +248,7 @@ label { font-size: 12px; }
 .relay-secret-hint { margin: 4px 0 0; }
 
 /* Shared settings geometry: section separators instead of nested islands. */
-.settings-shell { gap: 0; padding: 12px 20px 6px; }
+.settings-shell { gap: 0; padding: 12px 20px 12px; }
 .block { border: 0; border-bottom: 1px solid color-mix(in srgb, CanvasText 16%, Canvas);
   border-radius: 0; padding: 13px 4px 15px; }
 .block:last-of-type { border-bottom: 0; }

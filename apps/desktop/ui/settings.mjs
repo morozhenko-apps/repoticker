@@ -158,6 +158,9 @@ traceStartup("settings.start");
 let relaySecretConfigured = null;
 let relaySecretBusy = false;
 let relaySecretTouched = false;
+// Hiding an undecorated Tauri WebView can drop the native "opened" event.
+// Arm this *before* close_settings: hidden WebViews may suspend JS callbacks.
+let settingsNeedsRefreshOnFocus = false;
 let original = null;
 let draft = null;
 syncWorkerControls();
@@ -714,8 +717,15 @@ byId("github-copy-code").addEventListener("click", async () => {
 });
 
 window.addEventListener("focus", () => {
+  if (settingsNeedsRefreshOnFocus) {
+    // Native open notifications are best effort while the WebView is hidden.
+    // Only a new Settings session may discard a stale in-memory draft.
+    settingsNeedsRefreshOnFocus = false;
+    void refresh();
+    return;
+  }
   if (githubPending) void refreshGithub();
-  // Native transport can advance while this WebView is hidden or unfocused.
+  // In the same active session, focus changes must preserve edited fields.
   if (draft && !saving && !settingsLoading) {
     void refreshRelayConnectionStatus();
   }
@@ -1203,7 +1213,14 @@ const cancelSettings = async () => {
     githubConnected = githubWasConnectedAtOpen && !githubStartedHere;
     byId("github-user-code").textContent = "";
     byId("relay-secret-mask").value = "";
-    await invoke("close_settings");
+    settingsNeedsRefreshOnFocus = true;
+    try {
+      await invoke("close_settings");
+    } catch (error) {
+      // An unsuccessful close leaves this editing session open.
+      settingsNeedsRefreshOnFocus = false;
+      throw error;
+    }
   } catch (error) {
     message(String(error), true);
   } finally {
@@ -1311,7 +1328,14 @@ byId("apply-settings").addEventListener("click", async () => {
       }
     }
     githubStartedHere = false;
-    await invoke("close_settings");
+    settingsNeedsRefreshOnFocus = true;
+    try {
+      await invoke("close_settings");
+    } catch (error) {
+      // An unsuccessful close leaves this editing session open.
+      settingsNeedsRefreshOnFocus = false;
+      throw error;
+    }
   } catch (error) {
     message(String(error), true);
   } finally {
@@ -1321,6 +1345,8 @@ byId("apply-settings").addEventListener("click", async () => {
   }
 });
 window.__TAURI__?.event?.listen?.("repoticker-settings-opened", () => {
+  // Native event is the primary path; focus above is its fallback.
+  settingsNeedsRefreshOnFocus = false;
   void refresh();
 });
 void refresh();

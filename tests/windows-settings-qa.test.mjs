@@ -53,7 +53,7 @@ test("Folders and ignored child names both have native browse controls", () => {
 
 test("Scrollable Settings and dropdown options align at the top without extra padding", () => {
   assert.match(settingsCss, /\.settings-shell \{[^}]*overflow-y: auto;/);
-  assert.match(settingsCss, /\.settings-footer \{[^}]*position: sticky;/);
+  assert.match(settingsCss, /\.settings-footer \{[^}]*position: relative;[^}]*flex: 0 0 auto;/);
   assert.match(settingsCss, /#language-options \{[^}]*padding: 0;/);
   assert.match(settingsCss, /#language-options button \{[^}]*align-items: center;/);
   assert.match(cardCss, /\.repo-menu button \{[^}]*align-items: center;/);

@@ -85,7 +85,9 @@ test("Settings scrolls vertically when repository selections expand beyond the w
   assert.match(settings, /byId\("settings-close"\).addEventListener\("click", cancelSettings\)/);
   assert.equal(win.resizable, false);
   assert.match(css, /\.settings-shell \{[^}]*height: 100%;[^}]*overflow-y: auto;/);
-  assert.match(css, /\.settings-footer \{[^}]*position: sticky;[^}]*bottom:/);
+  assert.match(html, /<\/main>\s*<footer class="settings-footer">/);
+  assert.match(css, /\.settings-footer \{[^}]*position: relative;[^}]*flex: 0 0 auto;/);
+  assert.doesNotMatch(css, /\.settings-footer \{[^}]*bottom:\s*-12px/);
   assert.match(css, /\.block\.github \{[^}]*overflow: visible;/);
   assert.match(css, /\.github-repo-list \{[^}]*overflow-y: auto;/);
 });

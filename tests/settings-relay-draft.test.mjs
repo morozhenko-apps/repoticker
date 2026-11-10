@@ -93,3 +93,14 @@ test("the separate popup is no longer invoked by the Settings UI", () => {
   assert.match(html, /id="relay-worker-guide-link"/);
   assert.doesNotMatch(html, /id="relay-worker-source-link"/);
 });
+
+test("Simple confirmation verifies native config and credential cleanup before closing", () => {
+  const save = source.split('byId("apply-settings").addEventListener("click", async () => {')[1];
+  const commit = save.indexOf('await invoke("relay_commit_secret_draft")');
+  const readBack = save.indexOf('invoke("get_settings_config")');
+  const readSecret = save.indexOf('invoke("relay_secret_status")');
+  const close = save.indexOf('await invoke("close_settings")');
+  assert.ok(commit >= 0 && readBack > commit && readSecret > commit && close > readBack);
+  assert.match(source, /draft\.relayUrl = ""/);
+  assert.match(source, /void refreshRelayConnectionStatus\(\)/);
+});

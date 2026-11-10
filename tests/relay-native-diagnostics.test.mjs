@@ -99,3 +99,12 @@ test("credential Disconnect does not depend on network state or Settings loading
   assert.match(js, /await invoke\("relay_clear_secret"\)/);
   assert.doesNotMatch(js, /draft\.connectionMode = "polling"/);
 });
+
+test("opt-in lifecycle tracing emits finite state only after persistence, not secrets", () => {
+  const secret = readFileSync(new URL("../apps/desktop/src-tauri/src/relay_secret.rs", import.meta.url), "utf8");
+  assert.ok(main.includes("RepoTicker relay config: mode={} origin_configured={}"));
+  assert.ok(secret.includes("RepoTicker relay credential: operation={operation} result=committed"));
+  assert.ok(rust.includes("RepoTicker relay supervisor: restarting pending_credential_draft={}"));
+  assert.doesNotMatch(main, /eprintln!\([^;]*config\.relay_url/i);
+  assert.doesNotMatch(secret, /eprintln!\([^;]*secret\.as_str/i);
+});

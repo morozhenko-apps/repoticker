@@ -48,6 +48,7 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
   });
   elements.get("language-options").querySelectorAll = () => languageOptions;
   const listeners = new Map();
+  const windowHandlers = new Map();
   const documentHandlers = new Map();
   const calls = [];
   let connected = initiallyConnected;
@@ -61,6 +62,7 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
   let persistedConnectionMode = options.connectionMode || "polling";
   let persistedRelayUrl = options.relayUrl || null;
   let relayStored = options.relayStored === true;
+  let relayStatusReadCount = 0;
   // Mirror native Rust: password dialogs stage only, Keyring mutates on OK.
   let relayPending = null;
   let relayTransportPhase = options.relayTransportPhase ?? "polling";
@@ -96,7 +98,7 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
   for (const node of [...elements.values(), ...languageOptions])
     node.focus = () => { document.activeElement = node; };
   const window = {
-    addEventListener() {},
+    addEventListener(name, handler) { windowHandlers.set(name, handler); },
     __TAURI__: {
       core: {
         async invoke(command, args) {
@@ -131,9 +133,13 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
               if (options.autostartWriteMismatch) return osAutostart;
               osAutostart = args.enabled;
               return osAutostart;
-            case "relay_secret_status":
-              if (options.relayStatusError) throw Error("PRIVATE_RELAY_STATUS");
+            case "relay_secret_status": {
+              const firstRead = relayStatusReadCount++ === 0;
+              if (options.relayStatusError &&
+                  (!options.relayStatusErrorInitialOnly || firstRead))
+                throw Error("PRIVATE_RELAY_STATUS");
               return relayPending === null ? relayStored : relayPending === "set";
+            }
             case "relay_connection_diagnostics":
               if (options.relayTransportStatusError) throw Error("PRIVATE_RELAY_PHASE");
               return delayedRelayTransportStatus ?? {
@@ -154,7 +160,8 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
             case "relay_commit_secret_draft":
               if (options.relayCommitError) throw Error("System credential store unavailable.");
               if (relayPending === "set") relayStored = true;
-              if (relayPending === "remove") relayStored = false;
+              if (relayPending === "remove" && !options.relayRemoveStillStored)
+                relayStored = false;
               relayPending = null;
               return undefined;
             case "github_auth_status":
@@ -224,7 +231,9 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
             case "save_settings":
               if (options.saveSettingsError) throw Error("Settings write denied");
               if (args.connectionMode) persistedConnectionMode = args.connectionMode;
-              if (Object.hasOwn(args, "relayUrl")) persistedRelayUrl = args.relayUrl;
+              if (Object.hasOwn(args, "relayUrl") &&
+                  !(options.relayConfigNotCleared && args.connectionMode === "polling"))
+                persistedRelayUrl = args.relayUrl;
               return undefined;
             case "close_settings":
               relayPending = null;
@@ -278,6 +287,15 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
       listeners.get("repoticker-relay-state")?.({ payload: { phase, reason } });
     },
     releaseRelayTransportStatus: phase => releaseRelayTransportStatus?.(phase),
+    setRelayPhaseWithoutEvent: (phase, reason = "none") => {
+      relayTransportPhase = phase;
+      relayTransportReason = reason;
+    },
+    async dispatchFocus() {
+      windowHandlers.get("focus")?.();
+      await tick();
+      await tick();
+    },
     get relayUrl() { return persistedRelayUrl; },
     get monitorRepositories() { return monitorRepositories; },
     releaseInstallations: payload => releaseInstallations?.(payload),
@@ -2172,7 +2190,7 @@ test("Hybrid returns to Simple when Keyring status read fails but removal works"
   const ui = await fixture("hybrid-rollback", true, [], {
     connectionMode: "hybrid",
     relayUrl: "https://relay.example.com/",
-    relayStatusError: true
+    relayStatusError: true, relayStatusErrorInitialOnly: true
   });
   try {
     assert.equal(ui.node("github-connection-mode").disabled, false);
@@ -2250,7 +2268,7 @@ test("Previously retained polling secret can be explicitly cleared without URL",
 test("Previously retained polling URL is cleared even if Keyring status read fails", async () => {
   const ui = await fixture("simple-legacy-url", true, [], {
     connectionMode: "polling", relayUrl: "https://worker.example.com/",
-    relayStatusError: true
+    relayStatusError: true, relayStatusErrorInitialOnly: true
   });
   try {
     assert.equal(ui.node("apply-settings").disabled, false);
@@ -2579,5 +2597,77 @@ test("Disconnect stays available when WSS is offline, and custom Close behaves a
     assert.equal(ui.closed, true);
     assert.equal(ui.relayStored, true);
     assert.equal(ui.relayPending, null);
+  } finally { ui.restore(); }
+});
+
+test("Saved Simple mode never resurrects Worker origin or stored credential on Hybrid reselect", async () => {
+  const ui = await fixture("hybrid-to-simple-to-hybrid-clean", true, [], {
+    connectionMode: "hybrid", relayUrl: "https://worker.example.com/", relayStored: true
+  });
+  try {
+    ui.node("github-connection-mode").value = "polling";
+    await ui.node("github-connection-mode").fire("change");
+    assert.equal(ui.node("github-worker-url").value, "", "old origin cleared in Simple draft");
+    assert.equal(ui.relayStored, true, "before OK Keyring must remain unchanged");
+    await ui.node("apply-settings").fire("click");
+    assert.equal(ui.closed, true);
+    assert.equal(ui.relayStored, false);
+    assert.equal(ui.relayUrl, "");
+    const orderedCalls = ui.calls.map(([command]) => command);
+    assert.ok(orderedCalls.lastIndexOf("relay_commit_secret_draft") <
+      orderedCalls.lastIndexOf("relay_secret_status"), "verify after Keyring commit");
+    await ui.dispatchOpened();
+    ui.node("github-connection-mode").value = "hybrid";
+    await ui.node("github-connection-mode").fire("change");
+    assert.equal(ui.node("github-worker-url").value, "");
+    assert.equal(ui.node("relay-secret-mask").type, "password");
+    assert.equal(ui.node("relay-secret-mask").value, "");
+    assert.equal(ui.node("apply-settings").disabled, true, "reconfiguration requires new origin and secret");
+  } finally { ui.restore(); }
+});
+
+test("Keyring removal that acknowledges but remains stored must not close Settings", async () => {
+  const ui = await fixture("broken-keyring-removal", true, [], {
+    connectionMode: "hybrid", relayUrl: "https://worker.example.com/",
+    relayStored: true, relayRemoveStillStored: true
+  });
+  try {
+    ui.node("github-connection-mode").value = "polling";
+    await ui.node("github-connection-mode").fire("change");
+    await ui.node("apply-settings").fire("click");
+    assert.equal(ui.closed, false);
+    assert.equal(ui.relayStored, true);
+    assert.match(ui.node("message").textContent, /Relay cleanup could not be verified/);
+    assert.equal(ui.node("apply-settings").disabled, false, "recovery remains interactive");
+  } finally { ui.restore(); }
+});
+
+test("Native config that leaves stale Worker origin must not claim completed cleanup", async () => {
+  const ui = await fixture("broken-url-removal", true, [], {
+    connectionMode: "hybrid", relayUrl: "https://worker.example.com/",
+    relayStored: true, relayConfigNotCleared: true
+  });
+  try {
+    ui.node("github-connection-mode").value = "polling";
+    await ui.node("github-connection-mode").fire("change");
+    await ui.node("apply-settings").fire("click");
+    assert.equal(ui.closed, false);
+    assert.equal(ui.relayUrl, "https://worker.example.com/");
+    assert.match(ui.node("message").textContent, /Relay cleanup could not be verified/);
+  } finally { ui.restore(); }
+});
+
+test("Settings focus re-reads native WebSocket state when previous event was missed", async () => {
+  const ui = await fixture("relay-recover-on-focus", true, [], {
+    relayStored: true, connectionMode: "hybrid",
+    relayUrl: "https://worker.example.com/", relayTransportPhase: "connecting"
+  });
+  try {
+    assert.equal(ui.node("relay-connection-state").dataset.state, "connecting");
+    ui.setRelayPhaseWithoutEvent("online");
+    await ui.dispatchFocus();
+    assert.equal(ui.node("relay-connection-state").dataset.state, "online");
+    assert.match(ui.node("relay-connection-text").textContent, /connected \(WebSocket\)/);
+    assert.equal(ui.node("github-worker-url").disabled, true);
   } finally { ui.restore(); }
 });

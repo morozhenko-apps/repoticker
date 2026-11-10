@@ -87,6 +87,29 @@ Executed commands (paths are relative to this repository; glob notation abbrevia
 
 Publication boundary: dev maintenance may be shared with these exact outcomes. Failed gates block completion/release. Main/master, accepted tags, deployment configuration and store identities remain outside this maintenance publication. Rollback uses ordinary reverts of the separate executable commits and this documentation receipt.
 
+## Native QA package provenance on same-version candidates
+
+A development acceptance DEB can have the same semantic version as the
+installed production package. Running `apt install` without a reinstall
+request may leave the previously installed binary intact. The unpublished
+Linux QA installer must use the exact checked CI run and source SHA, verify
+the DEB checksum, force a reinstall from that local DEB, and compare the
+installed executable byte-for-byte with the executable inside the verified
+package before launching. The package's version number alone is not
+source provenance.
+
+Installed settings and OS Keyring contents are preserved. Never bypass
+the existing single-instance check or treat the existence of an executable
+as proof of the candidate. If verification fails, refuse launch and keep
+the diagnostic non-secret. The installer remains operator-invoked and may
+replace the locally installed app only after owner acceptance of the
+unpublished candidate. Do not alter release publication, signing,
+protected branches or external services.
+
+Acceptance: bash syntax, exact-package source guard, mandatory
+`--reinstall`, content comparison, fail-closed mismatch, installed
+runtime diagnostics and a later separate production-release gate.
+
 ## Unpublished desktop bundler diagnostics
 
 Native acceptance is separate from the successful Rust compile and unit-test gates. On Ubuntu 24.04, a Tauri executable and DEB may build while the external AppImage `linuxdeploy` step fails. The dev-only candidate workflow sets `NO_STRIP=true` for the Linux bundling command to avoid a known incompatibility between `linuxdeploy`'s stripping tool and modern ELF relocation sections; it also enables verbose Tauri diagnostics to make future bundling failures actionable. This flag does not disable Cargo release optimization, ABI checks, or artifact integrity verification. A passing bundle still requires installed KDE acceptance.

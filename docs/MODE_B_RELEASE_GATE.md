@@ -49,8 +49,9 @@ Cloudflare deployment, signing, tag changes or `main` promotion.
    stop checking CI when triggered and collect owner-provided completion.
 6. Complete operator KDE lifecycle/crash evidence before any production decision.
 
-Rollback: revert the test implementation commit separately from this
-documentation; no runtime change or hosted deployment is part of Mode B.
+Rollback: revert test implementation commits separately from this
+documentation. The production Worker correction discovered by Mode B is an
+independent code commit. No hosted deployment is part of this work.
 
 ## Full release-delta artifact inventory and branch map
 
@@ -196,8 +197,11 @@ defined contract. Fix: `return await` each async route dispatch so the
 rejection is observed by the existing catch. Do not change test expectations,
 webhook verification, authentication, Worker public routes or response
 payloads. The existing two Mode B tests are the regression gate.
-The Worker CI dry-run is not a deployment; no production credentials or
-bindings are to be touched.
+The source-only correction is commit `8e7695e510781c318e2859aec39eca8899f81d53`.
+It has passed a narrow static syntax and source-diff review. A new exact-SHA
+Preflight and Worker bundle dry-run are still required; neither is being
+represented as passed before execution. The Worker CI dry-run is not a
+deployment; no production credentials or bindings are to be touched.
 
 The KDE host reported `No coredumps found` for
 `coredumpctl --no-pager list /usr/bin/repoticker`. This only rules out a

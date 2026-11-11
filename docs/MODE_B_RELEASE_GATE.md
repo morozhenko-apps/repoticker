@@ -177,6 +177,35 @@ The unexecuted manual native shutdown test is tracked as
 Physical KDE acceptance already demonstrated Relay `online` transitions
 and polling cleanup, but it has *not* closed the allocator-integrity risk.
 
+## Mode B defect found by stable preflight
+
+Exact-SHA Preflight #43040145163 on
+`6f3ca7f4e0ed85993a936eaf57dca1f11a29e8a4`
+reported two failing JS tests in `mode-b-relay-worker.test.mjs`:
+
+- A Durable Object `fetch` rejection during signed webhook ingestion surfaced
+  `PRIVATE_HUB_FAILURE` instead of returning a redacted HTTP 503.
+- The same rejected fetch on authenticated private changes escaped the
+  handler instead of returning HTTP 503 with `cache-control: no-store`.
+
+Root cause: `handleRelayRequest` returns unawaited promises from
+`ingest()` and `subscribe()` inside a synchronous `try/catch`.
+An asynchronous rejection occurs after control exits that `try` block,
+so the error handler never receives it. The existing 503 fallback is the
+defined contract. Fix: `return await` each async route dispatch so the
+rejection is observed by the existing catch. Do not change test expectations,
+webhook verification, authentication, Worker public routes or response
+payloads. The existing two Mode B tests are the regression gate.
+The Worker CI dry-run is not a deployment; no production credentials or
+bindings are to be touched.
+
+The KDE host reported `No coredumps found` for
+`coredumpctl --no-pager list /usr/bin/repoticker`. This only rules out a
+currently retrievable dump under that exact executable filter; the earlier
+`corrupted double-linked list` line remains unattributed. Issue #23 is
+still open. Journal metadata and process identity are the next diagnostic,
+not a release gate waiver.
+
 ## Validation status and acceptance evidence
 
 - Source review: docs, JS test files, signatures and referenced modules

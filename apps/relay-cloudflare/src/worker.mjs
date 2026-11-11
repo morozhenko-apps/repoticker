@@ -55,12 +55,13 @@ export async function handleRelayRequest(request, env) {
     const allowed = allowedRepositories(env.ALLOWED_REPOSITORIES);
     if (!allowed) return fail(503);
     const path = new URL(request.url).pathname;
+    // Await inside this catch boundary so DO failures yield a redacted 503.
     if (path === "/v1/github")
-      return request.method === "POST" ? ingest(request, env, allowed) : fail(405);
+      return request.method === "POST" ? await ingest(request, env, allowed) : fail(405);
     if (path === "/v1/stream")
-      return request.method === "GET" ? subscribe(request, env, true) : fail(405);
+      return request.method === "GET" ? await subscribe(request, env, true) : fail(405);
     if (path === "/v1/changes")
-      return request.method === "GET" ? subscribe(request, env, false) : fail(405);
+      return request.method === "GET" ? await subscribe(request, env, false) : fail(405);
     return fail(404);
   } catch {
     // Never include provider payload, configuration, tokens or private names in errors.

@@ -193,3 +193,26 @@ test("Given malformed bearer formats When verifying Then fail closed without thr
   ]) assert.equal(await validClientAuthorization(header, expected), false,
     JSON.stringify({ headerLength: header?.length, expectedLength: expected?.length }));
 });
+
+
+test("Given a source stream failing mid-read When bounding Then reject without propagating private errors", async () => {
+  const body = new ReadableStream({
+    start(controller) {
+      controller.enqueue(bytes("first"));
+      controller.error(Error("PRIVATE_STREAM_ERROR"));
+    }
+  });
+  const req = new Request("https://relay.test/", {
+    method: "POST", body, duplex: "half"
+  });
+  assert.equal(await boundedRequestBody(req, 10), null);
+});
+
+test("Given concurrent bearer verifications When comparing Then reject every wrong credential without shared state", async () => {
+  const expected = "A".repeat(32);
+  const inputs = Array.from({ length: 24 }, (_, index) =>
+    index % 2 === 0 ? expected : "B".repeat(32));
+  const outcomes = await Promise.all(inputs.map(value =>
+    validClientAuthorization("Bearer " + value, expected)));
+  assert.deepEqual(outcomes, inputs.map(value => value === expected));
+});

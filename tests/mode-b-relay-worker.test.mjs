@@ -229,3 +229,15 @@ test("Given Durable Object exceptions When reading private changes Then emit onl
   await reject(access("/v1/changes"), env, 503);
   assert.equal(calls.length, 1);
 });
+
+
+test("Given concurrent authenticated change reads When forwarding Then preserve each independent cursor", async () => {
+  const { calls, env } = fixture({ hubStatus: 200, hubBody: "{}" });
+  const responses = await Promise.all([0, 1, 9, 10, 999].map(after =>
+    handleRelayRequest(access("/v1/changes?after=" + after), env)));
+  assert.deepEqual(responses.map(response => response.status), [200, 200, 200, 200, 200]);
+  assert.equal(calls.length, 5);
+  assert.deepEqual(calls.map(req => new URL(req.url).searchParams.get("after")).sort(),
+    ["0", "1", "10", "9", "999"].sort());
+  assert.ok(calls.every(req => req.headers.get("authorization") === "Bearer " + CLIENT));
+});

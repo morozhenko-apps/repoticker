@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { DatabaseSync } from "node:sqlite";
 import { RelayHubController } from "../apps/relay-cloudflare/src/hub.mjs";
+import { HISTORY_AGE_MS } from "../apps/relay-cloudflare/src/relay-protocol.mjs";
 
 const CLIENT = "RelayClientSecret01234567890123456";
 const REPO = "team/repo";
@@ -195,4 +196,133 @@ test("Given owner-scope allowlist When ingesting/replaying Then permit new repo 
   batch = await (await f.changes()).json();
   assert.deepEqual(batch.hints, [], "revocation also filters durable history");
   assert.equal((await f.ingest(3, "team/new")).status, 422);
+});
+
+
+test("Given concurrent duplicate deliveries When ingesting Then transaction grants one cursor and one rate admission", async () => {
+  const f = fixture();
+  const responses = await Promise.all(Array.from({ length: 24 }, () => f.ingest(11)));
+  assert.ok(responses.every(response => response.status === 202));
+  assert.equal(f.database.prepare("SELECT COUNT(*) AS count FROM hints").get().count, 1);
+  assert.equal(f.database.prepare("SELECT admitted FROM rate_budget").get().admitted, 1);
+  const result = await (await f.changes()).json();
+  assert.deepEqual(result.hints.map(hint => hint.cursor), [1]);
+});
+
+test("Given failed SQL insert after budget increment When transacting Then roll back both hint and budget", async () => {
+  const f = fixture();
+  f.database.exec("CREATE TRIGGER deny_hints BEFORE INSERT ON hints BEGIN SELECT RAISE(ABORT, 'storage denied'); END");
+  await assert.rejects(() => f.ingest(11));
+  assert.equal(f.database.prepare("SELECT COUNT(*) AS count FROM hints").get().count, 0);
+  assert.equal(f.database.prepare("SELECT COUNT(*) AS count FROM rate_budget").get().count, 0);
+  f.database.exec("DROP TRIGGER deny_hints");
+  assert.equal((await f.ingest(11)).status, 202);
+  assert.equal(f.database.prepare("SELECT admitted FROM rate_budget").get().admitted, 1);
+});
+
+test("Given exact history age boundary When replaying Then include age limit and reset one millisecond later", async () => {
+  const f = fixture();
+  assert.equal((await f.ingest(9)).status, 202);
+  f.clock.ms += HISTORY_AGE_MS;
+  const atLimit = await (await f.changes(0)).json();
+  assert.equal(atLimit.reset, false);
+  assert.deepEqual(atLimit.hints.map(row => row.cursor), [1]);
+  f.clock.ms += 1;
+  const expired = await (await f.changes(0)).json();
+  assert.equal(expired.reset, true);
+  assert.deepEqual(expired.hints, []);
+  assert.equal(expired.cursor, 1);
+});
+
+test("Given one backpressured subscriber When broadcasting Then close only it and notify healthy peers", async () => {
+  const f = fixture();
+  assert.equal((await f.stream(0)).status, 101);
+  assert.equal((await f.stream(0)).status, 101);
+  const [blocked, healthy] = f.sockets;
+  blocked.bufferedAmount = 65_537;
+  healthy.bufferedAmount = 65_536;
+  assert.equal((await f.ingest(1)).status, 202);
+  assert.equal(blocked.closed, true);
+  assert.deepEqual(blocked.sent.map(message => message.type), ["ready"]);
+  assert.equal(healthy.closed, false);
+  assert.deepEqual(healthy.sent.map(message => message.type), ["ready", "hint"]);
+  assert.equal(healthy.sent.at(-1).cursor, 1);
+});
+
+test("Given one throwing socket When broadcasting Then isolate send error and keep durable write committed", async () => {
+  const f = fixture();
+  assert.equal((await f.stream(0)).status, 101);
+  assert.equal((await f.stream(0)).status, 101);
+  const [broken, healthy] = f.sockets;
+  broken.send = () => { throw Error("PRIVATE_SOCKET_FAILURE"); };
+  assert.equal((await f.ingest(1)).status, 202);
+  assert.equal(broken.closed, true);
+  assert.equal(healthy.closed, false);
+  assert.equal(healthy.sent.at(-1).cursor, 1);
+  assert.equal(f.database.prepare("SELECT COUNT(*) AS count FROM hints").get().count, 1);
+});
+
+test("Given socket client messages When handling Then pong to ping and close arbitrary commands", async () => {
+  const f = fixture();
+  assert.equal((await f.stream(0)).status, 101);
+  const socket = f.lastServer;
+  const transmitted = [];
+  socket.send = value => transmitted.push(value);
+  f.hub.webSocketMessage(socket, "ping");
+  assert.deepEqual(transmitted, ["pong"]);
+  f.hub.webSocketMessage(socket, JSON.stringify({ type: "trigger-sync" }));
+  assert.equal(socket.closed, true);
+});
+
+test("Given invalid durable requests When dispatching Then reject without writing records", async () => {
+  const f = fixture();
+  const authorization = "Bearer " + CLIENT;
+  const checks = [
+    [new Request("https://internal.invalid/ingest", { headers: { authorization } }), 404],
+    [new Request("https://internal.invalid/missing", { headers: { authorization } }), 404],
+    [new Request("https://internal.invalid/changes", {
+      method: "POST", headers: { authorization }, body: "{}"
+    }), 405],
+    [new Request("https://internal.invalid/stream", { headers: { authorization } }), 426],
+    [new Request("https://internal.invalid/changes?after=0&after=1", {
+      headers: { authorization }
+    }), 400],
+    [new Request("https://internal.invalid/changes?after=1", {
+      headers: { authorization: "Bearer wrong" }
+    }), 401]
+  ];
+  for (const [request, code] of checks) {
+    const response = await f.hub.fetch(request);
+    assert.equal(response.status, code);
+    assert.equal(response.headers.get("cache-control"), "no-store");
+  }
+  assert.equal(f.database.prepare("SELECT COUNT(*) AS count FROM hints").get().count, 0);
+});
+
+test("Given 512/513-byte signed-internal hint payloads When ingesting Then enforce exact DO bound", async () => {
+  const f = fixture();
+  const authorization = "Bearer " + CLIENT;
+  const item = JSON.stringify({ v: 1, delivery: id(1), repository: REPO });
+  assert.ok(item.length < 512);
+  const exact = new Request("https://internal.invalid/ingest", {
+    method: "POST", headers: { authorization },
+    body: item + " ".repeat(512 - item.length)
+  });
+  assert.equal((await f.hub.fetch(exact)).status, 202);
+  const large = new Request("https://internal.invalid/ingest", {
+    method: "POST", headers: { authorization },
+    body: item + " ".repeat(513 - item.length)
+  });
+  assert.equal((await f.hub.fetch(large)).status, 413);
+  assert.equal(f.database.prepare("SELECT COUNT(*) AS count FROM hints").get().count, 1);
+});
+
+test("Given revoked runtime allowlist When reading Durable Object Then fail closed with no journal leak", async () => {
+  const f = fixture();
+  assert.equal((await f.ingest(1)).status, 202);
+  f.env.ALLOWED_REPOSITORIES = "*/*";
+  const response = await f.changes(0);
+  assert.equal(response.status, 503);
+  assert.equal(response.headers.get("cache-control"), "no-store");
+  assert.equal(await response.text(), "");
 });

@@ -1,5 +1,10 @@
 # Verification
 
+Mode B release-delta inventory, branch map and unresolved production gates
+are maintained in [the Mode B release gate](MODE_B_RELEASE_GATE.md).
+This file intentionally remains the concise permanent CI contract.
+
+
 RepoTicker uses targeted tests during development and a complete stable gate for changes ready to ship. Mode B is a finite, risk-driven test-expansion phase after substantial functionality changes or before a release. It is not an automatically repeated pipeline stage.
 
 ## Automated checks

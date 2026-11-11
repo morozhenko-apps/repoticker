@@ -143,7 +143,59 @@ path exists in stateless name/cursor helpers. The actual UI has N8 via the
 - Native glibc heap corruption requires actual process/core evidence and
   cannot be certified absent by source assertions.
 
-**Release gate**: pending Mode B implementation and complete STABLE run,
+## Mode B executable test expansion receipt
+
+55 deterministic test cases have been added or extended in five suites.
+Each case directly tests a real exported validation/worker/hub method or the
+real Settings controller under an IPC contract fixture. The socket, SQLite
+clock, OS Keyring and Tauri IPC are external dependencies; no production
+business-rule implementation is mocked.
+
+| Test suite | New cases | Primary categories |
+| --- | ---: | --- |
+| `tests/mode-b-relay-protocol.test.mjs` | 17 | N1, N2, N3, N5, N6, N7, N10, positive |
+| `tests/mode-b-relay-worker.test.mjs` | 16 | N1, N2, N3, N5, N6, N7, N10, positive |
+| `tests/relay-hub.test.mjs` (added cases) | 9 | N2, N3, N5, N7, N12 |
+| `tests/settings-github-confirm.test.mjs` (added cases) | 8 | N4, N5, N6, N9, N12 |
+| `tests/mode-b-window-layout.test.mjs` | 5 | N2, N7, N8, N9, positive |
+| **Total** | **55** | |
+
+One primary classification per new case (cross-cutting assertions also
+cover other categories): Positive 4, N1 6, N2 9, N3 4, N4 1, N5 5,
+N6 5, N7 11, N8 1, N9 3, N10 2, N11 0, N12 4.
+N11 does not apply to the relay release delta: RepoTicker does not grant
+entitlements via this Worker; existing billing/quota tests remain part of
+STABLE. No tests were marked skipped to suppress defects.
+
+Existing Mode B suites continue to protect OAuth, GitHub REST, CI state,
+runner and billing invariants and will execute in the full STABLE gate.
+The source branch map remains risk-scoped; exact project-wide branch
+coverage is **not** being claimed.
+
+The unexecuted manual native shutdown test is tracked as
+[release blocker #23](https://github.com/morozhenko-apps/repoticker/issues/23).
+Physical KDE acceptance already demonstrated Relay `online` transitions
+and polling cleanup, but it has *not* closed the allocator-integrity risk.
+
+## Validation status and acceptance evidence
+
+- Source review: docs, JS test files, signatures and referenced modules
+  inspected. Test JavaScript syntax was checked statically in isolated V8;
+  no runtime network, SQLite or OS Keyring execution was available locally.
+- Required final STABLE gate: **NOT EXECUTED** as of this receipt. The
+  project CI shall run Node26.13.0 JS tests, Rust unit/Clippy/compile and
+  Python release contracts on the exact candidate SHA.
+- Known-FLAKY suite: none classified in the release-delta inventory;
+  no tests were silently moved to a flaky group.
+- Native KDE and Windows package QA: requires separate exact-SHA artifacts,
+  checksums and operator acceptance. Browser and native surface tests
+  cannot substitute for physical compositor checks.
+- Hosted Worker/prod deployment: NOT ATTEMPTED. Dashboard variable
+  retention (`keep_vars`) must be resolved before any redeploy.
+- Production promotion: BLOCKED until stable gates pass, native crash
+  report #23 is triaged, and the owner explicitly authorizes release.
+
+**Release gate**: pending final complete STABLE run,
 Windows artifact acceptance, KDE user smoke and **corrupted double-linked
 list root-cause evaluation**. `keep_vars` is separately required before
 any future Cloudflare Worker redeploy; this Mode B suite must not deploy

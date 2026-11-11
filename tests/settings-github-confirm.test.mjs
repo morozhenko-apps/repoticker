@@ -158,6 +158,7 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
               relayPending = "remove";
               return undefined;
             case "relay_commit_secret_draft":
+              if (options.relayCommitPromise) await options.relayCommitPromise;
               if (options.relayCommitError) throw Error("System credential store unavailable.");
               if (relayPending === "set") relayStored = true;
               if (relayPending === "remove" && !options.relayRemoveStillStored)
@@ -236,6 +237,8 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
                 persistedRelayUrl = args.relayUrl;
               return undefined;
             case "close_settings":
+              if (options.closeSettingsError)
+                throw Error("Synthetic window close rejected");
               relayPending = null;
               closed = true;
               return undefined;
@@ -304,6 +307,7 @@ async function fixture(suffix, initiallyConnected, initialRepositories = [], opt
     rejectInitialConfig: error => rejectInitialConfig?.(error),
     setConfigReadError: value => { options.configReadError = value; },
     setRelayCommitError: value => { options.relayCommitError = value; },
+    setRelayStatusError: value => { options.relayStatusError = value; },
     setAuthStatusError: value => { options.authStatusError = value; },
     setAuthStatusErrorText: value => { options.authStatusErrorText = value; },
     setLanguage: value => { options.language = value; },
@@ -2776,5 +2780,192 @@ test("Ordinary focus within an editing session retains unsaved Relay changes", a
     assert.equal(ui.node("apply-settings").disabled, false);
     assert.equal(ui.calls.filter(([name]) => name === "get_settings_config").length,
       readsBefore, "focus while editing must not reload persistent settings");
+  } finally { ui.restore(); }
+});
+
+
+test("Given many unsaved mode toggles When returning to original polling Then no credential or config writes occur", async () => {
+  const ui = await fixture("mode-b-relay-rapid-toggle-draft", true);
+  try {
+    const mode = ui.node("github-connection-mode");
+    const url = ui.node("github-worker-url");
+    const secret = ui.node("relay-secret-mask");
+    for (let i = 0; i < 24; i++) {
+      mode.value = "hybrid";
+      await mode.fire("change");
+      url.value = "https://worker.example.com/";
+      await url.fire("input");
+      secret.value = "A".repeat(64);
+      await secret.fire("input");
+      mode.value = "polling";
+      await mode.fire("change");
+    }
+    assert.equal(mode.value, "polling");
+    assert.equal(url.value, "");
+    assert.equal(secret.value, "");
+    assert.equal(ui.node("apply-settings").disabled, true);
+    assert.equal(ui.connectionMode, "polling");
+    assert.equal(ui.relayUrl, null);
+    assert.equal(ui.relayStored, false);
+    assert.ok(!ui.calls.some(([name]) => [
+      "save_settings", "relay_stage_secret", "relay_clear_secret", "relay_commit_secret_draft"
+    ].includes(name)), "editing an unsaved draft cannot invoke persistence");
+  } finally { ui.restore(); }
+});
+
+test("Given a failed native stage When confirming Hybrid Then keep Settings open with no config or secret mutation", async () => {
+  const ui = await fixture("mode-b-relay-stage-failure", true, [], {
+    relayStageError: true
+  });
+  try {
+    const mode = ui.node("github-connection-mode");
+    mode.value = "hybrid";
+    await mode.fire("change");
+    ui.node("github-worker-url").value = "https://worker.example.com/";
+    await ui.node("github-worker-url").fire("input");
+    ui.node("relay-secret-mask").value = "A".repeat(64);
+    await ui.node("relay-secret-mask").fire("input");
+    await ui.node("apply-settings").fire("click");
+    assert.equal(ui.closed, false);
+    assert.equal(ui.connectionMode, "polling");
+    assert.equal(ui.relayStored, false);
+    assert.equal(ui.relayPending, null);
+    assert.equal(ui.calls.filter(([name]) => name === "relay_stage_secret").length, 1);
+    assert.equal(ui.calls.some(([name]) => name === "save_settings"), false);
+    assert.equal(ui.calls.some(([name]) => name === "relay_commit_secret_draft"), false);
+  } finally { ui.restore(); }
+});
+
+test("Given staged Hybrid credential and rejected config write When cancelling Then drop native draft without Keyring write", async () => {
+  const ui = await fixture("mode-b-relay-config-write-failure", true, [], {
+    saveSettingsError: true
+  });
+  try {
+    const mode = ui.node("github-connection-mode");
+    mode.value = "hybrid";
+    await mode.fire("change");
+    ui.node("github-worker-url").value = "https://worker.example.com/";
+    await ui.node("github-worker-url").fire("input");
+    ui.node("relay-secret-mask").value = "A".repeat(64);
+    await ui.node("relay-secret-mask").fire("input");
+    await ui.node("apply-settings").fire("click");
+    assert.equal(ui.closed, false);
+    assert.equal(ui.connectionMode, "polling");
+    assert.equal(ui.relayPending, "set");
+    assert.equal(ui.relayStored, false);
+    assert.equal(ui.calls.some(([name]) => name === "relay_commit_secret_draft"), false);
+    await ui.node("cancel-settings").fire("click");
+    assert.equal(ui.relayPending, null);
+    assert.equal(ui.relayStored, false);
+    assert.equal(ui.relayUrl, null);
+  } finally { ui.restore(); }
+});
+
+test("Given concurrent OK taps during credential commit When saving Then stage and commit exactly once", async () => {
+  let releaseCommit;
+  const pendingCommit = new Promise(resolve => { releaseCommit = resolve; });
+  const ui = await fixture("mode-b-relay-double-confirm", true, [], {
+    relayCommitPromise: pendingCommit
+  });
+  try {
+    const mode = ui.node("github-connection-mode");
+    mode.value = "hybrid";
+    await mode.fire("change");
+    ui.node("github-worker-url").value = "https://worker.example.com/";
+    await ui.node("github-worker-url").fire("input");
+    ui.node("relay-secret-mask").value = "A".repeat(64);
+    await ui.node("relay-secret-mask").fire("input");
+    const first = ui.node("apply-settings").fire("click");
+    await tick();
+    assert.equal(ui.node("apply-settings").disabled, true);
+    await ui.node("apply-settings").fire("click");
+    assert.equal(ui.calls.filter(([name]) => name === "relay_commit_secret_draft").length, 1);
+    releaseCommit();
+    await first;
+    assert.equal(ui.closed, true);
+    assert.equal(ui.connectionMode, "hybrid");
+    assert.equal(ui.relayStored, true);
+    assert.equal(ui.calls.filter(([name]) => name === "relay_stage_secret").length, 1);
+    assert.equal(ui.calls.filter(([name]) => name === "save_settings").length, 1);
+    assert.equal(ui.calls.filter(([name]) => name === "close_settings").length, 1);
+  } finally { ui.restore(); }
+});
+
+test("Given a rejected Settings close When focusing same session Then preserve its editing state", async () => {
+  const ui = await fixture("mode-b-relay-close-error", true, [], {
+    connectionMode: "hybrid",
+    relayUrl: "https://worker.example.com/",
+    relayStored: true,
+    closeSettingsError: true
+  });
+  try {
+    ui.node("ci-notification-mode").value = "failures";
+    await ui.node("ci-notification-mode").fire("change");
+    await ui.node("apply-settings").fire("click");
+    assert.equal(ui.closed, false);
+    const reads = ui.calls.filter(([name]) => name === "get_settings_config").length;
+    await ui.dispatchFocus();
+    assert.equal(ui.calls.filter(([name]) => name === "get_settings_config").length, reads,
+      "a failed close must never reinitialize the same editing session");
+    assert.equal(ui.node("ci-notification-mode").value, "failures");
+    assert.equal(ui.node("github-connection-mode").value, "hybrid");
+    assert.equal(ui.relayStored, true);
+  } finally { ui.restore(); }
+});
+
+test("Given two focus events after a missed reopening notification When reconciling Then reload config once", async () => {
+  const ui = await fixture("mode-b-relay-reopen-focus-idempotence", true, [], {
+    connectionMode: "hybrid",
+    relayUrl: "https://worker.example.com/",
+    relayStored: true
+  });
+  try {
+    await ui.node("cancel-settings").fire("click");
+    const before = ui.calls.filter(([name]) => name === "get_settings_config").length;
+    await ui.dispatchFocus();
+    const afterFirst = ui.calls.filter(([name]) => name === "get_settings_config").length;
+    assert.equal(afterFirst, before + 1);
+    await ui.dispatchFocus();
+    assert.equal(ui.calls.filter(([name]) => name === "get_settings_config").length,
+      afterFirst, "second focus belongs to the current editing session");
+    assert.equal(ui.node("github-connection-mode").value, "hybrid");
+  } finally { ui.restore(); }
+});
+
+test("Given saved Hybrid but missing stored secret When reopening Then preserve Hybrid and explain REST fallback", async () => {
+  const ui = await fixture("mode-b-relay-missing-keyring-hybrid", true, [], {
+    connectionMode: "hybrid",
+    relayUrl: "https://worker.example.com/",
+    relayStored: false,
+    relayTransportPhase: "fallback",
+    relayTransportReason: "missing_secret"
+  });
+  try {
+    assert.equal(ui.node("github-connection-mode").value, "hybrid");
+    assert.equal(ui.node("github-worker-url").value, "https://worker.example.com/");
+    assert.equal(ui.node("relay-secret-mask").type, "password");
+    assert.equal(ui.node("relay-secret-mask").value, "");
+    assert.equal(ui.node("relay-connection-state").dataset.state, "fallback");
+    assert.match(ui.node("relay-connection-detail").textContent, /No relay secret/);
+    assert.equal(ui.relayStored, false);
+  } finally { ui.restore(); }
+});
+
+test("Given failed postcommit Keyring status read When clearing Relay Then do not claim successful teardown", async () => {
+  const ui = await fixture("mode-b-relay-readback-error", true, [], {
+    connectionMode: "hybrid",
+    relayUrl: "https://worker.example.com/",
+    relayStored: true
+  });
+  try {
+    ui.node("github-connection-mode").value = "polling";
+    await ui.node("github-connection-mode").fire("change");
+    // Simulate an OS wallet read outage after the initial successful Settings load.
+    // The native command intentionally returns a synthetic error without credentials.
+    ui.setRelayStatusError?.(true);
+    await ui.node("apply-settings").fire("click");
+    assert.equal(ui.closed, false, "failure to verify cleanup must not report success");
+    assert.equal(ui.connectionMode, "polling");
+    assert.equal(ui.relayStored, false);
   } finally { ui.restore(); }
 });

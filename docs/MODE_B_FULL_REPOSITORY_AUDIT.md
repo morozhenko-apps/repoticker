@@ -54,12 +54,12 @@ changes merely to report test progress.
 | --- | --- | --- | --- |
 | 1 | Repository Scan | COMPLETE | Tracked tree, test suites, strict and preflight workflow entrypoints inventoried |
 | 2 | Risk and invariant analysis | COMPLETE | Risk families and fail-closed requirements documented below |
-| 3 | Exhaustive Test Inventory | IN PROGRESS | Enumerate every executable artifact, method, exported operation, risk, test level, positive and applicable negatives; reconcile against existing tests |
-| 4 | Executable Branch Map | PENDING | Every public method and domain rule, each real outcome path and its mapped test |
-| 5 | Positive and N1–N12 matrix | PENDING | No empty cells; covered/planned/not applicable with a specific reason |
-| 6 | Meaningful Interaction Matrix | PENDING | Cross-domain state, auth, concurrency, shutdown and persistence combinations |
-| 7 | Coverage estimation | PENDING | Planned counts per method/domain/risk, reconciled with 747 existing JS and native/Python suites |
-| 8 | File-level Coverage Map | PENDING | Every production file: methods, branches, proven coverage, gaps and rationale |
+| 3 | Exhaustive Test Inventory | SOURCE AND TEST FILES INDEXED; METHOD REVIEW OPEN | 80/80 executable source files, 77 JS + 13 Python test files and 2 Rust integration sources indexed; line-by-line public method classification outstanding |
+| 4 | Executable Branch Map | PARTIAL: RELAY INSPECTED | 1,721 lexical branch/return anchors initially enumerated; Relay method outcomes assertion-mapped; all other domains remain for semantic expansion |
+| 5 | Positive and N1–N12 matrix | INITIAL FILE MATRIX COMPLETE; EVIDENCE PENDING | 80 file rows × 13 columns populated with '?' or reasoned NA; method-level coverage needs actual assertions before upgrading '?'. |
+| 6 | Meaningful Interaction Matrix | PARTIAL: RELAY | Relay interleavings and native shutdown scenarios inventoried, rest of product pending |
+| 7 | Coverage estimation | INITIAL ESTIMATE ONLY | 707 extracted signatures and 1,721 source control-flow/return anchors; not a count of missing tests |
+| 8 | File-level Coverage Map | FILE SKELETON COMPLETE; ASSERTIONS PENDING | 80/80 production files listed with function/branch candidates; no global branch-level PASS asserted |
 | 9 | Implement every planned case | BLOCKED BY STAGES 3–8 | No representative sampling, no contract-weakening or mocking subject under test |
 | 10 | Mutation Review | PENDING | Identify exact operator/guard/ordering/state mutations killed by key assertions |
 | 11 | Final STABLE/FLAKY execution | PENDING NEW CHANGES | Once only after Stages 1–10. Baseline Strict PASS above is not a new final gate |
@@ -120,6 +120,52 @@ a Cloudflare-connected push is reviewed for deployment side effects.
 Without all seven Stage 12 answers supported by evidence, report PARTIAL
 and the exact unverified coverage rather than a percentage invented from
 case totals.
+
+## Current audit index (continuation checkpoint)
+
+The documentation-only work is organized in a separate `docs/mode-b/`
+directory so permanent user/architecture documentation does not become a
+development journal. It is source-derived and does not claim final coverage.
+
+- [All 80 production files: status matrix and per-file gap ledger](mode-b/full-matrix-and-coverage.md)
+- [Rust Git core and Cloudflare relay source inventory](mode-b/inventory-core-relay.md)
+- [Tauri native orchestration / GitHub REST / OAuth inventory](mode-b/inventory-desktop-rust-core.md)
+- [Tauri inline-test continuation correction](mode-b/inventory-main-continuation.md)
+- [Linux/Windows native surfaces, Keyring and relay transport](mode-b/inventory-native-surfaces.md)
+- [WebView Settings, GitHub monitor, UI controllers](mode-b/inventory-ui-controllers.md)
+- [Runner/metric/scan and interaction utilities](mode-b/inventory-ui-utilities.md)
+- [20-locale and pluralization data/control paths](mode-b/inventory-locales.md)
+- [Remaining UI helpers and HTML/CSS structural contracts](mode-b/inventory-ui-final.md)
+- [Release signing, R2, APT, install and CI tooling](mode-b/inventory-release-tooling.md)
+- [Relay function-level inspected branch and N-cases](mode-b/branch-map-relay.md)
+- [Existing JS test index part 1](mode-b/test-index-js-1.md),
+  [part 2](mode-b/test-index-js-2.md),
+  [part 3](mode-b/test-index-js-3.md),
+  [part 4](mode-b/test-index-js-4.md),
+  [part 5](mode-b/test-index-js-5.md),
+  [part 6](mode-b/test-index-js-6.md)
+- [Python release and Rust integration test index](mode-b/test-index-python-rust.md)
+
+All JS test declaration counts reconcile to the exact-source completed
+Strict result (**747/747**) without omitting a JS test file. Python
+declarations reconcile to **98 release + 6 CI-policy = 104/104**.
+These totals **do not** imply execution of every executable branch.
+
+**Important correction:** a first lexical Rust pass truncated `main.rs`
+at the first inline `#[cfg(test)]` despite production definitions
+continuing later. The continuation appendix adds the omitted region,
+and the initial counts remain explicitly *estimates*. AST-aware
+classification and targeted assertion review are required before
+Stage 3–8 can be signed off.
+
+**Next actionable work:** manually reconcile branch outcomes and matched
+assertions for Git safety and cancellation, OAuth/ETag, Tauri Settings,
+GitHub monitor/runner/billing, cloud relay and distribution. Create a
+concrete list of unsupported observable outcomes for each public
+function; do not add new tests before the full global Stage 3–8 plan is
+signed off per the Mode B SSOT. Then implement and run the final STABLE
+suite once. Existing `#23` WebKitGTK native crash and `#24`
+Cloudflare retention remain independent acceptance/risk records.
 
 ## Inventory appendices
 

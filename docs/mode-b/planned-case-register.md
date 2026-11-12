@@ -62,7 +62,7 @@ Each group includes multiple boundaries/outcomes and is **not** a promise that o
 
 ## Group-count planning summary (NOT implemented-test counts)
 
-Total scenario groups: 51. Native/physical groups: 0. Counts below are group applicability, **not test count, coverage or completion**:
+Total scenario groups: 51. Native/physical groups: 10. Counts below are group applicability, **not test count, coverage or completion**:
 - N1: 10 groups
 - N2: 13 groups
 - N3: 12 groups

@@ -1,6 +1,10 @@
 # Mode B production inventory: desktop Rust orchestration and GitHub
 
-Exact source `5b07a3273a27516af8ceb793f0d427a1bada964b`. Discovery mapping only; `#[cfg(test)]` bodies omitted. Every condition needs true/false analysis; every early return needs the corresponding error/success evidence. Source `main.rs` uses Tauri commands and user-facing I/O; core logic is not to be replaced by mocks. No cases are marked covered by name similarity.
+Exact source `5b07a3273a27516af8ceb793f0d427a1bada964b`. Discovery mapping only;
+
+**Source-inventory correction:** `main.rs` contains production functions **after** inline `#[cfg(test)]` blocks; its initial method/branch counts below were truncated and are NOT the final full-file total. The omitted executable continuation is enumerated in [inventory-main-continuation.md](inventory-main-continuation.md). That supplement supersedes the earlier count. Do not mark Stage 3 complete until its branch mapping is reconciled.
+
+ `#[cfg(test)]` bodies omitted. Every condition needs true/false analysis; every early return needs the corresponding error/success evidence. Source `main.rs` uses Tauri commands and user-facing I/O; core logic is not to be replaced by mocks. No cases are marked covered by name similarity.
 
 Files **9**, signatures **133**, branch and return anchors **240**.
 

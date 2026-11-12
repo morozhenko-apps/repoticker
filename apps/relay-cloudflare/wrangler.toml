@@ -3,6 +3,9 @@
 name = "repoticker-relay"
 main = "src/index.ts"
 compatibility_date = "2026-11-08"
+# Preserve operator-managed runtime variables on Git-linked Wrangler deploys.
+# In particular, never erase ALLOWED_REPOSITORIES configured in the Dashboard.
+keep_vars = true
 
 [[durable_objects.bindings]]
 name = "RELAY_HUB"

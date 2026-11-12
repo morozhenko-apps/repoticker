@@ -54,12 +54,12 @@ changes merely to report test progress.
 | --- | --- | --- | --- |
 | 1 | Repository Scan | COMPLETE | Tracked tree, test suites, strict and preflight workflow entrypoints inventoried |
 | 2 | Risk and invariant analysis | COMPLETE | Risk families and fail-closed requirements documented below |
-| 3 | Exhaustive Test Inventory | SOURCE AND TEST FILES INDEXED; METHOD REVIEW OPEN | 80/80 executable source files, 77 JS + 13 Python test files and 2 Rust integration sources indexed; line-by-line public method classification outstanding |
-| 4 | Executable Branch Map | PARTIAL: CRITICAL DOMAINS REVIEWED | Relay, Settings/Quota/Card, Git/OAuth/ETag, release and monitor mapped to explicit outcomes and existing test candidates; 1,721 lexical anchors remain to classify across all methods |
+| 3 | Exhaustive Test Inventory | METHOD DISCOVERY PREPARED; SEMANTIC REVIEW OPEN | 80 production files, 707 lexical named method/type entries (218 public/export candidates), 9 static dictionary or top-level command entrypoints; exact public/anonymous and cfg classification pending |
+| 4 | Executable Branch Map | ALL MAJOR FAMILIES PREMAPPED; OUTCOME MAP PARTIAL | Relay, Settings/Quota/Card, Git/OAuth, release/monitor, native OS, UI helpers and locales mapped; ~1721 lexical anchors still need exact executable outcomes + assertion evidence |
 | 5 | Positive and N1–N12 matrix | INITIAL FILE MATRIX COMPLETE; EVIDENCE PENDING | 80 file rows × 13 columns populated with '?' or reasoned NA; method-level coverage needs actual assertions before upgrading '?'. |
-| 6 | Meaningful Interaction Matrix | PARTIAL: HIGH-RISK COMBINATIONS MAPPED | Relay, Settings, Git safety, OAuth/ETag, main card, Quota, GitHub monitor and release combinations enumerated; exhaustive pairwise/state coverage pending |
-| 7 | Coverage estimation | INITIAL ESTIMATE ONLY | 707 extracted signatures and 1,721 source control-flow/return anchors; not a count of missing tests |
-| 8 | File-level Coverage Map | FILE SKELETON COMPLETE; ASSERTIONS PENDING | 80/80 production files listed with function/branch candidates; no global branch-level PASS asserted |
+| 6 | Meaningful Interaction Matrix | CASE REGISTER PREPARED; EXHAUSTIVENESS OPEN | 51 case groups listed including 10 platform physical groups, with N1–N12 tags and independent state combinations; not implemented-test counts |
+| 7 | Coverage estimation | PRELIMINARY | Method planning floors and 51 grouped obligations documented, exact tests per semantic branch not yet reconciled with existing assertions |
+| 8 | File-level Coverage Map | FILE COVERAGE INDEXED; ASSERTIONS PENDING | 80/80 production files and 707 method/type candidates indexed; node UI branch coverage 46.28% on instrumented modules; no global branch-level PASS |
 | 9 | Implement every planned case | BLOCKED BY STAGES 3–8 | No representative sampling, no contract-weakening or mocking subject under test |
 | 10 | Mutation Review | PENDING | Identify exact operator/guard/ordering/state mutations killed by key assertions |
 | 11 | Final STABLE/FLAKY execution | PENDING NEW CHANGES | Once only after Stages 1–10. Baseline Strict PASS above is not a new final gate |
@@ -152,6 +152,10 @@ development journal. It is source-derived and does not claim final coverage.
 - [Settings/Quota/Card semantic map and planned negative cases](mode-b/branch-map-settings-quota-card.md)
 - [Git safety, OAuth, ETag and rate gate semantic branch map](mode-b/branch-map-git-oauth.md)
 - [R2/APT release and GitHub monitoring semantic branch map](mode-b/branch-map-release-monitor.md)
+- [Native KDE/Windows surface, vault, Relay transport and shutdown branch map](mode-b/branch-map-native-platform.md)
+- [UI helpers, 20-language localization and presentation branch map](mode-b/branch-map-helpers-locales.md)
+- [Method-level production source register (lexical discovery, not coverage)](mode-b/method-level-discovery.md)
+- [Mode B planned negative/interaction case register (51 scenario groups)](mode-b/planned-case-register.md)
 - [Existing JS test index part 1](mode-b/test-index-js-1.md),
   [part 2](mode-b/test-index-js-2.md),
   [part 3](mode-b/test-index-js-3.md),
@@ -247,6 +251,50 @@ production branch of the operator-owned Cloudflare Worker, these
 documentation-only commits are not published until a safe boundary
 is available. Pushing dev may start a new Worker deployment even for
 documentation updates.
+## Later checkpoint: Native, helpers and source method register
+
+The current audit now also has verified source-level reviews for
+native KDE/Windows surfaces, OS vault and WSS, UI helper and locale
+semantics, and a single register of **707 lexically discovered
+method/type signatures across all 80 source files** (218 named as
+public/exported). Nine files contain static locale dictionaries or
+top-level shell entrypoints rather than ordinary named operations.
+These numbers are **not** AST-confirmed executable method totals or
+coverage. The method register explicitly lists the remaining tasks:
+anonymous handlers, Rust cfg/macro boundaries and all expression-level
+branches need review.
+
+The case register organizes **51 scenario groups**: 10 require
+physical platform acceptance and 41 concern executable or planned
+unit/integration/UI contracts. Counts by N categories are group
+applicability, not tests implemented. Existing tests may already cover
+parts of these groups and must be credited before new tests are written.
+
+The owner previously attested to acceptance of all 20 contextual
+localizations on 2026-10-29, and the L10N issue #16 is closed.
+Do not ask the owner to repeat the entire language review.
+Mode B continues to require executable N8/RTL/DST/unknown-data
+tests, which a manual acceptance alone does not prove.
+
+Potential additional privacy/schema concern: `github_monitor_publish`
+accepts `runner_state` as unconstrained JSON beyond `counts`
+and `coverage` object existence/size; the privacy contract says the
+native monitor does not store credentials. This **source-level
+discrepancy** is tracked in issue #25, without claiming observed
+real-world token disclosure. A production schema tightening may be a
+security boundary/API decision and must follow STOP FACTOR rules
+before implementation. Do not add an assertion silently assuming a
+new, unapproved projection schema.
+
+**Status remains PARTIAL**. No new automated tests, mutations,
+or final CI execution are claimed in this documentation slice.
+The baseline strict and preflight results belong to
+`5b07a3273a27516af8ceb793f0d427a1bada964b`, and
+`dev` source was last observed at
+`a3ba7fa30fc4c81890d3075f94142942d001cbf3`.
+No unapproved Cloudflare production deploy is justified by a
+documentation-only update; publication to `dev` remains held.
+
 ## Inventory appendices
 
 The per-file method inventory, branch map, Positive/N1–N12 matrix,

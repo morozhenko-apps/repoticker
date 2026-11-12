@@ -1,0 +1,1132 @@
+# Mode B: per-method discovery register (source-derived)
+
+Baseline production source `a3ba7fa30fc4c81890d3075f94142942d001cbf3`.
+Input: eight preserved source inventories in this audit plus a separate `main.rs` continuation (inline Rust tests are interspersed). These are lexical extraction records, NOT an AST and NOT evidence that branches have been covered.
+
+Every line carries **risk**, **test level**, **candidate N categories**, and an **initial test-count floor**. These floors represent planning estimates to be refined against each distinct decision outcome, NOT observed tests, and NOT a cap on required tests. The letter `?` denotes not yet assertion-mapped. External dependencies are faked only by contract, never by replacing business logic.
+
+Static catalog/data-only entries are separate testable artifacts: cross-locale structural parity + consumer semantics, not artificially invented network/disk failure tests. N11 not applicable to any RepoTicker file (no entitlements).
+
+## `apps/desktop/src-tauri/build.rs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 3 | `fn execute(name: &str, args: &[&str]) -> String {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 17 | `fn compile_wayland_bridge() {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 79 | `fn main() {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `apps/desktop/src-tauri/src/app_icon.rs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 5 | `pub fn tray_rgba() -> (Vec<u8>, u32, u32) {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 15 | `pub fn tray_argb() -> (Vec<u8>, u32, u32) {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `apps/desktop/src-tauri/src/autostart.rs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 6 | `pub(crate) fn autostart_is_enabled(app: AppHandle) -> Result<bool, String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 13 | `pub(crate) fn autostart_set_enabled(app: AppHandle, enabled: bool) -> Result<bool, String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `apps/desktop/src-tauri/src/ci_notifications.rs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 23 | `fn notification_catalog() -> &'static NotificationCatalog {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 31 | `fn notification_error(language: &str, kind: &str) -> String {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 45 | `fn notification_text(` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 74 | `fn approved_scope(` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 113 | `pub(crate) fn ci_run_notify(` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `apps/desktop/src-tauri/src/github_api.rs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 21 | `pub struct GitHubRestClient {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 25 | `impl GitHubRestClient {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 26 | `fn client(&self) -> Result<&Client, String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 42 | `fn api_http_failure(` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 57 | `pub(crate) fn valid_name(value: &str) -> bool {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 67 | `fn valid_utc_second_timestamp(timestamp: &str) -> bool {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 106 | `fn valid_path(requested: &str) -> bool {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 191 | `fn project_billing(value: Value) -> Result<Value, String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 226 | `fn project(path: &str, value: Value) -> Result<Value, String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 361 | `pub async fn github_api_get(app: AppHandle, path: String) -> Result<Value, String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `apps/desktop/src-tauri/src/github_etag_cache.rs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 25 | `pub struct GitHubETagCache {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 29 | `pub struct CacheLookup {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 34 | `fn valid_etag(etag: &str) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 43 | `fn cacheable(path: &str) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 48 | `impl GitHubETagCache {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 49 | `pub fn snapshot(&self, path: &str) -> CacheLookup {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 66 | `pub fn unchanged(&self, generation: u64) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 74 | `pub fn not_modified(&self, path: &str, lookup: &CacheLookup) -> Option<Value> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 88 | `pub fn invalidate(&self) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 96 | `pub fn save(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `apps/desktop/src-tauri/src/github_native.rs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 21 | `fn device_challenge_fields() -> [(&'static str, &'static str); 1] {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 26 | `pub enum NativeAuthError {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 40 | `pub struct CredentialRecord {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 48 | `impl std::fmt::Debug for CredentialRecord {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 49 | `fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 60 | `impl CredentialRecord {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 61 | `pub fn from_lease(lease: TokenLease, issued_at: u64) -> Result<Self, NativeAuthError> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 80 | `fn decode(body: &str) -> Result<Self, NativeAuthError> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 95 | `pub struct NativeCredentialStore;` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 97 | `impl NativeCredentialStore {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 100 | `fn entry() -> Result<keyring::Entry, NativeAuthError> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 105 | `pub fn load(&self) -> Result<Option<CredentialRecord>, NativeAuthError> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 114 | `pub fn replace(&self, record: &CredentialRecord) -> Result<(), NativeAuthError> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 123 | `pub fn clear(&self) -> Result<(), NativeAuthError> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 134 | `pub struct GithubOAuthHttp {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 138 | `impl GithubOAuthHttp {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 139 | `pub fn new() -> Result<Self, NativeAuthError> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 149 | `async fn submit(` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 188 | `pub async fn begin(&self, now: u64) -> Result<DeviceChallenge, NativeAuthError> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 195 | `pub async fn poll(&self, device_code: &str) -> Result<PollReply, NativeAuthError> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 209 | `pub async fn refresh(&self, refresh_token: &str) -> Result<TokenLease, NativeAuthError> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `apps/desktop/src-tauri/src/github_oauth_wire.rs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 14 | `pub enum WireError {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 20 | `pub struct DeviceChallenge {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 25 | `impl DeviceChallenge {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 26 | `pub fn device_code(&self) -> &str {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 31 | `impl std::fmt::Debug for DeviceChallenge {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 32 | `fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 41 | `pub struct TokenLease {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 48 | `impl std::fmt::Debug for TokenLease {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 49 | `fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 60 | `pub enum PollReply {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 65 | `fn object(input: &str) -> Result<Value, WireError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 76 | `fn valid_ascii_token(value: &str, max_len: usize) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 80 | `pub fn parse_device_challenge(input: &str, started_at: u64) -> Result<DeviceChallenge, WireError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 108 | `pub fn parse_token_reply(input: &str) -> Result<PollReply, WireError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `apps/desktop/src-tauri/src/github_rate_gate.rs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 13 | `pub struct GitHubRateGate {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 17 | `impl GitHubRateGate {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 18 | `pub fn remaining_seconds(&self) -> u64 {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 29 | `pub fn defer(&self, duration: Duration) {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 38 | `fn bounded_seconds(input: Option<&str>) -> Option<u64> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 47 | `pub fn backoff_duration(` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 68 | `pub fn now_unix() -> u64 {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 77 | `pub fn github_api_cooldown_seconds(app: AppHandle) -> u64 {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `apps/desktop/src-tauri/src/github_session.rs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 30 | `pub struct GitHubAuthManager {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 46 | `impl Default for AuthProgress {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 47 | `fn default() -> Self {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 55 | `impl GitHubAuthManager {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 56 | `fn invalidate(&self) -> u64 {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 62 | `fn active(&self, epoch: u64) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 66 | `fn progress(&self) -> AuthProgress {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 73 | `fn set_progress(&self, next: AuthProgress) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 88 | `pub struct GitHubAuthEvent {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 95 | `pub struct GitHubAuthChallenge {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 103 | `pub struct GitHubAuthStatus {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 110 | `fn unix_now() -> u64 {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 117 | `fn public_error(error: NativeAuthError) -> String {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 139 | `fn reason_category(error: NativeAuthError) -> &'static str {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 155 | `fn publish_with_reason(app: &AppHandle, status: &'static str, reason: Option<&'static str>) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 174 | `fn publish(app: &AppHandle, status: &'static str) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 183 | `pub fn cancel_pending(app: &AppHandle) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 190 | `async fn read_credential() -> Result<Option<CredentialRecord>, NativeAuthError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 196 | `async fn store_credential(record: CredentialRecord) -> Result<(), NativeAuthError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 202 | `async fn delete_credential() -> Result<(), NativeAuthError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 210 | `pub fn github_flow_status(app: AppHandle) -> GitHubAuthEvent {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 219 | `pub async fn github_auth_status(app: AppHandle) -> Result<GitHubAuthStatus, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 249 | `pub async fn github_begin(app: AppHandle) -> Result<GitHubAuthChallenge, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 286 | `async fn poll_authorization(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 388 | `fn valid_user_code(code: &str) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 401 | `pub fn github_copy_user_code(app: AppHandle, code: String) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 411 | `pub fn github_cancel(app: AppHandle) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 416 | `pub async fn github_disconnect(app: AppHandle) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 433 | `pub async fn github_access_token_with_cache(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 474 | `pub fn github_open_device_page() -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `apps/desktop/src-tauri/src/linux_surface.rs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 13 | `fn repoticker_relative_init(callback: extern "C" fn(f64, f64)) -> i32;` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 14 | `fn repoticker_relative_begin() -> i32;` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 15 | `fn repoticker_relative_end();` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 41 | `pub fn enabled() -> bool {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 45 | `pub fn visible() -> bool {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 100 | `pub fn install(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 200 | `fn install_usage_surface(` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 260 | `fn on_usage_main(` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 276 | `fn anchor_usage(window: &gtk::ApplicationWindow) {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 301 | `pub fn show_usage(app: &AppHandle) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 316 | `pub fn hide_usage(app: &AppHandle) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 323 | `fn set_exact_viewport_height(viewport: &gtk::ScrolledWindow, previous: i32, height: i32) {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 333 | `pub async fn resize_usage(app: AppHandle, height: i32) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 378 | `fn apply_size(window: &gtk::ApplicationWindow, width: i32, height: i32) {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 401 | `fn on_main(` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 419 | `fn apply_card_height(window: &gtk::ApplicationWindow, height: i32) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 458 | `fn validate_card_height(height: i32) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 467 | `pub fn request_resize(app: &AppHandle, height: i32) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 478 | `pub async fn resize(app: AppHandle, height: i32) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 499 | `pub fn show(app: &AppHandle) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 522 | `pub fn hide(app: &AppHandle) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 531 | `fn persist_now(app: &AppHandle) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 542 | `fn stop_on_gtk(app: &AppHandle) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 553 | `pub fn cancel_drag(app: &AppHandle) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 563 | `pub async fn start_drag(app: &AppHandle) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 585 | `pub async fn stop_drag(app: &AppHandle) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `apps/desktop/src-tauri/src/linux_tray.rs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 15 | `impl LinuxTray {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 16 | `fn on_ui(&self, action: &'static str) {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 32 | `impl Tray for LinuxTray {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 33 | `fn id(&self) -> String {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 37 | `fn title(&self) -> String {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 41 | `fn icon_pixmap(&self) -> Vec<Icon> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 50 | `fn activate(&mut self, _x: i32, _y: i32) {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 54 | `fn menu(&self) -> Vec<MenuItem<Self>> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 96 | `pub fn install(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 112 | `pub(crate) fn set_language(app: &AppHandle, language: &str) {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `apps/desktop/src-tauri/src/main.rs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 59 | `impl Drop for ActiveFetchLease<'_> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 60 | `fn drop(&mut self) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 112 | `impl CiNotificationMode {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 113 | `fn allows(self, conclusion: &str) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 123 | `fn default_language() -> String {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 173 | `fn notify_progress(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 195 | `fn config_path(app: &AppHandle) -> Result<PathBuf, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 202 | `fn default_config() -> Config {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 217 | `fn read_config(app: &AppHandle) -> Result<Config, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 227 | `fn update_config<R>(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 236 | `fn roots_as_paths(config: &Config) -> Vec<PathBuf> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 240 | `fn decision_label(decision: SyncDecision) -> String {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 252 | `fn present(repo: RepoSnapshot) -> RepoSummary {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 266 | `fn scan(app: &AppHandle) -> Result<Snapshot, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 301 | `fn git_action_result(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 348 | `fn should_schedule_git_target(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 359 | `fn execute(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 501 | `async fn get_snapshot(app: AppHandle) -> Result<Snapshot, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 511 | `fn get_monitor_scope(app: AppHandle) -> Result<Option<String>, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 526 | `fn get_monitor_selection(app: AppHandle) -> Result<MonitorSelection, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 550 | `fn get_settings_config(app: AppHandle) -> Result<SettingsConfig, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 566 | `fn add_root(app: AppHandle, root: String) -> Result<Vec<String>, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 585 | `fn remove_root(app: AppHandle, root: String) -> Result<Vec<String>, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 598 | `fn cancel_git_fetch(app: AppHandle) -> Result<bool, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 612 | `async fn perform_git_action(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 623 | `fn resize_unmanaged_card(window: &tauri::WebviewWindow, height: f64) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 647 | `async fn set_card_view(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 683 | `fn ui_hover_debug_enabled() -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 688 | `fn trace_ui_hover(kind: String, stage: String, sequence: u32) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 724 | `fn get_usage_popup_kind() -> &'static str {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 737 | `fn footer_anchored_usage_position(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 756 | `fn position_unmanaged_usage_popup(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 807 | `fn show_usage_popup(app: AppHandle, kind: String) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 886 | `fn hide_usage_popup(app: AppHandle) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 911 | `async fn resize_usage_popup(app: AppHandle, height: i32) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 945 | `fn hide_card(app: AppHandle) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 967 | `fn show_compact_card(app: &AppHandle) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 1017 | `fn show_settings(app: &AppHandle) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 1044 | `fn show_about(app: &AppHandle) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 1056 | `fn hide_about(app: AppHandle) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 1071 | `fn get_about_info() -> AboutInfo {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 1079 | `fn launch_browser(url: &str) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 1094 | `fn open_project_website() -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 1100 | `fn trusted_relay_resource_url(resource: &str) -> Option<&'static str> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 1111 | `fn open_relay_resource(window: tauri::WebviewWindow, resource: String) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 1147 | `fn open_actions_job(url: String) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 1177 | `fn enrolled_repository(app: &AppHandle, repo_path: &str) -> Result<PathBuf, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 1190 | `async fn open_repository_on_github(app: AppHandle, repo_path: String) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 1201 | `fn launch_file_manager(path: &std::path::Path) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 1216 | `async fn open_repository_folder(app: AppHandle, repo_path: String) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 1227 | `async fn copy_repository_path(app: AppHandle, repo_path: String) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 1242 | `async fn start_card_drag(app: AppHandle) -> Result<bool, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 1256 | `async fn stop_card_drag(app: AppHandle) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 1276 | `fn open_settings(app: AppHandle) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 1281 | `fn start_settings_drag(app: AppHandle) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 1291 | `async fn select_repository_root(app: AppHandle) -> Result<Option<String>, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 1315 | `fn clear_relay_url_for_polling(config: &mut Config) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 1324 | `fn save_settings(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 1444 | `fn close_settings(app: AppHandle) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 1620 | `fn validate_monitor_repositories(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 1651 | `fn github_set_monitor_org(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 1685 | `fn set_language(app: AppHandle, language: String) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 1699 | `fn toggle_card(app: &AppHandle) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 1726 | `fn tray_image() -> Image<'static> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 1732 | `fn build_desktop_tray_menu(app: &AppHandle, language: &str) -> tauri::Result<Menu<tauri::Wry>> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 1780 | `fn refresh_tray_language(app: &AppHandle, language: &str) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 1797 | `fn request_quit(app: &AppHandle) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 1834 | `fn dispatch_menu_action(app: &AppHandle, operation: &'static str) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 1844 | `fn configure_gdk_for_native_wayland() {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 1858 | `fn main() {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `apps/desktop/src-tauri/src/monitor_cache.rs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 10 | `pub struct MonitorCache {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 20 | `impl Default for CacheState {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 21 | `fn default() -> Self {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 32 | `impl MonitorCache {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 33 | `pub fn read(&self) -> (bool, Option<Value>, Option<String>) {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 48 | `pub struct MonitorPresentation {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 55 | `pub fn github_monitor_snapshot(app: AppHandle) -> MonitorPresentation {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 69 | `fn default_status_is_unknown_until_wallet_verification() {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 77 | `fn monitor_projection_uses_only_expected_fields() {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 95 | `pub fn github_monitor_publish(` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `apps/desktop/src-tauri/src/relay_endpoint.rs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 6 | `pub fn normalize_base_url(raw: &str) -> Result<String, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 43 | `pub fn websocket_url(base: &str, cursor: u64) -> Result<String, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 61 | `fn only_canonical_public_https_origins_are_stored() {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 91 | `fn websocket_url_contains_only_cursor_and_validated_origin() {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `apps/desktop/src-tauri/src/relay_secret.rs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 12 | `pub struct RelayPromptGate(AtomicBool);` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 17 | `pub struct RelaySecretDraftState(Mutex<Option<RelaySecretDraft>>);` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 24 | `fn lock_draft(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 33 | `pub(crate) fn discard_draft(app: &AppHandle) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 38 | `pub(crate) fn has_pending_draft(app: &AppHandle) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 45 | `impl Drop for PromptLease {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 46 | `fn drop(&mut self) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 51 | `fn enter_prompt(app: &AppHandle) -> Result<PromptLease, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 59 | `fn valid_secret(value: &str) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 66 | `fn entry() -> Result<keyring::Entry, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 71 | `pub(crate) fn read_secret() -> Result<Option<SensitiveSecret>, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 88 | `pub(crate) fn wipe(value: &mut String) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 103 | `impl SensitiveSecret {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 104 | `pub(crate) fn as_str(&self) -> &str {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 109 | `impl Drop for SensitiveSecret {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 110 | `fn drop(&mut self) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 115 | `fn store_secret(secret: &SensitiveSecret) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 124 | `fn remove_secret() -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 131 | `fn settings_only(window: &tauri::WebviewWindow) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 139 | `pub async fn relay_secret_status(window: tauri::WebviewWindow) -> Result<bool, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 162 | `pub async fn relay_prompt_secret(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 189 | `pub async fn relay_stage_secret(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 210 | `pub async fn relay_clear_secret(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 224 | `pub async fn relay_commit_secret_draft(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 272 | `async fn prompt_native(app: &AppHandle) -> Result<Option<String>, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 320 | `async fn prompt_native(_app: &AppHandle) -> Result<Option<String>, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 327 | `async fn prompt_native(_app: &AppHandle) -> Result<Option<String>, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 346 | `fn CredUIPromptForCredentialsW(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 366 | `fn wide(text: &str) -> Vec<u16> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 370 | `pub(super) fn prompt() -> Result<Option<String>, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 437 | `fn relay_credential_isolated_from_github_auth_record() {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 443 | `fn strict_base64url_secret_policy_does_not_accept_untrusted_bytes() {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 462 | `fn replacing_draft_wipes_candidate_without_keyring_write() {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 479 | `fn wipes_owned_secret_buffer() {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `apps/desktop/src-tauri/src/relay_transport.rs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 35 | `pub struct RelayTransportState {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 47 | `pub struct RelayPhaseEvent {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 52 | `fn phase_label(code: u8) -> &'static str {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 61 | `fn reason_label(code: u8) -> &'static str {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 84 | `fn http_failure_code(status: u16) -> u8 {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 94 | `fn handshake_failure_code(error: &tokio_tungstenite::tungstenite::Error) -> u8 {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 104 | `fn snapshot(code: u8) -> RelayPhaseEvent {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 111 | `fn set_phase(app: &AppHandle, code: u8) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 136 | `pub fn relay_connection_status(app: AppHandle) -> &'static str {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 145 | `pub fn relay_connection_diagnostics(app: AppHandle) -> RelayPhaseEvent {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 153 | `fn backoff(attempt: u32) -> Duration {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 159 | `pub fn restart(app: &AppHandle) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 179 | `fn send_reconcile(app: &AppHandle, decision: RelayDecision) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 188 | `async fn run(app: AppHandle) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 344 | `fn reconnect_is_bounded_without_unlimited_retry_frequency() {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 352 | `fn public_availability_is_only_fixed_nonsecret_phase_data() {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `apps/desktop/src-tauri/src/startup_diagnostics.rs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 9 | `pub fn initialize() {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 13 | `fn enabled() -> bool {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 17 | `fn write(stage: &'static str, elapsed: Duration) {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 29 | `pub struct Span {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 34 | `impl Span {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 35 | `pub fn new(stage: &'static str) -> Self {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 43 | `impl Drop for Span {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 44 | `fn drop(&mut self) {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 53 | `fn allowed_stage(stage: &str) -> Option<&'static str> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 71 | `pub fn trace_startup_stage(stage: String) {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 85 | `fn only_fixed_nonsecret_startup_milestones_are_accepted() {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `apps/desktop/src-tauri/src/tray_i18n.rs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 8 | `fn catalog() -> &'static Catalog {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
+| 16 | `pub(crate) fn is_supported_locale(language: &str) -> bool {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
+| 20 | `fn text(language: &str, english: &'static str) -> &'static str {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
+| 29 | `pub(crate) fn label(language: &str, action: &str) -> &'static str {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
+| 42 | `pub(crate) fn window_title(language: &str, window: &str) -> &'static str {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
+| 55 | `fn native_registry_contains_exactly_twenty_locales() {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
+| 69 | `fn every_native_action_and_title_has_a_bundled_string() {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
+| 85 | `fn unknown_tray_action_is_not_a_command() {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
+
+## `apps/desktop/src-tauri/src/windows_geometry.rs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 10 | `fn placement(` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 25 | `fn monitor_area(window: &WebviewWindow) -> Result<Option<((i64, i64), (i64, i64))>, String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 44 | `pub(crate) fn restore(app: &AppHandle, window: &WebviewWindow) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 73 | `pub(crate) fn save(app: &AppHandle, window: &WebviewWindow) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 97 | `fn restores_position_for_bottom_right_work_area() {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 105 | `fn keeps_bottom_edge_when_view_grows() {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 113 | `fn supports_negative_monitor_coordinates_and_high_dpi_sizes() {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 121 | `fn clamps_stale_margins_and_oversized_windows() {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 136 | `fn SetWindowPos(` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 150 | `pub(crate) fn raise_usage_popup(popup: &WebviewWindow) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 183 | `fn CreateRoundRectRgn(` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 191 | `fn DeleteObject(handle: *mut std::ffi::c_void) -> i32;` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 196 | `fn SetWindowRgn(hwnd: *mut std::ffi::c_void, region: *mut std::ffi::c_void, redraw: i32)` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 202 | `pub(crate) fn clip_usage_popup(popup: &WebviewWindow) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `apps/desktop/ui/about.mjs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 7 | `const invoke = command => window.__TAURI__?.core?.invoke(command) ??` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 11 | `function paintLocale(value) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 26 | `async function refreshLocale() {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 55 | `function closeAbout() {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `apps/desktop/ui/app.mjs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 21 | `const byId = id => document.getElementById(id);` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 23 | `const invoke = (command, args = {}) => {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 29 | `const traceStartup = stage => {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 51 | `function updateReposActivity() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 63 | `function cancelAutoHide() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 66 | `function armAutoHide() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 86 | `function paintNotice() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 97 | `function showError(message) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 101 | `function showResizeError(message) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 105 | `function showGitOperationErrors(count, message) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 109 | `function clearError() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 113 | `function addText(parent, tag, value, className = "") {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 125 | `function hideRepoMenus(restoreFocus = false) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 136 | `function showRepoMenu(button, repoPath) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 215 | `function paintCiIndicator(row, repo) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 232 | `function updateCiStatuses(next) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 241 | `function makeRepoRow(repo) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 272 | `function updateActionState() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 320 | `function traceHover(kind, stage) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 336 | `function setActiveTooltip(kind) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 343 | `function resetQuota() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 352 | `function setQuotaOpen(kind = null) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 400 | `const enter = () => {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 430 | `function monitorRefreshState(kind, active) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 439 | `function clearBrowserTooltips() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 445 | `function updateMetricAccessibleNames() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 452 | `function setCardLanguage(language) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 492 | `function renderMonitorMetrics(state) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 503 | `function traceMonitorReady() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 509 | `function render(next) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 545 | `render(reconcileScanPresentation(next, snapshot, revision, monitorRevision));` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 554 | `function refresh() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 560 | `async function refreshMonitor() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 574 | `function consumeResults(results) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 582 | `async function cancelActiveFetch() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 595 | `async function runGitAction(operation, repoPath = null) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 612 | `render(snapshot);` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 615 | `function resetView() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 624 | `async function openView(target) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 713 | `refresh();` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 718 | `function refreshCardConfiguration() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 745 | `refresh();` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 762 | `function stopDragging(event = null) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `apps/desktop/ui/browser-context-menu.mjs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 2 | `export function disableBrowserContextMenu(documentRef) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `apps/desktop/ui/card-i18n.mjs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 111 | `export function cardText(language, key, value) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
+| 130 | `function countText(language, value) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
+| 141 | `export function metricAccessibleLabel(language, kind, counts, busy = false) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
+| 154 | `export function cardNoticeText(language, notice) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
+
+## `apps/desktop/ui/ci-failure-events.mjs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 6 | `const canonicalUtc = value => {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 18 | `function validateSelection(account, repositories) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 39 | `function validRun(run) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 51 | `export async function collectRecentCompleted({` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 92 | `export function createCiFailureTracker({ maxRemembered = 500 } = {}) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `apps/desktop/ui/ci-status.mjs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 4 | `const identity = fullName => {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 12 | `export function projectLatestCiStatuses(account, observations) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 31 | `export function ciOutcomeForRepo(repo, statuses) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `apps/desktop/ui/github-billing.mjs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 8 | `export function billingMonth(now = new Date()) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 14 | `export function knownPersonalAllowance(plan) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 25 | `export function knownOrganizationAllowance(plan) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 33 | `export function reportedActionsMinutes(payload) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 49 | `const unavailable = reason => ({` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 54 | `export async function collectBillingUsage({ get, organization, now = new Date() }) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 60 | `async function fetchOrganization() {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 91 | `async function fetchPersonal() {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 121 | `export function createBillingCache({ get, now = () => Date.now(),` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 130 | `function clear() {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 136 | `async function load(organization, connected) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `apps/desktop/ui/github-errors.mjs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 19 | `export function githubFailureReason(error) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 26 | `export function githubFailureMessage(reason, scope = "monitor") {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 52 | `export function mostImportantGithubFailure(failures) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `apps/desktop/ui/github-installations.mjs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 5 | `const validAccountName = name => typeof name === "string" &&` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 8 | `export async function listAvailableInstallations(get) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `apps/desktop/ui/github-monitor.mjs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 15 | `export function monitorRefreshDelay(repositoryCount) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 23 | `const validAccountName = name => typeof name === "string" &&` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 27 | `export async function listInstalledRepositories(get, owner, installationId,` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 59 | `export async function collectForAccount({` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 120 | `export function mergeMetricGroup(previous, next, kind) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 127 | `const priorClock = field => Object.hasOwn(previous, field)` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 155 | `export function invalidateMetricGroup(previous, kind) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 186 | `export function startGithubMonitoring({ invoke, event, onError = () => {},` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 206 | `const get = path => invoke("github_api_get", { path });` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 207 | `function publish(connected, runnerState = null, message = null,` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 216 | `function invalidatePresentation(message) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 228 | `async function applyCooldown(reason) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 238 | `async function refresh(force = false, kind = "all") {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 411 | `function applyRelayPhase(phase) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `apps/desktop/ui/locale-auth.mjs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| — | No named function extracted: module entrypoint / data / anonymous handlers require source inspection | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
+
+## `apps/desktop/ui/locale-card.mjs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| — | No named function extracted: module entrypoint / data / anonymous handlers require source inspection | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
+
+## `apps/desktop/ui/locale-catalog.mjs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 1032 | `export function normalizeLocale(value) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
+| 1035 | `export function localeName(value) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
+| 1038 | `export function localeDirection(value) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
+| 1041 | `export function coreText(value, english) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
+
+## `apps/desktop/ui/locale-counts.mjs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 157 | `function countText(locale, count) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
+| 164 | `function render(template, values) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
+| 168 | `export function repositorySelectionMessage(language, {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
+
+## `apps/desktop/ui/locale-errors.mjs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 1050 | `export function localizedKnownError(language, value) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
+
+## `apps/desktop/ui/locale-extended.mjs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| — | No named function extracted: module entrypoint / data / anonymous handlers require source inspection | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
+
+## `apps/desktop/ui/locale-plurals.mjs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 67 | `export function localizedGitCount(language, key, count) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
+
+## `apps/desktop/ui/locale-surface.mjs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| — | No named function extracted: module entrypoint / data / anonymous handlers require source inspection | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
+
+## `apps/desktop/ui/locale-workflow.mjs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| — | No named function extracted: module entrypoint / data / anonymous handlers require source inspection | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
+
+## `apps/desktop/ui/model.mjs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 1 | `export function summarize(snapshot) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 14 | `export function safeRunUrl(url) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 27 | `export function safeActionsJobUrl(url) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 34 | `const validName = name => /^[A-Za-z0-9_.-]+$/.test(name) && name !== "." && name !== "..";` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 35 | `const validNumber = num => /^[0-9]+$/.test(num);` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `apps/desktop/ui/monitor-presentation.mjs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 4 | `export function mergeMonitorPresentation(local, remote) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 18 | `export function reconcileScanPresentation(next, current, before, after) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `apps/desktop/ui/native-drag.mjs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 5 | `export function createNativeDragGesture({ start, stop, onError }) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 9 | `function enqueue(action) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `apps/desktop/ui/quota-details.mjs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 6 | `function displayLocale(language) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 15 | `const hasRunnerName = value => typeof value === "string" && Boolean(value.trim());` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 16 | `export function displayRunnerName(value) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 29 | `export function localCheckedTime(value, timeZone, language = "en") {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 36 | `const view = (status, sections, message = "") => ({` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 39 | `const notReady = (authorized, topic, reason) => ({` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 49 | `export function isHoverKind(kind) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 53 | `function runnerDetails(state) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 65 | `function tasksDetails(state) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 87 | `function billingDetails(billing = null, language = "en") {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 88 | `const fmt = value => Number.isFinite(value) && value >= 0` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 112 | `export function buildHoverDetails(state, kind = "billing", authorized = false, statusMessage = null, billing = null, language = "en") {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 132 | `export function buildQuotaDetails(state, authorized = false, statusMessage = null, billing = null) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `apps/desktop/ui/quota-size.mjs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 10 | `export function usageHeight(titleHeight, contentHeights) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `apps/desktop/ui/quota.mjs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 11 | `const byId = id => document.getElementById(id);` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 12 | `const invoke = (name, args = {}) => window.__TAURI__.core.invoke(name, args);` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 13 | `function add(parent, tag, value, cls = "") {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 20 | `function line(parent, label, value, providerName = false) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 31 | `function setLocale(value) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 40 | `function paint(details, runnerNameRows = 0) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 103 | `function invalidateBilling() {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 112 | `function statusUnavailable(message) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 117 | `export function selectedOrganization(snapshot) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 129 | `function paintSnapshot(snapshot) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 136 | `function scheduleBilling(snapshot) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 156 | `async function refresh() {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 196 | `async function refreshMonitorOnly() {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 222 | `async function refreshLocale() {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 234 | `function subscribe(eventName, handler = refresh) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 251 | `function applyHoverKind(kind) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 264 | `async function onUsageShown() {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `apps/desktop/ui/repo-menu.mjs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 3 | `export function placeRepoMenu(anchor, drawer, menu, gap = 4) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `apps/desktop/ui/repo-row-indicator.mjs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 3 | `export function repoRowIndicator(repo, outcome = null) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 4 | `const valid = value => Number.isSafeInteger(value) && value >= 0;` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `apps/desktop/ui/runner-collector.mjs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 10 | `async function getPages(get, pathForPage, key, maxPages) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 22 | `async function boundedMap(items, parallel, process) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 41 | `function limitRequests(get, limit) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 44 | `function dispatch() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 65 | `export async function collectRunnerState({` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 177 | `const priorClock = (state, field) => state && Object.hasOwn(state, field)` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `apps/desktop/ui/runner-state.mjs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 5 | `const isObject = value => value !== null && typeof value === "object" && !Array.isArray(value);` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 6 | `const label = value => typeof value === "string" ? value.trim().toLowerCase() : "";` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 8 | `export function normalizeLabels(values) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 20 | `export function runnerLabelCompatible(jobLabels, runnerLabels) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 29 | `export function isStandardGitHubHostedLabel(value) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 36 | `export function classifyJobLane(job, knownRunnerIds = new Set()) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 48 | `function laneCounts(jobs, ids) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 63 | `export function summarizeRunnerState({` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 124 | `const exact = value => jobsComplete ? value : null;` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `apps/desktop/ui/scan-refresh.mjs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 10 | `export function shouldSpinForRepos(scanActive, hasCachedSnapshot) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 14 | `export function createScanRefreshQueue({ scan, publish, onError,` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 23 | `async function drain() {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `apps/desktop/ui/settings-i18n.mjs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 147 | `export function settingsText(language, english) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
+
+## `apps/desktop/ui/settings.mjs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 9 | `const byId = id => document.getElementById(id);` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 11 | `const t = english => settingsText(uiLocale, english);` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 14 | `function applySettingsLanguage(value) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 62 | `function confirmedRelayConnection() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 69 | `function syncWorkerControls() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 121 | `function applyRelayPhase(status) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 146 | `const invoke = (command, args = {}) => window.__TAURI__?.core?.invoke(command, args) ??` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 153 | `const traceStartup = stage => {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 168 | `function renderRelaySecretState() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 193 | `async function refreshRelaySecretStatus(revision = settingsRefreshRevision) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 246 | `async function refreshRelayConnectionStatus(revision = settingsRefreshRevision) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 284 | `const validRepoName = name => REPO_NAME.test(name) &&` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 288 | `const sameGithubIdentity = (a, b) => typeof a === "string" &&` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 290 | `const containsGithubIdentity = (items, name) =>` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 292 | `function normalizeRepoDraft() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 295 | `function updateRepoDirty() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 300 | `function repoChoiceValid() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 307 | `function renderRepoChoices() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 363 | `async function refreshRepoInventory() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 417 | `function clearMonitorScopes() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 431 | `async function refreshMonitorScopes() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 534 | `function stopGithubStatusUpdates() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 543 | `function startGithubStatusUpdates() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 567 | `function githubMessage(text, error = false) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 578 | `function githubButtons() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 624 | `async function refreshGithub(knownAuth = null) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 777 | `function message(text, error = false) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 782 | `function validRelayUrl(value) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 802 | `function validRelayDraft() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 808 | `const candidateValid = (32 <= candidate.length && candidate.length <= 256) &&` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 815 | `function syncConnectionAvailability() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 821 | `function pollingNeedsRelayCleanup() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 826 | `function isDirty() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 840 | `function updateApply() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 842 | `const authNeedsConfirmation = (githubConnected && githubStartedHere) \|\| disconnectPending;` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 849 | `function displayRootPath(path) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 860 | `function renderRoots() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 888 | `function renderIgnoredChildren() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 939 | `async function refresh() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 1115 | `function updateLanguagePicker() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 1122 | `function closeLanguagePicker(returnFocus = false) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 1128 | `function openLanguagePicker(position = "selected") {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 1192 | `const cancelSettings = async () => {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `apps/desktop/ui/status-metrics.mjs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 2 | `export const shown = n => Number.isSafeInteger(n) && n >= 0 ? String(n) : "—";` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 4 | `export function compactStatus(state) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 8 | `const valid = n => Number.isSafeInteger(n) && n >= 0;` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `apps/desktop/ui/surface-i18n.mjs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 57 | `export function surfaceText(language, key) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
+| 64 | `function isolatedValue(language, value) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
+| 68 | `function translatedStatus(language, status) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
+| 83 | `function translatedMessage(language, message) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
+| 98 | `export function translateHoverDetails(details, language, runnerNameRows = 0) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
+
+## `apps/desktop/ui/view.mjs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 8 | `export function nextCardView(current, requested) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 14 | `export function cardWindowHeight(view, repositoryCount = 0) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 26 | `export function pullReadyCommitCount(repositories = []) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 39 | `export function syncReadyCommitCount(repositories = []) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `apps/relay-cloudflare/src/hub.mjs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 14 | `export class RelayHubController {` | Critical | Node unit + Worker isolated integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
+| 15 | `constructor(ctx, env, platform = {}) {` | Critical | Node unit + Worker isolated integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
+| 29 | `history(after) {` | Critical | Node unit + Worker isolated integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
+| 52 | `ingest(delivery, repository) {` | Critical | Node unit + Worker isolated integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
+| 85 | `broadcast(hint) {` | Critical | Node unit + Worker isolated integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
+| 139 | `webSocketMessage(socket, message) {` | Critical | Node unit + Worker isolated integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
+| 144 | `webSocketClose(socket, code, reason) {` | Critical | Node unit + Worker isolated integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
+
+## `apps/relay-cloudflare/src/index.ts`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 6 | `export class RelayHub extends DurableObject {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
+| 8 | `constructor(ctx: DurableObjectState, env: any) {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
+| 12 | `fetch(request: Request): Promise<Response> { return this.hub.fetch(request); }` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
+| 13 | `webSocketMessage(socket: WebSocket, message: string \\| ArrayBuffer): void {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
+| 16 | `webSocketClose(socket: WebSocket, code: number, reason: string): void {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
+| 22 | `fetch(request: Request, env: any): Promise<Response> {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
+
+## `apps/relay-cloudflare/src/relay-protocol.mjs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 11 | `export function canonicalRepository(value) {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
+| 19 | `export function allowedRepositories(raw) {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
+| 40 | `export function isAllowedRepository(allowlist, value) {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
+| 49 | `export function validDeliveryId(value) {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
+| 53 | `export function parseCursor(raw) {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
+| 60 | `export function cursorFromUrl(url) {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
+| 68 | `export function validatedWorkflowEvent(payload, eventName, allowlist) {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
+| 92 | `export async function boundedRequestBody(request, limit = BODY_LIMIT) {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
+| 125 | `export async function validClientAuthorization(header, expectedSecret) {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
+
+## `apps/relay-cloudflare/src/webhook-verify.mjs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 5 | `export async function verifyGithubWebhookSignature(rawBody, signatureHeader, secret) {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
+
+## `apps/relay-cloudflare/src/worker.mjs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 51 | `export async function handleRelayRequest(request, env) {` | Critical | Node unit + Worker isolated integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
+
+## `crates/repoticker-core/src/bounded.rs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 7 | `pub fn bounded_map<T, R, Work, Start, Complete>(` | Medium | Rust unit + native integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `crates/repoticker-core/src/config_store.rs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 14 | `fn backup_path(path: &Path) -> PathBuf {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 21 | `fn sibling_name(path: &Path, suffix: &str) -> PathBuf {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 30 | `fn create_private(path: &Path) -> io::Result<File> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 46 | `impl Drop for StagingFile {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 47 | `fn drop(&mut self) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 54 | `fn sync_directory(parent: &Path) -> io::Result<()> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 66 | `fn atomic_replace(path: &Path, bytes: &[u8]) -> io::Result<()> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 94 | `fn load(path: &Path) -> Result<Option<Vec<u8>>, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 102 | `fn quarantine_corrupt(path: &Path, raw: &[u8]) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 127 | `pub fn read_json<T: DeserializeOwned>(path: &Path) -> Result<Option<T>, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 163 | `pub fn save_json<T: Serialize + DeserializeOwned>(path: &Path, value: &T) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 178 | `pub struct JsonStore(std::sync::Mutex<()>);` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 180 | `impl JsonStore {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 181 | `pub fn read<T: DeserializeOwned>(&self, path: &Path) -> Result<Option<T>, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 186 | `pub fn update<T, R>(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `crates/repoticker-core/src/git.rs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 17 | `pub struct GitError(pub String);` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 19 | `impl fmt::Display for GitError {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 20 | `fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 25 | `impl std::error::Error for GitError {}` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 40 | `fn configure_background_child(command: &mut Command) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 47 | `fn configure_background_child(_command: &mut Command) {}` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 53 | `fn check_git_process_startup(output: &Output) -> Result<(), GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 62 | `fn is_git_process_startup_failure(error: &GitError) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 74 | `fn git_command(repo: &Path, args: &[&str]) -> Command {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 97 | `pub struct FetchCancellation {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 101 | `impl FetchCancellation {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 102 | `pub fn is_cancelled(&self) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 112 | `pub fn cancel(&self) -> Result<bool, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 116 | `fn cancel_with(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 149 | `fn register(&self, pid: u32) -> Result<bool, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 161 | `fn unregister(&self, pid: u32) -> Result<bool, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 172 | `fn terminate_fetch_group(pid: u32) -> Result<(), GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 177 | `fn kill(pid: i32, signal: i32) -> i32;` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 190 | `fn terminate_fetch_group(pid: u32) -> Result<(), GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 223 | `fn terminate_fetch_group(_pid: u32) -> Result<(), GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 232 | `fn classify_fetch_completion(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 245 | `fn fetch_was_interrupted(status: &std::process::ExitStatus) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 251 | `fn fetch_was_interrupted(status: &std::process::ExitStatus) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 257 | `fn fetch_was_interrupted(_status: &std::process::ExitStatus) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 264 | `fn unregistered_fetch_cleanup_error(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 286 | `fn run_cancellable_command(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 301 | `fn run_cancellable_command_with_timeout(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 367 | `pub struct RepoSnapshot {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 381 | `pub enum OperationOutcome {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 389 | `fn drain_git_pipe<R: Read + Send + 'static>(mut reader: R) -> mpsc::Receiver<io::Result<Vec<u8>>> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 402 | `fn receive_owned_pipe(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 438 | `fn wait_owned_child(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 508 | `fn run_bounded_command(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 528 | `fn invoke(repo: &Path, args: &[&str]) -> Result<Output, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 556 | `fn stderr(output: &Output) -> String {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 562 | `fn required(repo: &Path, args: &[&str]) -> Result<String, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 574 | `fn optional(repo: &Path, args: &[&str]) -> Result<Option<String>, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 585 | `fn looks_like_checkout(path: &Path, allow_worktree: bool) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 590 | `fn verified_checkout(path: &Path) -> Result<bool, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 602 | `fn ignored_child(path: &Path) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 619 | `pub fn validate_ignored_child_names(names: Vec<String>) -> Result<Vec<String>, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 644 | `pub fn discover_with_ignored(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 699 | `pub fn discover(root: &Path) -> Result<Vec<PathBuf>, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 703 | `pub fn discover_all_with_ignored(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 719 | `pub fn discover_all(roots: &[PathBuf]) -> (Vec<PathBuf>, Vec<String>) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 724 | `pub fn resolve_enrolled_checkout_with_ignored(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 741 | `pub fn resolve_enrolled_checkout(roots: &[PathBuf], requested: &str) -> Result<PathBuf, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 745 | `pub fn normalize_root(path: &str) -> Result<PathBuf, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 775 | `pub fn inspect_all(repositories: Vec<PathBuf>) -> Vec<(PathBuf, Result<RepoSnapshot, GitError>)> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 795 | `pub fn inspect(repo: &Path) -> Result<RepoSnapshot, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 873 | `fn git_operation_in_progress(repo: &Path) -> Result<bool, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 895 | `pub fn github_remote_to_browser_url(remote: &str) -> Option<String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 924 | `pub fn github_origin_url(repo: &Path) -> Result<String, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 934 | `pub fn fetch(repo: &Path) -> Result<OperationOutcome, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 945 | `pub fn fetch_with_cancel(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 974 | `fn commit_oid(repo: &Path, revision: &str) -> Result<String, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 986 | `fn pull_source_unchanged(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 1003 | `fn safe_pull_with_checkpoints(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 1055 | `fn safe_push_source_unchanged(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 1079 | `fn parse_single_remote_branch(raw: &str, branch_ref: &str) -> Result<String, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 1102 | `pub fn safe_push(repo: &Path) -> Result<OperationOutcome, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 1108 | `fn safe_push_with_checkpoint(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 1232 | `pub fn safe_sync(repo: &Path) -> Result<OperationOutcome, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 1244 | `pub fn safe_pull(repo: &Path) -> Result<OperationOutcome, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 1260 | `fn loader_failure_reports_ntstatus_without_leaking_command_or_repo_path() {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 1272 | `fn ordinary_failure_remains_a_regular_git_exit_status() {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 1282 | `fn headless_git_command_executes_without_losing_output() {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 1292 | `fn headless_child_creation_preserves_exit_status() {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `crates/repoticker-core/src/github_auth.rs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 9 | `pub enum AuthError {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 14 | `pub enum DeviceResponse {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 27 | `pub enum DevicePhase {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 37 | `pub enum PollDecision {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 45 | `pub struct DeviceSession {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 54 | `impl DeviceSession {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 55 | `pub fn new(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 91 | `pub fn next_poll(&mut self, now: u64) -> PollDecision {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 107 | `pub fn receive(&mut self, response: DeviceResponse, now: u64) -> DevicePhase {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 135 | `pub fn cancel(&mut self) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 143 | `pub struct TokenExpiration {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 149 | `pub enum TokenAction {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 155 | `impl TokenExpiration {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 156 | `pub fn decide(self, now: u64, refresh_margin_seconds: u64) -> TokenAction {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `crates/repoticker-core/src/lib.rs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 12 | `pub struct RepositoryState {` | Medium | Rust unit + native integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 21 | `pub enum SyncDecision {` | Medium | Rust unit + native integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 32 | `pub fn classify_sync(state: RepositoryState) -> SyncDecision {` | Medium | Rust unit + native integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `crates/repoticker-core/src/relay.rs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 10 | `pub enum RelayFrame {` | Medium | Rust unit + native integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
+| 17 | `pub enum RelayDecision {` | Medium | Rust unit + native integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
+| 23 | `fn valid_component(value: &str) -> bool {` | Medium | Rust unit + native integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
+| 33 | `fn canonical_repo(value: &str) -> Option<String> {` | Medium | Rust unit + native integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
+| 47 | `pub fn parse_frame(raw: &[u8]) -> Result<RelayFrame, &'static str> {` | Medium | Rust unit + native integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
+| 81 | `pub struct RelayCursor {` | Medium | Rust unit + native integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
+| 88 | `impl RelayCursor {` | Medium | Rust unit + native integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
+| 89 | `pub fn new(account: &str, selected: &[String]) -> Result<Self, &'static str> {` | Medium | Rust unit + native integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
+| 109 | `pub fn cursor(&self) -> u64 {` | Medium | Rust unit + native integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
+| 113 | `pub fn observe(&mut self, frame: RelayFrame) -> RelayDecision {` | Medium | Rust unit + native integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
+
+## `crates/repoticker-core/src/shutdown.rs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 7 | `pub struct ShutdownSignal(AtomicBool);` | Medium | Rust unit + native integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 9 | `impl ShutdownSignal {` | Medium | Rust unit + native integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 11 | `pub fn begin(&self) -> bool {` | Medium | Rust unit + native integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 15 | `pub fn is_requested(&self) -> bool {` | Medium | Rust unit + native integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `scripts/accept_autostart_linux.sh`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| — | No named function extracted: module entrypoint / data / anonymous handlers require source inspection | Medium | Shell contract + isolated subprocess | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `scripts/accept_autostart_windows.ps1`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| — | No named function extracted: module entrypoint / data / anonymous handlers require source inspection | Medium | Shell contract + isolated subprocess | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `scripts/apt_repository.py`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 17 | `def invoke(*args, env=None, input_data=None):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
+| 21 | `def sha256(path):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
+| 29 | `def package_field(deb, field):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
+| 33 | `def assemble(deb: Path, out: Path, version: str, gpg_home: Path,` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
+| 100 | `def verify(root, keyring):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
+| 112 | `def main():` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
+
+## `scripts/ci-pr-scope.sh`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| — | No named function extracted: module entrypoint / data / anonymous handlers require source inspection | Medium | Shell contract + isolated subprocess | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `scripts/cleanup-published-artifacts.mjs`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 11 | `const isSha = value => typeof value === "string" && /^[0-9a-f]{64}$/.test(value);` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 13 | `export function validateR2Receipt(receipt) {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 79 | `async function listRunArtifacts(run, token, request) {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 97 | `export async function deletePublishedArtifacts(receipt, token, request = fetch) {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 138 | `async function main() {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `scripts/install_qa_linux.sh`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| — | No named function extracted: module entrypoint / data / anonymous handlers require source inspection | Medium | Shell contract + isolated subprocess | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `scripts/provision_apt_key.sh`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 65 | `cleanup_signing_validation() {` | Medium | Shell contract + isolated subprocess | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `scripts/r2_release.py`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 39 | `def digest(path):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
+| 47 | `def safe_file(path):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
+| 56 | `def platform_files(release, platform, version, commit):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
+| 97 | `def verify_signed_apt_indexes(inrelease, index):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
+| 152 | `def verify_apt_package_catalog(packages, compressed, pool, version):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
+| 217 | `def apt_files(apt, linux_deb, version):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
+| 242 | `def source_map(release, apt, version, commit):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
+| 258 | `def latest_manifest(immutable, version, commit):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
+| 260 | `def item(key):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
+| 278 | `def content_type(path):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
+| 284 | `class _RejectPublicRedirect(urllib.request.HTTPRedirectHandler):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
+| 287 | `def redirect_request(self, req, fp, code, msg, headers, newurl):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
+| 291 | `def _verified_public_opener(request, timeout):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
+| 300 | `def public_readback(path, relative, opener=_verified_public_opener):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
+| 333 | `def object_head(client, key):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
+| 344 | `def object_etag(head):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
+| 354 | `def upload(client, key, file, immutable, expected_latest=_NO_SNAPSHOT):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
+| 403 | `def publish(release, apt, version, commit, run_id, output, account, access_key, secret):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
+| 468 | `def main():` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
+
+## `scripts/release_assets.py`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 25 | `def digest(path):` | High | Python unit + isolated release integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
+| 33 | `def canonical(version, platform, ext):` | High | Python unit + isolated release integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
+| 48 | `def source_has_version(filename, version):` | High | Python unit + isolated release integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
+| 55 | `def collect(source, target, platform, version):` | High | Python unit + isolated release integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
+| 112 | `def merge(parts, output, version):` | High | Python unit + isolated release integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
+| 142 | `def main():` | High | Python unit + isolated release integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
+
+## `scripts/release_version.py`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 24 | `def versions():` | Medium | Python unit + isolated release integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 32 | `def bump(which):` | Medium | Python unit + isolated release integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 56 | `def main():` | Medium | Python unit + isolated release integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `scripts/verify_signing_key.py`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 8 | `def validate(text, fingerprint):` | Medium | Python unit + isolated release integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 32 | `def main():` | Medium | Python unit + isolated release integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `scripts/verify_signing_passphrase.sh`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 18 | `cleanup() {` | Medium | Shell contract + isolated subprocess | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## `tools/import_icon.py`
+
+| Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
+| ---: | --- | --- | --- | ---: | --- | :---: |
+| 15 | `def main():` | Medium | Python unit + isolated release integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+
+## Completion controls
+
+- Check public/anonymous exports and syntax-level branches with a language parser; lexical extraction is intentionally not signed off as Stage 3.
+- Map each `?` to named tests and distinct true/false/match arms, including exceptions, `?` propagation and early returns.
+- After method-level reconciliation, replace generic N category candidates with a reasoned ✔/✖/? for *each* applicable operation; preserve per-file coverage map as the companion index.
+- Record final Stage 7 **number of actual planned new tests** after existing-assertion reconciliation; no fabricated totals from lexical candidate counts.
+- Stage 9 remains blocked until full Stages 3–8 are independently auditable.

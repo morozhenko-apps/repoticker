@@ -214,6 +214,39 @@ signed off per the Mode B SSOT. Then implement and run the final STABLE
 suite once. Existing `#23` WebKitGTK native crash and `#24`
 Cloudflare retention remain independent acceptance/risk records.
 
+## Historical Mode B plan reconciliation
+
+GitHub issue #10 ('Mode B before v1.0') remains OPEN. It links to
+docs/testing/MODE_B_PLAN.md, MODE_B_INVENTORY.md, MODE_B_BRANCH_MAP.md
+and VERSION_ROADMAP_TO_1_0.md from the October work. None of these
+historical docs/testing paths are present in the current dev Git tree;
+do not claim those links still provide current SSOT evidence.
+Current canonical evidence lives in this document and docs/mode-b/.
+The original AGENT.md Stage 1–12 contract remains mandatory; an
+outdated issue checkbox marked Stage 3 complete in October cannot
+substitute for rescanning the 2026-11 production tree.
+Source and test inventory at baseline: 80/80 executable production
+files, 77 JavaScript test modules (747 test declarations) and 13
+Python suites (104 declarations), plus Rust inline/integration tests.
+These declaration counts prove coverage inventory reconciliation,
+**not** full method or branch behavior coverage.
+
+## Current prepared documentation commits (not merged to dev)
+
+- 21d74704e126edeb258b2be7fdb5e15db659a3b4: Settings, Quota,
+  main card branch map and interaction gaps.
+- 5d9015d186a5a861c24f33eed63fadc866099c6e: Git safety,
+  OAuth, ETag and rate-limiter decision map.
+- 405e0fdbef352faa56aeaeb0f752e8cb28dde3c0: release/Apt/R2
+  and GitHub monitoring map.
+- ac8c59a0711275804bc30a3a1f3ec1b91f996baa: ledger update.
+
+No production code, tests, workflow, hosted Cloudflare bindings or
+release branch have been changed. Because current dev is the Git
+production branch of the operator-owned Cloudflare Worker, these
+documentation-only commits are not published until a safe boundary
+is available. Pushing dev may start a new Worker deployment even for
+documentation updates.
 ## Inventory appendices
 
 The per-file method inventory, branch map, Positive/N1–N12 matrix,

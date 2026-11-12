@@ -92,6 +92,15 @@ separately reviewed least-privilege token where the account setup supports
 it. Root-directory selection restricts which source gets built, **not** what
 Cloudflare resources a powerful deployment credential can access.
 
+The top-level `keep_vars = true` in `wrangler.toml` keeps runtime
+variables configured through Cloudflare Dashboard when Wrangler publishes a
+new version. This is essential for `ALLOWED_REPOSITORIES` if it was saved
+as a Text variable: without it, a Git-connected `wrangler deploy` can
+replace Dashboard variables with the bindings in source and cause HTTP 503.
+Wrangler normally preserves encrypted Secret bindings independently. Keep
+the allowlist private and prefer the Secret type for private repository scopes.
+Do not move its value into `[vars]` or a tracked build file.
+
 After Worker creation, configure **runtime Secret bindings**, not build
 environment variables, under **Worker → Settings → Variables and Secrets**:
 

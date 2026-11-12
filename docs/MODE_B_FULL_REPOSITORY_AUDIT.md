@@ -121,6 +121,17 @@ Without all seven Stage 12 answers supported by evidence, report PARTIAL
 and the exact unverified coverage rather than a percentage invented from
 case totals.
 
+### Instrumented UI coverage correction
+
+The exact-source Preflight UI coverage report identifies
+**56.49% line, 46.28% branch and 47.62% function coverage** across
+instrumented UI modules; `settings.mjs` alone is 50.58% branch
+coverage and `app.mjs` is absent from the imported module set.
+The [full executed report](mode-b/instrumented-ui-coverage.md) records
+all measured modules and uncovered line ranges. These are materially
+stronger evidence of gaps than lexical source counts. Completion Stage 12
+remains NO until the missing executable behavior is exercised.
+
 ## Current audit index (continuation checkpoint)
 
 The documentation-only work is organized in a separate `docs/mode-b/`

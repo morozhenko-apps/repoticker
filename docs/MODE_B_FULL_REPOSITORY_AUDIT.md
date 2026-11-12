@@ -55,9 +55,9 @@ changes merely to report test progress.
 | 1 | Repository Scan | COMPLETE | Tracked tree, test suites, strict and preflight workflow entrypoints inventoried |
 | 2 | Risk and invariant analysis | COMPLETE | Risk families and fail-closed requirements documented below |
 | 3 | Exhaustive Test Inventory | SOURCE AND TEST FILES INDEXED; METHOD REVIEW OPEN | 80/80 executable source files, 77 JS + 13 Python test files and 2 Rust integration sources indexed; line-by-line public method classification outstanding |
-| 4 | Executable Branch Map | PARTIAL: RELAY INSPECTED | 1,721 lexical branch/return anchors initially enumerated; Relay method outcomes assertion-mapped; all other domains remain for semantic expansion |
+| 4 | Executable Branch Map | PARTIAL: CRITICAL DOMAINS REVIEWED | Relay, Settings/Quota/Card, Git/OAuth/ETag, release and monitor mapped to explicit outcomes and existing test candidates; 1,721 lexical anchors remain to classify across all methods |
 | 5 | Positive and N1–N12 matrix | INITIAL FILE MATRIX COMPLETE; EVIDENCE PENDING | 80 file rows × 13 columns populated with '?' or reasoned NA; method-level coverage needs actual assertions before upgrading '?'. |
-| 6 | Meaningful Interaction Matrix | PARTIAL: RELAY | Relay interleavings and native shutdown scenarios inventoried, rest of product pending |
+| 6 | Meaningful Interaction Matrix | PARTIAL: HIGH-RISK COMBINATIONS MAPPED | Relay, Settings, Git safety, OAuth/ETag, main card, Quota, GitHub monitor and release combinations enumerated; exhaustive pairwise/state coverage pending |
 | 7 | Coverage estimation | INITIAL ESTIMATE ONLY | 707 extracted signatures and 1,721 source control-flow/return anchors; not a count of missing tests |
 | 8 | File-level Coverage Map | FILE SKELETON COMPLETE; ASSERTIONS PENDING | 80/80 production files listed with function/branch candidates; no global branch-level PASS asserted |
 | 9 | Implement every planned case | BLOCKED BY STAGES 3–8 | No representative sampling, no contract-weakening or mocking subject under test |
@@ -149,6 +149,9 @@ development journal. It is source-derived and does not claim final coverage.
 - [Remaining UI helpers and HTML/CSS structural contracts](mode-b/inventory-ui-final.md)
 - [Release signing, R2, APT, install and CI tooling](mode-b/inventory-release-tooling.md)
 - [Relay function-level inspected branch and N-cases](mode-b/branch-map-relay.md)
+- [Settings/Quota/Card semantic map and planned negative cases](mode-b/branch-map-settings-quota-card.md)
+- [Git safety, OAuth, ETag and rate gate semantic branch map](mode-b/branch-map-git-oauth.md)
+- [R2/APT release and GitHub monitoring semantic branch map](mode-b/branch-map-release-monitor.md)
 - [Existing JS test index part 1](mode-b/test-index-js-1.md),
   [part 2](mode-b/test-index-js-2.md),
   [part 3](mode-b/test-index-js-3.md),
@@ -168,6 +171,39 @@ continuing later. The continuation appendix adds the omitted region,
 and the initial counts remain explicitly *estimates*. AST-aware
 classification and targeted assertion review are required before
 Stage 3–8 can be signed off.
+
+### Current unmerged checkpoint and publication boundary
+
+Semantic source-review receipts were prepared in three separate
+documentation commits on top of branch baseline
+`a3ba7fa30fc4c81890d3075f94142942d001cbf3`.
+No production JS, Rust, Worker, secrets, CI workflow, test or release
+source has been modified in this audit slice. Test implementation remains
+gated by full Stages 3–8.
+
+**Do not automatically fast-forward dev while Cloudflare Workers Builds
+uses dev as its production branch.** A documentation-only push can still
+trigger `wrangler deploy`; no cloud deployment was authorized for this
+audit update. Keep new documentation in reviewable, unreferenced Git
+objects until a safe publication boundary is established. No extra
+working branch was created. The exact pending commit HEAD is documented
+in the owner-facing completion receipt.
+
+Current outstanding work, beyond these three critical-domain maps:
+- Classify all remaining source method/type candidates, including
+  Rust functions embedded after inline test modules, and all branch
+  expression/early-return variants beyond lexical counts.
+- Map native surface/Windows/KDE, UI helper, localization and
+  release-script outcomes to exact assertions; label real execution
+  separately from source-text contracts.
+- Inspect each candidate test's assertions; mark specific file-level
+  Positive/N1-N12 cells ✔ only when all applicable method-level
+  outcome variants are actually covered.
+- Plan and estimate every remaining concrete case and meaningful
+  cross-domain combination before entering Stage 9.
+- Later, execute all planned test additions, mutation review and
+  one final exact-SHA STABLE gate, followed by physical platform
+  acceptance. Existing #23 WebKit abort remains unresolved.
 
 **Next actionable work:** manually reconcile branch outcomes and matched
 assertions for Git safety and cancellation, OAuth/ETag, Tauri Settings,

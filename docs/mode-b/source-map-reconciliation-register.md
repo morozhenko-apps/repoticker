@@ -11,7 +11,7 @@ This register is a **source-file navigation and outstanding-evidence checklist**
 - **I** means only a lexical inventory exists; none of the current 80 rows had to be assigned I after this manual mapping, but that **does not mean** all source branches are tested.
 - **Stage 3–8 closed?** remains **? in every row** because independent required outcomes, N-matrix statuses and cross-component executions are still partial. Do not promote D/G to a test pass or infer executable coverage from a documentation link.
 - Validation of this register used the exact GitHub source matrix and full audit Git tree. There are exactly **80 distinct production paths**, each assigned once, and every primary linked `branch-map` path exists in that tree at the parent SHA.
-- Progress by map granularity: **59 focused / 21 grouped / 0 inventory-only**, **not** a percentage of test coverage or completed stages.
+- Progress by map granularity: **61 focused / 19 grouped / 0 inventory-only**, **not** a percentage of test coverage or completed stages.
 
 ## Native Rust/build
 
@@ -49,8 +49,8 @@ This register is a **source-file navigation and outstanding-evidence checklist**
 | `apps/desktop/ui/ci-failure-events.mjs` | Medium | 5/33 | D | [ci-events-and-status](branch-map-ci-events-and-status.md) | ? |
 | `apps/desktop/ui/ci-status.mjs` | Medium | 3/9 | D | [ci-events-and-status](branch-map-ci-events-and-status.md) | ? |
 | `apps/desktop/ui/github-billing.mjs` | Medium | 11/43 | D | [github-billing](branch-map-github-billing.md) | ? |
-| `apps/desktop/ui/github-errors.mjs` | Medium | 3/7 | G | [helpers-locales](branch-map-helpers-locales.md) | ? |
-| `apps/desktop/ui/github-installations.mjs` | Medium | 2/8 | G | [helpers-locales](branch-map-helpers-locales.md) | ? |
+| `apps/desktop/ui/github-errors.mjs` | Medium | 3/7 | D | [installation-error-provenance](branch-map-installation-error-provenance.md) | ? |
+| `apps/desktop/ui/github-installations.mjs` | Medium | 2/8 | D | [installation-error-provenance](branch-map-installation-error-provenance.md) | ? |
 | `apps/desktop/ui/github-monitor.mjs` | Medium | 14/87 | D | [github-monitor-controller](branch-map-github-monitor-controller.md) | ? |
 | `apps/desktop/ui/locale-auth.mjs` | Medium | 0/0 | G | [entrypoints](branch-map-entrypoints.md) | ? |
 | `apps/desktop/ui/locale-card.mjs` | Medium | 0/0 | G | [entrypoints](branch-map-entrypoints.md) | ? |

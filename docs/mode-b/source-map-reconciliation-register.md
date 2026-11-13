@@ -11,7 +11,7 @@ This register is a **source-file navigation and outstanding-evidence checklist**
 - **I** means only a lexical inventory exists; none of the current 80 rows had to be assigned I after this manual mapping, but that **does not mean** all source branches are tested.
 - **Stage 3–8 closed?** remains **? in every row** because independent required outcomes, N-matrix statuses and cross-component executions are still partial. Do not promote D/G to a test pass or infer executable coverage from a documentation link.
 - Validation of this register used the exact GitHub source matrix and full audit Git tree. There are exactly **80 distinct production paths**, each assigned once, and every primary linked `branch-map` path exists in that tree at the parent SHA.
-- Progress by map granularity: **62 focused / 18 grouped / 0 inventory-only**, **not** a percentage of test coverage or completed stages.
+- Progress by map granularity: **65 focused / 15 grouped / 0 inventory-only**, **not** a percentage of test coverage or completed stages.
 
 ## Native Rust/build
 
@@ -67,11 +67,11 @@ This register is a **source-file navigation and outstanding-evidence checklist**
 | `apps/desktop/ui/quota-details.mjs` | Medium | 13/24 | G | [helpers-locales](branch-map-helpers-locales.md) | ? |
 | `apps/desktop/ui/quota-size.mjs` | Medium | 1/3 | G | [helpers-locales](branch-map-helpers-locales.md) | ? |
 | `apps/desktop/ui/quota.mjs` | Medium | 17/45 | D | [quota-async-controller](branch-map-quota-async-controller.md) | ? |
-| `apps/desktop/ui/repo-menu.mjs` | Medium | 1/1 | G | [helpers-locales](branch-map-helpers-locales.md) | ? |
-| `apps/desktop/ui/repo-row-indicator.mjs` | Medium | 2/7 | G | [helpers-locales](branch-map-helpers-locales.md) | ? |
+| `apps/desktop/ui/repo-menu.mjs` | Medium | 1/1 | D | [repository-menu-scan-queue](branch-map-repository-menu-scan-queue.md) | ? |
+| `apps/desktop/ui/repo-row-indicator.mjs` | Medium | 2/7 | D | [repository-menu-scan-queue](branch-map-repository-menu-scan-queue.md) | ? |
 | `apps/desktop/ui/runner-collector.mjs` | Medium | 6/32 | D | [runner-collector-exact](branch-map-runner-collector-exact.md) | ? |
 | `apps/desktop/ui/runner-state.mjs` | Medium | 9/28 | D | [runner-state-classification](branch-map-runner-state-classification.md) | ? |
-| `apps/desktop/ui/scan-refresh.mjs` | Medium | 3/10 | G | [helpers-locales](branch-map-helpers-locales.md) | ? |
+| `apps/desktop/ui/scan-refresh.mjs` | Medium | 3/10 | D | [repository-menu-scan-queue](branch-map-repository-menu-scan-queue.md) | ? |
 | `apps/desktop/ui/settings-i18n.mjs` | Medium | 1/3 | G | [helpers-locales](branch-map-helpers-locales.md) | ? |
 | `apps/desktop/ui/settings.mjs` | Critical | 43/203 | D | [settings-quota-card](branch-map-settings-quota-card.md) | ? |
 | `apps/desktop/ui/status-metrics.mjs` | Medium | 3/1 | D | [metric-presentation](branch-map-metric-presentation.md) | ? |

@@ -242,6 +242,7 @@ development journal. It is source-derived and does not claim final coverage.
 - [Quota detached WebView native kind authority and asynchronous race map](mode-b/branch-map-quota-async-controller.md)
 - [Twenty-locale registry, cardinal plural and card accessibility tests](mode-b/branch-map-localized-counts-and-card.md)
 - [GitHub installation authorized pagination and finite redacted errors](mode-b/branch-map-installation-error-provenance.md)
+- [GitHub Actions run/job URL admission and summary projection](mode-b/branch-map-model-github-url-admission.md)
 - [Settings/Quota/Card semantic map and planned negative cases](mode-b/branch-map-settings-quota-card.md)
 - [Git safety, OAuth, ETag and rate gate semantic branch map](mode-b/branch-map-git-oauth.md)
 - [R2/APT release and GitHub monitoring semantic branch map](mode-b/branch-map-release-monitor.md)

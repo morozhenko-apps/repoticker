@@ -23,10 +23,10 @@ Each group includes multiple boundaries/outcomes and is **not** a promise that o
 | S4 | Settings | N9,N10 | DOM | picker keyboard Home/End/Escape/Tab and RTL; restored focus, Cancel not persisted | settings-github-confirm | VERIFY | E_PARTIAL |
 | Q1 | Quota | N5,N8 | Integration | old owner billing rejection after scope switch cannot overwrite newer successful reply | quota-mode-b | VERIFY | E_PARTIAL |
 | Q2 | Quota | N3,N9,N10 | DOM | native listener rejects/missing; bounded unavailable, no raw error or fake auth failure | quota-mode-b | VERIFY | E_PARTIAL |
-| Q3 | Quota | N5,N6 | DOM | out-of-order kind vs locale/scope update, latest user-selected view wins | quota-mode-b | VERIFY |
+| Q3 | Quota | N5,N6 | DOM | out-of-order kind vs locale/scope update, latest user-selected view wins | quota-mode-b | VERIFY | NEW_GAP_CONFIRMED |
 | A1 | Main card | N4,N5,N9 | DOM | real app.mjs via Tauri/DOM external adapter, queued hide/render/refresh and double-click | ui;scan-refresh | NEW_HARNESS |
-| A2 | Main card | N2,N5,N9 | Integration | double Fetch and Safe Sync contention: one Git mutation, targeted child cancellation | git_integration;git-fetch-cancel | VERIFY |
-| A3 | Main card | N6,N10 | DOM | incomplete CI/runner data stays unknown, no token/provider body in DOM | github-monitor;ui | VERIFY |
+| A2 | Main card | N2,N5,N9 | Integration | double Fetch and Safe Sync contention: one Git mutation, targeted child cancellation | git_integration;git-fetch-cancel | VERIFY | NEW_GAP_CONFIRMED |
+| A3 | Main card | N6,N10 | DOM | incomplete CI/runner data stays unknown, no token/provider body in DOM | github-monitor;ui | VERIFY | E_PARTIAL |
 | G1 | Git core | N4,N5,N7 | Integration | each push route invariant independently flipped; local+remote refs unchanged | git_integration | VERIFY | E_PARTIAL |
 | G2 | Git core | N5,N12 | Integration | both pinned-ref checks abort when external branch or upstream tip changes | git_integration | VERIFY | E_PARTIAL |
 | G3 | Git core | N4,N5 | Integration | cancel after spawn/register with failed termination/reaping; outcome remains unknown | git.rs inline | VERIFY | E_PARTIAL |
@@ -40,15 +40,15 @@ Each group includes multiple boundaries/outcomes and is **not** a promise that o
 | D2 | Distribution | N4,N5 | Integration | concurrent immutable/create + mutable CAS does not overwrite other producer | test_release_r2_contract.py | VERIFY | E_PARTIAL |
 | D3 | Distribution | N1,N2,N6,N7 | Integration | bad signature/package fields/checksum/symlink reject before remote access | test_release_r2_contract.py;test_release_assets.py | VERIFY | E_PARTIAL |
 | D4 | Distribution | N3,N10 | Integration | HTTP 200 truncation or tainted readback cannot certify release | test_release_r2_contract.py | VERIFY | E_PARTIAL |
-| M1 | Monitor | N3,N5 | Integration | task-only refresh with partial page while owner switches | github-monitor.test.mjs | VERIFY |
-| M2 | Monitor | N4,N5,N8 | Integration | cooldown boundary during forced refresh, logout, and late response | github-monitor.test.mjs | VERIFY |
-| M3 | Monitor | N1,N2,N6 | Unit | runner page 0/1/page limit/+1 and corrupt field never fabricates complete counts | runner-collector.test.mjs | VERIFY |
-| H1 | Helpers | N1,N2,N7 | Unit | safe GitHub URLs reject encoded hostile paths, credentials, fragments, overflow IDs | model.mjs;quota-details.test.mjs | VERIFY |
-| H2 | Localization | N1,N2,N8 | Unit | plural categories 0/1/2/5/11/21; invalid count and timezone/DST, all 20 locales | locale-counts-and-notifications;localization-20 | VERIFY |
-| H3 | Helpers | N5,N6 | Integration | selected owner x old billing/runner x late CI status; never cross identities | github-billing.test.mjs;github-monitor.test.mjs | VERIFY |
-| H4 | Helpers | N3,N4,N10 | Unit | provider errors redacted at native producer, not hidden through translation only | github-errors.test.mjs;locale-errors.test.mjs | VERIFY |
+| M1 | Monitor | N3,N5 | Integration | task-only refresh with partial page while owner switches | github-monitor.test.mjs | VERIFY | E_PARTIAL |
+| M2 | Monitor | N4,N5,N8 | Integration | cooldown boundary during forced refresh, logout, and late response | github-monitor.test.mjs | VERIFY | E_PARTIAL |
+| M3 | Monitor | N1,N2,N6 | Unit | runner page 0/1/page limit/+1 and corrupt field never fabricates complete counts | runner-collector.test.mjs | VERIFY | E_PARTIAL |
+| H1 | Helpers | N1,N2,N7 | Unit | safe GitHub URLs reject encoded hostile paths, credentials, fragments, overflow IDs | model.mjs;quota-details.test.mjs | VERIFY | E_PARTIAL |
+| H2 | Localization | N1,N2,N8 | Unit | plural categories 0/1/2/5/11/21; invalid count and timezone/DST, all 20 locales | locale-counts-and-notifications;localization-20 | VERIFY | E_PARTIAL |
+| H3 | Helpers | N5,N6 | Integration | selected owner x old billing/runner x late CI status; never cross identities | github-billing.test.mjs;github-monitor.test.mjs | VERIFY | E_PARTIAL |
+| H4 | Helpers | N3,N4,N10 | Unit | provider errors redacted at native producer, not hidden through translation only | github-errors.test.mjs;locale-errors.test.mjs | VERIFY | E_PARTIAL |
 | H5 | UI native | N9,N10 | Platform | keyboard focus and translated accessibility on both KDE and Windows | ui-layout;settings-visual-controls | PHYSICAL |
-| H6 | Settings storage | N6,N8,N12 | Integration | corrupt saved locale and OS denied write fall back without inconsistent transactional state | settings-github-confirm;config_store | VERIFY |
+| H6 | Settings storage | N6,N8,N12 | Integration | corrupt saved locale and OS denied write fall back without inconsistent transactional state | settings-github-confirm;config_store | VERIFY | E_PARTIAL |
 | OS-A1 | Native OS | N3,N5,N12 | Platform | autostart registration readback mismatch and rollback under OS failure | autostart-integration | PHYSICAL |
 | OS-L1 | Native OS | N5,N9 | Platform | KDE Layer Shell show/hide/drag/resize at high DPI and two screens | native-drag;quota-surface | PHYSICAL |
 | OS-L2 | Native OS | N4,N9 | Platform | tray open/close/Quit exactly once with no lingering WebKit children | graceful-quit | PHYSICAL |
@@ -115,3 +115,7 @@ D1–D4 now have `E_PARTIAL` evidence from the existing **real `release.publish`
 ## Additional inspected Rust/Settings behavioral evidence
 
 S4, G3, G4 and O1 are now `E_PARTIAL`. Real Rust domain/process tests and Settings controller keyboard tests are inspected in [verified-assertions-git-cancel-picker.md](verified-assertions-git-cancel-picker.md); remaining independent branches remain planned.
+
+## Monitor/UI helper final candidate triage
+
+All original `VERIFY` case groups have now been inspected at the **group level**, with 9 additional `E_PARTIAL` credits and 2 `NEW_GAP_CONFIRMED`: see [verified-assertions-monitor-helpers.md](verified-assertions-monitor-helpers.md). This is **not** per-public-method exhaustive coverage: independent condition/edge outcomes within E_PARTIAL groups remain planned. The method inventory and Stage 8 map still contain unresolved `?` branches.

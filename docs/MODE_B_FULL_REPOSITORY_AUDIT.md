@@ -235,6 +235,7 @@ development journal. It is source-derived and does not claim final coverage.
 - [Developer Pillow icon importer, asset sizes and partial-write map](mode-b/branch-map-icon-import-tool.md)
 - [Source-level 80-file to branch-map coverage reconciliation register](mode-b/source-map-reconciliation-register.md)
 - [GitHub billing UTC report, scoped cache and no invented free allowance](mode-b/branch-map-github-billing.md)
+- [Core bounded worker concurrency and atomic shutdown inline Rust assertions](mode-b/branch-map-core-bounded-shutdown.md)
 - [Settings/Quota/Card semantic map and planned negative cases](mode-b/branch-map-settings-quota-card.md)
 - [Git safety, OAuth, ETag and rate gate semantic branch map](mode-b/branch-map-git-oauth.md)
 - [R2/APT release and GitHub monitoring semantic branch map](mode-b/branch-map-release-monitor.md)

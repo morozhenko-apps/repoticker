@@ -11,7 +11,7 @@ This register is a **source-file navigation and outstanding-evidence checklist**
 - **I** means only a lexical inventory exists; none of the current 80 rows had to be assigned I after this manual mapping, but that **does not mean** all source branches are tested.
 - **Stage 3–8 closed?** remains **? in every row** because independent required outcomes, N-matrix statuses and cross-component executions are still partial. Do not promote D/G to a test pass or infer executable coverage from a documentation link.
 - Validation of this register used the exact GitHub source matrix and full audit Git tree. There are exactly **80 distinct production paths**, each assigned once, and every primary linked `branch-map` path exists in that tree at the parent SHA.
-- Progress by map granularity: **70 focused / 10 grouped / 0 inventory-only**, **not** a percentage of test coverage or completed stages.
+- Progress by map granularity: **72 focused / 8 grouped / 0 inventory-only**, **not** a percentage of test coverage or completed stages.
 
 ## Native Rust/build
 
@@ -110,12 +110,12 @@ This register is a **source-file navigation and outstanding-evidence checklist**
 | `scripts/ci-pr-scope.sh` | High | 0/5 | D | [ci-preflight-admission](branch-map-ci-preflight-admission.md) | ? |
 | `scripts/cleanup-published-artifacts.mjs` | High | 5/25 | D | [release-retention](branch-map-release-retention.md) | ? |
 | `scripts/install_qa_linux.sh` | High | 0/9 | D | [linux-qa-installer](branch-map-linux-qa-installer.md) | ? |
-| `scripts/provision_apt_key.sh` | High | 1/6 | G | [apt-signing-authority](branch-map-apt-signing-authority.md) | ? |
+| `scripts/provision_apt_key.sh` | High | 1/6 | D | [apt-provisioning-shell](branch-map-apt-provisioning-shell.md) | ? |
 | `scripts/r2_release.py` | Critical | 19/94 | D | [r2-upload-publish](branch-map-r2-upload-publish.md) | ? |
 | `scripts/release_assets.py` | Critical | 6/36 | D | [release-assets](branch-map-release-assets.md) | ? |
 | `scripts/release_version.py` | High | 3/12 | D | [release-version](branch-map-release-version.md) | ? |
 | `scripts/verify_signing_key.py` | High | 2/11 | D | [apt-signing-authority](branch-map-apt-signing-authority.md) | ? |
-| `scripts/verify_signing_passphrase.sh` | High | 1/5 | G | [apt-signing-authority](branch-map-apt-signing-authority.md) | ? |
+| `scripts/verify_signing_passphrase.sh` | High | 1/5 | D | [apt-provisioning-shell](branch-map-apt-provisioning-shell.md) | ? |
 | `tools/import_icon.py` | High | 1/4 | D | [icon-import-tool](branch-map-icon-import-tool.md) | ? |
 
 ## Mandatory gaps not closed by this index

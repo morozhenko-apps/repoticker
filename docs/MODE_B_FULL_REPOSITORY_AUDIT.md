@@ -246,6 +246,7 @@ development journal. It is source-derived and does not claim final coverage.
 - [Repository menu geometry, Git/CI row precedence and scan queue](mode-b/branch-map-repository-menu-scan-queue.md)
 - [Card view geometry, native drag gesture and browser menu suppression](mode-b/branch-map-view-drag-contextmenu.md)
 - [Quota hover projection, Unicode runner names and bounded sizing](mode-b/branch-map-quota-details-sizing.md)
+- [Isolated GPG signer and protected GitHub subkey provisioning shell](mode-b/branch-map-apt-provisioning-shell.md)
 - [Settings/Quota/Card semantic map and planned negative cases](mode-b/branch-map-settings-quota-card.md)
 - [Git safety, OAuth, ETag and rate gate semantic branch map](mode-b/branch-map-git-oauth.md)
 - [R2/APT release and GitHub monitoring semantic branch map](mode-b/branch-map-release-monitor.md)

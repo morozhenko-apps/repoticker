@@ -6,6 +6,36 @@ It covers all applicable code at source baseline
 `5b07a3273a27516af8ceb793f0d427a1bada964b`. This document records decisions and evidence for another
 agent to resume without relying on conversation context.
 
+## Working branch and commit ownership
+
+As of 2026-11-13, the **named, fetchable Git branch**
+[`audit/mode-b-testing`](https://github.com/morozhenko-apps/repoticker/tree/audit/mode-b-testing)
+owns all Mode B audit documentation commits. An earlier tool-based audit
+created 54 linked Git commit objects but did **not** move a branch reference,
+which made normal `git fetch` unable to discover them and exposed the
+unreferenced history to eventual garbage collection. This operational
+mistake has been corrected by creating the named branch at
+`e8a689d76b44e6be9e5829b8ba61dd6bb6f227aa`.
+
+**Current continuation rule:** fetch the branch head from GitHub and
+advance this branch by fast-forward only, with an expected-head
+compare-and-swap; do not create further unreferenced audit commits.
+To work locally: `git fetch origin audit/mode-b-testing`, followed by
+`git switch --track origin/audit/mode-b-testing` (or switch directly
+if the local branch already exists). Record exact commit SHAs and test
+evidence in issue #10; never treat a commit object without a branch as a
+published or fetchable result.
+
+GitHub's `dev` remains the original published
+`a3ba7fa30fc4c81890d3075f94142942d001cbf3` baseline as last
+verified during this continuation. The project has a Cloudflare-linked
+Worker, and `dev`/production branch pushes may have external side
+effects; do not update `dev`, `main`, tags or Worker configuration as
+part of these documentation-only inventory commits. Before any later
+merge or release, review CI/path filters and Cloudflare deployment
+behavior separately. The audit branch is **not** equivalent to a verified
+build, test pass, PR, preview deployment or feature release.
+
 ## Scope and acceptance boundary
 
 The repository has 239 tracked files at the audit baseline. Application

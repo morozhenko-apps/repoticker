@@ -322,6 +322,15 @@ See [verified-assertions-settings-quota-relay.md](mode-b/verified-assertions-set
 Native OS Keyring, malformed internal JSON and socket.close failures
 are still unknown. No test-run or mutation result is claimed.
 
+## Protocol and 100-repository boundary verification
+
+The exact-source protocol validator and Settings inventories were reviewed
+against executable JS assertions. Current L2/L3/S3 case evidence includes
+body size/claim limits, cursor ambiguity and 100/101 repository selection.
+See [verified-assertions-protocol-limits.md](mode-b/verified-assertions-protocol-limits.md).
+Each group remains partially covered until all listed variants are
+implemented or proved by another existing assertion.
+
 ## Inventory appendices
 
 The per-file method inventory, branch map, Positive/N1–N12 matrix,

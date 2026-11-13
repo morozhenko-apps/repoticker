@@ -2,9 +2,15 @@
 
 This audit follows the operator-supplied `AGENT.md` **Mode B** Testing contract,
 not merely the release-delta additions in `docs/MODE_B_RELEASE_GATE.md`.
-It covers all applicable code at source baseline
-`5b07a3273a27516af8ceb793f0d427a1bada964b`. This document records decisions and evidence for another
-agent to resume without relying on conversation context.
+The original inventory was taken at source baseline
+`5b07a3273a27516af8ceb793f0d427a1bada964b`. GitHub comparison verifies
+that the later published `dev` baseline
+`a3ba7fa30fc4c81890d3075f94142942d001cbf3` is 21 commits ahead,
+zero behind, with changes to **Markdown files only**, so application,
+tests, CI and distribution source are unchanged between these two SHAs.
+The branch maps refer to the latter SHA for a single unambiguous baseline.
+This document records decisions and evidence for another agent to resume
+without relying on conversation context.
 
 ## Working branch and commit ownership
 

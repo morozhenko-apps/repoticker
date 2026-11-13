@@ -220,6 +220,7 @@ development journal. It is source-derived and does not claim final coverage.
 - [GitHub monitor authorization, cache transaction and async races map](mode-b/branch-map-github-monitor-controller.md)
 - [Completed CI runs, silent-baseline alerts and exact identity projection](mode-b/branch-map-ci-events-and-status.md)
 - [Hybrid relay hints, fallback and REST 15-minute safety schedule](mode-b/branch-map-hybrid-reconciliation.md)
+- [Preflight PR scope, Git Bash admission and manual Strict gate](mode-b/branch-map-ci-preflight-admission.md)
 - [Settings/Quota/Card semantic map and planned negative cases](mode-b/branch-map-settings-quota-card.md)
 - [Git safety, OAuth, ETag and rate gate semantic branch map](mode-b/branch-map-git-oauth.md)
 - [R2/APT release and GitHub monitoring semantic branch map](mode-b/branch-map-release-monitor.md)

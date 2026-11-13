@@ -159,6 +159,7 @@ development journal. It is source-derived and does not claim final coverage.
 - [Native GitHub OAuth HTTP and Keyring adapter map](mode-b/branch-map-native-oauth-adapters.md)
 - [Native CI notification admission and delivery branch map](mode-b/branch-map-ci-notifications.md)
 - [Native WSS relay supervisor, phases and frame branch map](mode-b/branch-map-relay-transport.md)
+- [Native Git Safe Pull, Safe Push and Safe Sync branch map](mode-b/branch-map-git-safe-operations.md)
 - [Settings/Quota/Card semantic map and planned negative cases](mode-b/branch-map-settings-quota-card.md)
 - [Git safety, OAuth, ETag and rate gate semantic branch map](mode-b/branch-map-git-oauth.md)
 - [R2/APT release and GitHub monitoring semantic branch map](mode-b/branch-map-release-monitor.md)

@@ -156,6 +156,7 @@ development journal. It is source-derived and does not claim final coverage.
 - [Native OAuth wire parser and redaction branch map](mode-b/branch-map-oauth-wire.md)
 - [Native OAuth session and Keyring branch map](mode-b/branch-map-auth-session.md)
 - [Native GitHub REST read client and response projection map](mode-b/branch-map-rest-client.md)
+- [Native GitHub OAuth HTTP and Keyring adapter map](mode-b/branch-map-native-oauth-adapters.md)
 - [Settings/Quota/Card semantic map and planned negative cases](mode-b/branch-map-settings-quota-card.md)
 - [Git safety, OAuth, ETag and rate gate semantic branch map](mode-b/branch-map-git-oauth.md)
 - [R2/APT release and GitHub monitoring semantic branch map](mode-b/branch-map-release-monitor.md)

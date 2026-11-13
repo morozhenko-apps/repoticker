@@ -52,3 +52,7 @@ Evidence labels: E = examined executable domain assertions; C = candidate test n
 - R1 (N2/N3/N8): 429 without Retry-After and malformed reset metadata retain bounded cooldown
 
 No tests may be implemented until the entire repository Stages 3-8 are reconciled. These are candidate *missing decisions*; inspect existing assertions before adding any duplicates.
+
+## Verified existing tests
+
+[Inspected native Git/OAuth/ETag assertions](verified-assertions-git-auth.md) provide **partial** evidence for G1/G2/O2/E1/R1. Unverified independent predicate outcomes remain ? until all assertions and applicable mutations are mapped. No new CI run.

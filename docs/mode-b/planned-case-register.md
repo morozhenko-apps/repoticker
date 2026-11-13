@@ -27,15 +27,15 @@ Each group includes multiple boundaries/outcomes and is **not** a promise that o
 | A1 | Main card | N4,N5,N9 | DOM | real app.mjs via Tauri/DOM external adapter, queued hide/render/refresh and double-click | ui;scan-refresh | NEW_HARNESS |
 | A2 | Main card | N2,N5,N9 | Integration | double Fetch and Safe Sync contention: one Git mutation, targeted child cancellation | git_integration;git-fetch-cancel | VERIFY |
 | A3 | Main card | N6,N10 | DOM | incomplete CI/runner data stays unknown, no token/provider body in DOM | github-monitor;ui | VERIFY |
-| G1 | Git core | N4,N5,N7 | Integration | each push route invariant independently flipped; local+remote refs unchanged | git_integration | VERIFY |
-| G2 | Git core | N5,N12 | Integration | both pinned-ref checks abort when external branch or upstream tip changes | git_integration | VERIFY |
+| G1 | Git core | N4,N5,N7 | Integration | each push route invariant independently flipped; local+remote refs unchanged | git_integration | VERIFY | E_PARTIAL |
+| G2 | Git core | N5,N12 | Integration | both pinned-ref checks abort when external branch or upstream tip changes | git_integration | VERIFY | E_PARTIAL |
 | G3 | Git core | N4,N5 | Integration | cancel after spawn/register with failed termination/reaping; outcome remains unknown | git.rs inline | VERIFY |
 | G4 | Git core | N1,N2,N7 | Unit | invalid remote-branch reply; 0/multiple lines; exact 40/64 hex and mismatched ref | git.rs inline | VERIFY |
 | O1 | OAuth | N5,N7,N10 | Unit/Integration | old Device Flow authorized after newer generation/cancel; no store/event | github_auth.rs;github_session.rs | VERIFY |
-| O2 | OAuth | N2,N8 | Unit | rolled-back clock plus repeated slow_down never polls early | github_auth.rs | VERIFY |
+| O2 | OAuth | N2,N8 | Unit | rolled-back clock plus repeated slow_down never polls early | github_auth.rs | VERIFY | E_PARTIAL |
 | O3 | OAuth | N5,N10,N12 | Integration | credential write/delete failure cannot publish connected or stale cached credentials | github_session.rs | NEEDS_ADAPTER |
-| E1 | ETag | N4,N5,N6 | Unit | 304 after path/epoch/scope changes refuses private stale projection | github_etag_cache.rs | VERIFY |
-| R1 | Rate gate | N2,N3,N8 | Unit | 429 without Retry-After plus invalid reset and backward clock remains bounded | github_rate_gate.rs | VERIFY |
+| E1 | ETag | N4,N5,N6 | Unit | 304 after path/epoch/scope changes refuses private stale projection | github_etag_cache.rs | VERIFY | E_PARTIAL |
+| R1 | Rate gate | N2,N3,N8 | Unit | 429 without Retry-After plus invalid reset and backward clock remains bounded | github_rate_gate.rs | VERIFY | E_PARTIAL |
 | D1 | Distribution | N3,N12 | Integration | isolated failure at each staged signed-publication boundary leaves no receipt/latest | test_release_r2_contract.py | VERIFY |
 | D2 | Distribution | N4,N5 | Integration | concurrent immutable/create + mutable CAS does not overwrite other producer | test_release_r2_contract.py | VERIFY |
 | D3 | Distribution | N1,N2,N6,N7 | Integration | bad signature/package fields/checksum/symlink reject before remote access | test_release_r2_contract.py;test_release_assets.py | VERIFY |
@@ -91,3 +91,7 @@ Total scenario groups: 51. Native/physical groups: 10. Counts below are group ap
 - Intermittent `WebKitWebProcess` SIGABRT is tracked in GitHub issue #23; one normal exit is not closure.
 - Cloudflare `ALLOWED_REPOSITORIES` retention proven for one deploy, but live WSS/webhook acceptance on current code remains a separate check (issue #24).
 
+
+## Reviewed existing assertions
+
+The cases G1, G2, O2, E1 and R1 are now `E_PARTIAL`: see [verified-assertions-git-auth.md](verified-assertions-git-auth.md) for exact runnable source assertions and still-uncovered combinations. This is NOT completion of the entire group or an N-category.

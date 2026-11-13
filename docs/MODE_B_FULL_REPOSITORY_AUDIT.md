@@ -295,6 +295,21 @@ The baseline strict and preflight results belong to
 No unapproved Cloudflare production deploy is justified by a
 documentation-only update; publication to `dev` remains held.
 
+## Source-verified assertion checkpoint (Git safety and auth)
+
+On 2026-11-13, inspected executable Rust test assertions for G1,
+G2, O2, E1 and R1 (Git safe push/final checkpoint, Device Flow
+slowdown/terminal, ETag auth epoch and rate gate status). These
+are **E_PARTIAL** case credits, not full branch completion.
+See [verified-assertions-git-auth.md](mode-b/verified-assertions-git-auth.md).
+Do not reproduce already verified assertions simply to increase counts.
+
+Historical issue #23 was closed `not_planned` on owner request:
+an isolated WebKit child SIGABRT cannot be attributed to RepoTicker.
+**It is no longer an open P0 release blocker**. Native shutdown
+acceptance remains in the Mode B physical matrix; a fresh repeatable
+crash would be a new evidence-backed defect.
+
 ## Inventory appendices
 
 The per-file method inventory, branch map, Positive/N1–N12 matrix,

@@ -164,6 +164,7 @@ development journal. It is source-derived and does not claim final coverage.
 - [Tauri main Git admission, Fetch/Sync/Quit concurrency map](mode-b/branch-map-main-git-admission.md)
 - [Git enrollment, shallow discovery and inspect branch map](mode-b/branch-map-git-discovery.md)
 - [Atomic JSON preferences, recovery and transaction branch map](mode-b/branch-map-config-store.md)
+- [Canonical GitHub origin and enrolled native opener branch map](mode-b/branch-map-github-origin-opener.md)
 - [Settings/Quota/Card semantic map and planned negative cases](mode-b/branch-map-settings-quota-card.md)
 - [Git safety, OAuth, ETag and rate gate semantic branch map](mode-b/branch-map-git-oauth.md)
 - [R2/APT release and GitHub monitoring semantic branch map](mode-b/branch-map-release-monitor.md)

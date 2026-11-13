@@ -231,6 +231,7 @@ development journal. It is source-derived and does not claim final coverage.
 - [Exact-main protected release tag DAG, signed APT, R2 and cleanup](mode-b/branch-map-ci-protected-release.md)
 - [Tauri Wayland bridge build.rs toolchain and target gating](mode-b/branch-map-native-build-script.md)
 - [Linux QA installer SHA admission, reinstall and payload identity map](mode-b/branch-map-linux-qa-installer.md)
+- [Linux/Windows autostart read-only acceptance CLI and redaction map](mode-b/branch-map-autostart-acceptance-cli.md)
 - [Settings/Quota/Card semantic map and planned negative cases](mode-b/branch-map-settings-quota-card.md)
 - [Git safety, OAuth, ETag and rate gate semantic branch map](mode-b/branch-map-git-oauth.md)
 - [R2/APT release and GitHub monitoring semantic branch map](mode-b/branch-map-release-monitor.md)

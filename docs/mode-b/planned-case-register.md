@@ -12,17 +12,17 @@ Each group includes multiple boundaries/outcomes and is **not** a promise that o
 | L2 | Relay | N1,N2,N3 | Unit | non-byte stream chunks and failed cancel; exact body cap; bounded error | mode-b-relay-protocol | VERIFY |
 | L3 | Relay | N2,N7 | Unit | cursor query too long/duplicate/unknown; reject before DO access | mode-b-relay-protocol | VERIFY |
 | L4 | Relay | N4,N5 | Integration | Durable Object constructor auto-response supported/unsupported; install once | relay-hub | VERIFY |
-| L5 | Relay | N1,N6,N7,N12 | Integration | bad JSON/internal schema receives 400/422 and performs no SQL write | relay-hub | VERIFY |
-| L6 | Relay | N3,N5 | Integration | 0 subscribers, failed websocket close/send, backpressured buffer; healthy peers unaffected | relay-hub | VERIFY |
+| L5 | Relay | N1,N6,N7,N12 | Integration | bad JSON/internal schema receives 400/422 and performs no SQL write | relay-hub | VERIFY | E_PARTIAL |
+| L6 | Relay | N3,N5 | Integration | 0 subscribers, failed websocket close/send, backpressured buffer; healthy peers unaffected | relay-hub | VERIFY | E_PARTIAL |
 | L7 | Relay | N4,N5 | Integration | webSocketClose with socket open/closed; no double close or leaked handler | relay-hub | VERIFY |
 | L8 | Relay | N2,N8 | Integration | clock rollback across rate limit/history expiry cannot bypass 120/min and 24h | relay-hub | VERIFY |
 | L9 | Relay | N4,N9 | Integration | Cloudflare RelayHub public adapter delegates each callback to controller | relay-worker | VERIFY |
-| S1 | Settings | N5,N6,N7 | Integration | stale Keyring status vs reopened Hybrid window and newer phase; no false online | settings-github-confirm | VERIFY |
-| S2 | Settings | N4,N5,N12 | Integration | ordered save+commit with each failure injected; stage preserved/rolled back; no double store | settings-github-confirm | VERIFY |
+| S1 | Settings | N5,N6,N7 | Integration | stale Keyring status vs reopened Hybrid window and newer phase; no false online | settings-github-confirm | VERIFY | E_PARTIAL |
+| S2 | Settings | N4,N5,N12 | Integration | ordered save+commit with each failure injected; stage preserved/rolled back; no double store | settings-github-confirm | VERIFY | E_PARTIAL |
 | S3 | Settings | N1,N2,N6,N9 | Unit/Integration | 0,1,100,101 repository and installation page; malformed rows fail closed | settings-github-confirm | VERIFY |
 | S4 | Settings | N9,N10 | DOM | picker keyboard Home/End/Escape/Tab and RTL; restored focus, Cancel not persisted | settings-github-confirm | VERIFY |
-| Q1 | Quota | N5,N8 | Integration | old owner billing rejection after scope switch cannot overwrite newer successful reply | quota-mode-b | VERIFY |
-| Q2 | Quota | N3,N9,N10 | DOM | native listener rejects/missing; bounded unavailable, no raw error or fake auth failure | quota-mode-b | VERIFY |
+| Q1 | Quota | N5,N8 | Integration | old owner billing rejection after scope switch cannot overwrite newer successful reply | quota-mode-b | VERIFY | E_PARTIAL |
+| Q2 | Quota | N3,N9,N10 | DOM | native listener rejects/missing; bounded unavailable, no raw error or fake auth failure | quota-mode-b | VERIFY | E_PARTIAL |
 | Q3 | Quota | N5,N6 | DOM | out-of-order kind vs locale/scope update, latest user-selected view wins | quota-mode-b | VERIFY |
 | A1 | Main card | N4,N5,N9 | DOM | real app.mjs via Tauri/DOM external adapter, queued hide/render/refresh and double-click | ui;scan-refresh | NEW_HARNESS |
 | A2 | Main card | N2,N5,N9 | Integration | double Fetch and Safe Sync contention: one Git mutation, targeted child cancellation | git_integration;git-fetch-cancel | VERIFY |
@@ -95,3 +95,7 @@ Total scenario groups: 51. Native/physical groups: 10. Counts below are group ap
 ## Reviewed existing assertions
 
 The cases G1, G2, O2, E1 and R1 are now `E_PARTIAL`: see [verified-assertions-git-auth.md](verified-assertions-git-auth.md) for exact runnable source assertions and still-uncovered combinations. This is NOT completion of the entire group or an N-category.
+
+## Reviewed Settings/Quota/Relay fixtures
+
+The S1, S2, Q1, Q2, L5 and L6 groups now have **partial real controller/DO assertion evidence**, indexed in [verified-assertions-settings-quota-relay.md](verified-assertions-settings-quota-relay.md). No group is fully closed; separate OS/IO paths remain planned. These results credit existing tests, not newly implemented cases.

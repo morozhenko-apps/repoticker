@@ -310,6 +310,18 @@ an isolated WebKit child SIGABRT cannot be attributed to RepoTicker.
 acceptance remains in the Mode B physical matrix; a fresh repeatable
 crash would be a new evidence-backed defect.
 
+## Confirmed existing Settings, Quota and Relay assertions
+
+Additional source/body inspection credited existing controller and
+Durable Object regression assertions for S1/S2/Q1/Q2/L5/L6 as
+**E_PARTIAL**. This covers finite stale WSS events, single-flight
+credential stage/save/commit failure handling, stale account billing,
+sanitized popup errors, exact 512/513-byte Durable Object limits and
+backpressure/throwing-socket isolation with persistent SQL write.
+See [verified-assertions-settings-quota-relay.md](mode-b/verified-assertions-settings-quota-relay.md).
+Native OS Keyring, malformed internal JSON and socket.close failures
+are still unknown. No test-run or mutation result is claimed.
+
 ## Inventory appendices
 
 The per-file method inventory, branch map, Positive/N1–N12 matrix,

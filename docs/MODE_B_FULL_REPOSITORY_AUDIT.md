@@ -162,6 +162,7 @@ development journal. It is source-derived and does not claim final coverage.
 - [Native Git Safe Pull, Safe Push and Safe Sync branch map](mode-b/branch-map-git-safe-operations.md)
 - [Owned Git subprocess and Fetch cancellation branch map](mode-b/branch-map-git-owned-processes.md)
 - [Tauri main Git admission, Fetch/Sync/Quit concurrency map](mode-b/branch-map-main-git-admission.md)
+- [Git enrollment, shallow discovery and inspect branch map](mode-b/branch-map-git-discovery.md)
 - [Settings/Quota/Card semantic map and planned negative cases](mode-b/branch-map-settings-quota-card.md)
 - [Git safety, OAuth, ETag and rate gate semantic branch map](mode-b/branch-map-git-oauth.md)
 - [R2/APT release and GitHub monitoring semantic branch map](mode-b/branch-map-release-monitor.md)

@@ -179,6 +179,7 @@ development journal. It is source-derived and does not claim final coverage.
 - [Embedded tray PNG, RGBA and Linux ARGB conversion map](mode-b/branch-map-native-tray-icon.md)
 - [Release asset discovery, canonical receipts and merge branch map](mode-b/branch-map-release-assets.md)
 - [Release source versions, three-manifest bump and tag admission map](mode-b/branch-map-release-version.md)
+- [Signed local APT package snapshot and GPG verification map](mode-b/branch-map-apt-signed-snapshot.md)
 - [Settings/Quota/Card semantic map and planned negative cases](mode-b/branch-map-settings-quota-card.md)
 - [Git safety, OAuth, ETag and rate gate semantic branch map](mode-b/branch-map-git-oauth.md)
 - [R2/APT release and GitHub monitoring semantic branch map](mode-b/branch-map-release-monitor.md)

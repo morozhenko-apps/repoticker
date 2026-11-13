@@ -1,7 +1,7 @@
 # Mode B: canonical release versions, three-file bump and strict tag admission
 
 Prepared parent `2fe9308e42cf15e0cc71f63fa72c686c73bb0c60`; production baseline `a3ba7fa30fc4c81890d3075f94142942d001cbf3`.
-Source `scripts/release_version.py` blob `d7837e2fd2851713b365880c226a4600df73cb9a`, 84? lines (use blob for stable identity).
+Source `scripts/release_version.py` blob `d7837e2fd2851713b365880c226a4600df73cb9a`, 75 source lines.
 Direct real Python module tests: `tests/test_release_version.py` blob `317a1af4da2e069e8b987c5c2fa5be9823f6f69c`, **3 unittest methods**, plus `tests/test_release_candidate_contract.py` source/manifest checks (6 tests), `tests/test_release_lockfile_contract.py` (2 static tests), and `tests/test_release_strict_contract.py` (3 static workflow tests).
 
 Mode B Stage 3–8 assertion reconciliation only. No version file was edited, no test or CI ran, no tag or release was created.

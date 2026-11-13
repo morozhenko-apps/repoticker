@@ -20,7 +20,7 @@ Each group includes multiple boundaries/outcomes and is **not** a promise that o
 | S1 | Settings | N5,N6,N7 | Integration | stale Keyring status vs reopened Hybrid window and newer phase; no false online | settings-github-confirm | VERIFY | E_PARTIAL |
 | S2 | Settings | N4,N5,N12 | Integration | ordered save+commit with each failure injected; stage preserved/rolled back; no double store | settings-github-confirm | VERIFY | E_PARTIAL |
 | S3 | Settings | N1,N2,N6,N9 | Unit/Integration | 0,1,100,101 repository and installation page; malformed rows fail closed | settings-github-confirm | VERIFY | E_PARTIAL |
-| S4 | Settings | N9,N10 | DOM | picker keyboard Home/End/Escape/Tab and RTL; restored focus, Cancel not persisted | settings-github-confirm | VERIFY |
+| S4 | Settings | N9,N10 | DOM | picker keyboard Home/End/Escape/Tab and RTL; restored focus, Cancel not persisted | settings-github-confirm | VERIFY | E_PARTIAL |
 | Q1 | Quota | N5,N8 | Integration | old owner billing rejection after scope switch cannot overwrite newer successful reply | quota-mode-b | VERIFY | E_PARTIAL |
 | Q2 | Quota | N3,N9,N10 | DOM | native listener rejects/missing; bounded unavailable, no raw error or fake auth failure | quota-mode-b | VERIFY | E_PARTIAL |
 | Q3 | Quota | N5,N6 | DOM | out-of-order kind vs locale/scope update, latest user-selected view wins | quota-mode-b | VERIFY |
@@ -29,9 +29,9 @@ Each group includes multiple boundaries/outcomes and is **not** a promise that o
 | A3 | Main card | N6,N10 | DOM | incomplete CI/runner data stays unknown, no token/provider body in DOM | github-monitor;ui | VERIFY |
 | G1 | Git core | N4,N5,N7 | Integration | each push route invariant independently flipped; local+remote refs unchanged | git_integration | VERIFY | E_PARTIAL |
 | G2 | Git core | N5,N12 | Integration | both pinned-ref checks abort when external branch or upstream tip changes | git_integration | VERIFY | E_PARTIAL |
-| G3 | Git core | N4,N5 | Integration | cancel after spawn/register with failed termination/reaping; outcome remains unknown | git.rs inline | VERIFY |
-| G4 | Git core | N1,N2,N7 | Unit | invalid remote-branch reply; 0/multiple lines; exact 40/64 hex and mismatched ref | git.rs inline | VERIFY |
-| O1 | OAuth | N5,N7,N10 | Unit/Integration | old Device Flow authorized after newer generation/cancel; no store/event | github_auth.rs;github_session.rs | VERIFY |
+| G3 | Git core | N4,N5 | Integration | cancel after spawn/register with failed termination/reaping; outcome remains unknown | git.rs inline | VERIFY | E_PARTIAL |
+| G4 | Git core | N1,N2,N7 | Unit | invalid remote-branch reply; 0/multiple lines; exact 40/64 hex and mismatched ref | git.rs inline | VERIFY | E_PARTIAL |
+| O1 | OAuth | N5,N7,N10 | Unit/Integration | old Device Flow authorized after newer generation/cancel; no store/event | github_auth.rs;github_session.rs | VERIFY | E_PARTIAL |
 | O2 | OAuth | N2,N8 | Unit | rolled-back clock plus repeated slow_down never polls early | github_auth.rs | VERIFY | E_PARTIAL |
 | O3 | OAuth | N5,N10,N12 | Integration | credential write/delete failure cannot publish connected or stale cached credentials | github_session.rs | NEEDS_ADAPTER |
 | E1 | ETag | N4,N5,N6 | Unit | 304 after path/epoch/scope changes refuses private stale projection | github_etag_cache.rs | VERIFY | E_PARTIAL |
@@ -111,3 +111,7 @@ Cases L1/L4/L7/L8/L9 are now `NEW_GAP_CONFIRMED`, not merely guessed from filena
 ## Real R2/APT release assertions credited
 
 D1–D4 now have `E_PARTIAL` evidence from the existing **real `release.publish`, `release.upload` and `release.public_readback` implementation**, with offline network byte-contract fakes and temporary files. See [verified-assertions-release-r2.md](verified-assertions-release-r2.md); exact remaining unproven combinations are listed there. No hosted R2 call or CI rerun was made.
+
+## Additional inspected Rust/Settings behavioral evidence
+
+S4, G3, G4 and O1 are now `E_PARTIAL`. Real Rust domain/process tests and Settings controller keyboard tests are inspected in [verified-assertions-git-cancel-picker.md](verified-assertions-git-cancel-picker.md); remaining independent branches remain planned.

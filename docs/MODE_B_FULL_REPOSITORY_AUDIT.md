@@ -166,6 +166,7 @@ development journal. It is source-derived and does not claim final coverage.
 - [Atomic JSON preferences, recovery and transaction branch map](mode-b/branch-map-config-store.md)
 - [Canonical GitHub origin and enrolled native opener branch map](mode-b/branch-map-github-origin-opener.md)
 - [Native Settings, persisted scope and side-effect ordering map](mode-b/branch-map-main-settings-scope.md)
+- [Main card app.mjs controller and A1/A2 event map](mode-b/branch-map-main-card-controller.md)
 - [Settings/Quota/Card semantic map and planned negative cases](mode-b/branch-map-settings-quota-card.md)
 - [Git safety, OAuth, ETag and rate gate semantic branch map](mode-b/branch-map-git-oauth.md)
 - [R2/APT release and GitHub monitoring semantic branch map](mode-b/branch-map-release-monitor.md)

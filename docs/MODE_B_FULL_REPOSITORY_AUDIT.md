@@ -174,6 +174,7 @@ development journal. It is source-derived and does not claim final coverage.
 - [Native Relay Secret Keyring and Settings draft transaction map](mode-b/branch-map-relay-secret-keyring.md)
 - [Native autostart and privacy-limited startup diagnostics map](mode-b/branch-map-autostart-startup.md)
 - [Windows popup geometry, DPI, topmost and Win32 region ownership map](mode-b/branch-map-windows-geometry.md)
+- [Linux KDE Wayland GTK Layer Shell geometry and drag map](mode-b/branch-map-linux-layer-shell.md)
 - [Settings/Quota/Card semantic map and planned negative cases](mode-b/branch-map-settings-quota-card.md)
 - [Git safety, OAuth, ETag and rate gate semantic branch map](mode-b/branch-map-git-oauth.md)
 - [R2/APT release and GitHub monitoring semantic branch map](mode-b/branch-map-release-monitor.md)

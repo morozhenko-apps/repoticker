@@ -11,7 +11,7 @@ This register is a **source-file navigation and outstanding-evidence checklist**
 - **I** means only a lexical inventory exists; none of the current 80 rows had to be assigned I after this manual mapping, but that **does not mean** all source branches are tested.
 - **Stage 3–8 closed?** remains **? in every row** because independent required outcomes, N-matrix statuses and cross-component executions are still partial. Do not promote D/G to a test pass or infer executable coverage from a documentation link.
 - Validation of this register used the exact GitHub source matrix and full audit Git tree. There are exactly **80 distinct production paths**, each assigned once, and every primary linked `branch-map` path exists in that tree at the parent SHA.
-- Progress by map granularity: **51 focused / 29 grouped / 0 inventory-only**, **not** a percentage of test coverage or completed stages.
+- Progress by map granularity: **53 focused / 27 grouped / 0 inventory-only**, **not** a percentage of test coverage or completed stages.
 
 ## Native Rust/build
 
@@ -95,8 +95,8 @@ This register is a **source-file navigation and outstanding-evidence checklist**
 | `crates/repoticker-core/src/bounded.rs` | High | 1/5 | D | [core-bounded-shutdown](branch-map-core-bounded-shutdown.md) | ? |
 | `crates/repoticker-core/src/config_store.rs` | Critical | 15/15 | D | [config-store](branch-map-config-store.md) | ? |
 | `crates/repoticker-core/src/git.rs` | Critical | 68/83 | D | [git-safe-operations](branch-map-git-safe-operations.md) | ? |
-| `crates/repoticker-core/src/github_auth.rs` | Critical | 14/10 | G | [git-oauth](branch-map-git-oauth.md) | ? |
-| `crates/repoticker-core/src/lib.rs` | High | 3/6 | G | [git-oauth](branch-map-git-oauth.md) | ? |
+| `crates/repoticker-core/src/github_auth.rs` | Critical | 14/10 | D | [core-sync-device-policy](branch-map-core-sync-device-policy.md) | ? |
+| `crates/repoticker-core/src/lib.rs` | High | 3/6 | D | [core-sync-device-policy](branch-map-core-sync-device-policy.md) | ? |
 | `crates/repoticker-core/src/relay.rs` | High | 10/15 | D | [relay](branch-map-relay.md) | ? |
 | `crates/repoticker-core/src/shutdown.rs` | High | 4/0 | D | [core-bounded-shutdown](branch-map-core-bounded-shutdown.md) | ? |
 

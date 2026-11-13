@@ -239,6 +239,7 @@ development journal. It is source-derived and does not claim final coverage.
 - [About window actual DOM controller and native IPC test map](mode-b/branch-map-about-window-controller.md)
 - [Core pure Safe Sync and OAuth Device Flow state policy tests](mode-b/branch-map-core-sync-device-policy.md)
 - [Compact metric safe counts and stale monitor presentation merge](mode-b/branch-map-metric-presentation.md)
+- [Quota detached WebView native kind authority and asynchronous race map](mode-b/branch-map-quota-async-controller.md)
 - [Settings/Quota/Card semantic map and planned negative cases](mode-b/branch-map-settings-quota-card.md)
 - [Git safety, OAuth, ETag and rate gate semantic branch map](mode-b/branch-map-git-oauth.md)
 - [R2/APT release and GitHub monitoring semantic branch map](mode-b/branch-map-release-monitor.md)

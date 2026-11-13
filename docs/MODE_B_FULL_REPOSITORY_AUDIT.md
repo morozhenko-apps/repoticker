@@ -214,6 +214,7 @@ development journal. It is source-derived and does not claim final coverage.
 - [R2 source provenance, signed index and strict platform manifest assertion map](mode-b/branch-map-r2-source-provenance.md)
 - [R2 exact public HTTP readback and redirect rejection map](mode-b/branch-map-r2-public-readback.md)
 - [R2 conditional upload, CAS and publication receipt gate map](mode-b/branch-map-r2-upload-publish.md)
+- [Release receipt validation and GitHub artifact cleanup map](mode-b/branch-map-release-retention.md)
 - [Settings/Quota/Card semantic map and planned negative cases](mode-b/branch-map-settings-quota-card.md)
 - [Git safety, OAuth, ETag and rate gate semantic branch map](mode-b/branch-map-git-oauth.md)
 - [R2/APT release and GitHub monitoring semantic branch map](mode-b/branch-map-release-monitor.md)

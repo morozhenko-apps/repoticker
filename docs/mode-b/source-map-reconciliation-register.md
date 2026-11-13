@@ -11,7 +11,7 @@ This register is a **source-file navigation and outstanding-evidence checklist**
 - **I** means only a lexical inventory exists; none of the current 80 rows had to be assigned I after this manual mapping, but that **does not mean** all source branches are tested.
 - **Stage 3–8 closed?** remains **? in every row** because independent required outcomes, N-matrix statuses and cross-component executions are still partial. Do not promote D/G to a test pass or infer executable coverage from a documentation link.
 - Validation of this register used the exact GitHub source matrix and full audit Git tree. There are exactly **80 distinct production paths**, each assigned once, and every primary linked `branch-map` path exists in that tree at the parent SHA.
-- Progress by map granularity: **72 focused / 8 grouped / 0 inventory-only**, **not** a percentage of test coverage or completed stages.
+- Progress by map granularity: **80 focused / 0 grouped / 0 inventory-only**, **not** a percentage of test coverage or completed stages.
 
 ## Native Rust/build
 
@@ -52,15 +52,15 @@ This register is a **source-file navigation and outstanding-evidence checklist**
 | `apps/desktop/ui/github-errors.mjs` | Medium | 3/7 | D | [installation-error-provenance](branch-map-installation-error-provenance.md) | ? |
 | `apps/desktop/ui/github-installations.mjs` | Medium | 2/8 | D | [installation-error-provenance](branch-map-installation-error-provenance.md) | ? |
 | `apps/desktop/ui/github-monitor.mjs` | Medium | 14/87 | D | [github-monitor-controller](branch-map-github-monitor-controller.md) | ? |
-| `apps/desktop/ui/locale-auth.mjs` | Medium | 0/0 | G | [entrypoints](branch-map-entrypoints.md) | ? |
-| `apps/desktop/ui/locale-card.mjs` | Medium | 0/0 | G | [entrypoints](branch-map-entrypoints.md) | ? |
+| `apps/desktop/ui/locale-auth.mjs` | Medium | 0/0 | D | [locale-bundles-projection](branch-map-locale-bundles-projection.md) | ? |
+| `apps/desktop/ui/locale-card.mjs` | Medium | 0/0 | D | [locale-bundles-projection](branch-map-locale-bundles-projection.md) | ? |
 | `apps/desktop/ui/locale-catalog.mjs` | Medium | 4/5 | D | [localized-counts-and-card](branch-map-localized-counts-and-card.md) | ? |
 | `apps/desktop/ui/locale-counts.mjs` | Medium | 3/4 | D | [localized-counts-and-card](branch-map-localized-counts-and-card.md) | ? |
-| `apps/desktop/ui/locale-errors.mjs` | Medium | 1/2 | G | [helpers-locales](branch-map-helpers-locales.md) | ? |
-| `apps/desktop/ui/locale-extended.mjs` | Medium | 0/0 | G | [entrypoints](branch-map-entrypoints.md) | ? |
+| `apps/desktop/ui/locale-errors.mjs` | Medium | 1/2 | D | [locale-bundles-projection](branch-map-locale-bundles-projection.md) | ? |
+| `apps/desktop/ui/locale-extended.mjs` | Medium | 0/0 | D | [locale-bundles-projection](branch-map-locale-bundles-projection.md) | ? |
 | `apps/desktop/ui/locale-plurals.mjs` | Medium | 1/4 | D | [localized-counts-and-card](branch-map-localized-counts-and-card.md) | ? |
-| `apps/desktop/ui/locale-surface.mjs` | Medium | 0/0 | G | [entrypoints](branch-map-entrypoints.md) | ? |
-| `apps/desktop/ui/locale-workflow.mjs` | Medium | 0/0 | G | [entrypoints](branch-map-entrypoints.md) | ? |
+| `apps/desktop/ui/locale-surface.mjs` | Medium | 0/0 | D | [locale-bundles-projection](branch-map-locale-bundles-projection.md) | ? |
+| `apps/desktop/ui/locale-workflow.mjs` | Medium | 0/0 | D | [locale-bundles-projection](branch-map-locale-bundles-projection.md) | ? |
 | `apps/desktop/ui/model.mjs` | Medium | 5/15 | D | [model-github-url-admission](branch-map-model-github-url-admission.md) | ? |
 | `apps/desktop/ui/monitor-presentation.mjs` | Medium | 2/5 | D | [metric-presentation](branch-map-metric-presentation.md) | ? |
 | `apps/desktop/ui/native-drag.mjs` | Medium | 2/6 | D | [view-drag-contextmenu](branch-map-view-drag-contextmenu.md) | ? |
@@ -72,10 +72,10 @@ This register is a **source-file navigation and outstanding-evidence checklist**
 | `apps/desktop/ui/runner-collector.mjs` | Medium | 6/32 | D | [runner-collector-exact](branch-map-runner-collector-exact.md) | ? |
 | `apps/desktop/ui/runner-state.mjs` | Medium | 9/28 | D | [runner-state-classification](branch-map-runner-state-classification.md) | ? |
 | `apps/desktop/ui/scan-refresh.mjs` | Medium | 3/10 | D | [repository-menu-scan-queue](branch-map-repository-menu-scan-queue.md) | ? |
-| `apps/desktop/ui/settings-i18n.mjs` | Medium | 1/3 | G | [helpers-locales](branch-map-helpers-locales.md) | ? |
+| `apps/desktop/ui/settings-i18n.mjs` | Medium | 1/3 | D | [locale-bundles-projection](branch-map-locale-bundles-projection.md) | ? |
 | `apps/desktop/ui/settings.mjs` | Critical | 43/203 | D | [settings-quota-card](branch-map-settings-quota-card.md) | ? |
 | `apps/desktop/ui/status-metrics.mjs` | Medium | 3/1 | D | [metric-presentation](branch-map-metric-presentation.md) | ? |
-| `apps/desktop/ui/surface-i18n.mjs` | Medium | 5/16 | G | [helpers-locales](branch-map-helpers-locales.md) | ? |
+| `apps/desktop/ui/surface-i18n.mjs` | Medium | 5/16 | D | [locale-bundles-projection](branch-map-locale-bundles-projection.md) | ? |
 | `apps/desktop/ui/view.mjs` | Medium | 4/14 | D | [view-drag-contextmenu](branch-map-view-drag-contextmenu.md) | ? |
 
 ## Cloudflare relay

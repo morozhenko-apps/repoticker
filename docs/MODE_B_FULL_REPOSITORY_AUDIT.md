@@ -247,6 +247,7 @@ development journal. It is source-derived and does not claim final coverage.
 - [Card view geometry, native drag gesture and browser menu suppression](mode-b/branch-map-view-drag-contextmenu.md)
 - [Quota hover projection, Unicode runner names and bounded sizing](mode-b/branch-map-quota-details-sizing.md)
 - [Isolated GPG signer and protected GitHub subkey provisioning shell](mode-b/branch-map-apt-provisioning-shell.md)
+- [Immutable 20-locale bundles, Settings/Quota exact-key and bidi projections](mode-b/branch-map-locale-bundles-projection.md)
 - [Settings/Quota/Card semantic map and planned negative cases](mode-b/branch-map-settings-quota-card.md)
 - [Git safety, OAuth, ETag and rate gate semantic branch map](mode-b/branch-map-git-oauth.md)
 - [R2/APT release and GitHub monitoring semantic branch map](mode-b/branch-map-release-monitor.md)

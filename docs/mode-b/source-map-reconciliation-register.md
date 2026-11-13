@@ -11,7 +11,7 @@ This register is a **source-file navigation and outstanding-evidence checklist**
 - **I** means only a lexical inventory exists; none of the current 80 rows had to be assigned I after this manual mapping, but that **does not mean** all source branches are tested.
 - **Stage 3–8 closed?** remains **? in every row** because independent required outcomes, N-matrix statuses and cross-component executions are still partial. Do not promote D/G to a test pass or infer executable coverage from a documentation link.
 - Validation of this register used the exact GitHub source matrix and full audit Git tree. There are exactly **80 distinct production paths**, each assigned once, and every primary linked `branch-map` path exists in that tree at the parent SHA.
-- Progress by map granularity: **65 focused / 15 grouped / 0 inventory-only**, **not** a percentage of test coverage or completed stages.
+- Progress by map granularity: **68 focused / 12 grouped / 0 inventory-only**, **not** a percentage of test coverage or completed stages.
 
 ## Native Rust/build
 
@@ -44,7 +44,7 @@ This register is a **source-file navigation and outstanding-evidence checklist**
 | --- | --- | ---: | :---: | --- | :---: |
 | `apps/desktop/ui/about.mjs` | Medium | 4/8 | D | [about-window-controller](branch-map-about-window-controller.md) | ? |
 | `apps/desktop/ui/app.mjs` | Medium | 43/111 | D | [main-card-controller](branch-map-main-card-controller.md) | ? |
-| `apps/desktop/ui/browser-context-menu.mjs` | Medium | 1/0 | G | [helpers-locales](branch-map-helpers-locales.md) | ? |
+| `apps/desktop/ui/browser-context-menu.mjs` | Medium | 1/0 | D | [view-drag-contextmenu](branch-map-view-drag-contextmenu.md) | ? |
 | `apps/desktop/ui/card-i18n.mjs` | Medium | 4/18 | D | [localized-counts-and-card](branch-map-localized-counts-and-card.md) | ? |
 | `apps/desktop/ui/ci-failure-events.mjs` | Medium | 5/33 | D | [ci-events-and-status](branch-map-ci-events-and-status.md) | ? |
 | `apps/desktop/ui/ci-status.mjs` | Medium | 3/9 | D | [ci-events-and-status](branch-map-ci-events-and-status.md) | ? |
@@ -63,7 +63,7 @@ This register is a **source-file navigation and outstanding-evidence checklist**
 | `apps/desktop/ui/locale-workflow.mjs` | Medium | 0/0 | G | [entrypoints](branch-map-entrypoints.md) | ? |
 | `apps/desktop/ui/model.mjs` | Medium | 5/15 | D | [model-github-url-admission](branch-map-model-github-url-admission.md) | ? |
 | `apps/desktop/ui/monitor-presentation.mjs` | Medium | 2/5 | D | [metric-presentation](branch-map-metric-presentation.md) | ? |
-| `apps/desktop/ui/native-drag.mjs` | Medium | 2/6 | G | [helpers-locales](branch-map-helpers-locales.md) | ? |
+| `apps/desktop/ui/native-drag.mjs` | Medium | 2/6 | D | [view-drag-contextmenu](branch-map-view-drag-contextmenu.md) | ? |
 | `apps/desktop/ui/quota-details.mjs` | Medium | 13/24 | G | [helpers-locales](branch-map-helpers-locales.md) | ? |
 | `apps/desktop/ui/quota-size.mjs` | Medium | 1/3 | G | [helpers-locales](branch-map-helpers-locales.md) | ? |
 | `apps/desktop/ui/quota.mjs` | Medium | 17/45 | D | [quota-async-controller](branch-map-quota-async-controller.md) | ? |
@@ -76,7 +76,7 @@ This register is a **source-file navigation and outstanding-evidence checklist**
 | `apps/desktop/ui/settings.mjs` | Critical | 43/203 | D | [settings-quota-card](branch-map-settings-quota-card.md) | ? |
 | `apps/desktop/ui/status-metrics.mjs` | Medium | 3/1 | D | [metric-presentation](branch-map-metric-presentation.md) | ? |
 | `apps/desktop/ui/surface-i18n.mjs` | Medium | 5/16 | G | [helpers-locales](branch-map-helpers-locales.md) | ? |
-| `apps/desktop/ui/view.mjs` | Medium | 4/14 | G | [helpers-locales](branch-map-helpers-locales.md) | ? |
+| `apps/desktop/ui/view.mjs` | Medium | 4/14 | D | [view-drag-contextmenu](branch-map-view-drag-contextmenu.md) | ? |
 
 ## Cloudflare relay
 

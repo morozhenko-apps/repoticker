@@ -244,6 +244,7 @@ development journal. It is source-derived and does not claim final coverage.
 - [GitHub installation authorized pagination and finite redacted errors](mode-b/branch-map-installation-error-provenance.md)
 - [GitHub Actions run/job URL admission and summary projection](mode-b/branch-map-model-github-url-admission.md)
 - [Repository menu geometry, Git/CI row precedence and scan queue](mode-b/branch-map-repository-menu-scan-queue.md)
+- [Card view geometry, native drag gesture and browser menu suppression](mode-b/branch-map-view-drag-contextmenu.md)
 - [Settings/Quota/Card semantic map and planned negative cases](mode-b/branch-map-settings-quota-card.md)
 - [Git safety, OAuth, ETag and rate gate semantic branch map](mode-b/branch-map-git-oauth.md)
 - [R2/APT release and GitHub monitoring semantic branch map](mode-b/branch-map-release-monitor.md)

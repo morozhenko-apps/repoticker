@@ -36,10 +36,10 @@ Each group includes multiple boundaries/outcomes and is **not** a promise that o
 | O3 | OAuth | N5,N10,N12 | Integration | credential write/delete failure cannot publish connected or stale cached credentials | github_session.rs | NEEDS_ADAPTER |
 | E1 | ETag | N4,N5,N6 | Unit | 304 after path/epoch/scope changes refuses private stale projection | github_etag_cache.rs | VERIFY | E_PARTIAL |
 | R1 | Rate gate | N2,N3,N8 | Unit | 429 without Retry-After plus invalid reset and backward clock remains bounded | github_rate_gate.rs | VERIFY | E_PARTIAL |
-| D1 | Distribution | N3,N12 | Integration | isolated failure at each staged signed-publication boundary leaves no receipt/latest | test_release_r2_contract.py | VERIFY |
-| D2 | Distribution | N4,N5 | Integration | concurrent immutable/create + mutable CAS does not overwrite other producer | test_release_r2_contract.py | VERIFY |
-| D3 | Distribution | N1,N2,N6,N7 | Integration | bad signature/package fields/checksum/symlink reject before remote access | test_release_r2_contract.py;test_release_assets.py | VERIFY |
-| D4 | Distribution | N3,N10 | Integration | HTTP 200 truncation or tainted readback cannot certify release | test_release_r2_contract.py | VERIFY |
+| D1 | Distribution | N3,N12 | Integration | isolated failure at each staged signed-publication boundary leaves no receipt/latest | test_release_r2_contract.py | VERIFY | E_PARTIAL |
+| D2 | Distribution | N4,N5 | Integration | concurrent immutable/create + mutable CAS does not overwrite other producer | test_release_r2_contract.py | VERIFY | E_PARTIAL |
+| D3 | Distribution | N1,N2,N6,N7 | Integration | bad signature/package fields/checksum/symlink reject before remote access | test_release_r2_contract.py;test_release_assets.py | VERIFY | E_PARTIAL |
+| D4 | Distribution | N3,N10 | Integration | HTTP 200 truncation or tainted readback cannot certify release | test_release_r2_contract.py | VERIFY | E_PARTIAL |
 | M1 | Monitor | N3,N5 | Integration | task-only refresh with partial page while owner switches | github-monitor.test.mjs | VERIFY |
 | M2 | Monitor | N4,N5,N8 | Integration | cooldown boundary during forced refresh, logout, and late response | github-monitor.test.mjs | VERIFY |
 | M3 | Monitor | N1,N2,N6 | Unit | runner page 0/1/page limit/+1 and corrupt field never fabricates complete counts | runner-collector.test.mjs | VERIFY |
@@ -107,3 +107,7 @@ L2, L3 and S3 have additional `E_PARTIAL` credits from real imported JS/Settings
 ## Confirmed gaps after checking existing Relay tests
 
 Cases L1/L4/L7/L8/L9 are now `NEW_GAP_CONFIRMED`, not merely guessed from filenames. See [relay-exact-new-test-spec.md](relay-exact-new-test-spec.md): it records exact production branch, competing test suites searched, deterministic fixture shape, Given/When/Then assertions and cross-platform adapter caveats. This is a *test plan*, not implemented code.
+
+## Real R2/APT release assertions credited
+
+D1–D4 now have `E_PARTIAL` evidence from the existing **real `release.publish`, `release.upload` and `release.public_readback` implementation**, with offline network byte-contract fakes and temporary files. See [verified-assertions-release-r2.md](verified-assertions-release-r2.md); exact remaining unproven combinations are listed there. No hosted R2 call or CI rerun was made.

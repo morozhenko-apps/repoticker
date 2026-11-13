@@ -369,6 +369,15 @@ and mutation sensitivities. They are not implemented or executed.
 The clock rollback policy is an unresolved invariant question,
 not permission to invent behavior.
 
+## Actual release-publication assertion review
+
+The existing Python R2/APT tests execute real release functions
+against offline adapters. D1/D2/D3/D4 gained `E_PARTIAL` evidence
+for fail-closed publication stages, immutable/mutable compare-and-swap,
+signed index checking and full public readback. See
+[verified-assertions-release-r2.md](mode-b/verified-assertions-release-r2.md).
+No hosted release or new test suite was executed.
+
 ## Inventory appendices
 
 The per-file method inventory, branch map, Positive/N1–N12 matrix,

@@ -57,7 +57,7 @@ Evidence labels in this file: **E** = test calls the real relevant Rust method, 
 - **MC2 N1/N2:** table-driven summary shape, JSON serialized byte limit and UTF-8 status length/newline; every rejected call must leave previously accepted cache state unchanged and emit no event.
 - **MC3 N4/N5/N12:** deterministic poisoned mutex, concurrent read/write, repeated same-state publish and failed event sink. Do not introduce sleeps; test real locking.
 - **MC4 N7/N10:** canary-only additional JSON key, actual Tauri caller permissions and source-to-sink redaction. Decide issue #25 *before* expecting a changed reject/project contract.
-- **MC5 OS/N9:** Qt/KDE? **No**: actual application uses GTK/WebKitGTK on KDE and WebView2 on Windows. Run native shutdown/readback acceptance, not JS regex.
+- **MC5 OS/N9:** Actual application uses GTK/WebKitGTK on KDE and WebView2 on Windows. Run native shutdown/readback acceptance, not JS regex.
 
 Mutation guards to kill: shape `||`→`&&`; size `>`→`>=`; message bytes `>`→`>=`; remove LF guard; replace conditional disconnected clear with unconditional keep; move validation after state write; remove event; remove poisoned-lock fallback. Each requires an exact failing assertion, not a source-text existence check.
 

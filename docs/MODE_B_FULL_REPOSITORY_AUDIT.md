@@ -331,6 +331,34 @@ See [verified-assertions-protocol-limits.md](mode-b/verified-assertions-protocol
 Each group remains partially covered until all listed variants are
 implemented or proved by another existing assertion.
 
+## Current inspected-assertion checkpoint (2026-11-13)
+
+**No additional production or test code has been written or executed.**
+Existing executable assertions were inspected and partly credited in 14
+case groups: G1/G2/O2/E1/R1, S1/S2/Q1/Q2/L5/L6, and L2/L3/S3.
+`E_PARTIAL` means **specific** outputs and mutations have matching
+assertions; uninspected independent branches remain planned.
+
+- [Git/OAuth/ETag executable assertion receipts](mode-b/verified-assertions-git-auth.md)
+- [Settings/Quota/Relay executable assertion receipts](mode-b/verified-assertions-settings-quota-relay.md)
+- [Protocol body/cursor and 100/101 selected repositories](mode-b/verified-assertions-protocol-limits.md)
+- [Static dictionaries and shell/PowerShell entrypoint coverage](mode-b/branch-map-entrypoints.md)
+
+`ci-pr-scope.sh` is additionally confirmed to have real subprocess
+integration tests with temporary Git repositories, rather than merely
+regex-based tests. In contrast, `install_qa_linux.sh` needs an
+isolated CLI contract fake to test failed SHA/checksum/package verification
+**without executing privileged `sudo apt` operations**.
+
+The unconfirmed historical WebKit issue #23 is CLOSED and no longer
+blocks release as an active speculative P0. Mode B native Quit smoke
+remains separately applicable.
+
+Remaining Stage 3–8 work: audit the complete 707-method lexical register
+(anonymous callbacks, Rust conditional compilation and short-circuit
+branches) and inspect assertions for remaining group-level `VERIFY`
+cases. Stage 9 implementation and Stage 11 final STABLE/FLAKY execution
+still require completion of the mandatory earlier stages.
 ## Inventory appendices
 
 The per-file method inventory, branch map, Positive/N1–N12 matrix,

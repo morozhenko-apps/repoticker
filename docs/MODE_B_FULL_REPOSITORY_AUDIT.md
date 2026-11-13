@@ -218,6 +218,7 @@ development journal. It is source-derived and does not claim final coverage.
 - [Runner REST collector pagination, shared concurrency and scope map](mode-b/branch-map-runner-collector-exact.md)
 - [Pure runner/job classification, coverage and idempotent duplicates map](mode-b/branch-map-runner-state-classification.md)
 - [GitHub monitor authorization, cache transaction and async races map](mode-b/branch-map-github-monitor-controller.md)
+- [Completed CI runs, silent-baseline alerts and exact identity projection](mode-b/branch-map-ci-events-and-status.md)
 - [Settings/Quota/Card semantic map and planned negative cases](mode-b/branch-map-settings-quota-card.md)
 - [Git safety, OAuth, ETag and rate gate semantic branch map](mode-b/branch-map-git-oauth.md)
 - [R2/APT release and GitHub monitoring semantic branch map](mode-b/branch-map-release-monitor.md)

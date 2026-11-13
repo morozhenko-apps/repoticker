@@ -170,6 +170,7 @@ development journal. It is source-derived and does not claim final coverage.
 - [Cloudflare Relay hub SQLite, WebSocket and DO controller map](mode-b/branch-map-relay-hub-sqlite.md)
 - [Cloudflare Worker webhook and native private subscription map](mode-b/branch-map-relay-worker-router.md)
 - [Cloudflare TypeScript Durable Object and Worker entrypoint L9 map](mode-b/branch-map-relay-cloudflare-entry.md)
+- [Relay protocol, bounded body and raw HMAC L1 branch map](mode-b/branch-map-relay-protocol-crypto.md)
 - [Settings/Quota/Card semantic map and planned negative cases](mode-b/branch-map-settings-quota-card.md)
 - [Git safety, OAuth, ETag and rate gate semantic branch map](mode-b/branch-map-git-oauth.md)
 - [R2/APT release and GitHub monitoring semantic branch map](mode-b/branch-map-release-monitor.md)

@@ -378,6 +378,37 @@ signed index checking and full public readback. See
 [verified-assertions-release-r2.md](mode-b/verified-assertions-release-r2.md).
 No hosted release or new test suite was executed.
 
+## Completed group-level triage (not complete Mode B)
+
+All **51 scenario groups** in the
+[planned-case-register.md](mode-b/planned-case-register.md) now have
+a concrete disposition after source and runnable test-body review:
+
+| Status | Groups | Interpretation |
+| --- | ---: | --- |
+| E_PARTIAL | 31 | Real existing assertions establish **some** required outcomes; unfinished independent branches still planned |
+| NEW_GAP_CONFIRMED | 7 | No matching direct behavioral assertion found for the specified outcome; write tests after Stages 3–8 |
+| PHYSICAL | 10 | KDE/Windows/Keyring/native compositor acceptance, not derivable from unit/regex tests |
+| NEW_HARNESS | 1 | Instrument real `app.mjs` main controller under external IPC/DOM adapters |
+| NEEDS_ADAPTER | 1 | Native credential-store failure path needs a contract-seamed adapter, no altered behavior |
+| ARCH_STOP_IF_FIX | 1 | Monitor IPC schema restriction might change trust/public contract; decision required before fixing |
+
+The **seven confirmed missing groups** are L1 (body reader absent
+with claimed length), L4 (DO automatic ping response), L7 (DO
+webSocketClose), L8 (backward-clock history/rate behavior), L9
+(Cloudflare TypeScript DO adapter), Q3 (out-of-order popup kind/
+locale/scope) and A2 (double Fetch/Safe Sync admission/cancellation).
+No arbitrary new test quota is inferred from these seven groups.
+
+Group triage is **not** the Stage 4/8 per-method completion required
+by the Mode B SSOT. The method-level discovery index has 707 lexical
+candidates and 1,721 prior control-flow anchors; exact branch-to-
+assertion coverage remains to be reconciled, including anonymous
+callbacks, early returns, cfg paths and compound conditions. The
+instrumented UI branch coverage remains at its baseline 46.28% and
+`app.mjs` is not measured. We must not skip these gaps or mark
+Stage 9 completed.
+
 ## Inventory appendices
 
 The per-file method inventory, branch map, Positive/N1–N12 matrix,

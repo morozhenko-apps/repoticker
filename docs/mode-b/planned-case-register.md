@@ -8,15 +8,15 @@ Each group includes multiple boundaries/outcomes and is **not** a promise that o
 
 | Case group | Domain | N applicability | Level | Required observable assertion / boundaries | Existing candidate | State |
 | --- | --- | --- | --- | --- | --- | --- |
-| L1 | Relay | N1,N6,N7 | Unit | no reader vs nonzero Content-Length; fail closed with no hang | mode-b-relay-protocol | VERIFY |
+| L1 | Relay | N1,N6,N7 | Unit | no reader vs nonzero Content-Length; fail closed with no hang | mode-b-relay-protocol | VERIFY | NEW_GAP_CONFIRMED |
 | L2 | Relay | N1,N2,N3 | Unit | non-byte stream chunks and failed cancel; exact body cap; bounded error | mode-b-relay-protocol | VERIFY | E_PARTIAL |
 | L3 | Relay | N2,N7 | Unit | cursor query too long/duplicate/unknown; reject before DO access | mode-b-relay-protocol | VERIFY | E_PARTIAL |
-| L4 | Relay | N4,N5 | Integration | Durable Object constructor auto-response supported/unsupported; install once | relay-hub | VERIFY |
+| L4 | Relay | N4,N5 | Integration | Durable Object constructor auto-response supported/unsupported; install once | relay-hub | VERIFY | NEW_GAP_CONFIRMED |
 | L5 | Relay | N1,N6,N7,N12 | Integration | bad JSON/internal schema receives 400/422 and performs no SQL write | relay-hub | VERIFY | E_PARTIAL |
 | L6 | Relay | N3,N5 | Integration | 0 subscribers, failed websocket close/send, backpressured buffer; healthy peers unaffected | relay-hub | VERIFY | E_PARTIAL |
-| L7 | Relay | N4,N5 | Integration | webSocketClose with socket open/closed; no double close or leaked handler | relay-hub | VERIFY |
-| L8 | Relay | N2,N8 | Integration | clock rollback across rate limit/history expiry cannot bypass 120/min and 24h | relay-hub | VERIFY |
-| L9 | Relay | N4,N9 | Integration | Cloudflare RelayHub public adapter delegates each callback to controller | relay-worker | VERIFY |
+| L7 | Relay | N4,N5 | Integration | webSocketClose with socket open/closed; no double close or leaked handler | relay-hub | VERIFY | NEW_GAP_CONFIRMED |
+| L8 | Relay | N2,N8 | Integration | clock rollback across rate limit/history expiry cannot bypass 120/min and 24h | relay-hub | VERIFY | NEW_GAP_CONFIRMED |
+| L9 | Relay | N4,N9 | Integration | Cloudflare RelayHub public adapter delegates each callback to controller | relay-worker | VERIFY | NEW_GAP_CONFIRMED |
 | S1 | Settings | N5,N6,N7 | Integration | stale Keyring status vs reopened Hybrid window and newer phase; no false online | settings-github-confirm | VERIFY | E_PARTIAL |
 | S2 | Settings | N4,N5,N12 | Integration | ordered save+commit with each failure injected; stage preserved/rolled back; no double store | settings-github-confirm | VERIFY | E_PARTIAL |
 | S3 | Settings | N1,N2,N6,N9 | Unit/Integration | 0,1,100,101 repository and installation page; malformed rows fail closed | settings-github-confirm | VERIFY | E_PARTIAL |
@@ -103,3 +103,7 @@ The S1, S2, Q1, Q2, L5 and L6 groups now have **partial real controller/DO asser
 ## Verified protocol boundary and Settings inventory assertions
 
 L2, L3 and S3 have additional `E_PARTIAL` credits from real imported JS/Settings controller tests. See [verified-assertions-protocol-limits.md](verified-assertions-protocol-limits.md). Remaining variants are specifically named there; no test was rerun.
+
+## Confirmed gaps after checking existing Relay tests
+
+Cases L1/L4/L7/L8/L9 are now `NEW_GAP_CONFIRMED`, not merely guessed from filenames. See [relay-exact-new-test-spec.md](relay-exact-new-test-spec.md): it records exact production branch, competing test suites searched, deterministic fixture shape, Given/When/Then assertions and cross-platform adapter caveats. This is a *test plan*, not implemented code.

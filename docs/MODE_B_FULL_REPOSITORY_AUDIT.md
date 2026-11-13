@@ -359,6 +359,16 @@ Remaining Stage 3–8 work: audit the complete 707-method lexical register
 branches) and inspect assertions for remaining group-level `VERIFY`
 cases. Stage 9 implementation and Stage 11 final STABLE/FLAKY execution
 still require completion of the mandatory earlier stages.
+## Confirmed relay test gaps
+
+Five Relay case groups (L1/L4/L7/L8/L9) are now
+`NEW_GAP_CONFIRMED` after inspecting all applicable existing
+relay tests. The [exact test specifications](mode-b/relay-exact-new-test-spec.md)
+name owning source branches, external fixtures, strong assertions,
+and mutation sensitivities. They are not implemented or executed.
+The clock rollback policy is an unresolved invariant question,
+not permission to invent behavior.
+
 ## Inventory appendices
 
 The per-file method inventory, branch map, Positive/N1–N12 matrix,

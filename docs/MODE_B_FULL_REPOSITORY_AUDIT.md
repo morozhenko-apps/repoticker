@@ -153,6 +153,7 @@ development journal. It is source-derived and does not claim final coverage.
 - [Native GitHub rate gate exact method/branch map](mode-b/branch-map-rate-gate.md)
 - [Native GitHub ETag cache exact method/branch map](mode-b/branch-map-etag-cache.md)
 - [Native Relay endpoint and WebSocket URL branch map](mode-b/branch-map-relay-endpoint.md)
+- [Native OAuth wire parser and redaction branch map](mode-b/branch-map-oauth-wire.md)
 - [Settings/Quota/Card semantic map and planned negative cases](mode-b/branch-map-settings-quota-card.md)
 - [Git safety, OAuth, ETag and rate gate semantic branch map](mode-b/branch-map-git-oauth.md)
 - [R2/APT release and GitHub monitoring semantic branch map](mode-b/branch-map-release-monitor.md)

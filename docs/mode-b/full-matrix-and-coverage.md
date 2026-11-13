@@ -1,7 +1,7 @@
 # Mode B full-source Positive/N1–N12 matrix and coverage ledger
 
 **Baseline SHA:** `5b07a3273a27516af8ceb793f0d427a1bada964b`.
-**Branch-map ownership reconciliation:** see [source-map-reconciliation-register.md](source-map-reconciliation-register.md) for every one of the 80 source files and its focused or grouped source map. D/G denotes documentation ownership **only**; every current matrix question mark remains unresolved until direct assertion review and applicable N1–N12 outcomes are closed.
+**Branch-map ownership reconciliation:** see [source-map-reconciliation-register.md](source-map-reconciliation-register.md). All 80 production files now route to a focused source map (one map may focus on multiple closely related files); no group-only or inventory-only rows remain. This is documentation ownership **only**: original question marks remain unresolved pending full method-level E/P/OS/NA and applicable N1–N12 outcomes. The [Stage 3–8 assertion closure queue](stage-3-8-assertion-closure-queue.md) lists concrete independent remaining proof.
 
 **Source equivalence:** the later `dev` SHA
 `a3ba7fa30fc4c81890d3075f94142942d001cbf3` contains 21 later

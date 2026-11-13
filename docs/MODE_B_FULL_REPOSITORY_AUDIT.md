@@ -90,12 +90,12 @@ changes merely to report test progress.
 | --- | --- | --- | --- |
 | 1 | Repository Scan | COMPLETE | Tracked tree, test suites, strict and preflight workflow entrypoints inventoried |
 | 2 | Risk and invariant analysis | COMPLETE | Risk families and fail-closed requirements documented below |
-| 3 | Exhaustive Test Inventory | METHOD DISCOVERY PREPARED; SEMANTIC REVIEW OPEN | 80 production files, 707 lexical named method/type entries (218 public/export candidates), 9 static dictionary or top-level command entrypoints; exact public/anonymous and cfg classification pending |
+| 3 | Exhaustive Test Inventory | 80/80 FILE-LEVEL FOCUSED ROUTING COMPLETE; METHOD CLASSIFICATION OPEN | Every source file has a focused branch-map owner; 707 lexical method/type entries (218 public/export candidates) and 9 catalog/command entrypoints still need executable vs data/impl/cfg classification. |
 | 4 | Executable Branch Map | ALL MAJOR FAMILIES PREMAPPED; OUTCOME MAP PARTIAL | Relay, Settings/Quota/Card, Git/OAuth, release/monitor, native OS, UI helpers and locales mapped; ~1721 lexical anchors still need exact executable outcomes + assertion evidence |
 | 5 | Positive and N1–N12 matrix | INITIAL FILE MATRIX COMPLETE; EVIDENCE PENDING | 80 file rows × 13 columns populated with '?' or reasoned NA; method-level coverage needs actual assertions before upgrading '?'. |
 | 6 | Meaningful Interaction Matrix | CASE REGISTER PREPARED; EXHAUSTIVENESS OPEN | 51 case groups listed including 10 platform physical groups, with N1–N12 tags and independent state combinations; not implemented-test counts |
 | 7 | Coverage estimation | PRELIMINARY | Method planning floors and 51 grouped obligations documented, exact tests per semantic branch not yet reconciled with existing assertions |
-| 8 | File-level Coverage Map | FILE COVERAGE INDEXED; ASSERTIONS PENDING | 80/80 production files and 707 method/type candidates indexed; node UI branch coverage 46.28% on instrumented modules; no global branch-level PASS |
+| 8 | File-level Coverage Map | ALL 80 SOURCE MAPS ROUTED; ASSERTION CLOSURE PENDING | 80/80 source files route to a focused map; 707 lexical method/type entries still need per-branch E/P/OS/NA evidence; Node UI branch coverage 46.28% on instrumented modules only. |
 | 9 | Implement every planned case | BLOCKED BY STAGES 3–8 | No representative sampling, no contract-weakening or mocking subject under test |
 | 10 | Mutation Review | PENDING | Identify exact operator/guard/ordering/state mutations killed by key assertions |
 | 11 | Final STABLE/FLAKY execution | PENDING NEW CHANGES | Once only after Stages 1–10. Baseline Strict PASS above is not a new final gate |
@@ -248,6 +248,7 @@ development journal. It is source-derived and does not claim final coverage.
 - [Quota hover projection, Unicode runner names and bounded sizing](mode-b/branch-map-quota-details-sizing.md)
 - [Isolated GPG signer and protected GitHub subkey provisioning shell](mode-b/branch-map-apt-provisioning-shell.md)
 - [Immutable 20-locale bundles, Settings/Quota exact-key and bidi projections](mode-b/branch-map-locale-bundles-projection.md)
+- [Stage 3–8 method-assertion closure queue and Stage 9 prerequisites](mode-b/stage-3-8-assertion-closure-queue.md)
 - [Settings/Quota/Card semantic map and planned negative cases](mode-b/branch-map-settings-quota-card.md)
 - [Git safety, OAuth, ETag and rate gate semantic branch map](mode-b/branch-map-git-oauth.md)
 - [R2/APT release and GitHub monitoring semantic branch map](mode-b/branch-map-release-monitor.md)

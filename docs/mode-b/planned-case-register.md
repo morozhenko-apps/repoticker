@@ -88,7 +88,7 @@ Total scenario groups: 51. Native/physical groups: 10. Counts below are group ap
 
 - `app.mjs` not instrumented in current Node UI coverage, not demonstrably 0%; plan executable lifecycle fixture (A1).
 - `monitor_cache.rs` privacy/data-shape discrepancy is tracked as GitHub issue #25. The intended schema must be decided before tightening IPC production behavior.
-- Intermittent `WebKitWebProcess` SIGABRT is tracked in GitHub issue #23; one normal exit is not closure.
+- Native shutdown acceptance remains in OS-Q1. Historical one-off WebKitGTK child SIGABRT issue #23 was **closed as unconfirmed/not planned** on the owner's request and is not an open release blocker. Only a new attributable failure with a reproducible path warrants a defect.
 - Cloudflare `ALLOWED_REPOSITORIES` retention proven for one deploy, but live WSS/webhook acceptance on current code remains a separate check (issue #24).
 
 

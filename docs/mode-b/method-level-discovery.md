@@ -60,18 +60,21 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 
 ## `apps/desktop/src-tauri/src/github_etag_cache.rs`
 
+**Method assertion evidence:** [Auth ETag cache, monotonic rate gate and private OAuth wire parsers](method-assertions-github-cache-rate-wire.md). Direct pure Rust tests distinguished from native AppHandle/OS callbacks.
+
+
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
 | 25 | `pub struct GitHubETagCache {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
 | 29 | `pub struct CacheLookup {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
-| 34 | `fn valid_etag(etag: &str) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 43 | `fn cacheable(path: &str) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 34 | `fn valid_etag(etag: &str) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
+| 43 | `fn cacheable(path: &str) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
 | 48 | `impl GitHubETagCache {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | IMPL_BLOCK |
-| 49 | `pub fn snapshot(&self, path: &str) -> CacheLookup {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 66 | `pub fn unchanged(&self, generation: u64) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 74 | `pub fn not_modified(&self, path: &str, lookup: &CacheLookup) -> Option<Value> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 88 | `pub fn invalidate(&self) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 96 | `pub fn save(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 49 | `pub fn snapshot(&self, path: &str) -> CacheLookup {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 66 | `pub fn unchanged(&self, generation: u64) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 74 | `pub fn not_modified(&self, path: &str, lookup: &CacheLookup) -> Option<Value> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 88 | `pub fn invalidate(&self) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 96 | `pub fn save(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
 
 ## `apps/desktop/src-tauri/src/github_native.rs`
 
@@ -104,35 +107,41 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 
 ## `apps/desktop/src-tauri/src/github_oauth_wire.rs`
 
+**Method assertion evidence:** [Auth ETag cache, monotonic rate gate and private OAuth wire parsers](method-assertions-github-cache-rate-wire.md). Direct pure Rust tests distinguished from native AppHandle/OS callbacks.
+
+
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
 | 14 | `pub enum WireError {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
 | 20 | `pub struct DeviceChallenge {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
 | 25 | `impl DeviceChallenge {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | IMPL_BLOCK |
-| 26 | `pub fn device_code(&self) -> &str {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 26 | `pub fn device_code(&self) -> &str {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
 | 31 | `impl std::fmt::Debug for DeviceChallenge {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | IMPL_BLOCK |
-| 32 | `fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 32 | `fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
 | 41 | `pub struct TokenLease {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
 | 48 | `impl std::fmt::Debug for TokenLease {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | IMPL_BLOCK |
-| 49 | `fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 49 | `fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
 | 60 | `pub enum PollReply {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
-| 65 | `fn object(input: &str) -> Result<Value, WireError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 76 | `fn valid_ascii_token(value: &str, max_len: usize) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 80 | `pub fn parse_device_challenge(input: &str, started_at: u64) -> Result<DeviceChallenge, WireError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 108 | `pub fn parse_token_reply(input: &str) -> Result<PollReply, WireError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 65 | `fn object(input: &str) -> Result<Value, WireError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
+| 76 | `fn valid_ascii_token(value: &str, max_len: usize) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
+| 80 | `pub fn parse_device_challenge(input: &str, started_at: u64) -> Result<DeviceChallenge, WireError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 108 | `pub fn parse_token_reply(input: &str) -> Result<PollReply, WireError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
 
 ## `apps/desktop/src-tauri/src/github_rate_gate.rs`
+
+**Method assertion evidence:** [Auth ETag cache, monotonic rate gate and private OAuth wire parsers](method-assertions-github-cache-rate-wire.md). Direct pure Rust tests distinguished from native AppHandle/OS callbacks.
+
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
 | 13 | `pub struct GitHubRateGate {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
 | 17 | `impl GitHubRateGate {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | IMPL_BLOCK |
-| 18 | `pub fn remaining_seconds(&self) -> u64 {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 29 | `pub fn defer(&self, duration: Duration) {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 38 | `fn bounded_seconds(input: Option<&str>) -> Option<u64> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 47 | `pub fn backoff_duration(` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 68 | `pub fn now_unix() -> u64 {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 77 | `pub fn github_api_cooldown_seconds(app: AppHandle) -> u64 {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 18 | `pub fn remaining_seconds(&self) -> u64 {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 29 | `pub fn defer(&self, duration: Duration) {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 38 | `fn bounded_seconds(input: Option<&str>) -> Option<u64> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
+| 47 | `pub fn backoff_duration(` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 68 | `pub fn now_unix() -> u64 {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 77 | `pub fn github_api_cooldown_seconds(app: AppHandle) -> u64 {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
 
 ## `apps/desktop/src-tauri/src/github_session.rs`
 

@@ -110,6 +110,10 @@ changes merely to report test progress.
 
 [Four more exact method/test receipts](mode-b/method-evidence-crosswalk-monitor-projections.md) now reconcile `status-metrics.mjs`, `github-installations.mjs`, `ci-status.mjs` and `github-errors.mjs`. The register documents 16 relevant existing test bodies and unresolved zero/MAX, 10-page pagination, CI scope and raw-error DOM boundaries. Across two crosswalks, **eight of 80 Stage 8 file rows** now contain real E/I assertion evidence plus named P/OS gaps. This **does not** turn their global Stage 5 `?` into `✔` or replace full AST source coverage. All suites deferred.
 
+### Third Stage 4–8 evidence migration: Git Core and JSON preferences
+
+[Direct Rust source and test receipts](mode-b/method-evidence-crosswalk-core-git-config.md) reconcile actual `git.rs` integration tests against enrolled path admission, Safe Pull/Push/Sync, no-force refs/hooks, owned Fetch cancellation and `config_store.rs` against atomic backup/recovery/16-thread transactions. Two Stage 8 Covered/Remaining rows now include E/P/OS evidence; **10 of 80** mapped so far. Native Tauri A2, denied fsync/rename, cross-process and Windows acceptance remain outstanding. No Stage 5 `✔`, no code/test/CI execution.
+
 ## Twelve-stage progress ledger
 
 | Stage | Contract | State | Completion evidence / next action |

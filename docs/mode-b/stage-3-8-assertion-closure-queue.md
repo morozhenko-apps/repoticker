@@ -86,6 +86,10 @@ All 29 remaining unknown rendered rows classified: 10 E_PARTIAL, 9 I_PARTIAL, 5 
 
 [Source and test line crosswalk](method-evidence-crosswalk-monitor-projections.md) now reconciles `status-metrics.mjs`, `github-installations.mjs`, `ci-status.mjs` and `github-errors.mjs`. Sixteen existing relevant test bodies call real imports or a real cross-module consumer. Stage 8 `Covered`/`Remaining` rows record evidence and explicit 0/1/MAX, 10×100 pagination, identity and redaction gaps. **Eight of 80 file rows** have direct crosswalk receipts across both focused migrations; no globally complete Stage 5 cell, no new test, CI or code execution.
 
+### Stage 4–8 third evidence transfer: Git core and atomic JSON config (2026-11-14)
+
+[Real Rust source-to-assertion crosswalk](method-evidence-crosswalk-core-git-config.md) details `git.rs` using 30 annotated integration tests with actual disposable Git repositories and source-reviewed inline cancellation cases, plus `config_store.rs` with 15 directly inspected file/concurrency tests. Their Stage 8 rows are now E/P linked. **10/80** file rows now have exact crosswalk receipts; statuses remain partial and all 810 applicable Stage 5 unknowns remain open. No tests rerun.
+
 ## Separate the executable test queue from policy STOP factors
 
 | Track / relevant source | What remains to map before Stage 9 | Proposed deterministic case IDs and exact proof needed | Stage 9 prerequisites |

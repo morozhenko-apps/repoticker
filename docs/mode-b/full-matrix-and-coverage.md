@@ -152,6 +152,10 @@ The [exact source-guard-to-test crosswalk](method-evidence-crosswalk-ui-worker.m
 
 [Actual monitor-projection test-to-guard crosswalk](method-evidence-crosswalk-monitor-projections.md) adds partial E/I source assertions to Stage 8 Covered/Remaining for `status-metrics.mjs`, `github-installations.mjs`, `ci-status.mjs` and `github-errors.mjs`. The first crosswalk migrated scan/gesture/Worker; **eight of 80 Stage 8 rows now have directly inspected case receipts, not completed branch signoff**. Stage 5 remains **810 `?`, 230 `✖`, 0 `✔`**.
 
+### Stage 4–8 third evidence transfer: real Rust Git and JSON persistence (2026-11-14)
+
+[Crosswalk for real disposable Git remotes and 15 Rust config-store tests](method-evidence-crosswalk-core-git-config.md) now fills Stage 8 E/P evidence in `crates/repoticker-core/src/git.rs` and `config_store.rs`. This is **10 of 80 Stage 8 file rows** with exact sourced assertions/remaining gaps. A2 native Git dispatcher and OS file/storage acceptance remain unverified. **No Stage 5 cell is promoted:** 810 `?`, 230 `✖`, 0 `✔`.
+
 ## Stage 8: per-file source Coverage Map (not yet completed)
 
 | Production artifact | Functions/types | Source branch candidates | Covered | Remaining | Inventory |
@@ -217,8 +221,8 @@ The [exact source-guard-to-test crosswalk](method-evidence-crosswalk-ui-worker.m
 | `apps/relay-cloudflare/src/webhook-verify.mjs` | 1 | 4 lexical | [HMAC: 4 real method tests](method-evidence-crosswalk-ui-worker.md) (1 static entrypoint check separated) | WH1 empty bytes/crypto exceptions; Worker size boundary and hosted adapter | [inventory-core-relay.md](inventory-core-relay.md) |
 | `apps/relay-cloudflare/src/worker.mjs` | 1 | 18 lexical | [Worker: 24 real method tests](method-evidence-crosswalk-ui-worker.md) with DO stub (not hosted Worker) | RW1–RW5 signed boundary, exceptions, browser-header/query, Worker→Hub and HOST gate | [inventory-core-relay.md](inventory-core-relay.md) |
 | `crates/repoticker-core/src/bounded.rs` | 1 | 5 lexical | Not measured per branch; candidate source suites indexed | Exact assertions and platform outcomes unverified | [inventory-core-relay.md](inventory-core-relay.md) |
-| `crates/repoticker-core/src/config_store.rs` | 15 | 15 lexical | Not measured per branch; candidate source suites indexed | Exact assertions and platform outcomes unverified | [inventory-core-relay.md](inventory-core-relay.md) |
-| `crates/repoticker-core/src/git.rs` | 68 | 83 lexical | Not measured per branch; candidate source suites indexed | Exact assertions and platform outcomes unverified | [inventory-core-relay.md](inventory-core-relay.md) |
+| `crates/repoticker-core/src/config_store.rs` | 15 | 15 lexical | [15 actual inline Rust config assertions](method-evidence-crosswalk-core-git-config.md): backup, corruption, 16-thread mutex, Unix 0600 | P atomic write/fsync failures, mutex poison, external writer/Windows ACL and physical interruption | [inventory-core-relay.md](inventory-core-relay.md) |
+| `crates/repoticker-core/src/git.rs` | 68 | 83 lexical | [actual Rust Git fixture & process assertions](method-evidence-crosswalk-core-git-config.md): 30 integration annotations + checked inline guards | P same-count upstream races, malformed refs, native A2 lock/Quit, Windows owned-process cancellation | [inventory-core-relay.md](inventory-core-relay.md) |
 | `crates/repoticker-core/src/github_auth.rs` | 14 | 10 lexical | Not measured per branch; candidate source suites indexed | Exact assertions and platform outcomes unverified | [inventory-core-relay.md](inventory-core-relay.md) |
 | `crates/repoticker-core/src/lib.rs` | 3 | 6 lexical | Not measured per branch; candidate source suites indexed | Exact assertions and platform outcomes unverified | [inventory-core-relay.md](inventory-core-relay.md) |
 | `crates/repoticker-core/src/relay.rs` | 10 | 15 lexical | Not measured per branch; candidate source suites indexed | Exact assertions and platform outcomes unverified | [inventory-core-relay.md](inventory-core-relay.md) |

@@ -90,6 +90,10 @@ changes merely to report test progress.
 
 [Bounded source-exact four-file closure slice](mode-b/stage-4-8-trust-closure-slice.md) now maps exact existing Node assertions, untested branch outcomes, Positive/N1–N12 relevance, seven cross-boundary interactions, per-file E/P/OS and **16 additional independently observable test bodies minimum**. The number is not a global test estimate or an executed result. The `safeRunUrl` vs `safeActionsJobUrl` admissible URL policy remains STOP for any implementation change. The global Stage 4–8 gates remain PARTIAL.
 
+### Stage 4–8 continued: Card/monitor/scan race evidence
+
+[Source-exact main-card, monitor and scan closure slice](mode-b/stage-4-8-card-monitor-scan-slice.md) maps the existing seven scan tests and four monitor suites (30, 12, 11 and 26 test bodies), while keeping the missing **real app.mjs import/DOM/Tauri harness** distinct from source regex assertions. It names eight cross-domain races and a bounded **15 independent new test bodies minimum**; actual case execution and physical OS evidence remain outstanding. No production trust or persistence policy changed; Stages 3–8 globally remain PARTIAL.
+
 ## Twelve-stage progress ledger
 
 | Stage | Contract | State | Completion evidence / next action |

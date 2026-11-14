@@ -66,6 +66,10 @@ All 29 remaining unknown rendered rows classified: 10 E_PARTIAL, 9 I_PARTIAL, 5 
 
 [Full decision/negative/interaction/coverage ledger](stage-4-8-trust-closure-slice.md) links real test functions to source guards for `model.mjs`, `native-drag.mjs`, `webhook-verify.mjs` and `worker.mjs`. It separates existing E/I from planned P and physical OS, gives a local **16-independent-body minimum** (parameterized subcases excluded), and preserves the `safeRunUrl` trust-policy STOP. **These four files remain PARTIAL; this is a bounded Stage 4–8 slice, not all 80 files.** No suites, code, CI or deployment executed.
 
+### Stage 4–8 cross-controller closure slice: main Card, GitHub monitoring and scan queue (2026-11-14)
+
+[Actual assertions, branch decisions, N1–N12, eight interaction cases, file ledger and 15 additional independent test bodies](stage-4-8-card-monitor-scan-slice.md) are now mapped for `app.mjs`, `github-monitor.mjs` and `scan-refresh.mjs`. Source inspection found true direct controller tests for monitor/scan, but **no proven genuine `app.mjs` controller import** in the reviewed suite; regex-based app checks are not DOM/Tauri execution. A1 and native NM1 remain blockers. This is a bounded Stage 4–8 slice and does not close the global matrices. No suites rerun.
+
 ## Separate the executable test queue from policy STOP factors
 
 | Track / relevant source | What remains to map before Stage 9 | Proposed deterministic case IDs and exact proof needed | Stage 9 prerequisites |

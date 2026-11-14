@@ -74,6 +74,10 @@ All 29 remaining unknown rendered rows classified: 10 E_PARTIAL, 9 I_PARTIAL, 5 
 
 [Native dispatcher/credential assertion and interaction ledger](stage-4-8-native-git-keyring-slice.md) maps production `main.rs`, `relay_secret.rs` and actual Rust Git/ShutdownSignal dependencies to E, source-only S, missing P and physical OS. **14 additional independent test bodies minimum** (6 Git/Quit, 8 native credential) are locally estimated, with nine cross-domain interactions. A2 remains a genuine Tauri dispatcher gap; RS1/RS2 remain unconfirmed Keyring draft races and **architectural STOP conditions before a production behavior fix**, not bugs asserted as reproduced. No normal suite, CI or OS vault operation executed.
 
+### Global mechanical Stage 3–8 consistency pass (2026-11-14)
+
+[Global source-to-matrix consistency and evidence migration ledger](stage-3-8-global-evidence-consistency.md) verifies **80/80 unique source paths** against the exact production Git tree, 80 Stage 5 rows, 80 Stage 8 rows, 80 method headings and **717 typed candidate rows**. It recounts 1,040 Stage 5 cells: **810 `?`**, **230 `✖`**, **zero `✔`**. No `✔` does **not** mean no existing real tests: assertion ownership is already documented in focused maps, but no file-level cell is proven complete. Existing bounded slices plan 16+15+14=45 locally estimated new test bodies, **not** a deduplicated global test estimate. Stages 3–8 remain PARTIAL; no suite executed.
+
 ## Separate the executable test queue from policy STOP factors
 
 | Track / relevant source | What remains to map before Stage 9 | Proposed deterministic case IDs and exact proof needed | Stage 9 prerequisites |

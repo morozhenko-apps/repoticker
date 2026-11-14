@@ -98,6 +98,10 @@ changes merely to report test progress.
 
 [Native Git/Keyring method-to-assertion slice](mode-b/stage-4-8-native-git-keyring-slice.md) separates real Core Rust and Settings JS evidence from source-only native command checks. It names nine multi-axis interactions and a local **14 independent additional test body minimum** without claiming pass evidence. The native A2 command harness and OS Keyring seam remain open. `relay_secret.rs` may restore a taken draft after Settings Cancel when a vault write fails (RS1 source-derived hypothesis) or lose it on a blocking task join failure (RS2); **no production semantics are changed and no defect is claimed confirmed**. Global stages 3–8 remain PARTIAL.
 
+### Global Stage 3–8 source/matrix arithmetic checkpoint
+
+[Independent register and evidence migration reconciliation](mode-b/stage-3-8-global-evidence-consistency.md) confirms the exact **80 file path sets** match the source-map registry, Stage 5, Stage 8, method headings and the source-equivalent production Git tree. There are **717 provisionally typed candidate rows**, not 717 executable methods. The global Stage 5 matrix currently has 1,040 applicability/evidence cells: **810 unknown `?`**, **230 provisional NA `✖`**, and **no full-file `✔`**. This is a documentation signoff deficiency, **not** a claim that all tests fail or no source methods are tested. Three bounded slices estimate 16+15+14 new independent test bodies locally, without global deduplication. Stages 3–8 remain PARTIAL.
+
 ## Twelve-stage progress ledger
 
 | Stage | Contract | State | Completion evidence / next action |

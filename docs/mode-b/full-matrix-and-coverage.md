@@ -31,6 +31,10 @@ includes the corrected post-inline-test continuation. Some declarations
 and source-only test helpers require manual classification; no additional
 test counts are guaranteed by these anchors.
 
+### Read-only cross-register consistency checkpoint (2026-11-14)
+
+The [global evidence reconciliation](stage-3-8-global-evidence-consistency.md) verified the 80-path source, Stage 5 and Stage 8 sets plus 80 method-file headings against the exact immutable `dev` Git tree. The **80 × 13** Stage 5 cells contain **810 `?`**, **230 `✖`**, and **zero `✔`**; this is an *evidence migration deficit*, not zero existing test coverage. Do not promote a file-level cell until every applicable executable branch has inspected independent real assertions. The legacy source branch-anchor total (~1,721) is lexical only.
+
 ## Stage 5: file-artifact matrix (pending assertion reconciliation)
 
 | Production artifact | Risk | Family | Signatures | Branch anchors | Positive | N1 | N2 | N3 | N4 | N5 | N6 | N7 | N8 | N9 | N10 | N11 | N12 |

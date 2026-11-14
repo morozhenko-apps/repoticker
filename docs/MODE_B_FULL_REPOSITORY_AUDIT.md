@@ -134,6 +134,10 @@ changes merely to report test progress.
 
 [Core entrypoints](mode-b/bulk-crosswalk-core-entrypoints.md), [locale-only data](mode-b/bulk-crosswalk-locale-dictionaries.md), and [release/CI tooling](mode-b/bulk-crosswalk-release-tooling.md) cover the final **24** unlinked source paths with exact immutable blobs, inspected tests and independent gaps. The full **80/80 Stage 8 path ledger** now links focused evidence, split **63 E partial** (existing tests execute real subject/core helper), **12 S** (structure/syntax-only, including app.mjs, Cloudflare index.ts, native Wayland/KSNI, certain scripts), and **5 D** (data-only locale assertions). The main Rust source has real inline pure helper tests but its Tauri dispatch still lacks native acceptance. R2 publication has strong offline direct tests; source-only provisioning/install controls cannot be counted as actual remote operations. The numbers are an **indexing audit**, not measured file or branch coverage. All Stage 5 totals stay 810 unknown/230 provisional NA, and the 717 lexical source artifacts still need AST/cfg/anonymous-handler census. Stage 9 not started; no source/test/CI/build/deployment actions in this continuation.
 
+### 80/80 file-routing checkpoint: evidence index is NOT a completed Mode B gate
+
+[Global coverage-routing closure and next Stage 3–8 gates](mode-b/stage-3-8-file-routing-closure.md) is the current handoff: **80/80** files linked, evidence classification **63 E (partial real method/source assertion), 12 S (static/syntax only), 5 D (locale dictionary value assertion)**. The per-file source routing milestone is complete; full method AST/cfg census, 810 Stage 5 unknowns, method-by-method branch maps, interaction deduplication and physical native/host acceptance remain PARTIAL. Do not authorize Stage 9 from this counter.
+
 ## Twelve-stage progress ledger
 
 | Stage | Contract | State | Completion evidence / next action |

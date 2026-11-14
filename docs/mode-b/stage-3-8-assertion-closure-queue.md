@@ -110,6 +110,10 @@ Three bounded crosswalks map real source guard/outcome and inspected existing te
 
 [Main card/Tauri/Core/Cloudflare entrypoints](bulk-crosswalk-core-entrypoints.md) (6 files), [five data-only locale dictionaries](bulk-crosswalk-locale-dictionaries.md), and [13 release/CI scripts](bulk-crosswalk-release-tooling.md) now cross-reference actual source blobs and test methods. Newly classified: **11 E**, **8 S**, **5 D**; with prior 56, all **80/80** Stage 8 file rows linked (**63 E partial / 12 S-only / 5 D-only**). **Major unresolved evidence:** main app.mjs real-controller A1, Tauri main.rs A2, Cloudflare index.ts HOST, GTK/Windows OS acceptance, release/provisioning external adapter contract, STOP NM1/RS1/RS2. Main.rs has 11 pure Rust tests; none proves native IPC. R2 and CI scripts have strong direct offline tests while key provisioning/QA install remain S-only. No Stage 9 test implementation permitted by this indexing milestone. Stage 3,4,5,6,7,8 substantive completion still PARTIAL; 810 Stage 5 `?` remain.
 
+### Current 80/80 routing completion handoff
+
+[Stage 3–8 remaining-evidence gates](stage-3-8-file-routing-closure.md) separate finished file-path routing from **uncompleted** Mode B inventory, branch mapping, full Positive/N1–N12 proof, interactions, deduplicated estimates and method-level coverage. Continue with reproducible AST/cfg inventory, then real app.mjs / main.rs / Cloudflare index.ts seams. No Stage 9 permission and no production tests or native acceptance were executed.
+
 ## Separate the executable test queue from policy STOP factors
 
 | Track / relevant source | What remains to map before Stage 9 | Proposed deterministic case IDs and exact proof needed | Stage 9 prerequisites |

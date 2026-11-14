@@ -84,7 +84,7 @@ changes merely to report test progress.
   independent from strict Node/Rust/Python gates. WebKit SIGABRT is tracked
   in [#23](https://github.com/morozhenko-apps/repoticker/issues/23).
 
-**Current Stage 3 checkpoint (documentation only):** 707 lexical entries = 296 previously classified + 159 newly reconciled across Relay Keyring (29), native OAuth session (24), OAuth HTTP/Keyring adapter (13), Git Core (61), JsonStore (12), and ETag/RateGate/OAuth wire (20) = **455 structurally classified, assertion-linked or planned; 252 unresolved**. Several entries are `TEST_ONLY` or `FFI_DECL` and must not count as production methods. **455 is not a passed-test/coverage count**. These counts are **structural inventory status**, not passing test coverage. [Method inventory](mode-b/method-level-discovery.md), [Rust declarations](mode-b/method-declaration-classification.md), [class/call-site triage](mode-b/lexical-false-positives-and-class-methods.md), and method-assertion maps are the traceable evidence. The agent has GitHub connector access but no network-resolving local Git checkout in this environment, so full AST-aware classification is still pending.
+**Current Stage 3 checkpoint (documentation only):** the original 707 lexical candidates omitted the real Wayland relative-pointer callback (`linux_surface.rs:51`). The **provisional register is now 708 entries**, of which **570 have structural, partial assertion or explicit pending-test classifications; 138 remain `?`**. Since the 455/707 checkpoint, 115 additional entries were classified across Relay Transport (14), Windows geometry (14), GTK/Wayland (26 + new callback), Python R2 (18), Quota/Billing (24), Cloudflare Relay protocol (9), and RunnerState (9). 14 TEST_ONLY definitions and 9 FFI_DECL declarations are not independently callable production methods. This is **source/test assertion inventory, not 570 tests executed or 80.5% branch coverage**. [Method inventory](mode-b/method-level-discovery.md), [Linux callback](mode-b/method-assertions-linux-layer-shell.md), and domain-specific method receipts are the current evidence. Full AST/FFI/cfg callback discovery and Stages 4–8 signoff remain open.
 
 ## Twelve-stage progress ledger
 
@@ -92,12 +92,12 @@ changes merely to report test progress.
 | --- | --- | --- | --- |
 | 1 | Repository Scan | COMPLETE | Tracked tree, test suites, strict and preflight workflow entrypoints inventoried |
 | 2 | Risk and invariant analysis | COMPLETE | Risk families and fail-closed requirements documented below |
-| 3 | Exhaustive Test Inventory | 80/80 FILE ROUTES COMPLETE; 455/707 LEXICAL ENTRIES CLASSIFIED/TRIAGED | All app.mjs, settings.mjs, native main.rs, relay_secret.rs, github_session.rs, github_native.rs, git.rs, config_store.rs, github_etag_cache.rs, github_rate_gate.rs and github_oauth_wire.rs lexical rows are routed. E=87 and I=74 partial source assertions; planned/platform/test-only rows still unresolved at branch level. 252 remain '?'. No full AST-aware cfg/anonymous method or global N-matrix signoff. |
+| 3 | Exhaustive Test Inventory | 80/80 FILE ROUTES COMPLETE; 570/708 PROVISIONAL LEXICAL ENTRIES TRIAGED | 138 unresolved lexical entries and potentially missed Rust extern/anonymous/cfg callbacks remain; current mapping separates 127 direct, 96 indirect, platform-only, FFI and TEST_ONLY records. AST completeness/branch assertions still PARTIAL. |
 | 4 | Executable Branch Map | ALL MAJOR FAMILIES PREMAPPED; OUTCOME MAP PARTIAL | Relay, Settings/Quota/Card, Git/OAuth, release/monitor, native OS, UI helpers and locales mapped; ~1721 lexical anchors still need exact executable outcomes + assertion evidence |
 | 5 | Positive and N1–N12 matrix | INITIAL FILE MATRIX COMPLETE; EVIDENCE PENDING | 80 file rows × 13 columns populated with '?' or reasoned NA; method-level coverage needs actual assertions before upgrading '?'. |
 | 6 | Meaningful Interaction Matrix | CASE REGISTER PREPARED; EXHAUSTIVENESS OPEN | 51 case groups listed including 10 platform physical groups, with N1–N12 tags and independent state combinations; not implemented-test counts |
 | 7 | Coverage estimation | PRELIMINARY | Method planning floors and 51 grouped obligations documented, exact tests per semantic branch not yet reconciled with existing assertions |
-| 8 | File-level Coverage Map | ALL 80 SOURCE MAPS ROUTED; ASSERTION CLOSURE PENDING | 80/80 source files route to a focused map; 707 lexical method/type entries still need per-branch E/P/OS/NA evidence; Node UI branch coverage 46.28% on instrumented modules only. |
+| 8 | File-level Coverage Map | ALL 80 SOURCE MAPS ROUTED; ASSERTION CLOSURE PENDING | 80/80 source files route to a focused map; 708 currently inventoried lexical/missed callback entries still need per-branch E/P/OS/NA evidence; Node UI branch coverage 46.28% on instrumented modules only. |
 | 9 | Implement every planned case | BLOCKED BY STAGES 3–8 | No representative sampling, no contract-weakening or mocking subject under test |
 | 10 | Mutation Review | PENDING | Identify exact operator/guard/ordering/state mutations killed by key assertions |
 | 11 | Final STABLE/FLAKY execution | PENDING NEW CHANGES | Once only after Stages 1–10. Baseline Strict PASS above is not a new final gate |
@@ -379,7 +379,7 @@ documentation updates.
 
 The current audit now also has verified source-level reviews for
 native KDE/Windows surfaces, OS vault and WSS, UI helper and locale
-semantics, and a single register of **707 lexically discovered
+semantics, and a provisional register of **708 lexical/source-reconciled
 method/type signatures across all 80 source files** (218 named as
 public/exported). Nine files contain static locale dictionaries or
 top-level shell entrypoints rather than ordinary named operations.
@@ -478,7 +478,7 @@ The unconfirmed historical WebKit issue #23 is CLOSED and no longer
 blocks release as an active speculative P0. Mode B native Quit smoke
 remains separately applicable.
 
-Remaining Stage 3–8 work: audit the complete 707-method lexical register
+Remaining Stage 3–8 work: audit the provisional 708-entry source-method register
 (anonymous callbacks, Rust conditional compilation and short-circuit
 branches) and inspect assertions for remaining group-level `VERIFY`
 cases. Stage 9 implementation and Stage 11 final STABLE/FLAKY execution

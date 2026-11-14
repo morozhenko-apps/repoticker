@@ -426,22 +426,25 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 
 ## `apps/desktop/src-tauri/src/windows_geometry.rs`
 
+**Method assertion receipt:** [Windows placement pure tests, OS z-order and Win32 region ownership](method-assertions-windows-geometry.md). Four inline test functions and four FFI declarations are not independent production methods.
+
+
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 10 | `fn placement(` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 25 | `fn monitor_area(window: &WebviewWindow) -> Result<Option<((i64, i64), (i64, i64))>, String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 44 | `pub(crate) fn restore(app: &AppHandle, window: &WebviewWindow) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 73 | `pub(crate) fn save(app: &AppHandle, window: &WebviewWindow) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 97 | `fn restores_position_for_bottom_right_work_area() {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 105 | `fn keeps_bottom_edge_when_view_grows() {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 113 | `fn supports_negative_monitor_coordinates_and_high_dpi_sizes() {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 121 | `fn clamps_stale_margins_and_oversized_windows() {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 136 | `fn SetWindowPos(` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 150 | `pub(crate) fn raise_usage_popup(popup: &WebviewWindow) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 183 | `fn CreateRoundRectRgn(` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 191 | `fn DeleteObject(handle: *mut std::ffi::c_void) -> i32;` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 196 | `fn SetWindowRgn(hwnd: *mut std::ffi::c_void, region: *mut std::ffi::c_void, redraw: i32)` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 202 | `pub(crate) fn clip_usage_popup(popup: &WebviewWindow) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 10 | `fn placement(` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 25 | `fn monitor_area(window: &WebviewWindow) -> Result<Option<((i64, i64), (i64, i64))>, String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 44 | `pub(crate) fn restore(app: &AppHandle, window: &WebviewWindow) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 73 | `pub(crate) fn save(app: &AppHandle, window: &WebviewWindow) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 97 | `fn restores_position_for_bottom_right_work_area() {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TEST_ONLY |
+| 105 | `fn keeps_bottom_edge_when_view_grows() {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TEST_ONLY |
+| 113 | `fn supports_negative_monitor_coordinates_and_high_dpi_sizes() {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TEST_ONLY |
+| 121 | `fn clamps_stale_margins_and_oversized_windows() {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TEST_ONLY |
+| 136 | `fn SetWindowPos(` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | FFI_DECL |
+| 150 | `pub(crate) fn raise_usage_popup(popup: &WebviewWindow) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | OS_P |
+| 183 | `fn CreateRoundRectRgn(` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | FFI_DECL |
+| 191 | `fn DeleteObject(handle: *mut std::ffi::c_void) -> i32;` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | FFI_DECL |
+| 196 | `fn SetWindowRgn(hwnd: *mut std::ffi::c_void, region: *mut std::ffi::c_void, redraw: i32)` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | FFI_DECL |
+| 202 | `pub(crate) fn clip_usage_popup(popup: &WebviewWindow) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | OS_P |
 
 ## `apps/desktop/ui/about.mjs`
 

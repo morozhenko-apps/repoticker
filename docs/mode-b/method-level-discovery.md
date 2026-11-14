@@ -692,16 +692,20 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 
 ## `apps/desktop/ui/repo-menu.mjs`
 
+**Per-method assertion reconciliation:** [Git UI exports and scan queue direct assertions](method-assertions-git-ui-queue.md). Evidence remains partial; inline predicate is not independently exported.
+
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 3 | `export function placeRepoMenu(anchor, drawer, menu, gap = 4) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 3 | `export function placeRepoMenu(anchor, drawer, menu, gap = 4) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
 
 ## `apps/desktop/ui/repo-row-indicator.mjs`
 
+**Per-method assertion reconciliation:** [Git UI exports and scan queue direct assertions](method-assertions-git-ui-queue.md). Evidence remains partial; inline predicate is not independently exported.
+
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 3 | `export function repoRowIndicator(repo, outcome = null) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 4 | `const valid = value => Number.isSafeInteger(value) && value >= 0;` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 3 | `export function repoRowIndicator(repo, outcome = null) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 4 | `const valid = value => Number.isSafeInteger(value) && value >= 0;` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | INLINE |
 
 ## `apps/desktop/ui/runner-collector.mjs`
 
@@ -730,11 +734,13 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 
 ## `apps/desktop/ui/scan-refresh.mjs`
 
+**Per-method assertion reconciliation:** [Git UI exports and scan queue direct assertions](method-assertions-git-ui-queue.md). Evidence remains partial; inline predicate is not independently exported.
+
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 10 | `export function shouldSpinForRepos(scanActive, hasCachedSnapshot) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 14 | `export function createScanRefreshQueue({ scan, publish, onError,` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 23 | `async function drain() {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 10 | `export function shouldSpinForRepos(scanActive, hasCachedSnapshot) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 14 | `export function createScanRefreshQueue({ scan, publish, onError,` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 23 | `async function drain() {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
 
 ## `apps/desktop/ui/settings-i18n.mjs`
 
@@ -812,12 +818,14 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 
 ## `apps/desktop/ui/view.mjs`
 
+**Per-method assertion reconciliation:** [Git UI exports and scan queue direct assertions](method-assertions-git-ui-queue.md). Evidence remains partial; inline predicate is not independently exported.
+
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 8 | `export function nextCardView(current, requested) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 14 | `export function cardWindowHeight(view, repositoryCount = 0) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 26 | `export function pullReadyCommitCount(repositories = []) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 39 | `export function syncReadyCommitCount(repositories = []) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 8 | `export function nextCardView(current, requested) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 14 | `export function cardWindowHeight(view, repositoryCount = 0) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 26 | `export function pullReadyCommitCount(repositories = []) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 39 | `export function syncReadyCommitCount(repositories = []) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
 
 ## `apps/relay-cloudflare/src/hub.mjs`
 

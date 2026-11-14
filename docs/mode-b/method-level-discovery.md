@@ -3,7 +3,7 @@
 Baseline production source `a3ba7fa30fc4c81890d3075f94142942d001cbf3`.
 Input: eight preserved source inventories in this audit plus a separate `main.rs` continuation (inline Rust tests are interspersed). These are lexical extraction records, NOT an AST and NOT evidence that branches have been covered.
 
-**Method evidence tags:** `I_PARTIAL` = real method was executed indirectly through a real consumer with some relevant assertions, but independent branches remain open; `E_PARTIAL` = real method called directly in reviewed tests with still-open branches; `INLINE` = a private closure nested within an enclosing method, not a separate public API. `ADAPTER` = a tiny private wrapper around DOM/native transport rather than a separate domain API; `P` = an inspected entrypoint with no matching direct executable event assertion. `TYPE_DECL` = Rust struct/enum/union declaration, not a callable method; `IMPL_BLOCK` = method-implementation container, not itself an executable method. These two are syntax-based Stage 3 type classification, **not** coverage of declared fields or member methods. `CLASS_DECL` = Python/JS/TS class definition, `CLASS_METHOD` = real class/adapter method awaiting assertion reconciliation, `CALL_SITE` = function call misrecognized as lexical method, `STARTUP_CALL` = top-level initialization effect, `LOCAL_EXPR` = Boolean/nonfunction value inside an owning function. None of these tags represents a passing test. `P_CONTROLLER` = private method whose in-situ main-card DOM/Tauri behavior is not verified, `CALLBACK_P` = unasserted event closure; these may already have directly tested separate pure helpers. `P_NATIVE` = actual native method/command without directly verified AppHandle/OS assertions (other pure modules may be tested); `BOOTSTRAP_P` = OS app setup. Other `?` rows remain unclassified. These tags do not change the global Stage 3–8 PARTIAL state.
+**Method evidence tags:** `I_PARTIAL` = real method was executed indirectly through a real consumer with some relevant assertions, but independent branches remain open; `E_PARTIAL` = real method called directly in reviewed tests with still-open branches; `INLINE` = a private closure nested within an enclosing method, not a separate public API. `ADAPTER` = a tiny private wrapper around DOM/native transport rather than a separate domain API; `P` = an inspected entrypoint with no matching direct executable event assertion. `TYPE_DECL` = Rust struct/enum/union declaration, not a callable method; `IMPL_BLOCK` = method-implementation container, not itself an executable method. These two are syntax-based Stage 3 type classification, **not** coverage of declared fields or member methods. `CLASS_DECL` = Python/JS/TS class definition, `CLASS_METHOD` = real class/adapter method awaiting assertion reconciliation, `CALL_SITE` = function call misrecognized as lexical method, `STARTUP_CALL` = top-level initialization effect, `LOCAL_EXPR` = Boolean/nonfunction value inside an owning function. None of these tags represents a passing test. `P_CONTROLLER` = private method whose in-situ main-card DOM/Tauri behavior is not verified, `CALLBACK_P` = unasserted event closure; these may already have directly tested separate pure helpers. `P_NATIVE` = actual native method/command without directly verified AppHandle/OS assertions (other pure modules may be tested); `BOOTSTRAP_P` = OS app setup. `TEST_ONLY` = Rust #[cfg(test)] test function, not production API; `FFI_DECL` = Win32 foreign function signature, not a Rust method body; `OS_P` = platform-gated native callable requiring OS acceptance. Other `?` rows remain unclassified. These tags do not change the global Stage 3–8 PARTIAL state.
 
 **Checkpoint after native main.rs triage:** 707 lexical entries: **24 E_PARTIAL, 64 I_PARTIAL, 6 INLINE, 7 ADAPTER, 3 P, 36 P_CONTROLLER, 1 CALLBACK_P, 61 P_NATIVE, 1 BOOTSTRAP_P**; 41 TYPE_DECL, 32 IMPL_BLOCK, 3 CALL_SITE, 1 STARTUP_CALL, 2 LOCAL_EXPR, 3 CLASS_DECL, 11 CLASS_METHOD; **411 '?' remain**. These are **296 structurally classified, partially assertion-linked or planned records**, NOT 296 passing methods or a test-coverage percentage. No new suite executed. All E/I observations derive from inspected historical test bodies, not a new test execution or full branch sign-off.
 
@@ -316,42 +316,45 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 
 ## `apps/desktop/src-tauri/src/relay_secret.rs`
 
+**Method-level native credential custody and inline-test inventory:** [relay_secret actual Rust assertions, Windows FFI/test-only and O3 gaps](method-assertions-relay-secret-native.md). Keyring implementation needs injected OS provider; no host credential operations performed.
+
+
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
 | 12 | `pub struct RelayPromptGate(AtomicBool);` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
 | 17 | `pub struct RelaySecretDraftState(Mutex<Option<RelaySecretDraft>>);` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
-| 24 | `fn lock_draft(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 33 | `pub(crate) fn discard_draft(app: &AppHandle) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 38 | `pub(crate) fn has_pending_draft(app: &AppHandle) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 24 | `fn lock_draft(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 33 | `pub(crate) fn discard_draft(app: &AppHandle) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 38 | `pub(crate) fn has_pending_draft(app: &AppHandle) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
 | 45 | `impl Drop for PromptLease {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | IMPL_BLOCK |
-| 46 | `fn drop(&mut self) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 51 | `fn enter_prompt(app: &AppHandle) -> Result<PromptLease, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 59 | `fn valid_secret(value: &str) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 66 | `fn entry() -> Result<keyring::Entry, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 71 | `pub(crate) fn read_secret() -> Result<Option<SensitiveSecret>, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 88 | `pub(crate) fn wipe(value: &mut String) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 46 | `fn drop(&mut self) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 51 | `fn enter_prompt(app: &AppHandle) -> Result<PromptLease, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 59 | `fn valid_secret(value: &str) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 66 | `fn entry() -> Result<keyring::Entry, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 71 | `pub(crate) fn read_secret() -> Result<Option<SensitiveSecret>, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 88 | `pub(crate) fn wipe(value: &mut String) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
 | 103 | `impl SensitiveSecret {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | IMPL_BLOCK |
-| 104 | `pub(crate) fn as_str(&self) -> &str {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 104 | `pub(crate) fn as_str(&self) -> &str {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
 | 109 | `impl Drop for SensitiveSecret {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | IMPL_BLOCK |
-| 110 | `fn drop(&mut self) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 115 | `fn store_secret(secret: &SensitiveSecret) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 124 | `fn remove_secret() -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 131 | `fn settings_only(window: &tauri::WebviewWindow) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 139 | `pub async fn relay_secret_status(window: tauri::WebviewWindow) -> Result<bool, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 162 | `pub async fn relay_prompt_secret(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 189 | `pub async fn relay_stage_secret(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 210 | `pub async fn relay_clear_secret(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 224 | `pub async fn relay_commit_secret_draft(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 272 | `async fn prompt_native(app: &AppHandle) -> Result<Option<String>, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 320 | `async fn prompt_native(_app: &AppHandle) -> Result<Option<String>, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 327 | `async fn prompt_native(_app: &AppHandle) -> Result<Option<String>, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 346 | `fn CredUIPromptForCredentialsW(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 366 | `fn wide(text: &str) -> Vec<u16> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 370 | `pub(super) fn prompt() -> Result<Option<String>, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 437 | `fn relay_credential_isolated_from_github_auth_record() {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 443 | `fn strict_base64url_secret_policy_does_not_accept_untrusted_bytes() {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 462 | `fn replacing_draft_wipes_candidate_without_keyring_write() {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 479 | `fn wipes_owned_secret_buffer() {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 110 | `fn drop(&mut self) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 115 | `fn store_secret(secret: &SensitiveSecret) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 124 | `fn remove_secret() -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 131 | `fn settings_only(window: &tauri::WebviewWindow) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 139 | `pub async fn relay_secret_status(window: tauri::WebviewWindow) -> Result<bool, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 162 | `pub async fn relay_prompt_secret(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 189 | `pub async fn relay_stage_secret(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 210 | `pub async fn relay_clear_secret(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 224 | `pub async fn relay_commit_secret_draft(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 272 | `async fn prompt_native(app: &AppHandle) -> Result<Option<String>, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | OS_P |
+| 320 | `async fn prompt_native(_app: &AppHandle) -> Result<Option<String>, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | OS_P |
+| 327 | `async fn prompt_native(_app: &AppHandle) -> Result<Option<String>, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | OS_P |
+| 346 | `fn CredUIPromptForCredentialsW(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | FFI_DECL |
+| 366 | `fn wide(text: &str) -> Vec<u16> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | OS_P |
+| 370 | `pub(super) fn prompt() -> Result<Option<String>, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | OS_P |
+| 437 | `fn relay_credential_isolated_from_github_auth_record() {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TEST_ONLY |
+| 443 | `fn strict_base64url_secret_policy_does_not_accept_untrusted_bytes() {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TEST_ONLY |
+| 462 | `fn replacing_draft_wipes_candidate_without_keyring_write() {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TEST_ONLY |
+| 479 | `fn wipes_owned_secret_buffer() {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TEST_ONLY |
 
 ## `apps/desktop/src-tauri/src/relay_transport.rs`
 

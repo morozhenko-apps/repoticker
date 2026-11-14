@@ -5,7 +5,7 @@ Input: eight preserved source inventories in this audit plus a separate `main.rs
 
 **Method evidence tags:** `I_PARTIAL` = real method was executed indirectly through a real consumer with some relevant assertions, but independent branches remain open; `E_PARTIAL` = real method called directly in reviewed tests with still-open branches; `INLINE` = a private closure nested within an enclosing method, not a separate public API. `ADAPTER` = a tiny private wrapper around DOM/native transport rather than a separate domain API; `P` = an inspected entrypoint with no matching direct executable event assertion. `TYPE_DECL` = Rust struct/enum/union declaration, not a callable method; `IMPL_BLOCK` = method-implementation container, not itself an executable method. These two are syntax-based Stage 3 type classification, **not** coverage of declared fields or member methods. `CLASS_DECL` = Python/JS/TS class definition, `CLASS_METHOD` = real class/adapter method awaiting assertion reconciliation, `CALL_SITE` = function call misrecognized as lexical method, `STARTUP_CALL` = top-level initialization effect, `LOCAL_EXPR` = Boolean/nonfunction value inside an owning function. None of these tags represents a passing test. `P_CONTROLLER` = private method whose in-situ main-card DOM/Tauri behavior is not verified, `CALLBACK_P` = unasserted event closure; these may already have directly tested separate pure helpers. `P_NATIVE` = actual native method/command without directly verified AppHandle/OS assertions (other pure modules may be tested); `BOOTSTRAP_P` = OS app setup. `TEST_ONLY` = Rust #[cfg(test)] test function, not production API; `FFI_DECL` = Win32 foreign function signature, not a Rust method body; `OS_P` = platform-gated native callable requiring OS acceptance. `P_CORE` = real private or public Core method without a named direct existing branch assertion; separate Git core dependencies may be tested. Other `?` rows remain unclassified. These tags do not change the global Stage 3–8 PARTIAL state.
 
-**Current Stage 3 checkpoint (source-inspected, not test-executed):** 708 provisional lexical/source-reconciled entries, **607 structurally classified or assertion-linked/planned, 101 '?' remain**. Exact categories: **148 E_PARTIAL, 98 I_PARTIAL, 123 P_NATIVE, 35 OS_P, 23 P_CORE, 36 P_CONTROLLER, 1 CALLBACK_P, 4 P, 1 BOOTSTRAP_P, 7 ADAPTER, 9 INLINE**, 41 TYPE_DECL, 32 IMPL_BLOCK, 9 FFI_DECL, 20 TEST_ONLY, 3 CALL_SITE, 1 STARTUP_CALL, 2 LOCAL_EXPR, 3 CLASS_DECL, 11 CLASS_METHOD. The initial 707-row lexical scan omitted real `linux_surface.rs:51` relative-pointer callback; more anonymous/extern/cfg omissions remain possible until true AST-aware reconciliation. **576 is not 576 passing tests, executable methods, or code coverage.**
+**Current Stage 3 checkpoint (source-inspected, not test-executed):** 708 provisional lexical/source-reconciled entries, **620 structurally classified or assertion-linked/planned, 88 '?' remain**. Exact categories: **153 E_PARTIAL, 98 I_PARTIAL, 129 P_NATIVE, 35 OS_P, 23 P_CORE, 36 P_CONTROLLER, 1 CALLBACK_P, 4 P, 1 BOOTSTRAP_P, 7 ADAPTER, 9 INLINE**, 41 TYPE_DECL, 32 IMPL_BLOCK, 9 FFI_DECL, 22 TEST_ONLY, 3 CALL_SITE, 1 STARTUP_CALL, 2 LOCAL_EXPR, 3 CLASS_DECL, 11 CLASS_METHOD. The initial 707-row lexical scan omitted real `linux_surface.rs:51` relative-pointer callback; more anonymous/extern/cfg omissions remain possible until true AST-aware reconciliation. **620 is not 620 passing tests, executable methods, or code coverage.**
 
 Every line carries **risk**, **test level**, **candidate N categories**, and an **initial test-count floor**. These floors represent planning estimates to be refined against each distinct decision outcome, NOT observed tests, and NOT a cap on required tests. The letter `?` denotes not yet assertion-mapped. External dependencies are faked only by contract, never by replacing business logic.
 
@@ -23,25 +23,25 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 5 | `pub fn tray_rgba() -> (Vec<u8>, u32, u32) {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 15 | `pub fn tray_argb() -> (Vec<u8>, u32, u32) {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 5 | `pub fn tray_rgba() -> (Vec<u8>, u32, u32) {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 15 | `pub fn tray_argb() -> (Vec<u8>, u32, u32) {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
 
 ## `apps/desktop/src-tauri/src/autostart.rs`
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 6 | `pub(crate) fn autostart_is_enabled(app: AppHandle) -> Result<bool, String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 13 | `pub(crate) fn autostart_set_enabled(app: AppHandle, enabled: bool) -> Result<bool, String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 6 | `pub(crate) fn autostart_is_enabled(app: AppHandle) -> Result<bool, String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 13 | `pub(crate) fn autostart_set_enabled(app: AppHandle, enabled: bool) -> Result<bool, String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
 
 ## `apps/desktop/src-tauri/src/ci_notifications.rs`
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 23 | `fn notification_catalog() -> &'static NotificationCatalog {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 31 | `fn notification_error(language: &str, kind: &str) -> String {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 45 | `fn notification_text(` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 74 | `fn approved_scope(` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 113 | `pub(crate) fn ci_run_notify(` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 23 | `fn notification_catalog() -> &'static NotificationCatalog {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 31 | `fn notification_error(language: &str, kind: &str) -> String {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 45 | `fn notification_text(` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 74 | `fn approved_scope(` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 113 | `pub(crate) fn ci_run_notify(` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
 
 ## `apps/desktop/src-tauri/src/github_api.rs`
 
@@ -331,10 +331,10 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 6 | `pub fn normalize_base_url(raw: &str) -> Result<String, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 43 | `pub fn websocket_url(base: &str, cursor: u64) -> Result<String, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 61 | `fn only_canonical_public_https_origins_are_stored() {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 91 | `fn websocket_url_contains_only_cursor_and_validated_origin() {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 6 | `pub fn normalize_base_url(raw: &str) -> Result<String, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 43 | `pub fn websocket_url(base: &str, cursor: u64) -> Result<String, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 61 | `fn only_canonical_public_https_origins_are_stored() {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TEST_ONLY |
+| 91 | `fn websocket_url_contains_only_cursor_and_validated_origin() {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TEST_ONLY |
 
 ## `apps/desktop/src-tauri/src/relay_secret.rs`
 

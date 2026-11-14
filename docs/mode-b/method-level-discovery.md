@@ -3,9 +3,9 @@
 Baseline production source `a3ba7fa30fc4c81890d3075f94142942d001cbf3`.
 Input: eight preserved source inventories in this audit plus a separate `main.rs` continuation (inline Rust tests are interspersed). These are lexical extraction records, NOT an AST and NOT evidence that branches have been covered.
 
-**Method evidence tags:** `I_PARTIAL` = real method was executed indirectly through a real consumer with some relevant assertions, but independent branches remain open; `E_PARTIAL` = real method called directly in reviewed tests with still-open branches; `INLINE` = a private closure nested within an enclosing method, not a separate public API. `ADAPTER` = a tiny private wrapper around DOM/native transport rather than a separate domain API; `P` = an inspected entrypoint with no matching direct executable event assertion. `TYPE_DECL` = Rust struct/enum/union declaration, not a callable method; `IMPL_BLOCK` = method-implementation container, not itself an executable method. These two are syntax-based Stage 3 type classification, **not** coverage of declared fields or member methods. `CLASS_DECL` = Python/JS/TS class definition, `CLASS_METHOD` = real class/adapter method awaiting assertion reconciliation, `CALL_SITE` = function call misrecognized as lexical method, `STARTUP_CALL` = top-level initialization effect, `LOCAL_EXPR` = Boolean/nonfunction value inside an owning function. None of these tags represents a passing test. `P_CONTROLLER` = private method whose in-situ main-card DOM/Tauri behavior is not verified, `CALLBACK_P` = unasserted event closure; these may already have directly tested separate pure helpers. `P_NATIVE` = actual native method/command without directly verified AppHandle/OS assertions (other pure modules may be tested); `BOOTSTRAP_P` = OS app setup. `TEST_ONLY` = Rust #[cfg(test)] test function, not production API; `FFI_DECL` = Win32 foreign function signature, not a Rust method body; `OS_P` = platform-gated native callable requiring OS acceptance. `P_CORE` = real private or public Core method without a named direct existing branch assertion; separate Git core dependencies may be tested. `DATA_ONLY` = a source-inspected module containing only an exported dictionary, with no callable extracted from the module; validate it as a structural/consumer artifact, not a fictitious method. Other `?` rows remain unclassified. These tags do not change the global Stage 3–8 PARTIAL state.
+**Method evidence tags:** `I_PARTIAL` = real method was executed indirectly through a real consumer with some relevant assertions, but independent branches remain open; `E_PARTIAL` = real method called directly in reviewed tests with still-open branches; `INLINE` = a private closure nested within an enclosing method, not a separate public API. `ADAPTER` = a tiny private wrapper around DOM/native transport rather than a separate domain API; `P` = an inspected entrypoint with no matching direct executable event assertion. `TYPE_DECL` = Rust struct/enum/union declaration, not a callable method; `IMPL_BLOCK` = method-implementation container, not itself an executable method. These two are syntax-based Stage 3 type classification, **not** coverage of declared fields or member methods. `CLASS_DECL` = Python/JS/TS class definition, `CLASS_METHOD` = real class/adapter method awaiting assertion reconciliation, `CALL_SITE` = function call misrecognized as lexical method, `STARTUP_CALL` = top-level initialization effect, `LOCAL_EXPR` = Boolean/nonfunction value inside an owning function. None of these tags represents a passing test. `P_CONTROLLER` = private method whose in-situ main-card DOM/Tauri behavior is not verified, `CALLBACK_P` = unasserted event closure; these may already have directly tested separate pure helpers. `P_NATIVE` = actual native method/command without directly verified AppHandle/OS assertions (other pure modules may be tested); `BOOTSTRAP_P` = OS app setup. `TEST_ONLY` = Rust #[cfg(test)] test function, not production API; `FFI_DECL` = Win32 foreign function signature, not a Rust method body; `OS_P` = platform-gated native callable requiring OS acceptance. `P_CORE` = real private or public Core method without a named direct existing branch assertion; separate Git core dependencies may be tested. `DATA_ONLY` = a source-inspected module containing only an exported dictionary, with no callable extracted from the module; validate it as a structural/consumer artifact, not a fictitious method. `SCRIPT_ENTRY` = a top-level executable Shell/PowerShell script without named functions; test as a real process. `P_CLI` = command-line entrypoint pending direct isolated invocation. `P_SHELL` = shell cleanup handler pending failure/lifecycle assertions. Other `?` rows remain unclassified. These tags do not change the global Stage 3–8 PARTIAL state.
 
-**Current Stage 3 checkpoint (source-inspected, not test-executed):** 708 provisional lexical/source-reconciled entries, **688 structurally classified or assertion-linked/planned, 20 '?' remain**. Exact categories: **185 E_PARTIAL, 113 I_PARTIAL, 133 P_NATIVE, 43 OS_P, 23 P_CORE, 36 P_CONTROLLER, 1 CALLBACK_P, 6 P, 1 BOOTSTRAP_P, 7 ADAPTER, 11 INLINE**, 41 TYPE_DECL, 32 IMPL_BLOCK, 9 FFI_DECL, 22 TEST_ONLY, 3 CALL_SITE, 1 STARTUP_CALL, 2 LOCAL_EXPR, 3 CLASS_DECL, 11 CLASS_METHOD, 5 DATA_ONLY. The initial 707-row lexical scan omitted real `linux_surface.rs:51` relative-pointer callback; more anonymous/extern/cfg omissions remain possible until true AST-aware reconciliation. **688 is not 688 passing tests, executable methods, or code coverage.**
+**Current Stage 3 checkpoint (source-inspected, not test-executed):** 717 physically rendered candidate rows, **717 provisionally classified or assertion-linked/planned, zero '?' remain**. Exact categories: **195 E_PARTIAL, 122 I_PARTIAL, 133 P_NATIVE, 43 OS_P, 23 P_CORE, 36 P_CONTROLLER, 1 CALLBACK_P, 6 P, 1 BOOTSTRAP_P, 7 ADAPTER, 11 INLINE**, 41 TYPE_DECL, 32 IMPL_BLOCK, 9 FFI_DECL, 22 TEST_ONLY, 3 CALL_SITE, 1 STARTUP_CALL, 2 LOCAL_EXPR, 3 CLASS_DECL, 11 CLASS_METHOD, 5 DATA_ONLY, 4 SCRIPT_ENTRY, 5 P_CLI, 1 P_SHELL. The original extractor reported 707 entries and one later-added Wayland callback. The actual Markdown row recount yields 717 (nine further rows beyond the old 708 ledger). Their provenance must be independently reconciled; no AST/anonymous/extern/cfg exhaustiveness is proven. **717 is not 717 passing tests, executable methods, or code coverage.**
 
 Every line carries **risk**, **test level**, **candidate N categories**, and an **initial test-count floor**. These floors represent planning estimates to be refined against each distinct decision outcome, NOT observed tests, and NOT a cap on required tests. The letter `?` denotes not yet assertion-mapped. External dependencies are faked only by contract, never by replacing business logic.
 
@@ -183,7 +183,7 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 
 ## `apps/desktop/src-tauri/src/linux_surface.rs`
 
-**Reconciliation:** [GTK Layer Shell exact source methods and Wayland relative pointer callback](method-assertions-linux-layer-shell.md). The original lexical extractor omitted `extern "C" fn on_relative_motion` at line 51; it is now a separate OS_P entry, making this provisional inventory **708 rows**, not 707.
+**Reconciliation:** [GTK Layer Shell exact source methods and Wayland relative pointer callback](method-assertions-linux-layer-shell.md). The original lexical extractor omitted `extern "C" fn on_relative_motion` at line 51; it is now a separate OS_P entry, bringing that historical checkpoint to **708 rows**, not 707. A later physical Markdown row recount is **717** and the nine-row delta remains open.
 
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
@@ -1096,52 +1096,52 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| — | No named function extracted: module entrypoint / data / anonymous handlers require source inspection | Medium | Shell contract + isolated subprocess | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| — | No named function extracted: module entrypoint / data / anonymous handlers require source inspection | Medium | Shell contract + isolated subprocess | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | SCRIPT_ENTRY |
 
 ## `scripts/accept_autostart_windows.ps1`
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| — | No named function extracted: module entrypoint / data / anonymous handlers require source inspection | Medium | Shell contract + isolated subprocess | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| — | No named function extracted: module entrypoint / data / anonymous handlers require source inspection | Medium | Shell contract + isolated subprocess | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | SCRIPT_ENTRY |
 
 ## `scripts/apt_repository.py`
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 17 | `def invoke(*args, env=None, input_data=None):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
-| 21 | `def sha256(path):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
-| 29 | `def package_field(deb, field):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
-| 33 | `def assemble(deb: Path, out: Path, version: str, gpg_home: Path,` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
-| 100 | `def verify(root, keyring):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
-| 112 | `def main():` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
+| 17 | `def invoke(*args, env=None, input_data=None):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | I_PARTIAL |
+| 21 | `def sha256(path):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | I_PARTIAL |
+| 29 | `def package_field(deb, field):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | I_PARTIAL |
+| 33 | `def assemble(deb: Path, out: Path, version: str, gpg_home: Path,` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | E_PARTIAL |
+| 100 | `def verify(root, keyring):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | E_PARTIAL |
+| 112 | `def main():` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | P_CLI |
 
 ## `scripts/ci-pr-scope.sh`
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| — | No named function extracted: module entrypoint / data / anonymous handlers require source inspection | Medium | Shell contract + isolated subprocess | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| — | No named function extracted: module entrypoint / data / anonymous handlers require source inspection | Medium | Shell contract + isolated subprocess | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | SCRIPT_ENTRY |
 
 ## `scripts/cleanup-published-artifacts.mjs`
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 11 | `const isSha = value => typeof value === "string" && /^[0-9a-f]{64}$/.test(value);` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 13 | `export function validateR2Receipt(receipt) {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 79 | `async function listRunArtifacts(run, token, request) {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 97 | `export async function deletePublishedArtifacts(receipt, token, request = fetch) {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 138 | `async function main() {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 11 | `const isSha = value => typeof value === "string" && /^[0-9a-f]{64}$/.test(value);` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
+| 13 | `export function validateR2Receipt(receipt) {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 79 | `async function listRunArtifacts(run, token, request) {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
+| 97 | `export async function deletePublishedArtifacts(receipt, token, request = fetch) {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 138 | `async function main() {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CLI |
 
 ## `scripts/install_qa_linux.sh`
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| — | No named function extracted: module entrypoint / data / anonymous handlers require source inspection | Medium | Shell contract + isolated subprocess | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| — | No named function extracted: module entrypoint / data / anonymous handlers require source inspection | Medium | Shell contract + isolated subprocess | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | SCRIPT_ENTRY |
 
 ## `scripts/provision_apt_key.sh`
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 65 | `cleanup_signing_validation() {` | Medium | Shell contract + isolated subprocess | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 65 | `cleanup_signing_validation() {` | Medium | Shell contract + isolated subprocess | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_SHELL |
 
 ## `scripts/r2_release.py`
 
@@ -1174,39 +1174,39 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 25 | `def digest(path):` | High | Python unit + isolated release integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
-| 33 | `def canonical(version, platform, ext):` | High | Python unit + isolated release integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
-| 48 | `def source_has_version(filename, version):` | High | Python unit + isolated release integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
-| 55 | `def collect(source, target, platform, version):` | High | Python unit + isolated release integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
-| 112 | `def merge(parts, output, version):` | High | Python unit + isolated release integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
-| 142 | `def main():` | High | Python unit + isolated release integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
+| 25 | `def digest(path):` | High | Python unit + isolated release integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | I_PARTIAL |
+| 33 | `def canonical(version, platform, ext):` | High | Python unit + isolated release integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | E_PARTIAL |
+| 48 | `def source_has_version(filename, version):` | High | Python unit + isolated release integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | I_PARTIAL |
+| 55 | `def collect(source, target, platform, version):` | High | Python unit + isolated release integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | E_PARTIAL |
+| 112 | `def merge(parts, output, version):` | High | Python unit + isolated release integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | E_PARTIAL |
+| 142 | `def main():` | High | Python unit + isolated release integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | P_CLI |
 
 ## `scripts/release_version.py`
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 24 | `def versions():` | Medium | Python unit + isolated release integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 32 | `def bump(which):` | Medium | Python unit + isolated release integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 56 | `def main():` | Medium | Python unit + isolated release integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 24 | `def versions():` | Medium | Python unit + isolated release integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 32 | `def bump(which):` | Medium | Python unit + isolated release integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 56 | `def main():` | Medium | Python unit + isolated release integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
 
 ## `scripts/verify_signing_key.py`
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 8 | `def validate(text, fingerprint):` | Medium | Python unit + isolated release integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 32 | `def main():` | Medium | Python unit + isolated release integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 8 | `def validate(text, fingerprint):` | Medium | Python unit + isolated release integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 32 | `def main():` | Medium | Python unit + isolated release integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CLI |
 
 ## `scripts/verify_signing_passphrase.sh`
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 18 | `cleanup() {` | Medium | Shell contract + isolated subprocess | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 18 | `cleanup() {` | Medium | Shell contract + isolated subprocess | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
 
 ## `tools/import_icon.py`
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 15 | `def main():` | Medium | Python unit + isolated release integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 15 | `def main():` | Medium | Python unit + isolated release integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CLI |
 
 ## Completion controls
 

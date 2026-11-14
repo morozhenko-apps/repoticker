@@ -3,7 +3,7 @@
 Baseline production source `a3ba7fa30fc4c81890d3075f94142942d001cbf3`.
 Input: eight preserved source inventories in this audit plus a separate `main.rs` continuation (inline Rust tests are interspersed). These are lexical extraction records, NOT an AST and NOT evidence that branches have been covered.
 
-**Method evidence tags:** `I_PARTIAL` = real method was executed indirectly through a real consumer with some relevant assertions, but independent branches remain open; `E_PARTIAL` = real method called directly in reviewed tests with still-open branches; `INLINE` = a private closure nested within an enclosing method, not a separate public API. `ADAPTER` = a tiny private wrapper around DOM/native transport rather than a separate domain API; `P` = an inspected entrypoint with no matching direct executable event assertion. `TYPE_DECL` = Rust struct/enum/union declaration, not a callable method; `IMPL_BLOCK` = method-implementation container, not itself an executable method. These two are syntax-based Stage 3 type classification, **not** coverage of declared fields or member methods. `CLASS_DECL` = Python/JS/TS class definition, `CLASS_METHOD` = real class/adapter method awaiting assertion reconciliation, `CALL_SITE` = function call misrecognized as lexical method, `STARTUP_CALL` = top-level initialization effect, `LOCAL_EXPR` = Boolean/nonfunction value inside an owning function. None of these tags represents a passing test. `P_CONTROLLER` = private method whose in-situ main-card DOM/Tauri behavior is not verified, `CALLBACK_P` = unasserted event closure; these may already have directly tested separate pure helpers. `P_NATIVE` = actual native method/command without directly verified AppHandle/OS assertions (other pure modules may be tested); `BOOTSTRAP_P` = OS app setup. `TEST_ONLY` = Rust #[cfg(test)] test function, not production API; `FFI_DECL` = Win32 foreign function signature, not a Rust method body; `OS_P` = platform-gated native callable requiring OS acceptance. Other `?` rows remain unclassified. These tags do not change the global Stage 3–8 PARTIAL state.
+**Method evidence tags:** `I_PARTIAL` = real method was executed indirectly through a real consumer with some relevant assertions, but independent branches remain open; `E_PARTIAL` = real method called directly in reviewed tests with still-open branches; `INLINE` = a private closure nested within an enclosing method, not a separate public API. `ADAPTER` = a tiny private wrapper around DOM/native transport rather than a separate domain API; `P` = an inspected entrypoint with no matching direct executable event assertion. `TYPE_DECL` = Rust struct/enum/union declaration, not a callable method; `IMPL_BLOCK` = method-implementation container, not itself an executable method. These two are syntax-based Stage 3 type classification, **not** coverage of declared fields or member methods. `CLASS_DECL` = Python/JS/TS class definition, `CLASS_METHOD` = real class/adapter method awaiting assertion reconciliation, `CALL_SITE` = function call misrecognized as lexical method, `STARTUP_CALL` = top-level initialization effect, `LOCAL_EXPR` = Boolean/nonfunction value inside an owning function. None of these tags represents a passing test. `P_CONTROLLER` = private method whose in-situ main-card DOM/Tauri behavior is not verified, `CALLBACK_P` = unasserted event closure; these may already have directly tested separate pure helpers. `P_NATIVE` = actual native method/command without directly verified AppHandle/OS assertions (other pure modules may be tested); `BOOTSTRAP_P` = OS app setup. `TEST_ONLY` = Rust #[cfg(test)] test function, not production API; `FFI_DECL` = Win32 foreign function signature, not a Rust method body; `OS_P` = platform-gated native callable requiring OS acceptance. `P_CORE` = real private or public Core method without a named direct existing branch assertion; separate Git core dependencies may be tested. Other `?` rows remain unclassified. These tags do not change the global Stage 3–8 PARTIAL state.
 
 **Checkpoint after native main.rs triage:** 707 lexical entries: **24 E_PARTIAL, 64 I_PARTIAL, 6 INLINE, 7 ADAPTER, 3 P, 36 P_CONTROLLER, 1 CALLBACK_P, 61 P_NATIVE, 1 BOOTSTRAP_P**; 41 TYPE_DECL, 32 IMPL_BLOCK, 3 CALL_SITE, 1 STARTUP_CALL, 2 LOCAL_EXPR, 3 CLASS_DECL, 11 CLASS_METHOD; **411 '?' remain**. These are **296 structurally classified, partially assertion-linked or planned records**, NOT 296 passing methods or a test-coverage percentage. No new suite executed. All E/I observations derive from inspected historical test bodies, not a new test execution or full branch sign-off.
 
@@ -930,76 +930,79 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 
 ## `crates/repoticker-core/src/git.rs`
 
+**Method-level Git Core assertion ledger:** [Git safety, owned child process cancellation and no-force push](method-assertions-git-core.md). Direct behavioral assertions are distinguished from platform-only and private helper paths; Windows inline test methods classified TEST_ONLY.
+
+
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
 | 17 | `pub struct GitError(pub String);` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
 | 19 | `impl fmt::Display for GitError {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | IMPL_BLOCK |
-| 20 | `fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 20 | `fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CORE |
 | 25 | `impl std::error::Error for GitError {}` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | IMPL_BLOCK |
-| 40 | `fn configure_background_child(command: &mut Command) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 47 | `fn configure_background_child(_command: &mut Command) {}` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 53 | `fn check_git_process_startup(output: &Output) -> Result<(), GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 62 | `fn is_git_process_startup_failure(error: &GitError) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 74 | `fn git_command(repo: &Path, args: &[&str]) -> Command {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 40 | `fn configure_background_child(command: &mut Command) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 47 | `fn configure_background_child(_command: &mut Command) {}` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | OS_P |
+| 53 | `fn check_git_process_startup(output: &Output) -> Result<(), GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 62 | `fn is_git_process_startup_failure(error: &GitError) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 74 | `fn git_command(repo: &Path, args: &[&str]) -> Command {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
 | 97 | `pub struct FetchCancellation {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
 | 101 | `impl FetchCancellation {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | IMPL_BLOCK |
-| 102 | `pub fn is_cancelled(&self) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 112 | `pub fn cancel(&self) -> Result<bool, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 116 | `fn cancel_with(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 149 | `fn register(&self, pid: u32) -> Result<bool, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 161 | `fn unregister(&self, pid: u32) -> Result<bool, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 172 | `fn terminate_fetch_group(pid: u32) -> Result<(), GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 177 | `fn kill(pid: i32, signal: i32) -> i32;` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 190 | `fn terminate_fetch_group(pid: u32) -> Result<(), GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 223 | `fn terminate_fetch_group(_pid: u32) -> Result<(), GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 232 | `fn classify_fetch_completion(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 245 | `fn fetch_was_interrupted(status: &std::process::ExitStatus) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 251 | `fn fetch_was_interrupted(status: &std::process::ExitStatus) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 257 | `fn fetch_was_interrupted(_status: &std::process::ExitStatus) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 264 | `fn unregistered_fetch_cleanup_error(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 286 | `fn run_cancellable_command(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 301 | `fn run_cancellable_command_with_timeout(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 102 | `pub fn is_cancelled(&self) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 112 | `pub fn cancel(&self) -> Result<bool, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 116 | `fn cancel_with(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 149 | `fn register(&self, pid: u32) -> Result<bool, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 161 | `fn unregister(&self, pid: u32) -> Result<bool, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 172 | `fn terminate_fetch_group(pid: u32) -> Result<(), GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
+| 177 | `fn kill(pid: i32, signal: i32) -> i32;` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | FFI_DECL |
+| 190 | `fn terminate_fetch_group(pid: u32) -> Result<(), GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | OS_P |
+| 223 | `fn terminate_fetch_group(_pid: u32) -> Result<(), GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | OS_P |
+| 232 | `fn classify_fetch_completion(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 245 | `fn fetch_was_interrupted(status: &std::process::ExitStatus) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
+| 251 | `fn fetch_was_interrupted(status: &std::process::ExitStatus) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | OS_P |
+| 257 | `fn fetch_was_interrupted(_status: &std::process::ExitStatus) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | OS_P |
+| 264 | `fn unregistered_fetch_cleanup_error(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 286 | `fn run_cancellable_command(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 301 | `fn run_cancellable_command_with_timeout(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
 | 367 | `pub struct RepoSnapshot {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
 | 381 | `pub enum OperationOutcome {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
-| 389 | `fn drain_git_pipe<R: Read + Send + 'static>(mut reader: R) -> mpsc::Receiver<io::Result<Vec<u8>>> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 402 | `fn receive_owned_pipe(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 438 | `fn wait_owned_child(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 508 | `fn run_bounded_command(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 528 | `fn invoke(repo: &Path, args: &[&str]) -> Result<Output, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 556 | `fn stderr(output: &Output) -> String {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 562 | `fn required(repo: &Path, args: &[&str]) -> Result<String, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 574 | `fn optional(repo: &Path, args: &[&str]) -> Result<Option<String>, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 585 | `fn looks_like_checkout(path: &Path, allow_worktree: bool) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 590 | `fn verified_checkout(path: &Path) -> Result<bool, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 602 | `fn ignored_child(path: &Path) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 619 | `pub fn validate_ignored_child_names(names: Vec<String>) -> Result<Vec<String>, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 644 | `pub fn discover_with_ignored(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 699 | `pub fn discover(root: &Path) -> Result<Vec<PathBuf>, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 703 | `pub fn discover_all_with_ignored(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 719 | `pub fn discover_all(roots: &[PathBuf]) -> (Vec<PathBuf>, Vec<String>) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 724 | `pub fn resolve_enrolled_checkout_with_ignored(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 741 | `pub fn resolve_enrolled_checkout(roots: &[PathBuf], requested: &str) -> Result<PathBuf, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 745 | `pub fn normalize_root(path: &str) -> Result<PathBuf, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 775 | `pub fn inspect_all(repositories: Vec<PathBuf>) -> Vec<(PathBuf, Result<RepoSnapshot, GitError>)> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 795 | `pub fn inspect(repo: &Path) -> Result<RepoSnapshot, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 873 | `fn git_operation_in_progress(repo: &Path) -> Result<bool, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 895 | `pub fn github_remote_to_browser_url(remote: &str) -> Option<String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 924 | `pub fn github_origin_url(repo: &Path) -> Result<String, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 934 | `pub fn fetch(repo: &Path) -> Result<OperationOutcome, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 945 | `pub fn fetch_with_cancel(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 974 | `fn commit_oid(repo: &Path, revision: &str) -> Result<String, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 986 | `fn pull_source_unchanged(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 1003 | `fn safe_pull_with_checkpoints(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 1055 | `fn safe_push_source_unchanged(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 1079 | `fn parse_single_remote_branch(raw: &str, branch_ref: &str) -> Result<String, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 1102 | `pub fn safe_push(repo: &Path) -> Result<OperationOutcome, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 1108 | `fn safe_push_with_checkpoint(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 1232 | `pub fn safe_sync(repo: &Path) -> Result<OperationOutcome, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 1244 | `pub fn safe_pull(repo: &Path) -> Result<OperationOutcome, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 1260 | `fn loader_failure_reports_ntstatus_without_leaking_command_or_repo_path() {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 1272 | `fn ordinary_failure_remains_a_regular_git_exit_status() {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 1282 | `fn headless_git_command_executes_without_losing_output() {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 1292 | `fn headless_child_creation_preserves_exit_status() {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 389 | `fn drain_git_pipe<R: Read + Send + 'static>(mut reader: R) -> mpsc::Receiver<io::Result<Vec<u8>>> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CORE |
+| 402 | `fn receive_owned_pipe(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 438 | `fn wait_owned_child(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CORE |
+| 508 | `fn run_bounded_command(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 528 | `fn invoke(repo: &Path, args: &[&str]) -> Result<Output, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CORE |
+| 556 | `fn stderr(output: &Output) -> String {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CORE |
+| 562 | `fn required(repo: &Path, args: &[&str]) -> Result<String, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CORE |
+| 574 | `fn optional(repo: &Path, args: &[&str]) -> Result<Option<String>, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CORE |
+| 585 | `fn looks_like_checkout(path: &Path, allow_worktree: bool) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CORE |
+| 590 | `fn verified_checkout(path: &Path) -> Result<bool, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CORE |
+| 602 | `fn ignored_child(path: &Path) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CORE |
+| 619 | `pub fn validate_ignored_child_names(names: Vec<String>) -> Result<Vec<String>, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 644 | `pub fn discover_with_ignored(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 699 | `pub fn discover(root: &Path) -> Result<Vec<PathBuf>, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 703 | `pub fn discover_all_with_ignored(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 719 | `pub fn discover_all(roots: &[PathBuf]) -> (Vec<PathBuf>, Vec<String>) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CORE |
+| 724 | `pub fn resolve_enrolled_checkout_with_ignored(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 741 | `pub fn resolve_enrolled_checkout(roots: &[PathBuf], requested: &str) -> Result<PathBuf, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 745 | `pub fn normalize_root(path: &str) -> Result<PathBuf, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 775 | `pub fn inspect_all(repositories: Vec<PathBuf>) -> Vec<(PathBuf, Result<RepoSnapshot, GitError>)> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 795 | `pub fn inspect(repo: &Path) -> Result<RepoSnapshot, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 873 | `fn git_operation_in_progress(repo: &Path) -> Result<bool, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CORE |
+| 895 | `pub fn github_remote_to_browser_url(remote: &str) -> Option<String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 924 | `pub fn github_origin_url(repo: &Path) -> Result<String, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 934 | `pub fn fetch(repo: &Path) -> Result<OperationOutcome, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 945 | `pub fn fetch_with_cancel(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CORE |
+| 974 | `fn commit_oid(repo: &Path, revision: &str) -> Result<String, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CORE |
+| 986 | `fn pull_source_unchanged(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CORE |
+| 1003 | `fn safe_pull_with_checkpoints(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 1055 | `fn safe_push_source_unchanged(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CORE |
+| 1079 | `fn parse_single_remote_branch(raw: &str, branch_ref: &str) -> Result<String, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 1102 | `pub fn safe_push(repo: &Path) -> Result<OperationOutcome, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 1108 | `fn safe_push_with_checkpoint(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 1232 | `pub fn safe_sync(repo: &Path) -> Result<OperationOutcome, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 1244 | `pub fn safe_pull(repo: &Path) -> Result<OperationOutcome, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 1260 | `fn loader_failure_reports_ntstatus_without_leaking_command_or_repo_path() {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TEST_ONLY |
+| 1272 | `fn ordinary_failure_remains_a_regular_git_exit_status() {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TEST_ONLY |
+| 1282 | `fn headless_git_command_executes_without_losing_output() {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TEST_ONLY |
+| 1292 | `fn headless_child_creation_preserves_exit_status() {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TEST_ONLY |
 
 ## `crates/repoticker-core/src/github_auth.rs`
 

@@ -3,6 +3,8 @@
 Baseline production source `a3ba7fa30fc4c81890d3075f94142942d001cbf3`.
 Input: eight preserved source inventories in this audit plus a separate `main.rs` continuation (inline Rust tests are interspersed). These are lexical extraction records, NOT an AST and NOT evidence that branches have been covered.
 
+**Method evidence tags:** `I_PARTIAL` = real method was executed indirectly through a real consumer with some relevant assertions, but independent branches remain open; `E_PARTIAL` = real method called directly in reviewed tests with still-open branches; `INLINE` = a private closure nested within an enclosing method, not a separate public API. Other `?` rows remain unclassified. These tags do not change the global Stage 3–8 PARTIAL state.
+
 Every line carries **risk**, **test level**, **candidate N categories**, and an **initial test-count floor**. These floors represent planning estimates to be refined against each distinct decision outcome, NOT observed tests, and NOT a cap on required tests. The letter `?` denotes not yet assertion-mapped. External dependencies are faked only by contract, never by replacing business logic.
 
 Static catalog/data-only entries are separate testable artifacts: cross-locale structural parity + consumer semantics, not artificially invented network/disk failure tests. N11 not applicable to any RepoTicker file (no entitlements).
@@ -786,11 +788,13 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 
 ## `apps/desktop/ui/status-metrics.mjs`
 
+**Per-method assertion reconciliation:** [status-metrics actual/indirect source evidence](method-assertions-status-metrics.md). This segment distinguishes two exported methods and one inline predicate; statuses are not branch-closure certificates.
+
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 2 | `export const shown = n => Number.isSafeInteger(n) && n >= 0 ? String(n) : "—";` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 4 | `export function compactStatus(state) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 8 | `const valid = n => Number.isSafeInteger(n) && n >= 0;` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 2 | `export const shown = n => Number.isSafeInteger(n) && n >= 0 ? String(n) : "—";` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
+| 4 | `export function compactStatus(state) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
+| 8 | `const valid = n => Number.isSafeInteger(n) && n >= 0;` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | INLINE |
 
 ## `apps/desktop/ui/surface-i18n.mjs`
 

@@ -256,6 +256,7 @@ development journal. It is source-derived and does not claim final coverage.
 - [Method assertions: detached Quota DOM/Tauri private callbacks and kind race](mode-b/method-assertions-quota-controller.md)
 - [Method assertions: local Git UI geometry, safe sync and scan single-flight](mode-b/method-assertions-git-ui-queue.md)
 - [Stage 3 Rust type and impl-block declaration classification (73 noncallable entries)](mode-b/method-declaration-classification.md)
+- [Method assertions: main app.mjs controller owner map and A1 harness contract](mode-b/method-assertions-main-card-controller.md)
 - [Settings/Quota/Card semantic map and planned negative cases](mode-b/branch-map-settings-quota-card.md)
 - [Git safety, OAuth, ETag and rate gate semantic branch map](mode-b/branch-map-git-oauth.md)
 - [R2/APT release and GitHub monitoring semantic branch map](mode-b/branch-map-release-monitor.md)

@@ -3,7 +3,7 @@
 Baseline production source `a3ba7fa30fc4c81890d3075f94142942d001cbf3`.
 Input: eight preserved source inventories in this audit plus a separate `main.rs` continuation (inline Rust tests are interspersed). These are lexical extraction records, NOT an AST and NOT evidence that branches have been covered.
 
-**Method evidence tags:** `I_PARTIAL` = real method was executed indirectly through a real consumer with some relevant assertions, but independent branches remain open; `E_PARTIAL` = real method called directly in reviewed tests with still-open branches; `INLINE` = a private closure nested within an enclosing method, not a separate public API. `ADAPTER` = a tiny private wrapper around DOM/native transport rather than a separate domain API; `P` = an inspected entrypoint with no matching direct executable event assertion. `TYPE_DECL` = Rust struct/enum/union declaration, not a callable method; `IMPL_BLOCK` = method-implementation container, not itself an executable method. These two are syntax-based Stage 3 type classification, **not** coverage of declared fields or member methods. `CLASS_DECL` = Python/JS/TS class definition, `CLASS_METHOD` = real class/adapter method awaiting assertion reconciliation, `CALL_SITE` = function call misrecognized as lexical method, `STARTUP_CALL` = top-level initialization effect, `LOCAL_EXPR` = Boolean/nonfunction value inside an owning function. None of these tags represents a passing test. Other `?` rows remain unclassified. These tags do not change the global Stage 3–8 PARTIAL state.
+**Method evidence tags:** `I_PARTIAL` = real method was executed indirectly through a real consumer with some relevant assertions, but independent branches remain open; `E_PARTIAL` = real method called directly in reviewed tests with still-open branches; `INLINE` = a private closure nested within an enclosing method, not a separate public API. `ADAPTER` = a tiny private wrapper around DOM/native transport rather than a separate domain API; `P` = an inspected entrypoint with no matching direct executable event assertion. `TYPE_DECL` = Rust struct/enum/union declaration, not a callable method; `IMPL_BLOCK` = method-implementation container, not itself an executable method. These two are syntax-based Stage 3 type classification, **not** coverage of declared fields or member methods. `CLASS_DECL` = Python/JS/TS class definition, `CLASS_METHOD` = real class/adapter method awaiting assertion reconciliation, `CALL_SITE` = function call misrecognized as lexical method, `STARTUP_CALL` = top-level initialization effect, `LOCAL_EXPR` = Boolean/nonfunction value inside an owning function. None of these tags represents a passing test. `P_CONTROLLER` = private method whose in-situ main-card DOM/Tauri behavior is not verified, `CALLBACK_P` = unasserted event closure; these may already have directly tested separate pure helpers. Other `?` rows remain unclassified. These tags do not change the global Stage 3–8 PARTIAL state.
 
 **Checkpoint after source-context triage:** 707 lexical entries: 15 E_PARTIAL, 21 I_PARTIAL, 4 INLINE, 2 ADAPTER, 2 P; 41 TYPE_DECL, 32 IMPL_BLOCK; 3 CALL_SITE, 1 STARTUP_CALL, 2 LOCAL_EXPR, 3 CLASS_DECL, 11 CLASS_METHOD; **570 '?' remain**. All E/I observations derive from inspected historical test bodies, not a new test execution or full branch sign-off.
 
@@ -430,51 +430,54 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 
 ## `apps/desktop/ui/app.mjs`
 
+**Method-level reconciliation:** [all main-card controller owners and missing A1 imported-DOM assertions](method-assertions-main-card-controller.md). `P_CONTROLLER` and `CALLBACK_P` indicate missing actual controller test evidence, not observed product failures.
+
+
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 21 | `const byId = id => document.getElementById(id);` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 23 | `const invoke = (command, args = {}) => {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 29 | `const traceStartup = stage => {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 51 | `function updateReposActivity() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 63 | `function cancelAutoHide() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 66 | `function armAutoHide() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 86 | `function paintNotice() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 97 | `function showError(message) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 101 | `function showResizeError(message) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 105 | `function showGitOperationErrors(count, message) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 109 | `function clearError() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 113 | `function addText(parent, tag, value, className = "") {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 125 | `function hideRepoMenus(restoreFocus = false) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 136 | `function showRepoMenu(button, repoPath) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 215 | `function paintCiIndicator(row, repo) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 232 | `function updateCiStatuses(next) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 241 | `function makeRepoRow(repo) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 272 | `function updateActionState() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 320 | `function traceHover(kind, stage) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 336 | `function setActiveTooltip(kind) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 343 | `function resetQuota() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 352 | `function setQuotaOpen(kind = null) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 400 | `const enter = () => {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 430 | `function monitorRefreshState(kind, active) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 439 | `function clearBrowserTooltips() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 445 | `function updateMetricAccessibleNames() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 452 | `function setCardLanguage(language) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 492 | `function renderMonitorMetrics(state) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 503 | `function traceMonitorReady() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 509 | `function render(next) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 21 | `const byId = id => document.getElementById(id);` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ADAPTER |
+| 23 | `const invoke = (command, args = {}) => {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ADAPTER |
+| 29 | `const traceStartup = stage => {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
+| 51 | `function updateReposActivity() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
+| 63 | `function cancelAutoHide() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
+| 66 | `function armAutoHide() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
+| 86 | `function paintNotice() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
+| 97 | `function showError(message) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
+| 101 | `function showResizeError(message) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
+| 105 | `function showGitOperationErrors(count, message) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
+| 109 | `function clearError() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
+| 113 | `function addText(parent, tag, value, className = "") {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
+| 125 | `function hideRepoMenus(restoreFocus = false) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
+| 136 | `function showRepoMenu(button, repoPath) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
+| 215 | `function paintCiIndicator(row, repo) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
+| 232 | `function updateCiStatuses(next) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
+| 241 | `function makeRepoRow(repo) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
+| 272 | `function updateActionState() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
+| 320 | `function traceHover(kind, stage) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
+| 336 | `function setActiveTooltip(kind) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
+| 343 | `function resetQuota() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
+| 352 | `function setQuotaOpen(kind = null) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
+| 400 | `const enter = () => {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 430 | `function monitorRefreshState(kind, active) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
+| 439 | `function clearBrowserTooltips() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
+| 445 | `function updateMetricAccessibleNames() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
+| 452 | `function setCardLanguage(language) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
+| 492 | `function renderMonitorMetrics(state) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
+| 503 | `function traceMonitorReady() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
+| 509 | `function render(next) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
 | 545 | `render(reconcileScanPresentation(next, snapshot, revision, monitorRevision));` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALL_SITE |
-| 554 | `function refresh() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 560 | `async function refreshMonitor() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 574 | `function consumeResults(results) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 582 | `async function cancelActiveFetch() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 595 | `async function runGitAction(operation, repoPath = null) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 554 | `function refresh() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
+| 560 | `async function refreshMonitor() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
+| 574 | `function consumeResults(results) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
+| 582 | `async function cancelActiveFetch() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
+| 595 | `async function runGitAction(operation, repoPath = null) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
 | 612 | `render(snapshot);` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALL_SITE |
-| 615 | `function resetView() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 624 | `async function openView(target) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 615 | `function resetView() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
+| 624 | `async function openView(target) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
 | 713 | `refresh();` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALL_SITE |
-| 718 | `function refreshCardConfiguration() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 718 | `function refreshCardConfiguration() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
 | 745 | `refresh();` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | STARTUP_CALL |
-| 762 | `function stopDragging(event = null) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 762 | `function stopDragging(event = null) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
 
 ## `apps/desktop/ui/browser-context-menu.mjs`
 

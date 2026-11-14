@@ -78,6 +78,10 @@ All 29 remaining unknown rendered rows classified: 10 E_PARTIAL, 9 I_PARTIAL, 5 
 
 [Global source-to-matrix consistency and evidence migration ledger](stage-3-8-global-evidence-consistency.md) verifies **80/80 unique source paths** against the exact production Git tree, 80 Stage 5 rows, 80 Stage 8 rows, 80 method headings and **717 typed candidate rows**. It recounts 1,040 Stage 5 cells: **810 `?`**, **230 `✖`**, **zero `✔`**. No `✔` does **not** mean no existing real tests: assertion ownership is already documented in focused maps, but no file-level cell is proven complete. Existing bounded slices plan 16+15+14=45 locally estimated new test bodies, **not** a deduplicated global test estimate. Stages 3–8 remain PARTIAL; no suite executed.
 
+### Stage 4–8 first exact assertion transfer: scan, gesture, HMAC and Worker (2026-11-14)
+
+[Source-line and test-line crosswalk](method-evidence-crosswalk-ui-worker.md) ties genuine behavior assertions to production branch outcomes in four modules and explicitly separates source-only contracts. **41 reviewed test bodies, 37 direct real-function assertions, 4 source-only inspections**. Stage 8 `Covered`/`Remaining` cells now reference exact evidence for these four files; Stage 5 `?` cannot be promoted to `✔` while independently observable branches remain P/OS/HOST. No test added, run, or duplicated in Stage 7 count. Other files and exhaustive AST mapping remain open.
+
 ## Separate the executable test queue from policy STOP factors
 
 | Track / relevant source | What remains to map before Stage 9 | Proposed deterministic case IDs and exact proof needed | Stage 9 prerequisites |

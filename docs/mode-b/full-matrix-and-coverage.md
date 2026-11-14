@@ -144,6 +144,10 @@ The [global evidence reconciliation](stage-3-8-global-evidence-consistency.md) v
   uncovered dependency/side effect must move a cell from ✖ to ? before
   Stage 5 can be signed off. ✖ is never shorthand for 'we did not test it.'
 
+### Stage 4–8 first per-branch evidence transfer (2026-11-14)
+
+The [exact source-guard-to-test crosswalk](method-evidence-crosswalk-ui-worker.md) transfers *partial* direct assertions for four files into their Stage 8 `Covered`/`Remaining` cells. Existing tests: 41 reviewed, 37 invoke actual production methods, 4 only inspect source text. Since relevant N1–N12 outcomes remain P or physical OS/HOST, **Stage 5 remains 810 `?`, 230 `✖`, 0 `✔`**; do not equate a changed Stage 8 row with a fully covered file.
+
 ## Stage 8: per-file source Coverage Map (not yet completed)
 
 | Production artifact | Functions/types | Source branch candidates | Covered | Remaining | Inventory |
@@ -189,7 +193,7 @@ The [global evidence reconciliation](stage-3-8-global-evidence-consistency.md) v
 | `apps/desktop/ui/locale-workflow.mjs` | 0 | 0 lexical | Not measured per branch; candidate source suites indexed | Exact assertions and platform outcomes unverified | [inventory-locales.md](inventory-locales.md) |
 | `apps/desktop/ui/model.mjs` | 5 | 15 lexical | Not measured per branch; candidate source suites indexed | Exact assertions and platform outcomes unverified | [inventory-ui-utilities.md](inventory-ui-utilities.md) |
 | `apps/desktop/ui/monitor-presentation.mjs` | 2 | 5 lexical | Not measured per branch; candidate source suites indexed | Exact assertions and platform outcomes unverified | [inventory-ui-utilities.md](inventory-ui-utilities.md) |
-| `apps/desktop/ui/native-drag.mjs` | 2 | 6 lexical | Not measured per branch; candidate source suites indexed | Exact assertions and platform outcomes unverified | [inventory-ui-utilities.md](inventory-ui-utilities.md) |
+| `apps/desktop/ui/native-drag.mjs` | 2 | 6 lexical | [gesture: 4 real method tests](method-evidence-crosswalk-ui-worker.md) (1 static wiring check separated) | DG1–DG2 rejected stop/old session; real pointer capture and KDE seat OS | [inventory-ui-utilities.md](inventory-ui-utilities.md) |
 | `apps/desktop/ui/quota-details.mjs` | 13 | 24 lexical | Not measured per branch; candidate source suites indexed | Exact assertions and platform outcomes unverified | [inventory-ui-utilities.md](inventory-ui-utilities.md) |
 | `apps/desktop/ui/quota-size.mjs` | 1 | 3 lexical | Not measured per branch; candidate source suites indexed | Exact assertions and platform outcomes unverified | [inventory-ui-utilities.md](inventory-ui-utilities.md) |
 | `apps/desktop/ui/quota.mjs` | 17 | 45 lexical | Not measured per branch; candidate source suites indexed | Exact assertions and platform outcomes unverified | [inventory-ui-controllers.md](inventory-ui-controllers.md) |
@@ -197,7 +201,7 @@ The [global evidence reconciliation](stage-3-8-global-evidence-consistency.md) v
 | `apps/desktop/ui/repo-row-indicator.mjs` | 2 | 7 lexical | Not measured per branch; candidate source suites indexed | Exact assertions and platform outcomes unverified | [inventory-ui-utilities.md](inventory-ui-utilities.md) |
 | `apps/desktop/ui/runner-collector.mjs` | 6 | 32 lexical | Not measured per branch; candidate source suites indexed | Exact assertions and platform outcomes unverified | [inventory-ui-utilities.md](inventory-ui-utilities.md) |
 | `apps/desktop/ui/runner-state.mjs` | 9 | 28 lexical | Not measured per branch; candidate source suites indexed | Exact assertions and platform outcomes unverified | [inventory-ui-utilities.md](inventory-ui-utilities.md) |
-| `apps/desktop/ui/scan-refresh.mjs` | 3 | 10 lexical | Not measured per branch; candidate source suites indexed | Exact assertions and platform outcomes unverified | [inventory-ui-utilities.md](inventory-ui-utilities.md) |
+| `apps/desktop/ui/scan-refresh.mjs` | 3 | 10 lexical | [scan/queue: 5 real method tests](method-evidence-crosswalk-ui-worker.md) (2 source-only tests separated) | SC1–SC2 callback exceptions, reentrant invalidation; A1 DOM/Tauri event/scan race and OS gate | [inventory-ui-utilities.md](inventory-ui-utilities.md) |
 | `apps/desktop/ui/settings-i18n.mjs` | 1 | 3 lexical | Not measured per branch; candidate source suites indexed | Exact assertions and platform outcomes unverified | [inventory-ui-final.md](inventory-ui-final.md) |
 | `apps/desktop/ui/settings.mjs` | 43 | 203 lexical | Not measured per branch; candidate source suites indexed | Exact assertions and platform outcomes unverified | [inventory-ui-controllers.md](inventory-ui-controllers.md) |
 | `apps/desktop/ui/status-metrics.mjs` | 3 | 1 lexical | Not measured per branch; candidate source suites indexed | Exact assertions and platform outcomes unverified | [inventory-ui-final.md](inventory-ui-final.md) |
@@ -206,8 +210,8 @@ The [global evidence reconciliation](stage-3-8-global-evidence-consistency.md) v
 | `apps/relay-cloudflare/src/hub.mjs` | 7 | 21 lexical | Not measured per branch; candidate source suites indexed | Exact assertions and platform outcomes unverified | [inventory-core-relay.md](inventory-core-relay.md) |
 | `apps/relay-cloudflare/src/index.ts` | 6 | 0 lexical | Not measured per branch; candidate source suites indexed | Exact assertions and platform outcomes unverified | [inventory-core-relay.md](inventory-core-relay.md) |
 | `apps/relay-cloudflare/src/relay-protocol.mjs` | 9 | 27 lexical | Not measured per branch; candidate source suites indexed | Exact assertions and platform outcomes unverified | [inventory-core-relay.md](inventory-core-relay.md) |
-| `apps/relay-cloudflare/src/webhook-verify.mjs` | 1 | 4 lexical | Not measured per branch; candidate source suites indexed | Exact assertions and platform outcomes unverified | [inventory-core-relay.md](inventory-core-relay.md) |
-| `apps/relay-cloudflare/src/worker.mjs` | 1 | 18 lexical | Not measured per branch; candidate source suites indexed | Exact assertions and platform outcomes unverified | [inventory-core-relay.md](inventory-core-relay.md) |
+| `apps/relay-cloudflare/src/webhook-verify.mjs` | 1 | 4 lexical | [HMAC: 4 real method tests](method-evidence-crosswalk-ui-worker.md) (1 static entrypoint check separated) | WH1 empty bytes/crypto exceptions; Worker size boundary and hosted adapter | [inventory-core-relay.md](inventory-core-relay.md) |
+| `apps/relay-cloudflare/src/worker.mjs` | 1 | 18 lexical | [Worker: 24 real method tests](method-evidence-crosswalk-ui-worker.md) with DO stub (not hosted Worker) | RW1–RW5 signed boundary, exceptions, browser-header/query, Worker→Hub and HOST gate | [inventory-core-relay.md](inventory-core-relay.md) |
 | `crates/repoticker-core/src/bounded.rs` | 1 | 5 lexical | Not measured per branch; candidate source suites indexed | Exact assertions and platform outcomes unverified | [inventory-core-relay.md](inventory-core-relay.md) |
 | `crates/repoticker-core/src/config_store.rs` | 15 | 15 lexical | Not measured per branch; candidate source suites indexed | Exact assertions and platform outcomes unverified | [inventory-core-relay.md](inventory-core-relay.md) |
 | `crates/repoticker-core/src/git.rs` | 68 | 83 lexical | Not measured per branch; candidate source suites indexed | Exact assertions and platform outcomes unverified | [inventory-core-relay.md](inventory-core-relay.md) |

@@ -102,6 +102,10 @@ changes merely to report test progress.
 
 [Independent register and evidence migration reconciliation](mode-b/stage-3-8-global-evidence-consistency.md) confirms the exact **80 file path sets** match the source-map registry, Stage 5, Stage 8, method headings and the source-equivalent production Git tree. There are **717 provisionally typed candidate rows**, not 717 executable methods. The global Stage 5 matrix currently has 1,040 applicability/evidence cells: **810 unknown `?`**, **230 provisional NA `✖`**, and **no full-file `✔`**. This is a documentation signoff deficiency, **not** a claim that all tests fail or no source methods are tested. Three bounded slices estimate 16+15+14 new independent test bodies locally, without global deduplication. Stages 3–8 remain PARTIAL.
 
+### First Stage 4–8 branch-to-test evidence migration
+
+[Crosswalk from source decisions to actual Node assertions](mode-b/method-evidence-crosswalk-ui-worker.md) now provides exact blob/line provenance for `scan-refresh.mjs`, `native-drag.mjs`, `webhook-verify.mjs` and `worker.mjs`. **41 existing test bodies reviewed: 37 invoke actual production methods, 4 are source-only contracts**. Four Stage 8 `Covered`/`Remaining` rows now link this evidence without granting a full Stage 5 `✔`: aggregate matrix still has 810 `?` and 230 provisional `✖`. Physical KDE, hosted Worker and incomplete negative branches remain open; no suites rerun.
+
 ## Twelve-stage progress ledger
 
 | Stage | Contract | State | Completion evidence / next action |

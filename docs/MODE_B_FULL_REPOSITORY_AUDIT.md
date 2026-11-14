@@ -259,6 +259,7 @@ development journal. It is source-derived and does not claim final coverage.
 - [Method assertions: main app.mjs controller owner map and A1 harness contract](mode-b/method-assertions-main-card-controller.md)
 - [Method assertions: actual imported Settings controller and native custody gaps](mode-b/method-assertions-settings-controller.md)
 - [Method assertions: GitHub runner and CI notification collectors](mode-b/method-assertions-runner-ci-collectors.md)
+- [Method assertions: native main.rs Tauri IPC and OS command ownership](mode-b/method-assertions-native-main-ipc.md)
 - [Settings/Quota/Card semantic map and planned negative cases](mode-b/branch-map-settings-quota-card.md)
 - [Git safety, OAuth, ETag and rate gate semantic branch map](mode-b/branch-map-git-oauth.md)
 - [R2/APT release and GitHub monitoring semantic branch map](mode-b/branch-map-release-monitor.md)

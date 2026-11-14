@@ -3,7 +3,7 @@
 Baseline production source `a3ba7fa30fc4c81890d3075f94142942d001cbf3`.
 Input: eight preserved source inventories in this audit plus a separate `main.rs` continuation (inline Rust tests are interspersed). These are lexical extraction records, NOT an AST and NOT evidence that branches have been covered.
 
-**Method evidence tags:** `I_PARTIAL` = real method was executed indirectly through a real consumer with some relevant assertions, but independent branches remain open; `E_PARTIAL` = real method called directly in reviewed tests with still-open branches; `INLINE` = a private closure nested within an enclosing method, not a separate public API. `ADAPTER` = a tiny private wrapper around DOM/native transport rather than a separate domain API; `P` = an inspected entrypoint with no matching direct executable event assertion. `TYPE_DECL` = Rust struct/enum/union declaration, not a callable method; `IMPL_BLOCK` = method-implementation container, not itself an executable method. These two are syntax-based Stage 3 type classification, **not** coverage of declared fields or member methods. `CLASS_DECL` = Python/JS/TS class definition, `CLASS_METHOD` = real class/adapter method awaiting assertion reconciliation, `CALL_SITE` = function call misrecognized as lexical method, `STARTUP_CALL` = top-level initialization effect, `LOCAL_EXPR` = Boolean/nonfunction value inside an owning function. None of these tags represents a passing test. `P_CONTROLLER` = private method whose in-situ main-card DOM/Tauri behavior is not verified, `CALLBACK_P` = unasserted event closure; these may already have directly tested separate pure helpers. Other `?` rows remain unclassified. These tags do not change the global Stage 3–8 PARTIAL state.
+**Method evidence tags:** `I_PARTIAL` = real method was executed indirectly through a real consumer with some relevant assertions, but independent branches remain open; `E_PARTIAL` = real method called directly in reviewed tests with still-open branches; `INLINE` = a private closure nested within an enclosing method, not a separate public API. `ADAPTER` = a tiny private wrapper around DOM/native transport rather than a separate domain API; `P` = an inspected entrypoint with no matching direct executable event assertion. `TYPE_DECL` = Rust struct/enum/union declaration, not a callable method; `IMPL_BLOCK` = method-implementation container, not itself an executable method. These two are syntax-based Stage 3 type classification, **not** coverage of declared fields or member methods. `CLASS_DECL` = Python/JS/TS class definition, `CLASS_METHOD` = real class/adapter method awaiting assertion reconciliation, `CALL_SITE` = function call misrecognized as lexical method, `STARTUP_CALL` = top-level initialization effect, `LOCAL_EXPR` = Boolean/nonfunction value inside an owning function. None of these tags represents a passing test. `P_CONTROLLER` = private method whose in-situ main-card DOM/Tauri behavior is not verified, `CALLBACK_P` = unasserted event closure; these may already have directly tested separate pure helpers. `P_NATIVE` = actual native method/command without directly verified AppHandle/OS assertions (other pure modules may be tested); `BOOTSTRAP_P` = OS app setup. Other `?` rows remain unclassified. These tags do not change the global Stage 3–8 PARTIAL state.
 
 **Checkpoint after controller and collector method triage:** 707 lexical entries: **18 E_PARTIAL, 64 I_PARTIAL, 6 INLINE, 7 ADAPTER, 3 P, 36 P_CONTROLLER, 1 CALLBACK_P**; 41 TYPE_DECL, 32 IMPL_BLOCK, 3 CALL_SITE, 1 STARTUP_CALL, 2 LOCAL_EXPR, 3 CLASS_DECL, 11 CLASS_METHOD; **479 '?' remain**. This is 228 classified/planning-linked lexical entries, not 228 fully tested methods; historical test assertions were inspected, no new suite executed. All E/I observations derive from inspected historical test bodies, not a new test execution or full branch sign-off.
 
@@ -214,78 +214,81 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 
 ## `apps/desktop/src-tauri/src/main.rs`
 
+**Native method assertion ledger:** [Tauri main.rs OS/IPC source-to-test ownership](method-assertions-native-main-ipc.md). Six direct inline Rust helper tests are credited; native commands remain pending actual command-level and OS acceptance.
+
+
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
 | 59 | `impl Drop for ActiveFetchLease<'_> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | IMPL_BLOCK |
-| 60 | `fn drop(&mut self) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 60 | `fn drop(&mut self) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
 | 112 | `impl CiNotificationMode {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | IMPL_BLOCK |
-| 113 | `fn allows(self, conclusion: &str) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 123 | `fn default_language() -> String {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 173 | `fn notify_progress(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 195 | `fn config_path(app: &AppHandle) -> Result<PathBuf, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 202 | `fn default_config() -> Config {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 217 | `fn read_config(app: &AppHandle) -> Result<Config, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 227 | `fn update_config<R>(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 236 | `fn roots_as_paths(config: &Config) -> Vec<PathBuf> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 240 | `fn decision_label(decision: SyncDecision) -> String {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 252 | `fn present(repo: RepoSnapshot) -> RepoSummary {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 266 | `fn scan(app: &AppHandle) -> Result<Snapshot, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 301 | `fn git_action_result(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 348 | `fn should_schedule_git_target(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 359 | `fn execute(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 501 | `async fn get_snapshot(app: AppHandle) -> Result<Snapshot, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 511 | `fn get_monitor_scope(app: AppHandle) -> Result<Option<String>, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 526 | `fn get_monitor_selection(app: AppHandle) -> Result<MonitorSelection, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 550 | `fn get_settings_config(app: AppHandle) -> Result<SettingsConfig, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 566 | `fn add_root(app: AppHandle, root: String) -> Result<Vec<String>, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 585 | `fn remove_root(app: AppHandle, root: String) -> Result<Vec<String>, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 598 | `fn cancel_git_fetch(app: AppHandle) -> Result<bool, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 612 | `async fn perform_git_action(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 623 | `fn resize_unmanaged_card(window: &tauri::WebviewWindow, height: f64) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 647 | `async fn set_card_view(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 683 | `fn ui_hover_debug_enabled() -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 688 | `fn trace_ui_hover(kind: String, stage: String, sequence: u32) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 724 | `fn get_usage_popup_kind() -> &'static str {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 737 | `fn footer_anchored_usage_position(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 756 | `fn position_unmanaged_usage_popup(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 807 | `fn show_usage_popup(app: AppHandle, kind: String) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 886 | `fn hide_usage_popup(app: AppHandle) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 911 | `async fn resize_usage_popup(app: AppHandle, height: i32) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 945 | `fn hide_card(app: AppHandle) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 967 | `fn show_compact_card(app: &AppHandle) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 1017 | `fn show_settings(app: &AppHandle) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 1044 | `fn show_about(app: &AppHandle) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 1056 | `fn hide_about(app: AppHandle) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 1071 | `fn get_about_info() -> AboutInfo {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 1079 | `fn launch_browser(url: &str) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 1094 | `fn open_project_website() -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 1100 | `fn trusted_relay_resource_url(resource: &str) -> Option<&'static str> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 1111 | `fn open_relay_resource(window: tauri::WebviewWindow, resource: String) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 1147 | `fn open_actions_job(url: String) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 1177 | `fn enrolled_repository(app: &AppHandle, repo_path: &str) -> Result<PathBuf, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 1190 | `async fn open_repository_on_github(app: AppHandle, repo_path: String) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 1201 | `fn launch_file_manager(path: &std::path::Path) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 1216 | `async fn open_repository_folder(app: AppHandle, repo_path: String) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 1227 | `async fn copy_repository_path(app: AppHandle, repo_path: String) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 1242 | `async fn start_card_drag(app: AppHandle) -> Result<bool, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 1256 | `async fn stop_card_drag(app: AppHandle) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 1276 | `fn open_settings(app: AppHandle) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 1281 | `fn start_settings_drag(app: AppHandle) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 1291 | `async fn select_repository_root(app: AppHandle) -> Result<Option<String>, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 1315 | `fn clear_relay_url_for_polling(config: &mut Config) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 1324 | `fn save_settings(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 1444 | `fn close_settings(app: AppHandle) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 1620 | `fn validate_monitor_repositories(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 1651 | `fn github_set_monitor_org(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 1685 | `fn set_language(app: AppHandle, language: String) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 1699 | `fn toggle_card(app: &AppHandle) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 1726 | `fn tray_image() -> Image<'static> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 1732 | `fn build_desktop_tray_menu(app: &AppHandle, language: &str) -> tauri::Result<Menu<tauri::Wry>> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 1780 | `fn refresh_tray_language(app: &AppHandle, language: &str) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 1797 | `fn request_quit(app: &AppHandle) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 1834 | `fn dispatch_menu_action(app: &AppHandle, operation: &'static str) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 1844 | `fn configure_gdk_for_native_wayland() {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 1858 | `fn main() {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 113 | `fn allows(self, conclusion: &str) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 123 | `fn default_language() -> String {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 173 | `fn notify_progress(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 195 | `fn config_path(app: &AppHandle) -> Result<PathBuf, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 202 | `fn default_config() -> Config {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 217 | `fn read_config(app: &AppHandle) -> Result<Config, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 227 | `fn update_config<R>(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 236 | `fn roots_as_paths(config: &Config) -> Vec<PathBuf> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 240 | `fn decision_label(decision: SyncDecision) -> String {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 252 | `fn present(repo: RepoSnapshot) -> RepoSummary {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 266 | `fn scan(app: &AppHandle) -> Result<Snapshot, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 301 | `fn git_action_result(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 348 | `fn should_schedule_git_target(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 359 | `fn execute(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 501 | `async fn get_snapshot(app: AppHandle) -> Result<Snapshot, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 511 | `fn get_monitor_scope(app: AppHandle) -> Result<Option<String>, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 526 | `fn get_monitor_selection(app: AppHandle) -> Result<MonitorSelection, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 550 | `fn get_settings_config(app: AppHandle) -> Result<SettingsConfig, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 566 | `fn add_root(app: AppHandle, root: String) -> Result<Vec<String>, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 585 | `fn remove_root(app: AppHandle, root: String) -> Result<Vec<String>, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 598 | `fn cancel_git_fetch(app: AppHandle) -> Result<bool, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 612 | `async fn perform_git_action(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 623 | `fn resize_unmanaged_card(window: &tauri::WebviewWindow, height: f64) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 647 | `async fn set_card_view(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 683 | `fn ui_hover_debug_enabled() -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 688 | `fn trace_ui_hover(kind: String, stage: String, sequence: u32) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 724 | `fn get_usage_popup_kind() -> &'static str {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 737 | `fn footer_anchored_usage_position(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 756 | `fn position_unmanaged_usage_popup(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 807 | `fn show_usage_popup(app: AppHandle, kind: String) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 886 | `fn hide_usage_popup(app: AppHandle) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 911 | `async fn resize_usage_popup(app: AppHandle, height: i32) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 945 | `fn hide_card(app: AppHandle) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 967 | `fn show_compact_card(app: &AppHandle) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 1017 | `fn show_settings(app: &AppHandle) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 1044 | `fn show_about(app: &AppHandle) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 1056 | `fn hide_about(app: AppHandle) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 1071 | `fn get_about_info() -> AboutInfo {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 1079 | `fn launch_browser(url: &str) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 1094 | `fn open_project_website() -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 1100 | `fn trusted_relay_resource_url(resource: &str) -> Option<&'static str> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 1111 | `fn open_relay_resource(window: tauri::WebviewWindow, resource: String) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 1147 | `fn open_actions_job(url: String) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 1177 | `fn enrolled_repository(app: &AppHandle, repo_path: &str) -> Result<PathBuf, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 1190 | `async fn open_repository_on_github(app: AppHandle, repo_path: String) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 1201 | `fn launch_file_manager(path: &std::path::Path) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 1216 | `async fn open_repository_folder(app: AppHandle, repo_path: String) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 1227 | `async fn copy_repository_path(app: AppHandle, repo_path: String) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 1242 | `async fn start_card_drag(app: AppHandle) -> Result<bool, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 1256 | `async fn stop_card_drag(app: AppHandle) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 1276 | `fn open_settings(app: AppHandle) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 1281 | `fn start_settings_drag(app: AppHandle) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 1291 | `async fn select_repository_root(app: AppHandle) -> Result<Option<String>, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 1315 | `fn clear_relay_url_for_polling(config: &mut Config) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 1324 | `fn save_settings(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 1444 | `fn close_settings(app: AppHandle) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 1620 | `fn validate_monitor_repositories(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 1651 | `fn github_set_monitor_org(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 1685 | `fn set_language(app: AppHandle, language: String) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 1699 | `fn toggle_card(app: &AppHandle) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 1726 | `fn tray_image() -> Image<'static> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 1732 | `fn build_desktop_tray_menu(app: &AppHandle, language: &str) -> tauri::Result<Menu<tauri::Wry>> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 1780 | `fn refresh_tray_language(app: &AppHandle, language: &str) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 1797 | `fn request_quit(app: &AppHandle) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 1834 | `fn dispatch_menu_action(app: &AppHandle, operation: &'static str) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 1844 | `fn configure_gdk_for_native_wayland() {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 1858 | `fn main() {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | BOOTSTRAP_P |
 
 ## `apps/desktop/src-tauri/src/monitor_cache.rs`
 

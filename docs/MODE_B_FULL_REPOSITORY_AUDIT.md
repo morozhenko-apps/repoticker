@@ -94,6 +94,10 @@ changes merely to report test progress.
 
 [Source-exact main-card, monitor and scan closure slice](mode-b/stage-4-8-card-monitor-scan-slice.md) maps the existing seven scan tests and four monitor suites (30, 12, 11 and 26 test bodies), while keeping the missing **real app.mjs import/DOM/Tauri harness** distinct from source regex assertions. It names eight cross-domain races and a bounded **15 independent new test bodies minimum**; actual case execution and physical OS evidence remain outstanding. No production trust or persistence policy changed; Stages 3–8 globally remain PARTIAL.
 
+### Stage 4–8 continued: native Git dispatcher, graceful Quit, and Relay credential custody
+
+[Native Git/Keyring method-to-assertion slice](mode-b/stage-4-8-native-git-keyring-slice.md) separates real Core Rust and Settings JS evidence from source-only native command checks. It names nine multi-axis interactions and a local **14 independent additional test body minimum** without claiming pass evidence. The native A2 command harness and OS Keyring seam remain open. `relay_secret.rs` may restore a taken draft after Settings Cancel when a vault write fails (RS1 source-derived hypothesis) or lose it on a blocking task join failure (RS2); **no production semantics are changed and no defect is claimed confirmed**. Global stages 3–8 remain PARTIAL.
+
 ## Twelve-stage progress ledger
 
 | Stage | Contract | State | Completion evidence / next action |

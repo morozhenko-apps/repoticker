@@ -70,6 +70,10 @@ All 29 remaining unknown rendered rows classified: 10 E_PARTIAL, 9 I_PARTIAL, 5 
 
 [Actual assertions, branch decisions, N1–N12, eight interaction cases, file ledger and 15 additional independent test bodies](stage-4-8-card-monitor-scan-slice.md) are now mapped for `app.mjs`, `github-monitor.mjs` and `scan-refresh.mjs`. Source inspection found true direct controller tests for monitor/scan, but **no proven genuine `app.mjs` controller import** in the reviewed suite; regex-based app checks are not DOM/Tauri execution. A1 and native NM1 remain blockers. This is a bounded Stage 4–8 slice and does not close the global matrices. No suites rerun.
 
+### Stage 4–8 native Git IPC/Quit and Relay Keyring transaction slice (2026-11-14)
+
+[Native dispatcher/credential assertion and interaction ledger](stage-4-8-native-git-keyring-slice.md) maps production `main.rs`, `relay_secret.rs` and actual Rust Git/ShutdownSignal dependencies to E, source-only S, missing P and physical OS. **14 additional independent test bodies minimum** (6 Git/Quit, 8 native credential) are locally estimated, with nine cross-domain interactions. A2 remains a genuine Tauri dispatcher gap; RS1/RS2 remain unconfirmed Keyring draft races and **architectural STOP conditions before a production behavior fix**, not bugs asserted as reproduced. No normal suite, CI or OS vault operation executed.
+
 ## Separate the executable test queue from policy STOP factors
 
 | Track / relevant source | What remains to map before Stage 9 | Proposed deterministic case IDs and exact proof needed | Stage 9 prerequisites |

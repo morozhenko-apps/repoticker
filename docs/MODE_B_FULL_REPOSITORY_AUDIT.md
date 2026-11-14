@@ -270,6 +270,7 @@ development journal. It is source-derived and does not claim final coverage.
 - [Method assertions: Windows placement, z-order and rounded-region ownership](mode-b/method-assertions-windows-geometry.md)
 - [Method assertions: KDE Wayland Layer Shell, relative-pointer callback and drag lifecycle](mode-b/method-assertions-linux-layer-shell.md)
 - [Method assertions: R2 publisher public/private readback, signed APT and latest CAS](mode-b/method-assertions-r2-publisher.md)
+- [Method assertions: Quota hover confidence, Unicode and native-backed billing](mode-b/method-assertions-quota-billing-models.md)
 - [Settings/Quota/Card semantic map and planned negative cases](mode-b/branch-map-settings-quota-card.md)
 - [Git safety, OAuth, ETag and rate gate semantic branch map](mode-b/branch-map-git-oauth.md)
 - [R2/APT release and GitHub monitoring semantic branch map](mode-b/branch-map-release-monitor.md)

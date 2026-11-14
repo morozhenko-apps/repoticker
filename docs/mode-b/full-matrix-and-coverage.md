@@ -148,6 +148,10 @@ The [global evidence reconciliation](stage-3-8-global-evidence-consistency.md) v
 
 The [exact source-guard-to-test crosswalk](method-evidence-crosswalk-ui-worker.md) transfers *partial* direct assertions for four files into their Stage 8 `Covered`/`Remaining` cells. Existing tests: 41 reviewed, 37 invoke actual production methods, 4 only inspect source text. Since relevant N1–N12 outcomes remain P or physical OS/HOST, **Stage 5 remains 810 `?`, 230 `✖`, 0 `✔`**; do not equate a changed Stage 8 row with a fully covered file.
 
+### Stage 4–8 second source-assertion migration (2026-11-14)
+
+[Actual monitor-projection test-to-guard crosswalk](method-evidence-crosswalk-monitor-projections.md) adds partial E/I source assertions to Stage 8 Covered/Remaining for `status-metrics.mjs`, `github-installations.mjs`, `ci-status.mjs` and `github-errors.mjs`. The first crosswalk migrated scan/gesture/Worker; **eight of 80 Stage 8 rows now have directly inspected case receipts, not completed branch signoff**. Stage 5 remains **810 `?`, 230 `✖`, 0 `✔`**.
+
 ## Stage 8: per-file source Coverage Map (not yet completed)
 
 | Production artifact | Functions/types | Source branch candidates | Covered | Remaining | Inventory |
@@ -177,10 +181,10 @@ The [exact source-guard-to-test crosswalk](method-evidence-crosswalk-ui-worker.m
 | `apps/desktop/ui/browser-context-menu.mjs` | 1 | 0 lexical | Not measured per branch; candidate source suites indexed | Exact assertions and platform outcomes unverified | [inventory-ui-utilities.md](inventory-ui-utilities.md) |
 | `apps/desktop/ui/card-i18n.mjs` | 4 | 18 lexical | Not measured per branch; candidate source suites indexed | Exact assertions and platform outcomes unverified | [inventory-ui-utilities.md](inventory-ui-utilities.md) |
 | `apps/desktop/ui/ci-failure-events.mjs` | 5 | 33 lexical | Not measured per branch; candidate source suites indexed | Exact assertions and platform outcomes unverified | [inventory-ui-controllers.md](inventory-ui-controllers.md) |
-| `apps/desktop/ui/ci-status.mjs` | 3 | 9 lexical | Not measured per branch; candidate source suites indexed | Exact assertions and platform outcomes unverified | [inventory-ui-controllers.md](inventory-ui-controllers.md) |
+| `apps/desktop/ui/ci-status.mjs` | 3 | 9 lexical | [4 actual CI identity tests](method-evidence-crosswalk-monitor-projections.md) success/failure/unknown and scope | CI1–CI3 100/101 observations, malformed scopes and caller race | [inventory-ui-controllers.md](inventory-ui-controllers.md) |
 | `apps/desktop/ui/github-billing.mjs` | 11 | 43 lexical | Not measured per branch; candidate source suites indexed | Exact assertions and platform outcomes unverified | [inventory-ui-controllers.md](inventory-ui-controllers.md) |
-| `apps/desktop/ui/github-errors.mjs` | 3 | 7 lexical | Not measured per branch; candidate source suites indexed | Exact assertions and platform outcomes unverified | [inventory-ui-controllers.md](inventory-ui-controllers.md) |
-| `apps/desktop/ui/github-installations.mjs` | 2 | 8 lexical | Not measured per branch; candidate source suites indexed | Exact assertions and platform outcomes unverified | [inventory-ui-controllers.md](inventory-ui-controllers.md) |
+| `apps/desktop/ui/github-errors.mjs` | 3 | 7 lexical | [4 real finite-error tests](method-evidence-crosswalk-monitor-projections.md), 20-locale consumer | GE1–GE2 aliases, priority ties, hostile provider text DOM sink | [inventory-ui-controllers.md](inventory-ui-controllers.md) |
+| `apps/desktop/ui/github-installations.mjs` | 2 | 8 lexical | [7 actual installation/collector tests](method-evidence-crosswalk-monitor-projections.md): empty, corrupt, dedup, 100/101 | INS1–INS3 10 full pages, page-2 GET error, stale account/scope | [inventory-ui-controllers.md](inventory-ui-controllers.md) |
 | `apps/desktop/ui/github-monitor.mjs` | 14 | 87 lexical | Not measured per branch; candidate source suites indexed | Exact assertions and platform outcomes unverified | [inventory-ui-controllers.md](inventory-ui-controllers.md) |
 | `apps/desktop/ui/locale-auth.mjs` | 0 | 0 lexical | Not measured per branch; candidate source suites indexed | Exact assertions and platform outcomes unverified | [inventory-locales.md](inventory-locales.md) |
 | `apps/desktop/ui/locale-card.mjs` | 0 | 0 lexical | Not measured per branch; candidate source suites indexed | Exact assertions and platform outcomes unverified | [inventory-locales.md](inventory-locales.md) |
@@ -204,7 +208,7 @@ The [exact source-guard-to-test crosswalk](method-evidence-crosswalk-ui-worker.m
 | `apps/desktop/ui/scan-refresh.mjs` | 3 | 10 lexical | [scan/queue: 5 real method tests](method-evidence-crosswalk-ui-worker.md) (2 source-only tests separated) | SC1–SC2 callback exceptions, reentrant invalidation; A1 DOM/Tauri event/scan race and OS gate | [inventory-ui-utilities.md](inventory-ui-utilities.md) |
 | `apps/desktop/ui/settings-i18n.mjs` | 1 | 3 lexical | Not measured per branch; candidate source suites indexed | Exact assertions and platform outcomes unverified | [inventory-ui-final.md](inventory-ui-final.md) |
 | `apps/desktop/ui/settings.mjs` | 43 | 203 lexical | Not measured per branch; candidate source suites indexed | Exact assertions and platform outcomes unverified | [inventory-ui-controllers.md](inventory-ui-controllers.md) |
-| `apps/desktop/ui/status-metrics.mjs` | 3 | 1 lexical | Not measured per branch; candidate source suites indexed | Exact assertions and platform outcomes unverified | [inventory-ui-final.md](inventory-ui-final.md) |
+| `apps/desktop/ui/status-metrics.mjs` | 3 | 1 lexical | [compactStatus direct source assertions](method-evidence-crosswalk-monitor-projections.md); shown through real consumer | MP1–MP3 zero/MAX/unsafe sum, invalid independent coverage, real Card DOM | [inventory-ui-final.md](inventory-ui-final.md) |
 | `apps/desktop/ui/surface-i18n.mjs` | 5 | 16 lexical | Not measured per branch; candidate source suites indexed | Exact assertions and platform outcomes unverified | [inventory-ui-final.md](inventory-ui-final.md) |
 | `apps/desktop/ui/view.mjs` | 4 | 14 lexical | Not measured per branch; candidate source suites indexed | Exact assertions and platform outcomes unverified | [inventory-ui-final.md](inventory-ui-final.md) |
 | `apps/relay-cloudflare/src/hub.mjs` | 7 | 21 lexical | Not measured per branch; candidate source suites indexed | Exact assertions and platform outcomes unverified | [inventory-core-relay.md](inventory-core-relay.md) |

@@ -106,6 +106,10 @@ changes merely to report test progress.
 
 [Crosswalk from source decisions to actual Node assertions](mode-b/method-evidence-crosswalk-ui-worker.md) now provides exact blob/line provenance for `scan-refresh.mjs`, `native-drag.mjs`, `webhook-verify.mjs` and `worker.mjs`. **41 existing test bodies reviewed: 37 invoke actual production methods, 4 are source-only contracts**. Four Stage 8 `Covered`/`Remaining` rows now link this evidence without granting a full Stage 5 `✔`: aggregate matrix still has 810 `?` and 230 provisional `✖`. Physical KDE, hosted Worker and incomplete negative branches remain open; no suites rerun.
 
+### Second Stage 4–8 evidence migration: GitHub monitor projections
+
+[Four more exact method/test receipts](mode-b/method-evidence-crosswalk-monitor-projections.md) now reconcile `status-metrics.mjs`, `github-installations.mjs`, `ci-status.mjs` and `github-errors.mjs`. The register documents 16 relevant existing test bodies and unresolved zero/MAX, 10-page pagination, CI scope and raw-error DOM boundaries. Across two crosswalks, **eight of 80 Stage 8 file rows** now contain real E/I assertion evidence plus named P/OS gaps. This **does not** turn their global Stage 5 `?` into `✔` or replace full AST source coverage. All suites deferred.
+
 ## Twelve-stage progress ledger
 
 | Stage | Contract | State | Completion evidence / next action |

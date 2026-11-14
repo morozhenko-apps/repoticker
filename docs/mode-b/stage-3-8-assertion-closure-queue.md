@@ -82,6 +82,10 @@ All 29 remaining unknown rendered rows classified: 10 E_PARTIAL, 9 I_PARTIAL, 5 
 
 [Source-line and test-line crosswalk](method-evidence-crosswalk-ui-worker.md) ties genuine behavior assertions to production branch outcomes in four modules and explicitly separates source-only contracts. **41 reviewed test bodies, 37 direct real-function assertions, 4 source-only inspections**. Stage 8 `Covered`/`Remaining` cells now reference exact evidence for these four files; Stage 5 `?` cannot be promoted to `✔` while independently observable branches remain P/OS/HOST. No test added, run, or duplicated in Stage 7 count. Other files and exhaustive AST mapping remain open.
 
+### Stage 4–8 second evidence transfer: installations, CI identity, finite errors and metrics (2026-11-14)
+
+[Source and test line crosswalk](method-evidence-crosswalk-monitor-projections.md) now reconciles `status-metrics.mjs`, `github-installations.mjs`, `ci-status.mjs` and `github-errors.mjs`. Sixteen existing relevant test bodies call real imports or a real cross-module consumer. Stage 8 `Covered`/`Remaining` rows record evidence and explicit 0/1/MAX, 10×100 pagination, identity and redaction gaps. **Eight of 80 file rows** have direct crosswalk receipts across both focused migrations; no globally complete Stage 5 cell, no new test, CI or code execution.
+
 ## Separate the executable test queue from policy STOP factors
 
 | Track / relevant source | What remains to map before Stage 9 | Proposed deterministic case IDs and exact proof needed | Stage 9 prerequisites |

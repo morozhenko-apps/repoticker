@@ -156,6 +156,10 @@ The [exact source-guard-to-test crosswalk](method-evidence-crosswalk-ui-worker.m
 
 [Crosswalk for real disposable Git remotes and 15 Rust config-store tests](method-evidence-crosswalk-core-git-config.md) now fills Stage 8 E/P evidence in `crates/repoticker-core/src/git.rs` and `config_store.rs`. This is **10 of 80 Stage 8 file rows** with exact sourced assertions/remaining gaps. A2 native Git dispatcher and OS file/storage acceptance remain unverified. **No Stage 5 cell is promoted:** 810 `?`, 230 `✖`, 0 `✔`.
 
+### Stage 4–8 fourth evidence transfer: actual Settings WebView controller (2026-11-14)
+
+[Actual Settings module imported with deterministic DOM/Tauri harness](method-evidence-crosswalk-settings-controller.md), with selected exact assertions for Save/Cancel, OAuth generation, Relay draft and postcommit Keyring readback, now populates Stage 8 `settings.mjs` E/P. The suite contains 132 test bodies; **only the cited representative assertions are manually remapped here**. **Eleven of 80 Stage 8 rows** carry direct crosswalk receipts. Native `relay_secret.rs` is not deemed proven by JS fake IPC. Stage 5 remains 810 `?`, 230 `✖`, no `✔`.
+
 ## Stage 8: per-file source Coverage Map (not yet completed)
 
 | Production artifact | Functions/types | Source branch candidates | Covered | Remaining | Inventory |
@@ -211,7 +215,7 @@ The [exact source-guard-to-test crosswalk](method-evidence-crosswalk-ui-worker.m
 | `apps/desktop/ui/runner-state.mjs` | 9 | 28 lexical | Not measured per branch; candidate source suites indexed | Exact assertions and platform outcomes unverified | [inventory-ui-utilities.md](inventory-ui-utilities.md) |
 | `apps/desktop/ui/scan-refresh.mjs` | 3 | 10 lexical | [scan/queue: 5 real method tests](method-evidence-crosswalk-ui-worker.md) (2 source-only tests separated) | SC1–SC2 callback exceptions, reentrant invalidation; A1 DOM/Tauri event/scan race and OS gate | [inventory-ui-utilities.md](inventory-ui-utilities.md) |
 | `apps/desktop/ui/settings-i18n.mjs` | 1 | 3 lexical | Not measured per branch; candidate source suites indexed | Exact assertions and platform outcomes unverified | [inventory-ui-final.md](inventory-ui-final.md) |
-| `apps/desktop/ui/settings.mjs` | 43 | 203 lexical | Not measured per branch; candidate source suites indexed | Exact assertions and platform outcomes unverified | [inventory-ui-controllers.md](inventory-ui-controllers.md) |
+| `apps/desktop/ui/settings.mjs` | 43 | 203 lexical | [real imported Settings controller assertions](method-evidence-crosswalk-settings-controller.md) for OAuth, Save/Cancel and Relay draft | ST1–ST6 native Keyring, multi-write interruption, reopen/auth race, OS UI and boundary inputs | [inventory-ui-controllers.md](inventory-ui-controllers.md) |
 | `apps/desktop/ui/status-metrics.mjs` | 3 | 1 lexical | [compactStatus direct source assertions](method-evidence-crosswalk-monitor-projections.md); shown through real consumer | MP1–MP3 zero/MAX/unsafe sum, invalid independent coverage, real Card DOM | [inventory-ui-final.md](inventory-ui-final.md) |
 | `apps/desktop/ui/surface-i18n.mjs` | 5 | 16 lexical | Not measured per branch; candidate source suites indexed | Exact assertions and platform outcomes unverified | [inventory-ui-final.md](inventory-ui-final.md) |
 | `apps/desktop/ui/view.mjs` | 4 | 14 lexical | Not measured per branch; candidate source suites indexed | Exact assertions and platform outcomes unverified | [inventory-ui-final.md](inventory-ui-final.md) |

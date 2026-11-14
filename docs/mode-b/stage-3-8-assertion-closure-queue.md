@@ -90,6 +90,10 @@ All 29 remaining unknown rendered rows classified: 10 E_PARTIAL, 9 I_PARTIAL, 5 
 
 [Real Rust source-to-assertion crosswalk](method-evidence-crosswalk-core-git-config.md) details `git.rs` using 30 annotated integration tests with actual disposable Git repositories and source-reviewed inline cancellation cases, plus `config_store.rs` with 15 directly inspected file/concurrency tests. Their Stage 8 rows are now E/P linked. **10/80** file rows now have exact crosswalk receipts; statuses remain partial and all 810 applicable Stage 5 unknowns remain open. No tests rerun.
 
+### Stage 4–8 fourth evidence transfer: Settings controller (2026-11-14)
+
+[Exact production Settings source and selected existing controller assertions](method-evidence-crosswalk-settings-controller.md) confirm real module import and DOM/Tauri event fixture, stale OAuth/Settings revisions, Save/Cancel atomicity at JS layer, duplicate OK single-flight, failed config/Relay Keyring fake responses and readback. The suite has 132 test bodies, but **not all were individually reclassified in this pass**. Stage 8 now **11/80 file rows** with sourced E/P receipts. Native OS Keyring, Settings teardown and RS1/RS2 remain P/OS and architecture STOP; no test executed.
+
 ## Separate the executable test queue from policy STOP factors
 
 | Track / relevant source | What remains to map before Stage 9 | Proposed deterministic case IDs and exact proof needed | Stage 9 prerequisites |

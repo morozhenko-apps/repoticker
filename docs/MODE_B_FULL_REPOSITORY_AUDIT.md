@@ -114,6 +114,10 @@ changes merely to report test progress.
 
 [Direct Rust source and test receipts](mode-b/method-evidence-crosswalk-core-git-config.md) reconcile actual `git.rs` integration tests against enrolled path admission, Safe Pull/Push/Sync, no-force refs/hooks, owned Fetch cancellation and `config_store.rs` against atomic backup/recovery/16-thread transactions. Two Stage 8 Covered/Remaining rows now include E/P/OS evidence; **10 of 80** mapped so far. Native Tauri A2, denied fsync/rename, cross-process and Windows acceptance remain outstanding. No Stage 5 `✔`, no code/test/CI execution.
 
+### Fourth Stage 4–8 evidence migration: real Settings controller
+
+[Selected real Settings WebView method-to-assertion links](mode-b/method-evidence-crosswalk-settings-controller.md) tie actual `settings.mjs` import under fake external Tauri and DOM to existing OAuth generation, Cancel, multi-write Apply, staged Relay secret and postcommit readback cases. This establishes meaningful **JS controller** E, not native Keyring acceptance. Stage 8 has sourced receipts in **11/80** files; full Stage 5 cells remain unknown where independent P/OS cases exist. Mode B globally PARTIAL, no suite rerun.
+
 ## Twelve-stage progress ledger
 
 | Stage | Contract | State | Completion evidence / next action |

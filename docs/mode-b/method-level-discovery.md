@@ -183,34 +183,38 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 
 ## `apps/desktop/src-tauri/src/linux_surface.rs`
 
+**Reconciliation:** [GTK Layer Shell exact source methods and Wayland relative pointer callback](method-assertions-linux-layer-shell.md). The original lexical extractor omitted `extern "C" fn on_relative_motion` at line 51; it is now a separate OS_P entry, making this provisional inventory **708 rows**, not 707.
+
+
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 13 | `fn repoticker_relative_init(callback: extern "C" fn(f64, f64)) -> i32;` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 14 | `fn repoticker_relative_begin() -> i32;` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 15 | `fn repoticker_relative_end();` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 41 | `pub fn enabled() -> bool {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 45 | `pub fn visible() -> bool {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 100 | `pub fn install(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 200 | `fn install_usage_surface(` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 260 | `fn on_usage_main(` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 276 | `fn anchor_usage(window: &gtk::ApplicationWindow) {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 301 | `pub fn show_usage(app: &AppHandle) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 316 | `pub fn hide_usage(app: &AppHandle) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 323 | `fn set_exact_viewport_height(viewport: &gtk::ScrolledWindow, previous: i32, height: i32) {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 333 | `pub async fn resize_usage(app: AppHandle, height: i32) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 378 | `fn apply_size(window: &gtk::ApplicationWindow, width: i32, height: i32) {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 401 | `fn on_main(` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 419 | `fn apply_card_height(window: &gtk::ApplicationWindow, height: i32) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 458 | `fn validate_card_height(height: i32) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 467 | `pub fn request_resize(app: &AppHandle, height: i32) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 478 | `pub async fn resize(app: AppHandle, height: i32) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 499 | `pub fn show(app: &AppHandle) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 522 | `pub fn hide(app: &AppHandle) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 531 | `fn persist_now(app: &AppHandle) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 542 | `fn stop_on_gtk(app: &AppHandle) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 553 | `pub fn cancel_drag(app: &AppHandle) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 563 | `pub async fn start_drag(app: &AppHandle) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 585 | `pub async fn stop_drag(app: &AppHandle) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 13 | `fn repoticker_relative_init(callback: extern "C" fn(f64, f64)) -> i32;` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | FFI_DECL |
+| 14 | `fn repoticker_relative_begin() -> i32;` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | FFI_DECL |
+| 15 | `fn repoticker_relative_end();` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | FFI_DECL |
+| 41 | `pub fn enabled() -> bool {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | OS_P |
+| 45 | `pub fn visible() -> bool {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | OS_P |
+| 51 | `extern "C" fn on_relative_motion(dx: f64, dy: f64) {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | OS_P |
+| 100 | `pub fn install(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | OS_P |
+| 200 | `fn install_usage_surface(` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | OS_P |
+| 260 | `fn on_usage_main(` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | OS_P |
+| 276 | `fn anchor_usage(window: &gtk::ApplicationWindow) {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | OS_P |
+| 301 | `pub fn show_usage(app: &AppHandle) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | OS_P |
+| 316 | `pub fn hide_usage(app: &AppHandle) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | OS_P |
+| 323 | `fn set_exact_viewport_height(viewport: &gtk::ScrolledWindow, previous: i32, height: i32) {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | OS_P |
+| 333 | `pub async fn resize_usage(app: AppHandle, height: i32) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | OS_P |
+| 378 | `fn apply_size(window: &gtk::ApplicationWindow, width: i32, height: i32) {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | OS_P |
+| 401 | `fn on_main(` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | OS_P |
+| 419 | `fn apply_card_height(window: &gtk::ApplicationWindow, height: i32) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | OS_P |
+| 458 | `fn validate_card_height(height: i32) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 467 | `pub fn request_resize(app: &AppHandle, height: i32) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | OS_P |
+| 478 | `pub async fn resize(app: AppHandle, height: i32) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | OS_P |
+| 499 | `pub fn show(app: &AppHandle) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | OS_P |
+| 522 | `pub fn hide(app: &AppHandle) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | OS_P |
+| 531 | `fn persist_now(app: &AppHandle) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | OS_P |
+| 542 | `fn stop_on_gtk(app: &AppHandle) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | OS_P |
+| 553 | `pub fn cancel_drag(app: &AppHandle) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | OS_P |
+| 563 | `pub async fn start_drag(app: &AppHandle) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | OS_P |
+| 585 | `pub async fn stop_drag(app: &AppHandle) -> Result<(), String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | OS_P |
 
 ## `apps/desktop/src-tauri/src/linux_tray.rs`
 

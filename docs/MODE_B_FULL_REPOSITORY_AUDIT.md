@@ -268,6 +268,7 @@ development journal. It is source-derived and does not claim final coverage.
 - [Method assertions: native GitHub ETag, rate gate and OAuth wire schema](mode-b/method-assertions-github-cache-rate-wire.md)
 - [Method assertions: native WSS Relay supervisor and bounded reconnect](mode-b/method-assertions-relay-transport-supervisor.md)
 - [Method assertions: Windows placement, z-order and rounded-region ownership](mode-b/method-assertions-windows-geometry.md)
+- [Method assertions: KDE Wayland Layer Shell, relative-pointer callback and drag lifecycle](mode-b/method-assertions-linux-layer-shell.md)
 - [Settings/Quota/Card semantic map and planned negative cases](mode-b/branch-map-settings-quota-card.md)
 - [Git safety, OAuth, ETag and rate gate semantic branch map](mode-b/branch-map-git-oauth.md)
 - [R2/APT release and GitHub monitoring semantic branch map](mode-b/branch-map-release-monitor.md)

@@ -65,7 +65,7 @@ E = real function call with exact assertions inspected in existing test source (
 | RW3 | Authorization/browser header/Upgrade/query 48/49 combinatoric table | 2 |
 | RW4 | Worker→real Hub duplicate delivery and durable failure/replay transaction (fake only environment/SQL port) | 2 |
 | RW5 | Real TypeScript Worker public adapter with injected external platform | 1 |
-| **Total** | **15 planned distinct test bodies minimum**, with parameterized subcases; no new implementation or test execution yet | **15** |
+| **Total** | **16 planned distinct test bodies minimum**, with parameterized subcases; no new implementation or test execution yet | **15** |
 
 Counting rule: one independent test body may contain several parameterized values but only one invariant. No existing tests are recounted as new work. A script source regex or mocked subject method never satisfies an independent case. This is a *local four-file slice*, not the global total.
 

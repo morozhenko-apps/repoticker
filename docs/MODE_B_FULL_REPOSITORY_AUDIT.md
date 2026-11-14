@@ -88,7 +88,7 @@ changes merely to report test progress.
 
 ### Stage 4–8 continued evidence: native gesture and GitHub/Worker trust
 
-[Bounded source-exact four-file closure slice](mode-b/stage-4-8-trust-closure-slice.md) now maps exact existing Node assertions, untested branch outcomes, Positive/N1–N12 relevance, seven cross-boundary interactions, per-file E/P/OS and **15 additional independently observable test bodies minimum**. The number is not a global test estimate or an executed result. The `safeRunUrl` vs `safeActionsJobUrl` admissible URL policy remains STOP for any implementation change. The global Stage 4–8 gates remain PARTIAL.
+[Bounded source-exact four-file closure slice](mode-b/stage-4-8-trust-closure-slice.md) now maps exact existing Node assertions, untested branch outcomes, Positive/N1–N12 relevance, seven cross-boundary interactions, per-file E/P/OS and **16 additional independently observable test bodies minimum**. The number is not a global test estimate or an executed result. The `safeRunUrl` vs `safeActionsJobUrl` admissible URL policy remains STOP for any implementation change. The global Stage 4–8 gates remain PARTIAL.
 
 ## Twelve-stage progress ledger
 

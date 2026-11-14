@@ -3,9 +3,9 @@
 Baseline production source `a3ba7fa30fc4c81890d3075f94142942d001cbf3`.
 Input: eight preserved source inventories in this audit plus a separate `main.rs` continuation (inline Rust tests are interspersed). These are lexical extraction records, NOT an AST and NOT evidence that branches have been covered.
 
-**Method evidence tags:** `I_PARTIAL` = real method was executed indirectly through a real consumer with some relevant assertions, but independent branches remain open; `E_PARTIAL` = real method called directly in reviewed tests with still-open branches; `INLINE` = a private closure nested within an enclosing method, not a separate public API. `ADAPTER` = a tiny private wrapper around DOM/native transport rather than a separate domain API; `P` = an inspected entrypoint with no matching direct executable event assertion. `TYPE_DECL` = Rust struct/enum/union declaration, not a callable method; `IMPL_BLOCK` = method-implementation container, not itself an executable method. These two are syntax-based Stage 3 type classification, **not** coverage of declared fields or member methods. `CLASS_DECL` = Python/JS/TS class definition, `CLASS_METHOD` = real class/adapter method awaiting assertion reconciliation, `CALL_SITE` = function call misrecognized as lexical method, `STARTUP_CALL` = top-level initialization effect, `LOCAL_EXPR` = Boolean/nonfunction value inside an owning function. None of these tags represents a passing test. `P_CONTROLLER` = private method whose in-situ main-card DOM/Tauri behavior is not verified, `CALLBACK_P` = unasserted event closure; these may already have directly tested separate pure helpers. `P_NATIVE` = actual native method/command without directly verified AppHandle/OS assertions (other pure modules may be tested); `BOOTSTRAP_P` = OS app setup. `TEST_ONLY` = Rust #[cfg(test)] test function, not production API; `FFI_DECL` = Win32 foreign function signature, not a Rust method body; `OS_P` = platform-gated native callable requiring OS acceptance. `P_CORE` = real private or public Core method without a named direct existing branch assertion; separate Git core dependencies may be tested. Other `?` rows remain unclassified. These tags do not change the global Stage 3–8 PARTIAL state.
+**Method evidence tags:** `I_PARTIAL` = real method was executed indirectly through a real consumer with some relevant assertions, but independent branches remain open; `E_PARTIAL` = real method called directly in reviewed tests with still-open branches; `INLINE` = a private closure nested within an enclosing method, not a separate public API. `ADAPTER` = a tiny private wrapper around DOM/native transport rather than a separate domain API; `P` = an inspected entrypoint with no matching direct executable event assertion. `TYPE_DECL` = Rust struct/enum/union declaration, not a callable method; `IMPL_BLOCK` = method-implementation container, not itself an executable method. These two are syntax-based Stage 3 type classification, **not** coverage of declared fields or member methods. `CLASS_DECL` = Python/JS/TS class definition, `CLASS_METHOD` = real class/adapter method awaiting assertion reconciliation, `CALL_SITE` = function call misrecognized as lexical method, `STARTUP_CALL` = top-level initialization effect, `LOCAL_EXPR` = Boolean/nonfunction value inside an owning function. None of these tags represents a passing test. `P_CONTROLLER` = private method whose in-situ main-card DOM/Tauri behavior is not verified, `CALLBACK_P` = unasserted event closure; these may already have directly tested separate pure helpers. `P_NATIVE` = actual native method/command without directly verified AppHandle/OS assertions (other pure modules may be tested); `BOOTSTRAP_P` = OS app setup. `TEST_ONLY` = Rust #[cfg(test)] test function, not production API; `FFI_DECL` = Win32 foreign function signature, not a Rust method body; `OS_P` = platform-gated native callable requiring OS acceptance. `P_CORE` = real private or public Core method without a named direct existing branch assertion; separate Git core dependencies may be tested. `DATA_ONLY` = a source-inspected module containing only an exported dictionary, with no callable extracted from the module; validate it as a structural/consumer artifact, not a fictitious method. Other `?` rows remain unclassified. These tags do not change the global Stage 3–8 PARTIAL state.
 
-**Current Stage 3 checkpoint (source-inspected, not test-executed):** 708 provisional lexical/source-reconciled entries, **648 structurally classified or assertion-linked/planned, 60 '?' remain**. Exact categories: **166 E_PARTIAL, 101 I_PARTIAL, 133 P_NATIVE, 43 OS_P, 23 P_CORE, 36 P_CONTROLLER, 1 CALLBACK_P, 4 P, 1 BOOTSTRAP_P, 7 ADAPTER, 9 INLINE**, 41 TYPE_DECL, 32 IMPL_BLOCK, 9 FFI_DECL, 22 TEST_ONLY, 3 CALL_SITE, 1 STARTUP_CALL, 2 LOCAL_EXPR, 3 CLASS_DECL, 11 CLASS_METHOD. The initial 707-row lexical scan omitted real `linux_surface.rs:51` relative-pointer callback; more anonymous/extern/cfg omissions remain possible until true AST-aware reconciliation. **648 is not 648 passing tests, executable methods, or code coverage.**
+**Current Stage 3 checkpoint (source-inspected, not test-executed):** 708 provisional lexical/source-reconciled entries, **662 structurally classified or assertion-linked/planned, 46 '?' remain**. Exact categories: **170 E_PARTIAL, 104 I_PARTIAL, 133 P_NATIVE, 43 OS_P, 23 P_CORE, 36 P_CONTROLLER, 1 CALLBACK_P, 6 P, 1 BOOTSTRAP_P, 7 ADAPTER, 9 INLINE**, 41 TYPE_DECL, 32 IMPL_BLOCK, 9 FFI_DECL, 22 TEST_ONLY, 3 CALL_SITE, 1 STARTUP_CALL, 2 LOCAL_EXPR, 3 CLASS_DECL, 11 CLASS_METHOD, 5 DATA_ONLY. The initial 707-row lexical scan omitted real `linux_surface.rs:51` relative-pointer callback; more anonymous/extern/cfg omissions remain possible until true AST-aware reconciliation. **662 is not 662 passing tests, executable methods, or code coverage.**
 
 Every line carries **risk**, **test level**, **candidate N categories**, and an **initial test-count floor**. These floors represent planning estimates to be refined against each distinct decision outcome, NOT observed tests, and NOT a cap on required tests. The letter `?` denotes not yet assertion-mapped. External dependencies are faked only by contract, never by replacing business logic.
 
@@ -608,60 +608,60 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| — | No named function extracted: module entrypoint / data / anonymous handlers require source inspection | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
+| — | No named function extracted: module entrypoint / data / anonymous handlers require source inspection | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | DATA_ONLY |
 
 ## `apps/desktop/ui/locale-card.mjs`
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| — | No named function extracted: module entrypoint / data / anonymous handlers require source inspection | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
+| — | No named function extracted: module entrypoint / data / anonymous handlers require source inspection | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | DATA_ONLY |
 
 ## `apps/desktop/ui/locale-catalog.mjs`
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 1032 | `export function normalizeLocale(value) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
-| 1035 | `export function localeName(value) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
-| 1038 | `export function localeDirection(value) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
-| 1041 | `export function coreText(value, english) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
+| 1032 | `export function normalizeLocale(value) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | I_PARTIAL |
+| 1035 | `export function localeName(value) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | P |
+| 1038 | `export function localeDirection(value) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | P |
+| 1041 | `export function coreText(value, english) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | E_PARTIAL |
 
 ## `apps/desktop/ui/locale-counts.mjs`
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 157 | `function countText(locale, count) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
-| 164 | `function render(template, values) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
-| 168 | `export function repositorySelectionMessage(language, {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
+| 157 | `function countText(locale, count) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | I_PARTIAL |
+| 164 | `function render(template, values) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | I_PARTIAL |
+| 168 | `export function repositorySelectionMessage(language, {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | E_PARTIAL |
 
 ## `apps/desktop/ui/locale-errors.mjs`
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 1050 | `export function localizedKnownError(language, value) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
+| 1050 | `export function localizedKnownError(language, value) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | E_PARTIAL |
 
 ## `apps/desktop/ui/locale-extended.mjs`
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| — | No named function extracted: module entrypoint / data / anonymous handlers require source inspection | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
+| — | No named function extracted: module entrypoint / data / anonymous handlers require source inspection | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | DATA_ONLY |
 
 ## `apps/desktop/ui/locale-plurals.mjs`
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 67 | `export function localizedGitCount(language, key, count) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
+| 67 | `export function localizedGitCount(language, key, count) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | E_PARTIAL |
 
 ## `apps/desktop/ui/locale-surface.mjs`
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| — | No named function extracted: module entrypoint / data / anonymous handlers require source inspection | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
+| — | No named function extracted: module entrypoint / data / anonymous handlers require source inspection | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | DATA_ONLY |
 
 ## `apps/desktop/ui/locale-workflow.mjs`
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| — | No named function extracted: module entrypoint / data / anonymous handlers require source inspection | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
+| — | No named function extracted: module entrypoint / data / anonymous handlers require source inspection | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | DATA_ONLY |
 
 ## `apps/desktop/ui/model.mjs`
 

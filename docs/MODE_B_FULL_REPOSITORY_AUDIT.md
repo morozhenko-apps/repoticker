@@ -258,6 +258,7 @@ development journal. It is source-derived and does not claim final coverage.
 - [Stage 3 Rust type and impl-block declaration classification (73 noncallable entries)](mode-b/method-declaration-classification.md)
 - [Method assertions: main app.mjs controller owner map and A1 harness contract](mode-b/method-assertions-main-card-controller.md)
 - [Method assertions: actual imported Settings controller and native custody gaps](mode-b/method-assertions-settings-controller.md)
+- [Method assertions: GitHub runner and CI notification collectors](mode-b/method-assertions-runner-ci-collectors.md)
 - [Settings/Quota/Card semantic map and planned negative cases](mode-b/branch-map-settings-quota-card.md)
 - [Git safety, OAuth, ETag and rate gate semantic branch map](mode-b/branch-map-git-oauth.md)
 - [R2/APT release and GitHub monitoring semantic branch map](mode-b/branch-map-release-monitor.md)

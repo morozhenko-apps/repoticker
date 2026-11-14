@@ -86,6 +86,10 @@ changes merely to report test progress.
 
 **Current Stage 3 checkpoint (documentation only):** originally 707 lexical candidate records; source inspection discovered and inserted the missed Linux Wayland relative-pointer callback at `linux_surface.rs:51`. **Current physically rendered inventory: 717 rows, all provisionally tagged, zero '?' remain.** The old 708 count correctly tracked numbered lexical candidates (707 original + one Wayland callback) but excluded nine `—` placeholder artifacts already present in the earlier 716-row Markdown. The current 717-row total includes both types. This arithmetic is reconciled; exhaustive Stage 3 is still unsigned. Since the earlier 455/707 checkpoint, 121 entries were classified across WSS Relay (14), Windows Geometry (14), Linux Layer Shell (26 + one new callback), R2 publisher (18), Quota/Billing (24), Cloudflare Relay protocol (9), RunnerState (9) and native MonitorCache (6). These counts include non-production FFI declarations and test-only functions. **No suites executed in this pass, 717 is not test coverage**. A real AST/FFI/cfg/anonymous-closure inventory remains necessary before Stage 3 completion. [Method inventory](mode-b/method-level-discovery.md), [missing Wayland callback](mode-b/method-assertions-linux-layer-shell.md), [native NM1 trust decision](mode-b/method-assertions-native-monitor-cache.md) and focused assertion maps retain the exact branch owners.
 
+### Stage 4–8 continued evidence: native gesture and GitHub/Worker trust
+
+[Bounded source-exact four-file closure slice](mode-b/stage-4-8-trust-closure-slice.md) now maps exact existing Node assertions, untested branch outcomes, Positive/N1–N12 relevance, seven cross-boundary interactions, per-file E/P/OS and **15 additional independently observable test bodies minimum**. The number is not a global test estimate or an executed result. The `safeRunUrl` vs `safeActionsJobUrl` admissible URL policy remains STOP for any implementation change. The global Stage 4–8 gates remain PARTIAL.
+
 ## Twelve-stage progress ledger
 
 | Stage | Contract | State | Completion evidence / next action |

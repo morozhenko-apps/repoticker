@@ -62,6 +62,10 @@ The [method assertion receipt](method-assertions-rest-client-build.md) classifie
 
 All 29 remaining unknown rendered rows classified: 10 E_PARTIAL, 9 I_PARTIAL, 5 P_CLI, 1 P_SHELL, 4 SCRIPT_ENTRY. See [release CLI method receipts](method-assertions-release-tooling-cli.md). The register actually contained 717 rows before this step, rather than 708. Classification of every *visible* row is not source-exhaustive completion. No suites executed.
 
+### Stage 4–8 cross-family evidence slice: URL, gesture, webhook and Worker (2026-11-14)
+
+[Full decision/negative/interaction/coverage ledger](stage-4-8-trust-closure-slice.md) links real test functions to source guards for `model.mjs`, `native-drag.mjs`, `webhook-verify.mjs` and `worker.mjs`. It separates existing E/I from planned P and physical OS, gives a local **15-independent-body minimum** (parameterized subcases excluded), and preserves the `safeRunUrl` trust-policy STOP. **These four files remain PARTIAL; this is a bounded Stage 4–8 slice, not all 80 files.** No suites, code, CI or deployment executed.
+
 ## Separate the executable test queue from policy STOP factors
 
 | Track / relevant source | What remains to map before Stage 9 | Proposed deterministic case IDs and exact proof needed | Stage 9 prerequisites |

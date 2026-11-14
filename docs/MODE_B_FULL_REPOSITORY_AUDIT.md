@@ -273,6 +273,7 @@ development journal. It is source-derived and does not claim final coverage.
 - [Method assertions: Quota hover confidence, Unicode and native-backed billing](mode-b/method-assertions-quota-billing-models.md)
 - [Method assertions: Cloudflare Relay allowlists, bounded upload and bearer trust](mode-b/method-assertions-cloudflare-relay-protocol.md)
 - [Method assertions: Runner state lane classification and strict coverage confidence](mode-b/method-assertions-runner-state.md)
+- [Method assertions: native MonitorCache, bounded projection and NM1 trust contract](mode-b/method-assertions-native-monitor-cache.md)
 - [Settings/Quota/Card semantic map and planned negative cases](mode-b/branch-map-settings-quota-card.md)
 - [Git safety, OAuth, ETag and rate gate semantic branch map](mode-b/branch-map-git-oauth.md)
 - [R2/APT release and GitHub monitoring semantic branch map](mode-b/branch-map-release-monitor.md)

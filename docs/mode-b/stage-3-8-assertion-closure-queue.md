@@ -106,6 +106,10 @@ Three bounded crosswalks map real source guard/outcome and inspected existing te
 
 [Ten card/Git/runner/CI modules](bulk-crosswalk-ui-domain.md), [nine About/i18n modules](bulk-crosswalk-ui-locale.md) and [six native platform modules](bulk-crosswalk-platform.md) now have source blob/test assertion receipts and distinct P/OS/HOST outcomes. **25 new Stage 8 rows**, 22 with executable direct/indirect source assertions, three Linux/KSNI/icon modules with static/host-only evidence. Totals: **56/80 indexed Stage 8 file rows (52 E/I, four S/P)**, no promotion of Stage 5 `?` to `✔`. Key opens: real `app.mjs` A1, KDE/Win physical input and tray, native Git A2, Keyring O3, nested runner-state NM1, URL trust STOP. Full suites and CI deferred.
 
+### Stage 4–8 final 24-file source-to-test classification (2026-11-14)
+
+[Main card/Tauri/Core/Cloudflare entrypoints](bulk-crosswalk-core-entrypoints.md) (6 files), [five data-only locale dictionaries](bulk-crosswalk-locale-dictionaries.md), and [13 release/CI scripts](bulk-crosswalk-release-tooling.md) now cross-reference actual source blobs and test methods. Newly classified: **11 E**, **8 S**, **5 D**; with prior 56, all **80/80** Stage 8 file rows linked (**63 E partial / 12 S-only / 5 D-only**). **Major unresolved evidence:** main app.mjs real-controller A1, Tauri main.rs A2, Cloudflare index.ts HOST, GTK/Windows OS acceptance, release/provisioning external adapter contract, STOP NM1/RS1/RS2. Main.rs has 11 pure Rust tests; none proves native IPC. R2 and CI scripts have strong direct offline tests while key provisioning/QA install remain S-only. No Stage 9 test implementation permitted by this indexing milestone. Stage 3,4,5,6,7,8 substantive completion still PARTIAL; 810 Stage 5 `?` remain.
+
 ## Separate the executable test queue from policy STOP factors
 
 | Track / relevant source | What remains to map before Stage 9 | Proposed deterministic case IDs and exact proof needed | Stage 9 prerequisites |

@@ -122,6 +122,10 @@ changes merely to report test progress.
 
 [Direct source/fixture crosswalk](mode-b/method-evidence-crosswalk-quota-native-oauth.md) now maps `quota.mjs` as a genuinely executed JS controller under fake external Tauri event/IPC and `github_native.rs`/`github_session.rs` as pure Rust credential-record, error projection and epoch-state evidence only. **21 existing test bodies were inspected, of which 20 invoke the real subject/helper and one checks literal reason labels.** Actual HTTP, OS Keyring, Tauri commands and AS1–AS3 stale-auth race hypotheses remain P/OS; **14/80 Stage 8 rows** now have E/P/OS receipts. No overall Stage 5 `✔` or actual new test coverage is claimed.
 
+### Sixth Stage 4–8 migration: large risk-focused batch, 17 production files
+
+[Relay and SQLite Hub](mode-b/bulk-crosswalk-relay.md), [GitHub HTTP/projections and monitor](mode-b/bulk-crosswalk-github.md) and [native lifecycle](mode-b/bulk-crosswalk-native.md) reconcile 17 additional files against exact existing assertions, separating real source E, fake external adapters, source-only S and remaining P/OS/HOST. The Hub suite uses actual in-memory SQLite with transactional rollback, not a mocked Durable Object data model. `autostart.rs` remains **source-contract only**, and native `github_monitor_publish`, Keyring, Quit, WSS and HTTP all remain unexecuted in this batch. **31 of 80 Stage 8 rows** now link detailed crosswalk receipts: **30 E/I partial, one S/P only**. Global Stage 3 AST census and 810 Stage 5 `?` entries remain open; no suite was run and no Stage 9 permission implied.
+
 ## Twelve-stage progress ledger
 
 | Stage | Contract | State | Completion evidence / next action |

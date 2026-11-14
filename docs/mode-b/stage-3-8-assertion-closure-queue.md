@@ -98,6 +98,10 @@ All 29 remaining unknown rendered rows classified: 10 E_PARTIAL, 9 I_PARTIAL, 5 
 
 [Exact Quota and native OAuth evidence crosswalk](method-evidence-crosswalk-quota-native-oauth.md) compares source guards to ten real Quota module-import controller tests and 11 Rust native auth tests (ten direct helper/record assertions, one hardcoded-label test not counted as production invocation). Existing fake Tauri DOM is **not** a native Keyring/HTTP/OS acceptance. Stage 8 now has **14/80 rows** with explicit source/test ownership and P/OS boundaries. AS1–AS3 remain hypotheses only; O3/native adapter seam and final Stage 3 AST census remain open. No tests run.
 
+### Large-batch Stage 4–8 evidence transfer: 17 critical modules (2026-11-14)
+
+Three bounded crosswalks map real source guard/outcome and inspected existing test assertions: [six Relay files](bulk-crosswalk-relay.md), [six GitHub files](bulk-crosswalk-github.md), and [five native/core files](bulk-crosswalk-native.md). Includes genuine `node:sqlite` Hub transactions, OAuth wire/ETag/rate Rust tests, imported GitHub monitor and billing controllers, Rust bounded/ShutdownSignal and native CI scope. Autostart has **only structural tests**, no real native invocation. Stage 8 E/P/OS indexed **31/80 total (30 with E/I partial; 1 with source-only S/P)**. Native NM1/RS1/RS2 and A1/A2/O3 retain STOP or harness gaps. Stage 5 810 unknown cells unchanged; all suites deferred.
+
 ## Separate the executable test queue from policy STOP factors
 
 | Track / relevant source | What remains to map before Stage 9 | Proposed deterministic case IDs and exact proof needed | Stage 9 prerequisites |

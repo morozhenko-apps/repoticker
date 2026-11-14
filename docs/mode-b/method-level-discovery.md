@@ -373,24 +373,27 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 
 ## `apps/desktop/src-tauri/src/relay_transport.rs`
 
+**Method assertion ledger:** [WSS Relay supervisor, finite diagnostics and native transport acceptance](method-assertions-relay-transport-supervisor.md). Two Rust test declarations are TEST_ONLY, not production methods.
+
+
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
 | 35 | `pub struct RelayTransportState {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
 | 47 | `pub struct RelayPhaseEvent {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
-| 52 | `fn phase_label(code: u8) -> &'static str {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 61 | `fn reason_label(code: u8) -> &'static str {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 84 | `fn http_failure_code(status: u16) -> u8 {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 94 | `fn handshake_failure_code(error: &tokio_tungstenite::tungstenite::Error) -> u8 {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 104 | `fn snapshot(code: u8) -> RelayPhaseEvent {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 111 | `fn set_phase(app: &AppHandle, code: u8) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 136 | `pub fn relay_connection_status(app: AppHandle) -> &'static str {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 145 | `pub fn relay_connection_diagnostics(app: AppHandle) -> RelayPhaseEvent {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 153 | `fn backoff(attempt: u32) -> Duration {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 159 | `pub fn restart(app: &AppHandle) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 179 | `fn send_reconcile(app: &AppHandle, decision: RelayDecision) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 188 | `async fn run(app: AppHandle) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 344 | `fn reconnect_is_bounded_without_unlimited_retry_frequency() {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 352 | `fn public_availability_is_only_fixed_nonsecret_phase_data() {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 52 | `fn phase_label(code: u8) -> &'static str {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 61 | `fn reason_label(code: u8) -> &'static str {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 84 | `fn http_failure_code(status: u16) -> u8 {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 94 | `fn handshake_failure_code(error: &tokio_tungstenite::tungstenite::Error) -> u8 {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 104 | `fn snapshot(code: u8) -> RelayPhaseEvent {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 111 | `fn set_phase(app: &AppHandle, code: u8) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 136 | `pub fn relay_connection_status(app: AppHandle) -> &'static str {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 145 | `pub fn relay_connection_diagnostics(app: AppHandle) -> RelayPhaseEvent {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 153 | `fn backoff(attempt: u32) -> Duration {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 159 | `pub fn restart(app: &AppHandle) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 179 | `fn send_reconcile(app: &AppHandle, decision: RelayDecision) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 188 | `async fn run(app: AppHandle) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_NATIVE |
+| 344 | `fn reconnect_is_bounded_without_unlimited_retry_frequency() {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TEST_ONLY |
+| 352 | `fn public_availability_is_only_fixed_nonsecret_phase_data() {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TEST_ONLY |
 
 ## `apps/desktop/src-tauri/src/startup_diagnostics.rs`
 

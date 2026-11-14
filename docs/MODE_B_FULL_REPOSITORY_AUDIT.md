@@ -84,13 +84,15 @@ changes merely to report test progress.
   independent from strict Node/Rust/Python gates. WebKit SIGABRT is tracked
   in [#23](https://github.com/morozhenko-apps/repoticker/issues/23).
 
+**Current Stage 3 checkpoint (documentation only):** 707 lexical entries = 44 manually assertion-triaged + 73 unambiguous Rust declarations + 20 source-context call/class/expression records + 570 unresolved. These counts are **structural inventory status**, not passing test coverage. [Method inventory](mode-b/method-level-discovery.md), [Rust declarations](mode-b/method-declaration-classification.md), [class/call-site triage](mode-b/lexical-false-positives-and-class-methods.md), and method-assertion maps are the traceable evidence. The agent has GitHub connector access but no network-resolving local Git checkout in this environment, so full AST-aware classification is still pending.
+
 ## Twelve-stage progress ledger
 
 | Stage | Contract | State | Completion evidence / next action |
 | --- | --- | --- | --- |
 | 1 | Repository Scan | COMPLETE | Tracked tree, test suites, strict and preflight workflow entrypoints inventoried |
 | 2 | Risk and invariant analysis | COMPLETE | Risk families and fail-closed requirements documented below |
-| 3 | Exhaustive Test Inventory | 80/80 FILE-LEVEL FOCUSED ROUTING COMPLETE; METHOD CLASSIFICATION OPEN | Every source file has a focused branch-map owner; 707 lexical method/type entries (218 public/export candidates) and 9 catalog/command entrypoints still need executable vs data/impl/cfg classification. |
+| 3 | Exhaustive Test Inventory | 80/80 FILE ROUTES COMPLETE; 137/707 LEXICAL ENTRIES CLASSIFIED/PARTIALLY ASSERTED | 44 method/adapter entries manually linked to assertion evidence or explicit gaps, 73 Rust type/impl declarations classified, 20 call sites/class methods/local expressions classified; 570 lexical entries still '?'. Full AST-aware public/anonymous/cfg mapping and Stage 4 assertion closure remain open. |
 | 4 | Executable Branch Map | ALL MAJOR FAMILIES PREMAPPED; OUTCOME MAP PARTIAL | Relay, Settings/Quota/Card, Git/OAuth, release/monitor, native OS, UI helpers and locales mapped; ~1721 lexical anchors still need exact executable outcomes + assertion evidence |
 | 5 | Positive and N1–N12 matrix | INITIAL FILE MATRIX COMPLETE; EVIDENCE PENDING | 80 file rows × 13 columns populated with '?' or reasoned NA; method-level coverage needs actual assertions before upgrading '?'. |
 | 6 | Meaningful Interaction Matrix | CASE REGISTER PREPARED; EXHAUSTIVENESS OPEN | 51 case groups listed including 10 platform physical groups, with N1–N12 tags and independent state combinations; not implemented-test counts |

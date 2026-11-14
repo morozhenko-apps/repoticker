@@ -910,23 +910,26 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 
 ## `crates/repoticker-core/src/config_store.rs`
 
+**Method assertion receipts:** [real JsonStore atomicity, backup recovery and storage fault cases](method-assertions-config-store.md). Source tests are actual filesystem tests with temporary paths; no owner config file was touched.
+
+
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 14 | `fn backup_path(path: &Path) -> PathBuf {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 21 | `fn sibling_name(path: &Path, suffix: &str) -> PathBuf {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 30 | `fn create_private(path: &Path) -> io::Result<File> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 14 | `fn backup_path(path: &Path) -> PathBuf {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 21 | `fn sibling_name(path: &Path, suffix: &str) -> PathBuf {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CORE |
+| 30 | `fn create_private(path: &Path) -> io::Result<File> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CORE |
 | 46 | `impl Drop for StagingFile {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | IMPL_BLOCK |
-| 47 | `fn drop(&mut self) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 54 | `fn sync_directory(parent: &Path) -> io::Result<()> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 66 | `fn atomic_replace(path: &Path, bytes: &[u8]) -> io::Result<()> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 94 | `fn load(path: &Path) -> Result<Option<Vec<u8>>, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 102 | `fn quarantine_corrupt(path: &Path, raw: &[u8]) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 127 | `pub fn read_json<T: DeserializeOwned>(path: &Path) -> Result<Option<T>, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 163 | `pub fn save_json<T: Serialize + DeserializeOwned>(path: &Path, value: &T) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 47 | `fn drop(&mut self) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CORE |
+| 54 | `fn sync_directory(parent: &Path) -> io::Result<()> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CORE |
+| 66 | `fn atomic_replace(path: &Path, bytes: &[u8]) -> io::Result<()> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CORE |
+| 94 | `fn load(path: &Path) -> Result<Option<Vec<u8>>, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CORE |
+| 102 | `fn quarantine_corrupt(path: &Path, raw: &[u8]) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CORE |
+| 127 | `pub fn read_json<T: DeserializeOwned>(path: &Path) -> Result<Option<T>, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
+| 163 | `pub fn save_json<T: Serialize + DeserializeOwned>(path: &Path, value: &T) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
 | 178 | `pub struct JsonStore(std::sync::Mutex<()>);` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
 | 180 | `impl JsonStore {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | IMPL_BLOCK |
-| 181 | `pub fn read<T: DeserializeOwned>(&self, path: &Path) -> Result<Option<T>, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 186 | `pub fn update<T, R>(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 181 | `pub fn read<T: DeserializeOwned>(&self, path: &Path) -> Result<Option<T>, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 186 | `pub fn update<T, R>(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
 
 ## `crates/repoticker-core/src/git.rs`
 

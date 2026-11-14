@@ -1130,27 +1130,30 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 
 ## `scripts/r2_release.py`
 
+**Executable assertion ledger:** [R2 publication/Apt signing, CAS, public CDN readback and CLI main](method-assertions-r2-publisher.md). 67 test cases exercise the real Python release functions with fake R2/public transport; no hosted release was performed.
+
+
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 39 | `def digest(path):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
-| 47 | `def safe_file(path):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
-| 56 | `def platform_files(release, platform, version, commit):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
-| 97 | `def verify_signed_apt_indexes(inrelease, index):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
-| 152 | `def verify_apt_package_catalog(packages, compressed, pool, version):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
-| 217 | `def apt_files(apt, linux_deb, version):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
-| 242 | `def source_map(release, apt, version, commit):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
-| 258 | `def latest_manifest(immutable, version, commit):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
-| 260 | `def item(key):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
-| 278 | `def content_type(path):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
+| 39 | `def digest(path):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | E_PARTIAL |
+| 47 | `def safe_file(path):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | E_PARTIAL |
+| 56 | `def platform_files(release, platform, version, commit):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | I_PARTIAL |
+| 97 | `def verify_signed_apt_indexes(inrelease, index):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | E_PARTIAL |
+| 152 | `def verify_apt_package_catalog(packages, compressed, pool, version):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | E_PARTIAL |
+| 217 | `def apt_files(apt, linux_deb, version):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | I_PARTIAL |
+| 242 | `def source_map(release, apt, version, commit):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | E_PARTIAL |
+| 258 | `def latest_manifest(immutable, version, commit):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | E_PARTIAL |
+| 260 | `def item(key):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | INLINE |
+| 278 | `def content_type(path):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | I_PARTIAL |
 | 284 | `class _RejectPublicRedirect(urllib.request.HTTPRedirectHandler):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | CLASS_DECL |
-| 287 | `def redirect_request(self, req, fp, code, msg, headers, newurl):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
-| 291 | `def _verified_public_opener(request, timeout):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
-| 300 | `def public_readback(path, relative, opener=_verified_public_opener):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
-| 333 | `def object_head(client, key):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
-| 344 | `def object_etag(head):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
-| 354 | `def upload(client, key, file, immutable, expected_latest=_NO_SNAPSHOT):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
-| 403 | `def publish(release, apt, version, commit, run_id, output, account, access_key, secret):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
-| 468 | `def main():` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
+| 287 | `def redirect_request(self, req, fp, code, msg, headers, newurl):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | I_PARTIAL |
+| 291 | `def _verified_public_opener(request, timeout):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | I_PARTIAL |
+| 300 | `def public_readback(path, relative, opener=_verified_public_opener):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | E_PARTIAL |
+| 333 | `def object_head(client, key):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | E_PARTIAL |
+| 344 | `def object_etag(head):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | I_PARTIAL |
+| 354 | `def upload(client, key, file, immutable, expected_latest=_NO_SNAPSHOT):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | E_PARTIAL |
+| 403 | `def publish(release, apt, version, commit, run_id, output, account, access_key, secret):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | E_PARTIAL |
+| 468 | `def main():` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | P |
 
 ## `scripts/release_assets.py`
 

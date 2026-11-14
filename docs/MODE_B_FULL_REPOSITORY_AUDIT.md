@@ -261,6 +261,7 @@ development journal. It is source-derived and does not claim final coverage.
 - [Method assertions: GitHub runner and CI notification collectors](mode-b/method-assertions-runner-ci-collectors.md)
 - [Method assertions: native main.rs Tauri IPC and OS command ownership](mode-b/method-assertions-native-main-ipc.md)
 - [Method assertions: Relay secret custody, Keyring faults and platform-only functions](mode-b/method-assertions-relay-secret-native.md)
+- [Method assertions: native GitHub OAuth session, public events and generation safety](mode-b/method-assertions-github-auth-session.md)
 - [Settings/Quota/Card semantic map and planned negative cases](mode-b/branch-map-settings-quota-card.md)
 - [Git safety, OAuth, ETag and rate gate semantic branch map](mode-b/branch-map-git-oauth.md)
 - [R2/APT release and GitHub monitoring semantic branch map](mode-b/branch-map-release-monitor.md)

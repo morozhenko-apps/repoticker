@@ -5,7 +5,7 @@ Input: eight preserved source inventories in this audit plus a separate `main.rs
 
 **Method evidence tags:** `I_PARTIAL` = real method was executed indirectly through a real consumer with some relevant assertions, but independent branches remain open; `E_PARTIAL` = real method called directly in reviewed tests with still-open branches; `INLINE` = a private closure nested within an enclosing method, not a separate public API. `ADAPTER` = a tiny private wrapper around DOM/native transport rather than a separate domain API; `P` = an inspected entrypoint with no matching direct executable event assertion. `TYPE_DECL` = Rust struct/enum/union declaration, not a callable method; `IMPL_BLOCK` = method-implementation container, not itself an executable method. These two are syntax-based Stage 3 type classification, **not** coverage of declared fields or member methods. `CLASS_DECL` = Python/JS/TS class definition, `CLASS_METHOD` = real class/adapter method awaiting assertion reconciliation, `CALL_SITE` = function call misrecognized as lexical method, `STARTUP_CALL` = top-level initialization effect, `LOCAL_EXPR` = Boolean/nonfunction value inside an owning function. None of these tags represents a passing test. `P_CONTROLLER` = private method whose in-situ main-card DOM/Tauri behavior is not verified, `CALLBACK_P` = unasserted event closure; these may already have directly tested separate pure helpers. `P_NATIVE` = actual native method/command without directly verified AppHandle/OS assertions (other pure modules may be tested); `BOOTSTRAP_P` = OS app setup. `TEST_ONLY` = Rust #[cfg(test)] test function, not production API; `FFI_DECL` = Win32 foreign function signature, not a Rust method body; `OS_P` = platform-gated native callable requiring OS acceptance. `P_CORE` = real private or public Core method without a named direct existing branch assertion; separate Git core dependencies may be tested. `DATA_ONLY` = a source-inspected module containing only an exported dictionary, with no callable extracted from the module; validate it as a structural/consumer artifact, not a fictitious method. Other `?` rows remain unclassified. These tags do not change the global Stage 3–8 PARTIAL state.
 
-**Current Stage 3 checkpoint (source-inspected, not test-executed):** 708 provisional lexical/source-reconciled entries, **662 structurally classified or assertion-linked/planned, 46 '?' remain**. Exact categories: **170 E_PARTIAL, 104 I_PARTIAL, 133 P_NATIVE, 43 OS_P, 23 P_CORE, 36 P_CONTROLLER, 1 CALLBACK_P, 6 P, 1 BOOTSTRAP_P, 7 ADAPTER, 9 INLINE**, 41 TYPE_DECL, 32 IMPL_BLOCK, 9 FFI_DECL, 22 TEST_ONLY, 3 CALL_SITE, 1 STARTUP_CALL, 2 LOCAL_EXPR, 3 CLASS_DECL, 11 CLASS_METHOD, 5 DATA_ONLY. The initial 707-row lexical scan omitted real `linux_surface.rs:51` relative-pointer callback; more anonymous/extern/cfg omissions remain possible until true AST-aware reconciliation. **662 is not 662 passing tests, executable methods, or code coverage.**
+**Current Stage 3 checkpoint (source-inspected, not test-executed):** 708 provisional lexical/source-reconciled entries, **679 structurally classified or assertion-linked/planned, 29 '?' remain**. Exact categories: **179 E_PARTIAL, 112 I_PARTIAL, 133 P_NATIVE, 43 OS_P, 23 P_CORE, 36 P_CONTROLLER, 1 CALLBACK_P, 6 P, 1 BOOTSTRAP_P, 7 ADAPTER, 9 INLINE**, 41 TYPE_DECL, 32 IMPL_BLOCK, 9 FFI_DECL, 22 TEST_ONLY, 3 CALL_SITE, 1 STARTUP_CALL, 2 LOCAL_EXPR, 3 CLASS_DECL, 11 CLASS_METHOD, 5 DATA_ONLY. The initial 707-row lexical scan omitted real `linux_surface.rs:51` relative-pointer callback; more anonymous/extern/cfg omissions remain possible until true AST-aware reconciliation. **679 is not 679 passing tests, executable methods, or code coverage.**
 
 Every line carries **risk**, **test level**, **candidate N categories**, and an **initial test-count floor**. These floors represent planning estimates to be refined against each distinct decision outcome, NOT observed tests, and NOT a cap on required tests. The letter `?` denotes not yet assertion-mapped. External dependencies are faked only by contract, never by replacing business logic.
 
@@ -457,10 +457,10 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 7 | `const invoke = command => window.__TAURI__?.core?.invoke(command) ??` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 11 | `function paintLocale(value) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 26 | `async function refreshLocale() {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 55 | `function closeAbout() {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 7 | `const invoke = command => window.__TAURI__?.core?.invoke(command) ??` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
+| 11 | `function paintLocale(value) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
+| 26 | `async function refreshLocale() {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
+| 55 | `function closeAbout() {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
 
 ## `apps/desktop/ui/app.mjs`
 
@@ -523,10 +523,10 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 111 | `export function cardText(language, key, value) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
-| 130 | `function countText(language, value) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
-| 141 | `export function metricAccessibleLabel(language, kind, counts, busy = false) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
-| 154 | `export function cardNoticeText(language, notice) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
+| 111 | `export function cardText(language, key, value) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | E_PARTIAL |
+| 130 | `function countText(language, value) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | I_PARTIAL |
+| 141 | `export function metricAccessibleLabel(language, kind, counts, busy = false) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | E_PARTIAL |
+| 154 | `export function cardNoticeText(language, notice) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | E_PARTIAL |
 
 ## `apps/desktop/ui/ci-failure-events.mjs`
 
@@ -677,8 +677,8 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 4 | `export function mergeMonitorPresentation(local, remote) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 18 | `export function reconcileScanPresentation(next, current, before, after) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 4 | `export function mergeMonitorPresentation(local, remote) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 18 | `export function reconcileScanPresentation(next, current, before, after) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
 
 ## `apps/desktop/ui/native-drag.mjs`
 
@@ -712,7 +712,7 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 10 | `export function usageHeight(titleHeight, contentHeights) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 10 | `export function usageHeight(titleHeight, contentHeights) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
 
 ## `apps/desktop/ui/quota.mjs`
 
@@ -800,7 +800,7 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 147 | `export function settingsText(language, english) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
+| 147 | `export function settingsText(language, english) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | E_PARTIAL |
 
 ## `apps/desktop/ui/settings.mjs`
 
@@ -867,11 +867,11 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 57 | `export function surfaceText(language, key) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
-| 64 | `function isolatedValue(language, value) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
-| 68 | `function translatedStatus(language, status) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
-| 83 | `function translatedMessage(language, message) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
-| 98 | `export function translateHoverDetails(details, language, runnerNameRows = 0) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | ? |
+| 57 | `export function surfaceText(language, key) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | E_PARTIAL |
+| 64 | `function isolatedValue(language, value) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | I_PARTIAL |
+| 68 | `function translatedStatus(language, status) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | I_PARTIAL |
+| 83 | `function translatedMessage(language, message) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | I_PARTIAL |
+| 98 | `export function translateHoverDetails(details, language, runnerNameRows = 0) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N6,N8,N9,N10 | E_PARTIAL |
 
 ## `apps/desktop/ui/view.mjs`
 

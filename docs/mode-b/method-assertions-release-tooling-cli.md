@@ -4,7 +4,7 @@ Source-equivalent baseline `dev=a3ba7fa30fc4c81890d3075f94142942d001cbf3`; audit
 
 ## Corrected Stage 3 inventory arithmetic
 
-Physical Markdown row count: **717**, previously claimed **708**. Before classification, 688 rows were tagged and **29** were `?` (not 20); this pass tags all 29. The original extractor's 707 plus an added Wayland callback explains the old 708 checkpoint, but nine further rendered records still need provenance reconciliation. **717/717 is only a classified lexical candidate register**, not 717 executable methods, complete AST discovery, test coverage, or Stage 3 signoff.
+Physical Markdown row count: **717**, previously claimed **708**. Before classification, 688 rows were tagged and **29** were `?` (not 20); this pass tags all 29. The historical register at `72f399a16fe6a869796210c31e99226d6d8a3c43` already had 716 rendered rows: 707 numbered candidates plus **nine `—` placeholder artifacts** (five locale dictionaries, four top-level scripts). Adding the Wayland callback gives 708 numbered candidates and 717 total rows. There is **no unexplained nine-row provenance discrepancy**. **717/717 is only a classified lexical candidate register**, not 717 executable methods, complete AST discovery, test coverage, or Stage 3 signoff.
 
 ## Source-true method and test evidence
 
@@ -27,4 +27,4 @@ Physical Markdown row count: **717**, previously claimed **708**. Before classif
 
 Positive/N1/N2: exact versions, marker synchronization, 39/40/41 fingerprint, 0/1/100/101 artifacts, 350 MiB boundary, bad URLs/receipt fields, APT index and checksum checks. N3/N12: missing external executables and permission-denied folders, failing GitHub listing, failed signing/passphrase, invalid output. N4/N5: idempotent cleanup and concurrent artifact publication/deletion, interrupted version update, trap teardown. N6/N7/N10: reject foreign SHA/paths, never leak full private keys or log secrets; keep all hosted R2/GitHub Secrets operations outside tests. N8: UTC Release date and deterministic gzip metadata. N9: OS login/Quit/failed installation/interrupt. N11: NA.
 
-Each missing outcome must acquire a traceable direct assertion (E) or remain planned (P)/physical (OS). Avoid claiming a script is covered from regex alone. Stage 3–8 remain PARTIAL despite zero visible `?`. The nine-entry discrepancy and absent AST-aware exhaustiveness are explicit audit blockers. No source, tests, CI or distribution side effects performed.
+Each missing outcome must acquire a traceable direct assertion (E) or remain planned (P)/physical (OS). Avoid claiming a script is covered from regex alone. Stage 3–8 remain PARTIAL despite zero visible `?`. The row-count discrepancy is resolved; AST-aware exhaustive method discovery remains an audit blocker. No source, tests, CI or distribution side effects performed.

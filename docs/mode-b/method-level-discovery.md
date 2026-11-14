@@ -3,7 +3,7 @@
 Baseline production source `a3ba7fa30fc4c81890d3075f94142942d001cbf3`.
 Input: eight preserved source inventories in this audit plus a separate `main.rs` continuation (inline Rust tests are interspersed). These are lexical extraction records, NOT an AST and NOT evidence that branches have been covered.
 
-**Method evidence tags:** `I_PARTIAL` = real method was executed indirectly through a real consumer with some relevant assertions, but independent branches remain open; `E_PARTIAL` = real method called directly in reviewed tests with still-open branches; `INLINE` = a private closure nested within an enclosing method, not a separate public API. `ADAPTER` = a tiny private wrapper around DOM/native transport rather than a separate domain API; `P` = an inspected entrypoint with no matching direct executable event assertion. `TYPE_DECL` = Rust struct/enum/union declaration, not a callable method; `IMPL_BLOCK` = method-implementation container, not itself an executable method. These two are syntax-based Stage 3 type classification, **not** coverage of declared fields or member methods. Other `?` rows remain unclassified. These tags do not change the global Stage 3–8 PARTIAL state.
+**Method evidence tags:** `I_PARTIAL` = real method was executed indirectly through a real consumer with some relevant assertions, but independent branches remain open; `E_PARTIAL` = real method called directly in reviewed tests with still-open branches; `INLINE` = a private closure nested within an enclosing method, not a separate public API. `ADAPTER` = a tiny private wrapper around DOM/native transport rather than a separate domain API; `P` = an inspected entrypoint with no matching direct executable event assertion. `TYPE_DECL` = Rust struct/enum/union declaration, not a callable method; `IMPL_BLOCK` = method-implementation container, not itself an executable method. These two are syntax-based Stage 3 type classification, **not** coverage of declared fields or member methods. `CLASS_DECL` = Python/JS/TS class definition, `CLASS_METHOD` = real class/adapter method awaiting assertion reconciliation, `CALL_SITE` = function call misrecognized as lexical method, `STARTUP_CALL` = top-level initialization effect, `LOCAL_EXPR` = Boolean/nonfunction value inside an owning function. None of these tags represents a passing test. Other `?` rows remain unclassified. These tags do not change the global Stage 3–8 PARTIAL state.
 
 Every line carries **risk**, **test level**, **candidate N categories**, and an **initial test-count floor**. These floors represent planning estimates to be refined against each distinct decision outcome, NOT observed tests, and NOT a cap on required tests. The letter `?` denotes not yet assertion-mapped. External dependencies are faked only by contract, never by replacing business logic.
 
@@ -460,18 +460,18 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 | 492 | `function renderMonitorMetrics(state) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 503 | `function traceMonitorReady() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 509 | `function render(next) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 545 | `render(reconcileScanPresentation(next, snapshot, revision, monitorRevision));` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 545 | `render(reconcileScanPresentation(next, snapshot, revision, monitorRevision));` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALL_SITE |
 | 554 | `function refresh() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 560 | `async function refreshMonitor() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 574 | `function consumeResults(results) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 582 | `async function cancelActiveFetch() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 595 | `async function runGitAction(operation, repoPath = null) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 612 | `render(snapshot);` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 612 | `render(snapshot);` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALL_SITE |
 | 615 | `function resetView() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 624 | `async function openView(target) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 713 | `refresh();` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 713 | `refresh();` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALL_SITE |
 | 718 | `function refreshCardConfiguration() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 745 | `refresh();` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 745 | `refresh();` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | STARTUP_CALL |
 | 762 | `function stopDragging(event = null) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 
 ## `apps/desktop/ui/browser-context-menu.mjs`
@@ -781,12 +781,12 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 | 777 | `function message(text, error = false) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 782 | `function validRelayUrl(value) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 802 | `function validRelayDraft() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 808 | `const candidateValid = (32 <= candidate.length && candidate.length <= 256) &&` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 808 | `const candidateValid = (32 <= candidate.length && candidate.length <= 256) &&` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | LOCAL_EXPR |
 | 815 | `function syncConnectionAvailability() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 821 | `function pollingNeedsRelayCleanup() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 826 | `function isDirty() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 840 | `function updateApply() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 842 | `const authNeedsConfirmation = (githubConnected && githubStartedHere) \|\| disconnectPending;` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 842 | `const authNeedsConfirmation = (githubConnected && githubStartedHere) \|\| disconnectPending;` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | LOCAL_EXPR |
 | 849 | `function displayRootPath(path) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 860 | `function renderRoots() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 888 | `function renderIgnoredChildren() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
@@ -831,24 +831,24 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 14 | `export class RelayHubController {` | Critical | Node unit + Worker isolated integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
-| 15 | `constructor(ctx, env, platform = {}) {` | Critical | Node unit + Worker isolated integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
-| 29 | `history(after) {` | Critical | Node unit + Worker isolated integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
-| 52 | `ingest(delivery, repository) {` | Critical | Node unit + Worker isolated integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
-| 85 | `broadcast(hint) {` | Critical | Node unit + Worker isolated integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
-| 139 | `webSocketMessage(socket, message) {` | Critical | Node unit + Worker isolated integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
-| 144 | `webSocketClose(socket, code, reason) {` | Critical | Node unit + Worker isolated integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
+| 14 | `export class RelayHubController {` | Critical | Node unit + Worker isolated integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | CLASS_DECL |
+| 15 | `constructor(ctx, env, platform = {}) {` | Critical | Node unit + Worker isolated integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | CLASS_METHOD |
+| 29 | `history(after) {` | Critical | Node unit + Worker isolated integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | CLASS_METHOD |
+| 52 | `ingest(delivery, repository) {` | Critical | Node unit + Worker isolated integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | CLASS_METHOD |
+| 85 | `broadcast(hint) {` | Critical | Node unit + Worker isolated integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | CLASS_METHOD |
+| 139 | `webSocketMessage(socket, message) {` | Critical | Node unit + Worker isolated integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | CLASS_METHOD |
+| 144 | `webSocketClose(socket, code, reason) {` | Critical | Node unit + Worker isolated integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | CLASS_METHOD |
 
 ## `apps/relay-cloudflare/src/index.ts`
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 6 | `export class RelayHub extends DurableObject {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
-| 8 | `constructor(ctx: DurableObjectState, env: any) {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
-| 12 | `fetch(request: Request): Promise<Response> { return this.hub.fetch(request); }` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
-| 13 | `webSocketMessage(socket: WebSocket, message: string \\| ArrayBuffer): void {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
-| 16 | `webSocketClose(socket: WebSocket, code: number, reason: string): void {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
-| 22 | `fetch(request: Request, env: any): Promise<Response> {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
+| 6 | `export class RelayHub extends DurableObject {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | CLASS_DECL |
+| 8 | `constructor(ctx: DurableObjectState, env: any) {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | CLASS_METHOD |
+| 12 | `fetch(request: Request): Promise<Response> { return this.hub.fetch(request); }` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | CLASS_METHOD |
+| 13 | `webSocketMessage(socket: WebSocket, message: string \\| ArrayBuffer): void {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | CLASS_METHOD |
+| 16 | `webSocketClose(socket: WebSocket, code: number, reason: string): void {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | CLASS_METHOD |
+| 22 | `fetch(request: Request, env: any): Promise<Response> {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | CLASS_METHOD |
 
 ## `apps/relay-cloudflare/src/relay-protocol.mjs`
 
@@ -1091,7 +1091,7 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 | 258 | `def latest_manifest(immutable, version, commit):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
 | 260 | `def item(key):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
 | 278 | `def content_type(path):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
-| 284 | `class _RejectPublicRedirect(urllib.request.HTTPRedirectHandler):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
+| 284 | `class _RejectPublicRedirect(urllib.request.HTTPRedirectHandler):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | CLASS_DECL |
 | 287 | `def redirect_request(self, req, fp, code, msg, headers, newurl):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
 | 291 | `def _verified_public_opener(request, timeout):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |
 | 300 | `def public_readback(path, relative, opener=_verified_public_opener):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | ? |

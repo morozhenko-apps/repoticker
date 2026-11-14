@@ -540,22 +540,24 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 
 ## `apps/desktop/ui/github-monitor.mjs`
 
+**Per-method assertion reconciliation:** [GitHub Monitor direct and private callback evidence](method-assertions-github-monitor.md). Statuses credit actual controller tests, never a branch-completeness certificate.
+
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 15 | `export function monitorRefreshDelay(repositoryCount) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 23 | `const validAccountName = name => typeof name === "string" &&` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 27 | `export async function listInstalledRepositories(get, owner, installationId,` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 59 | `export async function collectForAccount({` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 120 | `export function mergeMetricGroup(previous, next, kind) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 127 | `const priorClock = field => Object.hasOwn(previous, field)` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 155 | `export function invalidateMetricGroup(previous, kind) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 186 | `export function startGithubMonitoring({ invoke, event, onError = () => {},` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 206 | `const get = path => invoke("github_api_get", { path });` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 207 | `function publish(connected, runnerState = null, message = null,` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 216 | `function invalidatePresentation(message) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 228 | `async function applyCooldown(reason) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 238 | `async function refresh(force = false, kind = "all") {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 411 | `function applyRelayPhase(phase) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 15 | `export function monitorRefreshDelay(repositoryCount) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 23 | `const validAccountName = name => typeof name === "string" &&` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
+| 27 | `export async function listInstalledRepositories(get, owner, installationId,` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 59 | `export async function collectForAccount({` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 120 | `export function mergeMetricGroup(previous, next, kind) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 127 | `const priorClock = field => Object.hasOwn(previous, field)` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | INLINE |
+| 155 | `export function invalidateMetricGroup(previous, kind) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 186 | `export function startGithubMonitoring({ invoke, event, onError = () => {},` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 206 | `const get = path => invoke("github_api_get", { path });` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | INLINE |
+| 207 | `function publish(connected, runnerState = null, message = null,` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
+| 216 | `function invalidatePresentation(message) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
+| 228 | `async function applyCooldown(reason) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
+| 238 | `async function refresh(force = false, kind = "all") {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
+| 411 | `function applyRelayPhase(phase) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
 
 ## `apps/desktop/ui/locale-auth.mjs`
 

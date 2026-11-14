@@ -250,6 +250,7 @@ development journal. It is source-derived and does not claim final coverage.
 - [Immutable 20-locale bundles, Settings/Quota exact-key and bidi projections](mode-b/branch-map-locale-bundles-projection.md)
 - [Stage 3–8 method-assertion closure queue and Stage 9 prerequisites](mode-b/stage-3-8-assertion-closure-queue.md)
 - [Method assertions: compact status confidence truth table](mode-b/method-assertions-status-metrics.md)
+- [Method assertions: GitHub Monitor/Hybrid controller ownership and races](mode-b/method-assertions-github-monitor.md)
 - [Settings/Quota/Card semantic map and planned negative cases](mode-b/branch-map-settings-quota-card.md)
 - [Git safety, OAuth, ETag and rate gate semantic branch map](mode-b/branch-map-git-oauth.md)
 - [R2/APT release and GitHub monitoring semantic branch map](mode-b/branch-map-release-monitor.md)

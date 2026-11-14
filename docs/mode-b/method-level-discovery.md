@@ -3,7 +3,7 @@
 Baseline production source `a3ba7fa30fc4c81890d3075f94142942d001cbf3`.
 Input: eight preserved source inventories in this audit plus a separate `main.rs` continuation (inline Rust tests are interspersed). These are lexical extraction records, NOT an AST and NOT evidence that branches have been covered.
 
-**Method evidence tags:** `I_PARTIAL` = real method was executed indirectly through a real consumer with some relevant assertions, but independent branches remain open; `E_PARTIAL` = real method called directly in reviewed tests with still-open branches; `INLINE` = a private closure nested within an enclosing method, not a separate public API. `ADAPTER` = a tiny private wrapper around DOM/native transport rather than a separate domain API; `P` = an inspected entrypoint with no matching direct executable event assertion. Other `?` rows remain unclassified. These tags do not change the global Stage 3–8 PARTIAL state.
+**Method evidence tags:** `I_PARTIAL` = real method was executed indirectly through a real consumer with some relevant assertions, but independent branches remain open; `E_PARTIAL` = real method called directly in reviewed tests with still-open branches; `INLINE` = a private closure nested within an enclosing method, not a separate public API. `ADAPTER` = a tiny private wrapper around DOM/native transport rather than a separate domain API; `P` = an inspected entrypoint with no matching direct executable event assertion. `TYPE_DECL` = Rust struct/enum/union declaration, not a callable method; `IMPL_BLOCK` = method-implementation container, not itself an executable method. These two are syntax-based Stage 3 type classification, **not** coverage of declared fields or member methods. Other `?` rows remain unclassified. These tags do not change the global Stage 3–8 PARTIAL state.
 
 Every line carries **risk**, **test level**, **candidate N categories**, and an **initial test-count floor**. These floors represent planning estimates to be refined against each distinct decision outcome, NOT observed tests, and NOT a cap on required tests. The letter `?` denotes not yet assertion-mapped. External dependencies are faked only by contract, never by replacing business logic.
 
@@ -45,8 +45,8 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 21 | `pub struct GitHubRestClient {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 25 | `impl GitHubRestClient {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 21 | `pub struct GitHubRestClient {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
+| 25 | `impl GitHubRestClient {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | IMPL_BLOCK |
 | 26 | `fn client(&self) -> Result<&Client, String> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 42 | `fn api_http_failure(` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 57 | `pub(crate) fn valid_name(value: &str) -> bool {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
@@ -60,11 +60,11 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 25 | `pub struct GitHubETagCache {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 29 | `pub struct CacheLookup {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 25 | `pub struct GitHubETagCache {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
+| 29 | `pub struct CacheLookup {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
 | 34 | `fn valid_etag(etag: &str) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 43 | `fn cacheable(path: &str) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 48 | `impl GitHubETagCache {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 48 | `impl GitHubETagCache {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | IMPL_BLOCK |
 | 49 | `pub fn snapshot(&self, path: &str) -> CacheLookup {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 66 | `pub fn unchanged(&self, generation: u64) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 74 | `pub fn not_modified(&self, path: &str, lookup: &CacheLookup) -> Option<Value> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
@@ -76,21 +76,21 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
 | 21 | `fn device_challenge_fields() -> [(&'static str, &'static str); 1] {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 26 | `pub enum NativeAuthError {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 40 | `pub struct CredentialRecord {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 48 | `impl std::fmt::Debug for CredentialRecord {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 26 | `pub enum NativeAuthError {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
+| 40 | `pub struct CredentialRecord {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
+| 48 | `impl std::fmt::Debug for CredentialRecord {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | IMPL_BLOCK |
 | 49 | `fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 60 | `impl CredentialRecord {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 60 | `impl CredentialRecord {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | IMPL_BLOCK |
 | 61 | `pub fn from_lease(lease: TokenLease, issued_at: u64) -> Result<Self, NativeAuthError> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 80 | `fn decode(body: &str) -> Result<Self, NativeAuthError> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 95 | `pub struct NativeCredentialStore;` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 97 | `impl NativeCredentialStore {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 95 | `pub struct NativeCredentialStore;` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
+| 97 | `impl NativeCredentialStore {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | IMPL_BLOCK |
 | 100 | `fn entry() -> Result<keyring::Entry, NativeAuthError> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 105 | `pub fn load(&self) -> Result<Option<CredentialRecord>, NativeAuthError> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 114 | `pub fn replace(&self, record: &CredentialRecord) -> Result<(), NativeAuthError> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 123 | `pub fn clear(&self) -> Result<(), NativeAuthError> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 134 | `pub struct GithubOAuthHttp {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 138 | `impl GithubOAuthHttp {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 134 | `pub struct GithubOAuthHttp {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
+| 138 | `impl GithubOAuthHttp {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | IMPL_BLOCK |
 | 139 | `pub fn new() -> Result<Self, NativeAuthError> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 149 | `async fn submit(` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 188 | `pub async fn begin(&self, now: u64) -> Result<DeviceChallenge, NativeAuthError> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
@@ -101,16 +101,16 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 14 | `pub enum WireError {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 20 | `pub struct DeviceChallenge {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 25 | `impl DeviceChallenge {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 14 | `pub enum WireError {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
+| 20 | `pub struct DeviceChallenge {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
+| 25 | `impl DeviceChallenge {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | IMPL_BLOCK |
 | 26 | `pub fn device_code(&self) -> &str {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 31 | `impl std::fmt::Debug for DeviceChallenge {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 31 | `impl std::fmt::Debug for DeviceChallenge {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | IMPL_BLOCK |
 | 32 | `fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 41 | `pub struct TokenLease {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 48 | `impl std::fmt::Debug for TokenLease {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 41 | `pub struct TokenLease {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
+| 48 | `impl std::fmt::Debug for TokenLease {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | IMPL_BLOCK |
 | 49 | `fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 60 | `pub enum PollReply {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 60 | `pub enum PollReply {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
 | 65 | `fn object(input: &str) -> Result<Value, WireError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 76 | `fn valid_ascii_token(value: &str, max_len: usize) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 80 | `pub fn parse_device_challenge(input: &str, started_at: u64) -> Result<DeviceChallenge, WireError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
@@ -120,8 +120,8 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 13 | `pub struct GitHubRateGate {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 17 | `impl GitHubRateGate {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 13 | `pub struct GitHubRateGate {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
+| 17 | `impl GitHubRateGate {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | IMPL_BLOCK |
 | 18 | `pub fn remaining_seconds(&self) -> u64 {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 29 | `pub fn defer(&self, duration: Duration) {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 38 | `fn bounded_seconds(input: Option<&str>) -> Option<u64> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
@@ -133,17 +133,17 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 30 | `pub struct GitHubAuthManager {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 46 | `impl Default for AuthProgress {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 30 | `pub struct GitHubAuthManager {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
+| 46 | `impl Default for AuthProgress {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | IMPL_BLOCK |
 | 47 | `fn default() -> Self {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 55 | `impl GitHubAuthManager {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 55 | `impl GitHubAuthManager {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | IMPL_BLOCK |
 | 56 | `fn invalidate(&self) -> u64 {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 62 | `fn active(&self, epoch: u64) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 66 | `fn progress(&self) -> AuthProgress {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 73 | `fn set_progress(&self, next: AuthProgress) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 88 | `pub struct GitHubAuthEvent {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 95 | `pub struct GitHubAuthChallenge {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 103 | `pub struct GitHubAuthStatus {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 88 | `pub struct GitHubAuthEvent {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
+| 95 | `pub struct GitHubAuthChallenge {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
+| 103 | `pub struct GitHubAuthStatus {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
 | 110 | `fn unix_now() -> u64 {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 117 | `fn public_error(error: NativeAuthError) -> String {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 139 | `fn reason_category(error: NativeAuthError) -> &'static str {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
@@ -199,9 +199,9 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 15 | `impl LinuxTray {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 15 | `impl LinuxTray {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | IMPL_BLOCK |
 | 16 | `fn on_ui(&self, action: &'static str) {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 32 | `impl Tray for LinuxTray {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 32 | `impl Tray for LinuxTray {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | IMPL_BLOCK |
 | 33 | `fn id(&self) -> String {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 37 | `fn title(&self) -> String {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 41 | `fn icon_pixmap(&self) -> Vec<Icon> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
@@ -214,9 +214,9 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 59 | `impl Drop for ActiveFetchLease<'_> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 59 | `impl Drop for ActiveFetchLease<'_> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | IMPL_BLOCK |
 | 60 | `fn drop(&mut self) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 112 | `impl CiNotificationMode {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 112 | `impl CiNotificationMode {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | IMPL_BLOCK |
 | 113 | `fn allows(self, conclusion: &str) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 123 | `fn default_language() -> String {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 173 | `fn notify_progress(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
@@ -289,12 +289,12 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 10 | `pub struct MonitorCache {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 20 | `impl Default for CacheState {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 10 | `pub struct MonitorCache {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
+| 20 | `impl Default for CacheState {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | IMPL_BLOCK |
 | 21 | `fn default() -> Self {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 32 | `impl MonitorCache {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 32 | `impl MonitorCache {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | IMPL_BLOCK |
 | 33 | `pub fn read(&self) -> (bool, Option<Value>, Option<String>) {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 48 | `pub struct MonitorPresentation {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 48 | `pub struct MonitorPresentation {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
 | 55 | `pub fn github_monitor_snapshot(app: AppHandle) -> MonitorPresentation {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 69 | `fn default_status_is_unknown_until_wallet_verification() {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 77 | `fn monitor_projection_uses_only_expected_fields() {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
@@ -313,21 +313,21 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 12 | `pub struct RelayPromptGate(AtomicBool);` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 17 | `pub struct RelaySecretDraftState(Mutex<Option<RelaySecretDraft>>);` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 12 | `pub struct RelayPromptGate(AtomicBool);` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
+| 17 | `pub struct RelaySecretDraftState(Mutex<Option<RelaySecretDraft>>);` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
 | 24 | `fn lock_draft(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 33 | `pub(crate) fn discard_draft(app: &AppHandle) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 38 | `pub(crate) fn has_pending_draft(app: &AppHandle) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 45 | `impl Drop for PromptLease {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 45 | `impl Drop for PromptLease {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | IMPL_BLOCK |
 | 46 | `fn drop(&mut self) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 51 | `fn enter_prompt(app: &AppHandle) -> Result<PromptLease, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 59 | `fn valid_secret(value: &str) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 66 | `fn entry() -> Result<keyring::Entry, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 71 | `pub(crate) fn read_secret() -> Result<Option<SensitiveSecret>, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 88 | `pub(crate) fn wipe(value: &mut String) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 103 | `impl SensitiveSecret {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 103 | `impl SensitiveSecret {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | IMPL_BLOCK |
 | 104 | `pub(crate) fn as_str(&self) -> &str {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 109 | `impl Drop for SensitiveSecret {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 109 | `impl Drop for SensitiveSecret {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | IMPL_BLOCK |
 | 110 | `fn drop(&mut self) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 115 | `fn store_secret(secret: &SensitiveSecret) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 124 | `fn remove_secret() -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
@@ -352,8 +352,8 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 35 | `pub struct RelayTransportState {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 47 | `pub struct RelayPhaseEvent {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 35 | `pub struct RelayTransportState {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
+| 47 | `pub struct RelayPhaseEvent {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
 | 52 | `fn phase_label(code: u8) -> &'static str {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 61 | `fn reason_label(code: u8) -> &'static str {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 84 | `fn http_failure_code(status: u16) -> u8 {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
@@ -376,10 +376,10 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 | 9 | `pub fn initialize() {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 13 | `fn enabled() -> bool {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 17 | `fn write(stage: &'static str, elapsed: Duration) {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 29 | `pub struct Span {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 34 | `impl Span {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 29 | `pub struct Span {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
+| 34 | `impl Span {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | IMPL_BLOCK |
 | 35 | `pub fn new(stage: &'static str) -> Self {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 43 | `impl Drop for Span {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 43 | `impl Drop for Span {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | IMPL_BLOCK |
 | 44 | `fn drop(&mut self) {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 53 | `fn allowed_stage(stage: &str) -> Option<&'static str> {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 71 | `pub fn trace_startup_stage(stage: String) {` | High | Rust unit + native integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
@@ -889,7 +889,7 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 | 14 | `fn backup_path(path: &Path) -> PathBuf {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 21 | `fn sibling_name(path: &Path, suffix: &str) -> PathBuf {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 30 | `fn create_private(path: &Path) -> io::Result<File> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 46 | `impl Drop for StagingFile {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 46 | `impl Drop for StagingFile {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | IMPL_BLOCK |
 | 47 | `fn drop(&mut self) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 54 | `fn sync_directory(parent: &Path) -> io::Result<()> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 66 | `fn atomic_replace(path: &Path, bytes: &[u8]) -> io::Result<()> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
@@ -897,8 +897,8 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 | 102 | `fn quarantine_corrupt(path: &Path, raw: &[u8]) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 127 | `pub fn read_json<T: DeserializeOwned>(path: &Path) -> Result<Option<T>, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 163 | `pub fn save_json<T: Serialize + DeserializeOwned>(path: &Path, value: &T) -> Result<(), String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 178 | `pub struct JsonStore(std::sync::Mutex<()>);` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 180 | `impl JsonStore {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 178 | `pub struct JsonStore(std::sync::Mutex<()>);` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
+| 180 | `impl JsonStore {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | IMPL_BLOCK |
 | 181 | `pub fn read<T: DeserializeOwned>(&self, path: &Path) -> Result<Option<T>, String> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 186 | `pub fn update<T, R>(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 
@@ -906,17 +906,17 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 17 | `pub struct GitError(pub String);` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 19 | `impl fmt::Display for GitError {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 17 | `pub struct GitError(pub String);` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
+| 19 | `impl fmt::Display for GitError {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | IMPL_BLOCK |
 | 20 | `fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 25 | `impl std::error::Error for GitError {}` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 25 | `impl std::error::Error for GitError {}` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | IMPL_BLOCK |
 | 40 | `fn configure_background_child(command: &mut Command) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 47 | `fn configure_background_child(_command: &mut Command) {}` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 53 | `fn check_git_process_startup(output: &Output) -> Result<(), GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 62 | `fn is_git_process_startup_failure(error: &GitError) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 74 | `fn git_command(repo: &Path, args: &[&str]) -> Command {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 97 | `pub struct FetchCancellation {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 101 | `impl FetchCancellation {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 97 | `pub struct FetchCancellation {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
+| 101 | `impl FetchCancellation {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | IMPL_BLOCK |
 | 102 | `pub fn is_cancelled(&self) -> bool {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 112 | `pub fn cancel(&self) -> Result<bool, GitError> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 116 | `fn cancel_with(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
@@ -933,8 +933,8 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 | 264 | `fn unregistered_fetch_cleanup_error(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 286 | `fn run_cancellable_command(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 301 | `fn run_cancellable_command_with_timeout(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 367 | `pub struct RepoSnapshot {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 381 | `pub enum OperationOutcome {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 367 | `pub struct RepoSnapshot {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
+| 381 | `pub enum OperationOutcome {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
 | 389 | `fn drain_git_pipe<R: Read + Send + 'static>(mut reader: R) -> mpsc::Receiver<io::Result<Vec<u8>>> {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 402 | `fn receive_owned_pipe(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 438 | `fn wait_owned_child(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
@@ -979,40 +979,40 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 9 | `pub enum AuthError {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 14 | `pub enum DeviceResponse {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 27 | `pub enum DevicePhase {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 37 | `pub enum PollDecision {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 45 | `pub struct DeviceSession {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 54 | `impl DeviceSession {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 9 | `pub enum AuthError {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
+| 14 | `pub enum DeviceResponse {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
+| 27 | `pub enum DevicePhase {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
+| 37 | `pub enum PollDecision {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
+| 45 | `pub struct DeviceSession {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
+| 54 | `impl DeviceSession {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | IMPL_BLOCK |
 | 55 | `pub fn new(` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 91 | `pub fn next_poll(&mut self, now: u64) -> PollDecision {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 107 | `pub fn receive(&mut self, response: DeviceResponse, now: u64) -> DevicePhase {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 135 | `pub fn cancel(&mut self) {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 143 | `pub struct TokenExpiration {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 149 | `pub enum TokenAction {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 155 | `impl TokenExpiration {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 143 | `pub struct TokenExpiration {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
+| 149 | `pub enum TokenAction {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
+| 155 | `impl TokenExpiration {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | IMPL_BLOCK |
 | 156 | `pub fn decide(self, now: u64, refresh_margin_seconds: u64) -> TokenAction {` | Critical | Rust unit + native integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 
 ## `crates/repoticker-core/src/lib.rs`
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 12 | `pub struct RepositoryState {` | Medium | Rust unit + native integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 21 | `pub enum SyncDecision {` | Medium | Rust unit + native integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 12 | `pub struct RepositoryState {` | Medium | Rust unit + native integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
+| 21 | `pub enum SyncDecision {` | Medium | Rust unit + native integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
 | 32 | `pub fn classify_sync(state: RepositoryState) -> SyncDecision {` | Medium | Rust unit + native integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 
 ## `crates/repoticker-core/src/relay.rs`
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 10 | `pub enum RelayFrame {` | Medium | Rust unit + native integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
-| 17 | `pub enum RelayDecision {` | Medium | Rust unit + native integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
+| 10 | `pub enum RelayFrame {` | Medium | Rust unit + native integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | TYPE_DECL |
+| 17 | `pub enum RelayDecision {` | Medium | Rust unit + native integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | TYPE_DECL |
 | 23 | `fn valid_component(value: &str) -> bool {` | Medium | Rust unit + native integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
 | 33 | `fn canonical_repo(value: &str) -> Option<String> {` | Medium | Rust unit + native integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
 | 47 | `pub fn parse_frame(raw: &[u8]) -> Result<RelayFrame, &'static str> {` | Medium | Rust unit + native integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
-| 81 | `pub struct RelayCursor {` | Medium | Rust unit + native integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
-| 88 | `impl RelayCursor {` | Medium | Rust unit + native integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
+| 81 | `pub struct RelayCursor {` | Medium | Rust unit + native integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | TYPE_DECL |
+| 88 | `impl RelayCursor {` | Medium | Rust unit + native integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | IMPL_BLOCK |
 | 89 | `pub fn new(account: &str, selected: &[String]) -> Result<Self, &'static str> {` | Medium | Rust unit + native integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
 | 109 | `pub fn cursor(&self) -> u64 {` | Medium | Rust unit + native integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
 | 113 | `pub fn observe(&mut self, frame: RelayFrame) -> RelayDecision {` | Medium | Rust unit + native integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
@@ -1021,8 +1021,8 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 7 | `pub struct ShutdownSignal(AtomicBool);` | Medium | Rust unit + native integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
-| 9 | `impl ShutdownSignal {` | Medium | Rust unit + native integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
+| 7 | `pub struct ShutdownSignal(AtomicBool);` | Medium | Rust unit + native integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | TYPE_DECL |
+| 9 | `impl ShutdownSignal {` | Medium | Rust unit + native integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | IMPL_BLOCK |
 | 11 | `pub fn begin(&self) -> bool {` | Medium | Rust unit + native integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 | 15 | `pub fn is_requested(&self) -> bool {` | Medium | Rust unit + native integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ? |
 

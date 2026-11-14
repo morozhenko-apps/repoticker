@@ -102,6 +102,10 @@ All 29 remaining unknown rendered rows classified: 10 E_PARTIAL, 9 I_PARTIAL, 5 
 
 Three bounded crosswalks map real source guard/outcome and inspected existing test assertions: [six Relay files](bulk-crosswalk-relay.md), [six GitHub files](bulk-crosswalk-github.md), and [five native/core files](bulk-crosswalk-native.md). Includes genuine `node:sqlite` Hub transactions, OAuth wire/ETag/rate Rust tests, imported GitHub monitor and billing controllers, Rust bounded/ShutdownSignal and native CI scope. Autostart has **only structural tests**, no real native invocation. Stage 8 E/P/OS indexed **31/80 total (30 with E/I partial; 1 with source-only S/P)**. Native NM1/RS1/RS2 and A1/A2/O3 retain STOP or harness gaps. Stage 5 810 unknown cells unchanged; all suites deferred.
 
+### Stage 4–8 second large-batch evidence migration: 25 UI/platform files (2026-11-14)
+
+[Ten card/Git/runner/CI modules](bulk-crosswalk-ui-domain.md), [nine About/i18n modules](bulk-crosswalk-ui-locale.md) and [six native platform modules](bulk-crosswalk-platform.md) now have source blob/test assertion receipts and distinct P/OS/HOST outcomes. **25 new Stage 8 rows**, 22 with executable direct/indirect source assertions, three Linux/KSNI/icon modules with static/host-only evidence. Totals: **56/80 indexed Stage 8 file rows (52 E/I, four S/P)**, no promotion of Stage 5 `?` to `✔`. Key opens: real `app.mjs` A1, KDE/Win physical input and tray, native Git A2, Keyring O3, nested runner-state NM1, URL trust STOP. Full suites and CI deferred.
+
 ## Separate the executable test queue from policy STOP factors
 
 | Track / relevant source | What remains to map before Stage 9 | Proposed deterministic case IDs and exact proof needed | Stage 9 prerequisites |

@@ -126,6 +126,10 @@ changes merely to report test progress.
 
 [Relay and SQLite Hub](mode-b/bulk-crosswalk-relay.md), [GitHub HTTP/projections and monitor](mode-b/bulk-crosswalk-github.md) and [native lifecycle](mode-b/bulk-crosswalk-native.md) reconcile 17 additional files against exact existing assertions, separating real source E, fake external adapters, source-only S and remaining P/OS/HOST. The Hub suite uses actual in-memory SQLite with transactional rollback, not a mocked Durable Object data model. `autostart.rs` remains **source-contract only**, and native `github_monitor_publish`, Keyring, Quit, WSS and HTTP all remain unexecuted in this batch. **31 of 80 Stage 8 rows** now link detailed crosswalk receipts: **30 E/I partial, one S/P only**. Global Stage 3 AST census and 810 Stage 5 `?` entries remain open; no suite was run and no Stage 9 permission implied.
 
+### Seventh Stage 4–8 source-to-test evidence migration: 25 UI and OS files
+
+[UI domain/Git/runner source assertions](mode-b/bulk-crosswalk-ui-domain.md), [About and locale projections](mode-b/bulk-crosswalk-ui-locale.md), and [platform evidence ledger](mode-b/bulk-crosswalk-platform.md) reconcile 25 more exact production artifacts. Direct evidence includes runner permission/page cap, bounded nested requests, CI tracker atomic rejects, real About WebView import, Unicode and 20-locale projection tests, and four actual Windows `placement` Rust assertions. **Linux Layer Shell and KSNI, plus icon pixel conversion have no direct real native tests in the inspected suites; source contracts remain S.** Stage 8 now has **56/80 linked rows: 52 with partial real E/I evidence, four S/OS-only** including prior autostart. Stage 3 AST completeness, all remaining Stage 4–8 outcomes and 810 global Stage 5 unknowns remain open. No tests/build/CI/OS acceptance executed in this pass.
+
 ## Twelve-stage progress ledger
 
 | Stage | Contract | State | Completion evidence / next action |

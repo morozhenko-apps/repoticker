@@ -118,6 +118,10 @@ changes merely to report test progress.
 
 [Selected real Settings WebView method-to-assertion links](mode-b/method-evidence-crosswalk-settings-controller.md) tie actual `settings.mjs` import under fake external Tauri and DOM to existing OAuth generation, Cancel, multi-write Apply, staged Relay secret and postcommit readback cases. This establishes meaningful **JS controller** E, not native Keyring acceptance. Stage 8 has sourced receipts in **11/80** files; full Stage 5 cells remain unknown where independent P/OS cases exist. Mode B globally PARTIAL, no suite rerun.
 
+### Fifth Stage 4–8 assertion migration: Quota and native OAuth
+
+[Direct source/fixture crosswalk](mode-b/method-evidence-crosswalk-quota-native-oauth.md) now maps `quota.mjs` as a genuinely executed JS controller under fake external Tauri event/IPC and `github_native.rs`/`github_session.rs` as pure Rust credential-record, error projection and epoch-state evidence only. **21 existing test bodies were inspected, of which 20 invoke the real subject/helper and one checks literal reason labels.** Actual HTTP, OS Keyring, Tauri commands and AS1–AS3 stale-auth race hypotheses remain P/OS; **14/80 Stage 8 rows** now have E/P/OS receipts. No overall Stage 5 `✔` or actual new test coverage is claimed.
+
 ## Twelve-stage progress ledger
 
 | Stage | Contract | State | Completion evidence / next action |

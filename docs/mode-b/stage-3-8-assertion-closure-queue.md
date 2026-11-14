@@ -94,6 +94,10 @@ All 29 remaining unknown rendered rows classified: 10 E_PARTIAL, 9 I_PARTIAL, 5 
 
 [Exact production Settings source and selected existing controller assertions](method-evidence-crosswalk-settings-controller.md) confirm real module import and DOM/Tauri event fixture, stale OAuth/Settings revisions, Save/Cancel atomicity at JS layer, duplicate OK single-flight, failed config/Relay Keyring fake responses and readback. The suite has 132 test bodies, but **not all were individually reclassified in this pass**. Stage 8 now **11/80 file rows** with sourced E/P receipts. Native OS Keyring, Settings teardown and RS1/RS2 remain P/OS and architecture STOP; no test executed.
 
+### Stage 4–8 fifth evidence transfer: Quota WebView and native GitHub authorization (2026-11-14)
+
+[Exact Quota and native OAuth evidence crosswalk](method-evidence-crosswalk-quota-native-oauth.md) compares source guards to ten real Quota module-import controller tests and 11 Rust native auth tests (ten direct helper/record assertions, one hardcoded-label test not counted as production invocation). Existing fake Tauri DOM is **not** a native Keyring/HTTP/OS acceptance. Stage 8 now has **14/80 rows** with explicit source/test ownership and P/OS boundaries. AS1–AS3 remain hypotheses only; O3/native adapter seam and final Stage 3 AST census remain open. No tests run.
+
 ## Separate the executable test queue from policy STOP factors
 
 | Track / relevant source | What remains to map before Stage 9 | Proposed deterministic case IDs and exact proof needed | Stage 9 prerequisites |

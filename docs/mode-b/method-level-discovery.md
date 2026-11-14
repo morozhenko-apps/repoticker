@@ -903,17 +903,20 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 
 ## `apps/relay-cloudflare/src/relay-protocol.mjs`
 
+**Method assertion evidence:** [Cloudflare Relay allowlists, body bounds and constant-time bearer authorization](method-assertions-cloudflare-relay-protocol.md). Nine exports are directly exercised by actual Node tests; no hosted Worker deployed.
+
+
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
-| 11 | `export function canonicalRepository(value) {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
-| 19 | `export function allowedRepositories(raw) {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
-| 40 | `export function isAllowedRepository(allowlist, value) {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
-| 49 | `export function validDeliveryId(value) {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
-| 53 | `export function parseCursor(raw) {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
-| 60 | `export function cursorFromUrl(url) {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
-| 68 | `export function validatedWorkflowEvent(payload, eventName, allowlist) {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
-| 92 | `export async function boundedRequestBody(request, limit = BODY_LIMIT) {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
-| 125 | `export async function validClientAuthorization(header, expectedSecret) {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | ? |
+| 11 | `export function canonicalRepository(value) {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | E_PARTIAL |
+| 19 | `export function allowedRepositories(raw) {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | E_PARTIAL |
+| 40 | `export function isAllowedRepository(allowlist, value) {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | E_PARTIAL |
+| 49 | `export function validDeliveryId(value) {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | E_PARTIAL |
+| 53 | `export function parseCursor(raw) {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | E_PARTIAL |
+| 60 | `export function cursorFromUrl(url) {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | E_PARTIAL |
+| 68 | `export function validatedWorkflowEvent(payload, eventName, allowlist) {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | E_PARTIAL |
+| 92 | `export async function boundedRequestBody(request, limit = BODY_LIMIT) {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | E_PARTIAL |
+| 125 | `export async function validClientAuthorization(header, expectedSecret) {` | Medium | Node unit + Worker isolated integration | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | E_PARTIAL |
 
 ## `apps/relay-cloudflare/src/webhook-verify.mjs`
 

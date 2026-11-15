@@ -146,6 +146,10 @@ Three bounded crosswalks map real source guard/outcome and inspected existing te
 
 [Five missing Hub callback nodes and exact source-blob receipts](stage-3-real-ast-cloudflare-slice.md) found: worker.mjs 5 callables/0 missing; hub.mjs 14 callables + 1 class/5 missing; index.ts 5 callables + 1 class/0 missing. Hub count 10→15, global provisional inventory 728→733. Two missing arrows are Cloudflare WebSocket host defaults P_HOST; three are indirectly exercised through real Hub SQLite tests I_PARTIAL. Socket limit 8/9 already has an actual controller test at `tests/relay-hub.test.mjs:118–122` with injected external socket adapter, so do not reimplement that same test. Full 80-file AST, Rust cfg AST and all negative-category gates remain open.
 
+### Stage 3 large callback sweep: three UI controllers + three Python release scripts (2026-11-15)
+
+[75 source-exact callable candidates with immutable blob and A1/SET/MON/Python owner mapping](stage-3-ui-python-callback-inventory.md) have been added to `method-level-discovery.md`: app.mjs 30, settings.mjs 34, github-monitor.mjs 8 (including two distinct same-line publication-tail arrows), r2_release.py/release_assets.py/apt_repository.py one digest read lambda each. They are **CALLBACK_P**: exact source callback declarations, not independent proof of execution or of still-missing assertions. Existing 27 UI event-flow *groups* are retained and deduplicated against these 72 UI callback nodes. Branch and N-category closure remain open, **808 provisional entries**, Stage 9 blocked. Python named def signatures are already represented in the old registry; lambda is the incremental finding.
+
 ## Separate the executable test queue from policy STOP factors
 
 | Track / relevant source | What remains to map before Stage 9 | Proposed deterministic case IDs and exact proof needed | Stage 9 prerequisites |

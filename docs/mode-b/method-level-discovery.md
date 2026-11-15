@@ -5,7 +5,7 @@ Input: eight preserved source inventories in this audit plus a separate `main.rs
 
 **Method evidence tags:** `I_PARTIAL` = real method was executed indirectly through a real consumer with some relevant assertions, but independent branches remain open; `E_PARTIAL` = real method called directly in reviewed tests with still-open branches; `INLINE` = a private closure nested within an enclosing method, not a separate public API. `ADAPTER` = a tiny private wrapper around DOM/native transport rather than a separate domain API; `P` = an inspected entrypoint with no matching direct executable event assertion. `TYPE_DECL` = Rust struct/enum/union declaration, not a callable method; `IMPL_BLOCK` = method-implementation container, not itself an executable method. These two are syntax-based Stage 3 type classification, **not** coverage of declared fields or member methods. `CLASS_DECL` = Python/JS/TS class definition, `CLASS_METHOD` = real class/adapter method awaiting assertion reconciliation, `CALL_SITE` = function call misrecognized as lexical method, `STARTUP_CALL` = top-level initialization effect, `LOCAL_EXPR` = Boolean/nonfunction value inside an owning function. None of these tags represents a passing test. `P_CONTROLLER` = private method whose in-situ main-card DOM/Tauri behavior is not verified, `CALLBACK_P` = unasserted event closure; these may already have directly tested separate pure helpers. `P_NATIVE` = actual native method/command without directly verified AppHandle/OS assertions (other pure modules may be tested); `BOOTSTRAP_P` = OS app setup. `TEST_ONLY` = Rust #[cfg(test)] test function, not production API; `FFI_DECL` = Win32 foreign function signature, not a Rust method body; `OS_P` = platform-gated native callable requiring OS acceptance. `P_CORE` = real private or public Core method without a named direct existing branch assertion; separate Git core dependencies may be tested. `DATA_ONLY` = a source-inspected module containing only an exported dictionary, with no callable extracted from the module; validate it as a structural/consumer artifact, not a fictitious method. `SCRIPT_ENTRY` = a top-level executable Shell/PowerShell script without named functions; test as a real process. `P_CLI` = command-line entrypoint pending direct isolated invocation. `P_SHELL` = shell cleanup handler pending failure/lifecycle assertions. Other `?` rows remain unclassified. These tags do not change the global Stage 3–8 PARTIAL state.
 
-**Current Stage 3 checkpoint (2026-11-15, source-inspected, not test-executed):** 733 physically rendered candidate rows, **733 provisionally classified or assertion-linked/planned, zero '?' remain**. See [new source-line reconciliation](stage-3-lexical-reconciliation-2026-11-15.md) for eleven omitted JS callables. Exact categories: **200 E_PARTIAL, 131 I_PARTIAL, 2 P_HOST, 133 P_NATIVE, 43 OS_P, 23 P_CORE, 36 P_CONTROLLER, 1 CALLBACK_P, 6 P, 1 BOOTSTRAP_P, 7 ADAPTER, 11 INLINE**, 41 TYPE_DECL, 32 IMPL_BLOCK, 9 FFI_DECL, 22 TEST_ONLY, 3 CALL_SITE, 1 STARTUP_CALL, 2 LOCAL_EXPR, 3 CLASS_DECL, 11 CLASS_METHOD, 5 DATA_ONLY, 4 SCRIPT_ENTRY, 5 P_CLI, 1 P_SHELL. The exact historical register at `72f399a16fe6a869796210c31e99226d6d8a3c43` contained 716 Markdown rows: 707 numbered lexical candidates plus nine `—` placeholder artifacts (five locale dictionaries and four top-level scripts). The later Wayland callback added one numbered row. After the 2026-11-15 SHA-verified AST first slice, the register includes **724 numbered candidates + nine non-method placeholder artifacts = 733 provisional source artifacts**; eleven earlier lexical candidates remain in [the reconciliation](stage-3-lexical-reconciliation-2026-11-15.md), and the five additional AST-verified callbacks appear in [the first source-exact AST slice](stage-3-real-ast-cloudflare-slice.md). A true AST/FFI/anonymous closure exhaustiveness check is still pending. **717 is not 717 passing tests, executable methods, or code coverage.**
+**Current Stage 3 checkpoint (2026-11-15, source-inspected, not test-executed):** 808 physically rendered candidate rows, **808 provisionally classified or assertion-linked/planned, zero '?' remain**. See [new source-line reconciliation](stage-3-lexical-reconciliation-2026-11-15.md) for eleven omitted JS callables. Exact categories: **200 E_PARTIAL, 131 I_PARTIAL, 2 P_HOST, 133 P_NATIVE, 43 OS_P, 23 P_CORE, 36 P_CONTROLLER, 76 CALLBACK_P, 6 P, 1 BOOTSTRAP_P, 7 ADAPTER, 11 INLINE**, 41 TYPE_DECL, 32 IMPL_BLOCK, 9 FFI_DECL, 22 TEST_ONLY, 3 CALL_SITE, 1 STARTUP_CALL, 2 LOCAL_EXPR, 3 CLASS_DECL, 11 CLASS_METHOD, 5 DATA_ONLY, 4 SCRIPT_ENTRY, 5 P_CLI, 1 P_SHELL. The exact historical register at `72f399a16fe6a869796210c31e99226d6d8a3c43` contained 716 Markdown rows: 707 numbered lexical candidates plus nine `—` placeholder artifacts (five locale dictionaries and four top-level scripts). The later Wayland callback added one numbered row. After the 2026-11-15 SHA-verified AST first slice, the register includes **799 numbered candidates + nine non-method placeholder artifacts = 808 provisional source artifacts**; eleven earlier lexical candidates remain in [the reconciliation](stage-3-lexical-reconciliation-2026-11-15.md), and the five additional AST-verified callbacks appear in [the first source-exact AST slice](stage-3-real-ast-cloudflare-slice.md). A true AST/FFI/anonymous closure exhaustiveness check is still pending. **717 is not 717 passing tests, executable methods, or code coverage.**
 
 Every line carries **risk**, **test level**, **candidate N categories**, and an **initial test-count floor**. These floors represent planning estimates to be refined against each distinct decision outcome, NOT observed tests, and NOT a cap on required tests. The letter `?` denotes not yet assertion-mapped. External dependencies are faked only by contract, never by replacing business logic.
 
@@ -481,6 +481,8 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 | 51 | `function updateReposActivity() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
 | 63 | `function cancelAutoHide() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
 | 66 | `function armAutoHide() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
+| 72 | `idleTimer = setTimeout(async () => {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 80 | `document.addEventListener("visibilitychange", () => {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
 | 86 | `function paintNotice() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
 | 97 | `function showError(message) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
 | 101 | `function showResizeError(message) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
@@ -489,15 +491,26 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 | 113 | `function addText(parent, tag, value, className = "") {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
 | 125 | `function hideRepoMenus(restoreFocus = false) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
 | 136 | `function showRepoMenu(button, repoPath) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
+| 172 | `item.addEventListener("click", async () => {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 193 | `repoMenu.addEventListener("keydown", event => {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 207 | `document.addEventListener("pointerdown", event => {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 212 | `byId("repo-list").addEventListener("scroll", () => hideRepoMenus(), { passive: true });` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 213 | `window.addEventListener("resize", () => hideRepoMenus());` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
 | 215 | `function paintCiIndicator(row, repo) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
 | 232 | `function updateCiStatuses(next) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
 | 241 | `function makeRepoRow(repo) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
+| 268 | `button.addEventListener("click", () => showRepoMenu(button, repo.path));` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
 | 272 | `function updateActionState() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
 | 320 | `function traceHover(kind, stage) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
 | 336 | `function setActiveTooltip(kind) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
 | 343 | `function resetQuota() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
 | 352 | `function setQuotaOpen(kind = null) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
+| 355 | `quotaQueue = quotaQueue.then(async () => {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
 | 400 | `const enter = () => {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 407 | `anchor.addEventListener("pointerenter", () => traceHover(kind, "pointer-enter"));` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 409 | `anchor.addEventListener("mouseleave", () => {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 414 | `anchor.addEventListener("focusout", () => {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 422 | `node.addEventListener("click", () => {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
 | 430 | `function monitorRefreshState(kind, active) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
 | 439 | `function clearBrowserTooltips() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
 | 445 | `function updateMetricAccessibleNames() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
@@ -505,6 +518,9 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 | 492 | `function renderMonitorMetrics(state) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
 | 503 | `function traceMonitorReady() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
 | 509 | `function render(next) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
+| 533 | `onBusyChange: active => {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 539 | `scan: async () => {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 544 | `publish: ({ revision, next }) => {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
 | 545 | `render(reconcileScanPresentation(next, snapshot, revision, monitorRevision));` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALL_SITE |
 | 554 | `function refresh() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
 | 560 | `async function refreshMonitor() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
@@ -514,10 +530,24 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 | 612 | `render(snapshot);` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALL_SITE |
 | 615 | `function resetView() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
 | 624 | `async function openView(target) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
+| 644 | `byId("show-repos").addEventListener("click", () => openView("repos"));` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 645 | `byId("hide-card").addEventListener("click", async () => {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 649 | `byId("fetch-all").addEventListener("click", () => {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 656 | `byId("sync-all").addEventListener("click", () => runGitAction("safe_sync"));` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 657 | `document.addEventListener("keydown", event => {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 669 | `window.__TAURI__?.event?.listen?.("repoticker-git-progress", event => {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 699 | `window.__TAURI__?.event?.listen?.("repoticker-card-hidden", () => {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 706 | `window.__TAURI__?.event?.listen?.("repoticker-card-shown", () => {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 710 | `window.__TAURI__?.event?.listen?.("repoticker-reset-view", () => {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
 | 713 | `refresh();` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALL_SITE |
 | 718 | `function refreshCardConfiguration() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
+| 733 | `window.__TAURI__?.event?.listen?.("repoticker-git-action-finished", async event => {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
 | 745 | `refresh();` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | STARTUP_CALL |
+| 756 | `start: () => invoke("start_card_drag"),` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 757 | `stop: () => invoke("stop_card_drag"),` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
 | 762 | `function stopDragging(event = null) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P_CONTROLLER |
+| 773 | `dragSurface.addEventListener("pointerdown", event => {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 780 | `dragSurface.addEventListener("pointermove", event => {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
 
 ## `apps/desktop/ui/browser-context-menu.mjs`
 
@@ -610,10 +640,18 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 | 186 | `export function startGithubMonitoring({ invoke, event, onError = () => {},` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
 | 206 | `const get = path => invoke("github_api_get", { path });` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | INLINE |
 | 207 | `function publish(connected, runnerState = null, message = null,` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
+| 209 | `const write = publicationTail.catch(() => {}).then(() => {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 209 | `const write = publicationTail.catch(() => {}).then(() => {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
 | 216 | `function invalidatePresentation(message) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
 | 228 | `async function applyCooldown(reason) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
 | 238 | `async function refresh(force = false, kind = "all") {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
+| 392 | `event?.listen?.("repoticker-github-auth", evt => {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 399 | `event?.listen?.("repoticker-github-scope-changed", () => {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 402 | `event?.listen?.("repoticker-config-changed", () => {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
 | 411 | `function applyRelayPhase(phase) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
+| 421 | `event?.listen?.("repoticker-relay-state", evt => {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 436 | `event?.listen?.("repoticker-relay-reconcile", evt => {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 467 | `event?.listen?.("repoticker-card-shown", () => { void refresh(); });` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
 
 ## `apps/desktop/ui/locale-auth.mjs`
 
@@ -834,10 +872,16 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 | 62 | `function confirmedRelayConnection() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
 | 69 | `function syncWorkerControls() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
 | 121 | `function applyRelayPhase(status) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
+| 128 | `byId("github-connection-mode").addEventListener("change", event => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 141 | `byId("github-worker-url").addEventListener("input", event => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
 | 146 | `const invoke = (command, args = {}) => window.__TAURI__?.core?.invoke(command, args) ??` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ADAPTER |
+| 149 | `byId("settings-titlebar").addEventListener("mousedown", event => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
 | 153 | `const traceStartup = stage => {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | P |
 | 168 | `function renderRelaySecretState() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
 | 193 | `async function refreshRelaySecretStatus(revision = settingsRefreshRevision) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
+| 206 | `byId("relay-secret-mask").addEventListener("input", () => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 210 | `byId("relay-remove-secret").addEventListener("click", async () => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 241 | `window.__TAURI__?.event?.listen?.("repoticker-relay-state", event => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
 | 246 | `async function refreshRelayConnectionStatus(revision = settingsRefreshRevision) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
 | 284 | `const validRepoName = name => REPO_NAME.test(name) &&` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
 | 288 | `const sameGithubIdentity = (a, b) => typeof a === "string" &&` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
@@ -846,14 +890,26 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 | 295 | `function updateRepoDirty() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
 | 300 | `function repoChoiceValid() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
 | 307 | `function renderRepoChoices() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
+| 330 | `checkbox.addEventListener("change", () => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
 | 363 | `async function refreshRepoInventory() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
+| 408 | `byId("github-repo-mode").addEventListener("change", event => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
 | 417 | `function clearMonitorScopes() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
 | 431 | `async function refreshMonitorScopes() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
+| 511 | `byId("github-monitor-scope").addEventListener("change", event => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
 | 534 | `function stopGithubStatusUpdates() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
 | 543 | `function startGithubStatusUpdates() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
+| 545 | `githubStatusTimer = setInterval(async () => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
 | 567 | `function githubMessage(text, error = false) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
 | 578 | `function githubButtons() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
 | 624 | `async function refreshGithub(knownAuth = null) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
+| 670 | `byId("github-connect").addEventListener("click", async () => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 706 | `byId("github-copy-code").addEventListener("click", async () => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 719 | `window.addEventListener("focus", () => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 735 | `byId("relay-worker-guide-link").addEventListener("click", event => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 742 | `byId("github-open-device").addEventListener("click", async () => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 746 | `byId("github-cancel-device").addEventListener("click", async () => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 756 | `byId("github-disconnect").addEventListener("click", () => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 771 | `window.__TAURI__?.event?.listen?.("repoticker-github-auth", () => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
 | 777 | `function message(text, error = false) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
 | 782 | `function validRelayUrl(value) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
 | 802 | `function validRelayDraft() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
@@ -865,12 +921,28 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 | 842 | `const authNeedsConfirmation = (githubConnected && githubStartedHere) \|\| disconnectPending;` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | LOCAL_EXPR |
 | 849 | `function displayRootPath(path) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
 | 860 | `function renderRoots() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
+| 879 | `remove.addEventListener("click", () => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
 | 888 | `function renderIgnoredChildren() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
+| 906 | `remove.addEventListener("click", () => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 915 | `byId("ignore-child-form").addEventListener("submit", event => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
 | 939 | `async function refresh() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
+| 1031 | `byId("autostart-enabled").addEventListener("change", event => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 1036 | `byId("ci-notification-mode").addEventListener("change", event => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 1043 | `byId("add-root-form").addEventListener("submit", event => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 1057 | `byId("browse-root").addEventListener("click", async () => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 1081 | `byId("browse-ignored-child").addEventListener("click", async () => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
 | 1115 | `function updateLanguagePicker() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
 | 1122 | `function closeLanguagePicker(returnFocus = false) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
 | 1128 | `function openLanguagePicker(position = "selected") {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
+| 1137 | `languageTrigger.addEventListener("click", () => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 1141 | `languageTrigger.addEventListener("keydown", event => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 1149 | `languageList.addEventListener("keydown", event => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 1172 | `option.addEventListener("click", () => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 1183 | `document.addEventListener("pointerdown", event => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 1186 | `document.addEventListener("keydown", event => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
 | 1192 | `const cancelSettings = async () => {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
+| 1234 | `byId("apply-settings").addEventListener("click", async () => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 1347 | `window.__TAURI__?.event?.listen?.("repoticker-settings-opened", () => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
 
 ## `apps/desktop/ui/status-metrics.mjs`
 
@@ -1141,6 +1213,7 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 | ---: | --- | --- | --- | ---: | --- | :---: |
 | 17 | `def invoke(*args, env=None, input_data=None):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | I_PARTIAL |
 | 21 | `def sha256(path):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | I_PARTIAL |
+| 24 | `for chunk in iter(lambda: f.read(1024 * 1024), b""):` | High | Python unit + APT signed metadata integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | CALLBACK_P |
 | 29 | `def package_field(deb, field):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | I_PARTIAL |
 | 33 | `def assemble(deb: Path, out: Path, version: str, gpg_home: Path,` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | E_PARTIAL |
 | 100 | `def verify(root, keyring):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | E_PARTIAL |
@@ -1182,6 +1255,7 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
 | 39 | `def digest(path):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | E_PARTIAL |
+| 42 | `for part in iter(lambda: fh.read(1024 * 1024), b""):` | Critical | Python unit + R2 publisher isolated integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | CALLBACK_P |
 | 47 | `def safe_file(path):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | E_PARTIAL |
 | 56 | `def platform_files(release, platform, version, commit):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | I_PARTIAL |
 | 97 | `def verify_signed_apt_indexes(inrelease, index):` | Critical | Python unit + isolated release integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | E_PARTIAL |
@@ -1206,6 +1280,7 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
 | 25 | `def digest(path):` | High | Python unit + isolated release integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | I_PARTIAL |
+| 28 | `for buf in iter(lambda: f.read(1024 * 1024), b""):` | Critical | Python unit + filesystem integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | CALLBACK_P |
 | 33 | `def canonical(version, platform, ext):` | High | Python unit + isolated release integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | E_PARTIAL |
 | 48 | `def source_has_version(filename, version):` | High | Python unit + isolated release integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | I_PARTIAL |
 | 55 | `def collect(source, target, platform, version):` | High | Python unit + isolated release integration | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N10,N12 | E_PARTIAL |

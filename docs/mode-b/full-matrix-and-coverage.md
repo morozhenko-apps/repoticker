@@ -35,6 +35,10 @@ test counts are guaranteed by these anchors.
 
 The [global evidence reconciliation](stage-3-8-global-evidence-consistency.md) verified the 80-path source, Stage 5 and Stage 8 sets plus 80 method-file headings against the exact immutable `dev` Git tree. The **80 × 13** Stage 5 cells contain **810 `?`**, **230 `✖`**, and **zero `✔`**; this is an *evidence migration deficit*, not zero existing test coverage. Do not promote a file-level cell until every applicable executable branch has inspected independent real assertions. The legacy source branch-anchor total (~1,721) is lexical only.
 
+### Stage 3 source-line reconciliation correction (2026-11-15)
+
+[Confirmed 11 omitted callable declarations](stage-3-lexical-reconciliation-2026-11-15.md) increase the provisional numbered inventory from 708 to 719 plus nine placeholders (728 total). Four `Functions/types` counters were updated (Worker 1→5, Hub 7→10, CI tracker 5→7, drag 2→4), but **their branch totals remain old lexical estimates** pending a per-method AST/count reconciliation. Stage 5 statuses remain 810 `?`, 230 provisional `✖`, 0 `✔`. No AST signoff.
+
 ## Stage 5: file-artifact matrix (pending assertion reconciliation)
 
 | Production artifact | Risk | Family | Signatures | Branch anchors | Positive | N1 | N2 | N3 | N4 | N5 | N6 | N7 | N8 | N9 | N10 | N11 | N12 |
@@ -63,7 +67,7 @@ The [global evidence reconciliation](stage-3-8-global-evidence-consistency.md) v
 | `apps/desktop/ui/app.mjs` | Medium | ui | 43 | 111 | ? | ? | ? | ? | ? | ? | ? | ? | ✖ | ? | ? | ✖ | ? |
 | `apps/desktop/ui/browser-context-menu.mjs` | Medium | ui | 1 | 0 | ? | ? | ? | ✖ | ✖ | ✖ | ? | ✖ | ✖ | ? | ? | ✖ | ✖ |
 | `apps/desktop/ui/card-i18n.mjs` | Medium | ui | 4 | 18 | ? | ? | ? | ? | ? | ? | ? | ? | ✖ | ✖ | ? | ✖ | ✖ |
-| `apps/desktop/ui/ci-failure-events.mjs` | Medium | ui | 5 | 33 | ? | ? | ? | ? | ? | ? | ? | ? | ✖ | ? | ? | ✖ | ? |
+| `apps/desktop/ui/ci-failure-events.mjs` | Medium | ui | 7 | 33 | ? | ? | ? | ? | ? | ? | ? | ? | ✖ | ? | ? | ✖ | ? |
 | `apps/desktop/ui/ci-status.mjs` | Medium | ui | 3 | 9 | ? | ? | ? | ? | ? | ? | ? | ? | ✖ | ? | ? | ✖ | ? |
 | `apps/desktop/ui/github-billing.mjs` | Medium | ui | 11 | 43 | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ✖ | ? |
 | `apps/desktop/ui/github-errors.mjs` | Medium | ui | 3 | 7 | ? | ? | ? | ? | ? | ? | ? | ? | ✖ | ✖ | ? | ✖ | ✖ |
@@ -80,7 +84,7 @@ The [global evidence reconciliation](stage-3-8-global-evidence-consistency.md) v
 | `apps/desktop/ui/locale-workflow.mjs` | Medium | locale | 0 | 0 | ? | ✖ | ✖ | ✖ | ✖ | ✖ | ? | ✖ | ? | ✖ | ✖ | ✖ | ✖ |
 | `apps/desktop/ui/model.mjs` | Medium | ui | 5 | 15 | ? | ? | ? | ? | ? | ? | ? | ? | ✖ | ✖ | ? | ✖ | ✖ |
 | `apps/desktop/ui/monitor-presentation.mjs` | Medium | ui | 2 | 5 | ? | ? | ? | ✖ | ✖ | ✖ | ? | ✖ | ? | ? | ? | ✖ | ✖ |
-| `apps/desktop/ui/native-drag.mjs` | Medium | ui | 2 | 6 | ? | ? | ? | ? | ? | ? | ? | ? | ✖ | ? | ? | ✖ | ? |
+| `apps/desktop/ui/native-drag.mjs` | Medium | ui | 4 | 6 | ? | ? | ? | ? | ? | ? | ? | ? | ✖ | ? | ? | ✖ | ? |
 | `apps/desktop/ui/quota-details.mjs` | Medium | ui | 13 | 24 | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ✖ | ? |
 | `apps/desktop/ui/quota-size.mjs` | Medium | ui | 1 | 3 | ? | ? | ? | ✖ | ✖ | ✖ | ? | ✖ | ? | ? | ? | ✖ | ✖ |
 | `apps/desktop/ui/quota.mjs` | Medium | ui | 17 | 45 | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ✖ | ? |
@@ -94,11 +98,11 @@ The [global evidence reconciliation](stage-3-8-global-evidence-consistency.md) v
 | `apps/desktop/ui/status-metrics.mjs` | Medium | ui | 3 | 1 | ? | ? | ? | ✖ | ✖ | ✖ | ? | ✖ | ✖ | ? | ? | ✖ | ✖ |
 | `apps/desktop/ui/surface-i18n.mjs` | Medium | ui | 5 | 16 | ? | ? | ? | ✖ | ✖ | ✖ | ? | ✖ | ✖ | ? | ? | ✖ | ✖ |
 | `apps/desktop/ui/view.mjs` | Medium | ui | 4 | 14 | ? | ? | ? | ✖ | ✖ | ✖ | ? | ✖ | ✖ | ? | ? | ✖ | ✖ |
-| `apps/relay-cloudflare/src/hub.mjs` | Critical | relay | 7 | 21 | ? | ? | ? | ? | ? | ? | ? | ? | ? | ✖ | ? | ✖ | ? |
+| `apps/relay-cloudflare/src/hub.mjs` | Critical | relay | 10 | 21 | ? | ? | ? | ? | ? | ? | ? | ? | ? | ✖ | ? | ✖ | ? |
 | `apps/relay-cloudflare/src/index.ts` | Medium | relay | 6 | 0 | ? | ? | ? | ? | ? | ? | ? | ? | ? | ✖ | ? | ✖ | ? |
 | `apps/relay-cloudflare/src/relay-protocol.mjs` | Medium | relay | 9 | 27 | ? | ? | ? | ? | ? | ? | ? | ? | ? | ✖ | ? | ✖ | ✖ |
 | `apps/relay-cloudflare/src/webhook-verify.mjs` | Medium | relay | 1 | 4 | ? | ? | ? | ? | ? | ? | ? | ? | ? | ✖ | ? | ✖ | ✖ |
-| `apps/relay-cloudflare/src/worker.mjs` | Critical | relay | 1 | 18 | ? | ? | ? | ? | ? | ? | ? | ? | ? | ✖ | ? | ✖ | ? |
+| `apps/relay-cloudflare/src/worker.mjs` | Critical | relay | 5 | 18 | ? | ? | ? | ? | ? | ? | ? | ? | ? | ✖ | ? | ✖ | ? |
 | `crates/repoticker-core/src/bounded.rs` | High | core | 1 | 5 | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ✖ | ? |
 | `crates/repoticker-core/src/config_store.rs` | Critical | core | 15 | 15 | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ✖ | ? |
 | `crates/repoticker-core/src/git.rs` | Critical | core | 68 | 83 | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ✖ | ? |
@@ -204,7 +208,7 @@ Three [core entrypoint](bulk-crosswalk-core-entrypoints.md), [locale dictionary]
 | `apps/desktop/ui/app.mjs` | 43 | 111 lexical | [S only structural evidence](bulk-crosswalk-core-entrypoints.md): Current inspected UI suites use imported helper modules (view, scan-refresh, github-monitor) and app.mjs source regex such as tests/ui-layout.test.mjs:40-4 | A1 essential: actual app.mjs import in faithful DOM with fake external Tauri IPC/event only; duplicate callbacks, scan-vs-monitor-vs-locale revisions, Fetch/Sync progress | [inventory-ui-controllers.md](inventory-ui-controllers.md) |
 | `apps/desktop/ui/browser-context-menu.mjs` | 1 | 0 lexical | [E real contextmenu prevention](bulk-crosswalk-ui-locale.md); other-window regex S | P GTK/Win native context menu and touch long-press | [inventory-ui-utilities.md](inventory-ui-utilities.md) |
 | `apps/desktop/ui/card-i18n.mjs` | 4 | 18 lexical | [E real card translation/accessibility tests](bulk-crosswalk-ui-locale.md) | P real screen-reader and all dynamic notices/RTL | [inventory-ui-utilities.md](inventory-ui-utilities.md) |
-| `apps/desktop/ui/ci-failure-events.mjs` | 5 | 33 lexical | [E 19 direct tracker/CI collector tests](bulk-crosswalk-ui-domain.md) | P native notification after logout and actual OS delivery | [inventory-ui-controllers.md](inventory-ui-controllers.md) |
+| `apps/desktop/ui/ci-failure-events.mjs` | 7 | 33 lexical | [E 19 direct tracker/CI collector tests](bulk-crosswalk-ui-domain.md) | P native notification after logout and actual OS delivery | [inventory-ui-controllers.md](inventory-ui-controllers.md) |
 | `apps/desktop/ui/ci-status.mjs` | 3 | 9 lexical | [4 actual CI identity tests](method-evidence-crosswalk-monitor-projections.md) success/failure/unknown and scope | CI1–CI3 100/101 observations, malformed scopes and caller race | [inventory-ui-controllers.md](inventory-ui-controllers.md) |
 | `apps/desktop/ui/github-billing.mjs` | 11 | 43 lexical | [E: 14 direct billing tests](bulk-crosswalk-github.md) plus same-source race suite | P actual authenticated billing 403/429, cross-controller Quota/Settings | [inventory-ui-controllers.md](inventory-ui-controllers.md) |
 | `apps/desktop/ui/github-errors.mjs` | 3 | 7 lexical | [4 real finite-error tests](method-evidence-crosswalk-monitor-projections.md), 20-locale consumer | GE1–GE2 aliases, priority ties, hostile provider text DOM sink | [inventory-ui-controllers.md](inventory-ui-controllers.md) |
@@ -221,7 +225,7 @@ Three [core entrypoint](bulk-crosswalk-core-entrypoints.md), [locale dictionary]
 | `apps/desktop/ui/locale-workflow.mjs` | 0 | 0 lexical | [D dictionary value evidence](bulk-crosswalk-locale-dictionaries.md): WORKFLOW_TERMS immutable dictionary; tests/localization-20.test.mjs:56 coverage of source key set and placeholders; :101 technical semantics through coreTe | Untrusted repository names, auth device code and Git ref stay untouched during actual view transitions; native settings/tray locale behavior | [inventory-locales.md](inventory-locales.md) |
 | `apps/desktop/ui/model.mjs` | 5 | 15 lexical | [E real summarize/safeRunUrl](bulk-crosswalk-ui-domain.md) from ui.test | P URL trust mismatch with safeActionsJobUrl, opener policy STOP | [inventory-ui-utilities.md](inventory-ui-utilities.md) |
 | `apps/desktop/ui/monitor-presentation.mjs` | 2 | 5 lexical | [E real monitor merge/reconcile](bulk-crosswalk-ui-domain.md) | P native publish/AppHandle and nested runner_state NM1 STOP | [inventory-ui-utilities.md](inventory-ui-utilities.md) |
-| `apps/desktop/ui/native-drag.mjs` | 2 | 6 lexical | [gesture: 4 real method tests](method-evidence-crosswalk-ui-worker.md) (1 static wiring check separated) | DG1–DG2 rejected stop/old session; real pointer capture and KDE seat OS | [inventory-ui-utilities.md](inventory-ui-utilities.md) |
+| `apps/desktop/ui/native-drag.mjs` | 4 | 6 lexical | [gesture: 4 real method tests](method-evidence-crosswalk-ui-worker.md) (1 static wiring check separated) | DG1–DG2 rejected stop/old session; real pointer capture and KDE seat OS | [inventory-ui-utilities.md](inventory-ui-utilities.md) |
 | `apps/desktop/ui/quota-details.mjs` | 13 | 24 lexical | [E real hover projections/grapheme tests](bulk-crosswalk-ui-domain.md) | P invalid dates, hostile provider text DOM and physical tooltip | [inventory-ui-utilities.md](inventory-ui-utilities.md) |
 | `apps/desktop/ui/quota-size.mjs` | 1 | 3 lexical | [E real usageHeight test](bulk-crosswalk-ui-domain.md), GTK structural tests excluded | P extreme invalid heights and real GTK resize | [inventory-ui-utilities.md](inventory-ui-utilities.md) |
 | `apps/desktop/ui/quota.mjs` | 17 | 45 lexical | [real Quota import & 10 controller assertions](method-evidence-crosswalk-quota-native-oauth.md): stale replies, redacted error, billing scope, locale | Q1–Q3 listener failure, same-scope request coalescing, hostile names/RTL, actual Tauri popup HOST | [inventory-ui-controllers.md](inventory-ui-controllers.md) |
@@ -235,11 +239,11 @@ Three [core entrypoint](bulk-crosswalk-core-entrypoints.md), [locale dictionary]
 | `apps/desktop/ui/status-metrics.mjs` | 3 | 1 lexical | [compactStatus direct source assertions](method-evidence-crosswalk-monitor-projections.md); shown through real consumer | MP1–MP3 zero/MAX/unsafe sum, invalid independent coverage, real Card DOM | [inventory-ui-final.md](inventory-ui-final.md) |
 | `apps/desktop/ui/surface-i18n.mjs` | 5 | 16 lexical | [E real translated hover projection](bulk-crosswalk-ui-locale.md) | P RTL provider text actual DOM, malformed nested input | [inventory-ui-final.md](inventory-ui-final.md) |
 | `apps/desktop/ui/view.mjs` | 4 | 14 lexical | [E real view/height/Git readiness helpers](bulk-crosswalk-ui-domain.md) | P invalid repository counts and real app/window resize A1 | [inventory-ui-final.md](inventory-ui-final.md) |
-| `apps/relay-cloudflare/src/hub.mjs` | 7 | 21 lexical | [E: 19 real controller + in-memory SQLite tests](bulk-crosswalk-relay.md), idempotence/rollback/sockets | P live DO/Cloudflare hibernation, WebSocket limit 8/9 and revocation while connected | [inventory-core-relay.md](inventory-core-relay.md) |
+| `apps/relay-cloudflare/src/hub.mjs` | 10 | 21 lexical | [E: 19 real controller + in-memory SQLite tests](bulk-crosswalk-relay.md), idempotence/rollback/sockets | P live DO/Cloudflare hibernation, WebSocket limit 8/9 and revocation while connected | [inventory-core-relay.md](inventory-core-relay.md) |
 | `apps/relay-cloudflare/src/index.ts` | 6 | 0 lexical | [S only structural evidence](bulk-crosswalk-core-entrypoints.md): index.ts:1-26 wires default fetch to real handleRelayRequest and exports RelayHub DurableObject forwarding fetch/webSocketMessage/webSocketClose to tested  | Actual Workers runtime module import and binding construction, WebSocketPair/DO alarm and socket hibernation; wrong/missing env credentials and DO instance failure; exact | [inventory-core-relay.md](inventory-core-relay.md) |
 | `apps/relay-cloudflare/src/relay-protocol.mjs` | 9 | 27 lexical | [E: 23 direct protocol tests](bulk-crosswalk-relay.md), exact name/cursor/bearer and body limits | P 48/49 query edge, crypto failures, signed Worker→Hub and hosted streams | [inventory-core-relay.md](inventory-core-relay.md) |
 | `apps/relay-cloudflare/src/webhook-verify.mjs` | 1 | 4 lexical | [HMAC: 4 real method tests](method-evidence-crosswalk-ui-worker.md) (1 static entrypoint check separated) | WH1 empty bytes/crypto exceptions; Worker size boundary and hosted adapter | [inventory-core-relay.md](inventory-core-relay.md) |
-| `apps/relay-cloudflare/src/worker.mjs` | 1 | 18 lexical | [Worker: 24 real method tests](method-evidence-crosswalk-ui-worker.md) with DO stub (not hosted Worker) | RW1–RW5 signed boundary, exceptions, browser-header/query, Worker→Hub and HOST gate | [inventory-core-relay.md](inventory-core-relay.md) |
+| `apps/relay-cloudflare/src/worker.mjs` | 5 | 18 lexical | [Worker: 24 real method tests](method-evidence-crosswalk-ui-worker.md) with DO stub (not hosted Worker) | RW1–RW5 signed boundary, exceptions, browser-header/query, Worker→Hub and HOST gate | [inventory-core-relay.md](inventory-core-relay.md) |
 | `crates/repoticker-core/src/bounded.rs` | 1 | 5 lexical | [E: 5 Rust actual bounded-worker tests](bulk-crosswalk-native.md) | P 1/overlength edge, native Git identity/progress under cancellation | [inventory-core-relay.md](inventory-core-relay.md) |
 | `crates/repoticker-core/src/config_store.rs` | 15 | 15 lexical | [15 actual inline Rust config assertions](method-evidence-crosswalk-core-git-config.md): backup, corruption, 16-thread mutex, Unix 0600 | P atomic write/fsync failures, mutex poison, external writer/Windows ACL and physical interruption | [inventory-core-relay.md](inventory-core-relay.md) |
 | `crates/repoticker-core/src/git.rs` | 68 | 83 lexical | [actual Rust Git fixture & process assertions](method-evidence-crosswalk-core-git-config.md): 30 integration annotations + checked inline guards | P same-count upstream races, malformed refs, native A2 lock/Quit, Windows owned-process cancellation | [inventory-core-relay.md](inventory-core-relay.md) |

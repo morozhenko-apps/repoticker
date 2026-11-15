@@ -46,7 +46,7 @@ This register is a **source-file navigation and outstanding-evidence checklist**
 | `apps/desktop/ui/app.mjs` | Medium | 43/111 | D | [main-card-controller](branch-map-main-card-controller.md) | ? |
 | `apps/desktop/ui/browser-context-menu.mjs` | Medium | 1/0 | D | [view-drag-contextmenu](branch-map-view-drag-contextmenu.md) | ? |
 | `apps/desktop/ui/card-i18n.mjs` | Medium | 4/18 | D | [localized-counts-and-card](branch-map-localized-counts-and-card.md) | ? |
-| `apps/desktop/ui/ci-failure-events.mjs` | Medium | 5/33 | D | [ci-events-and-status](branch-map-ci-events-and-status.md) | ? |
+| `apps/desktop/ui/ci-failure-events.mjs` | Medium | 7/33 | D | [ci-events-and-status](branch-map-ci-events-and-status.md) | ? |
 | `apps/desktop/ui/ci-status.mjs` | Medium | 3/9 | D | [ci-events-and-status](branch-map-ci-events-and-status.md) | ? |
 | `apps/desktop/ui/github-billing.mjs` | Medium | 11/43 | D | [github-billing](branch-map-github-billing.md) | ? |
 | `apps/desktop/ui/github-errors.mjs` | Medium | 3/7 | D | [installation-error-provenance](branch-map-installation-error-provenance.md) | ? |
@@ -63,7 +63,7 @@ This register is a **source-file navigation and outstanding-evidence checklist**
 | `apps/desktop/ui/locale-workflow.mjs` | Medium | 0/0 | D | [locale-bundles-projection](branch-map-locale-bundles-projection.md) | ? |
 | `apps/desktop/ui/model.mjs` | Medium | 5/15 | D | [model-github-url-admission](branch-map-model-github-url-admission.md) | ? |
 | `apps/desktop/ui/monitor-presentation.mjs` | Medium | 2/5 | D | [metric-presentation](branch-map-metric-presentation.md) | ? |
-| `apps/desktop/ui/native-drag.mjs` | Medium | 2/6 | D | [view-drag-contextmenu](branch-map-view-drag-contextmenu.md) | ? |
+| `apps/desktop/ui/native-drag.mjs` | Medium | 4/6 | D | [view-drag-contextmenu](branch-map-view-drag-contextmenu.md) | ? |
 | `apps/desktop/ui/quota-details.mjs` | Medium | 13/24 | D | [quota-details-sizing](branch-map-quota-details-sizing.md) | ? |
 | `apps/desktop/ui/quota-size.mjs` | Medium | 1/3 | D | [quota-details-sizing](branch-map-quota-details-sizing.md) | ? |
 | `apps/desktop/ui/quota.mjs` | Medium | 17/45 | D | [quota-async-controller](branch-map-quota-async-controller.md) | ? |
@@ -82,11 +82,11 @@ This register is a **source-file navigation and outstanding-evidence checklist**
 
 | Production file | Risk | Lexical functions/anchors | Map | Primary source map | Stage 3–8 closed? |
 | --- | --- | ---: | :---: | --- | :---: |
-| `apps/relay-cloudflare/src/hub.mjs` | Critical | 7/21 | D | [relay-hub-sqlite](branch-map-relay-hub-sqlite.md) | ? |
+| `apps/relay-cloudflare/src/hub.mjs` | Critical | 10/21 | D | [relay-hub-sqlite](branch-map-relay-hub-sqlite.md) | ? |
 | `apps/relay-cloudflare/src/index.ts` | Medium | 6/0 | D | [relay-cloudflare-entry](branch-map-relay-cloudflare-entry.md) | ? |
 | `apps/relay-cloudflare/src/relay-protocol.mjs` | Medium | 9/27 | D | [relay-protocol-crypto](branch-map-relay-protocol-crypto.md) | ? |
 | `apps/relay-cloudflare/src/webhook-verify.mjs` | Medium | 1/4 | D | [relay-protocol-crypto](branch-map-relay-protocol-crypto.md) | ? |
-| `apps/relay-cloudflare/src/worker.mjs` | Critical | 1/18 | D | [relay-worker-router](branch-map-relay-worker-router.md) | ? |
+| `apps/relay-cloudflare/src/worker.mjs` | Critical | 5/18 | D | [relay-worker-router](branch-map-relay-worker-router.md) | ? |
 
 ## Core Rust
 

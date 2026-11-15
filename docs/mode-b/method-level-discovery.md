@@ -5,7 +5,7 @@ Input: eight preserved source inventories in this audit plus a separate `main.rs
 
 **Method evidence tags:** `I_PARTIAL` = real method was executed indirectly through a real consumer with some relevant assertions, but independent branches remain open; `E_PARTIAL` = real method called directly in reviewed tests with still-open branches; `INLINE` = a private closure nested within an enclosing method, not a separate public API. `ADAPTER` = a tiny private wrapper around DOM/native transport rather than a separate domain API; `P` = an inspected entrypoint with no matching direct executable event assertion. `TYPE_DECL` = Rust struct/enum/union declaration, not a callable method; `IMPL_BLOCK` = method-implementation container, not itself an executable method. These two are syntax-based Stage 3 type classification, **not** coverage of declared fields or member methods. `CLASS_DECL` = Python/JS/TS class definition, `CLASS_METHOD` = real class/adapter method awaiting assertion reconciliation, `CALL_SITE` = function call misrecognized as lexical method, `STARTUP_CALL` = top-level initialization effect, `LOCAL_EXPR` = Boolean/nonfunction value inside an owning function. None of these tags represents a passing test. `P_CONTROLLER` = private method whose in-situ main-card DOM/Tauri behavior is not verified, `CALLBACK_P` = unasserted event closure; these may already have directly tested separate pure helpers. `P_NATIVE` = actual native method/command without directly verified AppHandle/OS assertions (other pure modules may be tested); `BOOTSTRAP_P` = OS app setup. `TEST_ONLY` = Rust #[cfg(test)] test function, not production API; `FFI_DECL` = Win32 foreign function signature, not a Rust method body; `OS_P` = platform-gated native callable requiring OS acceptance. `P_CORE` = real private or public Core method without a named direct existing branch assertion; separate Git core dependencies may be tested. `DATA_ONLY` = a source-inspected module containing only an exported dictionary, with no callable extracted from the module; validate it as a structural/consumer artifact, not a fictitious method. `SCRIPT_ENTRY` = a top-level executable Shell/PowerShell script without named functions; test as a real process. `P_CLI` = command-line entrypoint pending direct isolated invocation. `P_SHELL` = shell cleanup handler pending failure/lifecycle assertions. Other `?` rows remain unclassified. These tags do not change the global Stage 3–8 PARTIAL state.
 
-**Current Stage 3 checkpoint (source-inspected, not test-executed):** 717 physically rendered candidate rows, **717 provisionally classified or assertion-linked/planned, zero '?' remain**. Exact categories: **195 E_PARTIAL, 122 I_PARTIAL, 133 P_NATIVE, 43 OS_P, 23 P_CORE, 36 P_CONTROLLER, 1 CALLBACK_P, 6 P, 1 BOOTSTRAP_P, 7 ADAPTER, 11 INLINE**, 41 TYPE_DECL, 32 IMPL_BLOCK, 9 FFI_DECL, 22 TEST_ONLY, 3 CALL_SITE, 1 STARTUP_CALL, 2 LOCAL_EXPR, 3 CLASS_DECL, 11 CLASS_METHOD, 5 DATA_ONLY, 4 SCRIPT_ENTRY, 5 P_CLI, 1 P_SHELL. The exact historical register at `72f399a16fe6a869796210c31e99226d6d8a3c43` contained 716 Markdown rows: 707 numbered lexical candidates plus nine `—` placeholder artifacts (five locale dictionaries and four top-level scripts). The later Wayland callback added one numbered row. Thus the current 717 rows consist of **708 numbered candidates + nine non-method placeholder artifacts**; no unexplained rows remain. A true AST/FFI/anonymous closure exhaustiveness check is still pending. **717 is not 717 passing tests, executable methods, or code coverage.**
+**Current Stage 3 checkpoint (2026-11-15, source-inspected, not test-executed):** 728 physically rendered candidate rows, **728 provisionally classified or assertion-linked/planned, zero '?' remain**. See [new source-line reconciliation](stage-3-lexical-reconciliation-2026-11-15.md) for eleven omitted JS callables. Exact categories: **200 E_PARTIAL, 128 I_PARTIAL, 133 P_NATIVE, 43 OS_P, 23 P_CORE, 36 P_CONTROLLER, 1 CALLBACK_P, 6 P, 1 BOOTSTRAP_P, 7 ADAPTER, 11 INLINE**, 41 TYPE_DECL, 32 IMPL_BLOCK, 9 FFI_DECL, 22 TEST_ONLY, 3 CALL_SITE, 1 STARTUP_CALL, 2 LOCAL_EXPR, 3 CLASS_DECL, 11 CLASS_METHOD, 5 DATA_ONLY, 4 SCRIPT_ENTRY, 5 P_CLI, 1 P_SHELL. The exact historical register at `72f399a16fe6a869796210c31e99226d6d8a3c43` contained 716 Markdown rows: 707 numbered lexical candidates plus nine `—` placeholder artifacts (five locale dictionaries and four top-level scripts). The later Wayland callback added one numbered row. Thus the 2026-11-15 register includes **719 numbered candidates + nine non-method placeholder artifacts = 728 provisional source artifacts**; eleven added real callables are recorded in [the reconciliation](stage-3-lexical-reconciliation-2026-11-15.md). A true AST/FFI/anonymous closure exhaustiveness check is still pending. **717 is not 717 passing tests, executable methods, or code coverage.**
 
 Every line carries **risk**, **test level**, **candidate N categories**, and an **initial test-count floor**. These floors represent planning estimates to be refined against each distinct decision outcome, NOT observed tests, and NOT a cap on required tests. The letter `?` denotes not yet assertion-mapped. External dependencies are faked only by contract, never by replacing business logic.
 
@@ -540,6 +540,8 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 | 39 | `function validRun(run) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
 | 51 | `export async function collectRecentCompleted({` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
 | 92 | `export function createCiFailureTracker({ maxRemembered = 500 } = {}) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 99 | `reset() {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 103 | `observe({ account, repositories, results, mode = "off" }) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
 
 ## `apps/desktop/ui/ci-status.mjs`
 
@@ -686,6 +688,8 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 | ---: | --- | --- | --- | ---: | --- | :---: |
 | 5 | `export function createNativeDragGesture({ start, stop, onError }) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
 | 9 | `function enqueue(action) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
+| 16 | `begin(id) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 26 | `end(id = null) {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
 
 ## `apps/desktop/ui/quota-details.mjs`
 
@@ -888,11 +892,14 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
+| 8 | `const fail = status => new Response(null, { status, headers: { "cache-control": "no-store" } });` | Critical | Node unit + Worker isolated integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | I_PARTIAL |
+| 9 | `const json = value => new Response(JSON.stringify(value), {` | Critical | Node unit + Worker isolated integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | I_PARTIAL |
 | 14 | `export class RelayHubController {` | Critical | Node unit + Worker isolated integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | CLASS_DECL |
 | 15 | `constructor(ctx, env, platform = {}) {` | Critical | Node unit + Worker isolated integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | CLASS_METHOD |
 | 29 | `history(after) {` | Critical | Node unit + Worker isolated integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | CLASS_METHOD |
 | 52 | `ingest(delivery, repository) {` | Critical | Node unit + Worker isolated integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | CLASS_METHOD |
 | 85 | `broadcast(hint) {` | Critical | Node unit + Worker isolated integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | CLASS_METHOD |
+| 98 | `async fetch(request) {` | Critical | Node unit + Worker isolated integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | E_PARTIAL |
 | 139 | `webSocketMessage(socket, message) {` | Critical | Node unit + Worker isolated integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | CLASS_METHOD |
 | 144 | `webSocketClose(socket, code, reason) {` | Critical | Node unit + Worker isolated integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | CLASS_METHOD |
 
@@ -934,6 +941,10 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
+| 7 | `const fail = status => new Response(null, { status, headers: { "cache-control": "no-store" } });` | Critical | Node unit + Worker isolated integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | I_PARTIAL |
+| 8 | `const stub = env => env.RELAY_HUB.get(env.RELAY_HUB.idFromName("personal-v1"));` | Critical | Node unit + Worker isolated integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | I_PARTIAL |
+| 10 | `async function ingest(request, env, allowed) {` | Critical | Node unit + Worker isolated integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | I_PARTIAL |
+| 34 | `async function subscribe(request, env, upgrade) {` | Critical | Node unit + Worker isolated integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | I_PARTIAL |
 | 51 | `export async function handleRelayRequest(request, env) {` | Critical | Node unit + Worker isolated integration | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N10,N12 | E_PARTIAL |
 
 ## `crates/repoticker-core/src/bounded.rs`

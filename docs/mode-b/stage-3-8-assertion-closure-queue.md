@@ -114,6 +114,10 @@ Three bounded crosswalks map real source guard/outcome and inspected existing te
 
 [Stage 3–8 remaining-evidence gates](stage-3-8-file-routing-closure.md) separate finished file-path routing from **uncompleted** Mode B inventory, branch mapping, full Positive/N1–N12 proof, interactions, deduplicated estimates and method-level coverage. Continue with reproducible AST/cfg inventory, then real app.mjs / main.rs / Cloudflare index.ts seams. No Stage 9 permission and no production tests or native acceptance were executed.
 
+### Stage 3 second-pass source correction (2026-11-15)
+
+[Full source-line reconciliation and 11 missing callables](stage-3-lexical-reconciliation-2026-11-15.md) updates four modules: Worker `fail/stub/ingest/subscribe`, Hub `fail/json/fetch`, CI tracker `reset/observe`, native drag `begin/end`. **728 provisional inventory rows** (719 numbered + nine placeholders), 13 Rust fixture helpers excluded. Stage 4 independent WB/HB/CT/DG case owners documented, Stage 5 cells still unpromoted. Parser-backed AST/cfg/anonymous-event inventory remains required before Stage 9.
+
 ## Separate the executable test queue from policy STOP factors
 
 | Track / relevant source | What remains to map before Stage 9 | Proposed deterministic case IDs and exact proof needed | Stage 9 prerequisites |

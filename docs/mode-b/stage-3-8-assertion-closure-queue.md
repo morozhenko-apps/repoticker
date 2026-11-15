@@ -122,6 +122,10 @@ Three bounded crosswalks map real source guard/outcome and inspected existing te
 
 [Five-controller event-flow ledger](stage-3-ui-event-handler-ownership.md) enumerates **27 non-additive grouped event/callback flow owners**: 9 Card A1, 8 Settings, 3 Quota, 4 GitHub Monitor, 3 About. Direct real-controller test evidence is partial for all but Card; Card event binding remains source-only and A1 pending. Each group includes named next negative/race branch owners; do **not** count these as 27 newly required tests or new AST nodes. Stage 3 AST completeness and Stage 4/5 exhaustive method/branch gates remain open.
 
+### Stage 3 executable AST inventory tool (2026-11-15)
+
+[Tool](tools/ast-reconciliation.mjs) and [runbook](tools/README.md) provide a read-only full-path JS/TS/Python parse on the immutable baseline, using local git show and producing machine-readable exact source-line gaps. Initial authoring validation: `node --check` exit 0 and a synthetic isolated Git fixture's 3 missing callable nodes, **not a RepoTicker scan**. Actual baseline run required on an authorized checkout. Rust cfg/FFI, anonymous native hooks, and Shell/PowerShell remain unparsed pending dedicated AST tooling; no 728-row completeness signoff.
+
 ## Separate the executable test queue from policy STOP factors
 
 | Track / relevant source | What remains to map before Stage 9 | Proposed deterministic case IDs and exact proof needed | Stage 9 prerequisites |

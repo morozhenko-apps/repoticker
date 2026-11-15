@@ -146,6 +146,10 @@ changes merely to report test progress.
 
 [27 source-backed grouped event-flow owners](mode-b/stage-3-ui-event-handler-ownership.md) now distinguish actual registered UI/Tauri callbacks from test-only source regex and separately tested helper modules. Card A1 still has **no verified imported-controller execution**. Settings/Quota/Monitor/About have E_PARTIAL event subsets with fake only external Tauri/HTTP/DOM, and real host acceptance remains P/OS. This 27-group planning annex is **not additive to the 728 provisional named/source artifacts** pending AST deduplication; Stage 3–8 remain PARTIAL and no tests/CI were run.
 
+### Stage 3 AST reconciliation tool added (2026-11-15)
+
+[Read-only parser-backed inventory script](mode-b/tools/ast-reconciliation.mjs) and [usage/evidence limits](mode-b/tools/README.md) are now available for running in a RepoTicker checkout. It parses JS/TS via TypeScript and Python via stdlib AST against exact immutable Git objects and identifies missing callable source lines; Rust cfg/FFI and shell are deliberately marked pending. The script was syntax-checked and exercised only against a two-file temporary diagnostic Git fixture; **it has NOT been executed against the actual RepoTicker baseline** because this agent's local container lacks the repository Git checkout and direct GitHub network. The baseline remains accessible via connected GitHub reading tools. Stage 3 AST exhaustiveness and all Stage 4–8 acceptance remain PARTIAL, with no Stage 9 tests authorized.
+
 ## Twelve-stage progress ledger
 
 | Stage | Contract | State | Completion evidence / next action |

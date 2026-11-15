@@ -130,6 +130,10 @@ Three bounded crosswalks map real source guard/outcome and inspected existing te
 
 [55-command source audit and Stage 4 negative obligations IPC-1..6](native-ipc-command-registration-audit.md) shows exact native command registration (33 main.rs + 22 external); 46 literal JS calls, three fixed menu mappings, six native commands without literal UI references (`relay_prompt_secret`, `open_actions_job`, `add_root`, `remove_root`, `open_settings`, `set_language`). These counts **do not** establish actual per-WebView permission or observed Tauri command execution. N7 effective custom-command ownership and OS/Keyring remain open; do not modify authorization without STOP decision.
 
+### Stage 3 read-only AST reconciliation strengthening (2026-11-15)
+
+[Refined parser and exact mismatch fields](tools/README.md): same-line multiple callables are no longer automatically treated as covered by a single registry row, and stale/noncallable rows and Markdown-normalized source drift are output separately. Tool commit `879bbe1`, documentation decision in [Stage 3 matching contract](stage-3-ast-matching-contract.md). An independent local matching implementation was syntax-checked and diagnostically exercised on two fixture files only. **Next action:** verify the committed script itself with `node --check`, run on exact immutable baseline in RepoTicker checkout, review AST discrepancy JSON, then tackle Rust cfg/FFI and shell scripts. Full Stage 3–8 gates remain open; no product tests/CI run.
+
 ## Separate the executable test queue from policy STOP factors
 
 | Track / relevant source | What remains to map before Stage 9 | Proposed deterministic case IDs and exact proof needed | Stage 9 prerequisites |

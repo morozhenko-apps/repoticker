@@ -1,6 +1,6 @@
 # Mode B Stage 3: AST-to-register matching and false-confidence controls
 
-**Status: planned corrective audit tooling; no Stage 3 or Stage 9 signoff.** Immutable source target: `dev=a3ba7fa30fc4c81890d3075f94142942d001cbf3`; existing candidate register: 728 provisional entries (719 numbered, nine non-method placeholders).
+**Status: corrective tool committed (2026-11-15); baseline parser execution and Stage 3 signoff still open.** Immutable source target: `dev=a3ba7fa30fc4c81890d3075f94142942d001cbf3`; existing candidate register: 728 provisional entries (719 numbered, nine non-method placeholders).
 
 ## Observed problem and competing causes
 
@@ -35,3 +35,7 @@ This is test-inventory tooling that preserves product APIs, authorization, stora
 ## Rollback / continuation
 
 The tooling correction must be a separate atomic commit after this documentation decision. If an agent cannot run the full baseline locally, report the exact execution limitation and retain `AST baseline not run`; do not infer results from synthetic fixture diagnostics. An operator or later agent with an isolated checkout may run the tool and submit the machine-readable report for branch mapping.
+
+## Implementation handoff (2026-11-15)
+
+The correction was committed as `879bbe19489d7f4127c58451069a85f66cd2bd43` after this documentation plan. It adds per-node line/column evidence, reports same-line collisions and unmatched registry lines, and compares registered snippets to exact Git blobs. The synthetic diagnostic used an equivalent local script; the **committed file itself still requires a direct `node --check` and immutable baseline execution in the RepoTicker checkout**. No Stage 5 `✔` was asserted.

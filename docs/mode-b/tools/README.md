@@ -19,4 +19,20 @@ The script reads `git show <baseline>:<source-path>` and `git rev-parse <baselin
 
 **Validation performed during authoring:** `node --check` returned 0, and an isolated two-file Git fixture with one JS arrow, one object method and one Python lambda returned three missing AST nodes (exit 0). These diagnostics did **not** read or execute RepoTicker source/tests.
 
+## Updated AST matching and interpretation (2026-11-15)
+
+The implementation now records source `line:column` for each JS/TS/Python callable and checks each recorded inventory line's exact source text, unescaping the Markdown `\\|` notation only. It reports these fields in **JSON**:
+
+| Output | Meaning | May close Stage 3? |
+| --- | --- | --- |
+| `missing` / `missingCallableNodes` | AST callable without an available numbered row at its source line, including an extra callable on a line with one registered row | **No**. A concrete discrepancy needing ownership |
+| `ambiguities` / `sameLineAmbiguities` | Multiple AST callables share a registered line; position-only matching cannot decide exact method identity | **No**. Review line, column and owner |
+| `unmatchedRegistry` / `registryRowsWithoutCallable` | Numbered inventory entry without an AST callable at that line | **No**. May be an intentionally recorded class/data/call-site declaration |
+| `sourceDrift` / `literalDrift` | Registered snippet does not match the immutable blob source line (aside from Markdown escaped pipe) | **No**. Review outdated/incorrect entry |
+| `positionalMatches` / `provisionalPositions` | Same-line registry/AST count can be paired positionally | **No**. Not identity-, branch- or test-verified |
+
+The output remains `astCompleteness: PARTIAL` even when all counted mismatches are zero. Rust `cfg`/FFI/test modules, Bash and PowerShell are still pending parser support. The JSON report is the authoritative machine-readable output; the Markdown report is a human review queue and can be lengthy.
+
+**Diagnostic validation disclosure:** the matching algorithm was implemented and checked locally with `node --check` (exit 0) and an isolated two-file Git fixture containing multiple JavaScript/Python functions on one line, a JS object method, a noncallable registry row and an escaped Markdown pipe. The fixture yielded three unmatched AST callables, two same-line ambiguities, one noncallable registry row and zero literal drift. After intentionally changing a registered literal it yielded one drift entry. These checks were performed against a **local matching implementation with equivalent logic**, not by running the GitHub-published file from a real RepoTicker checkout. They are **not** product tests, AST coverage or Stage 11 evidence. Re-run `node --check` and the full immutable baseline scan against the *exact current committed file* on an authorized checkout before trusting any global discrepancy totals.
+
 **Remaining Mode B gates:** Rust parser/cfg + test-exclusion reconciliation, shell and PowerShell entrypoints, complete anonymous native/UI callback census, AST-to-branch mapping for all applicable methods, Positive/N1–N12 coverage and OS/HOST evidence before Stage 9.

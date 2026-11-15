@@ -158,6 +158,10 @@ changes merely to report test progress.
 
 [AST-to-register matching contract](mode-b/stage-3-ast-matching-contract.md) records two concrete audit-tool blind spots: multiple AST callables on a single registered line are silently counted as mapped, and stale/noncallable registered rows are never separately reported. The planned correction is read-only, with exact source blob/line/column receipts, separate unmatched/ambiguous/drift evidence and a synthetic diagnostic fixture. **Actual RepoTicker baseline AST scan remains unrun.** This tooling work does not promote Stage 3–8, change the 728 provisional inventory, or begin Stage 9.
 
+### Stage 3 AST mismatch detection implemented, baseline evidence remains pending (2026-11-15)
+
+[Read-only parser tool](mode-b/tools/ast-reconciliation.mjs) was refined in `879bbe19489d7f4127c58451069a85f66cd2bd43` to detect same-line callable collisions, unmatched provisional registry entries and source literal drift, and expose exact JS/TS/Python source column. [Matching contract](mode-b/stage-3-ast-matching-contract.md) and [report interpretation/runbook](mode-b/tools/README.md) distinguish missing callable nodes from intentionally noncallable source rows. A local independent two-file diagnostic implementation passed focused checks (3 missing callables, 2 same-line ambiguities, 1 source row without callable, 0 drift; changed literal→1 drift); the **actual committed tool has not been syntax-checked or executed on the immutable RepoTicker baseline** in this environment. Rust/shell and physical OS/HOST still pending; inventory stays 728 provisional, Stage 5 810 `?` / 230 provisional `✖`, Stage 9 blocked.
+
 ## Twelve-stage progress ledger
 
 | Stage | Contract | State | Completion evidence / next action |

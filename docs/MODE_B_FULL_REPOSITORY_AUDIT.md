@@ -142,6 +142,10 @@ changes merely to report test progress.
 
 [Source-line verification across all 80 files](mode-b/stage-3-lexical-reconciliation-2026-11-15.md) corrected the lexical register from 717 to **728 provisional entries** (719 numbered + nine non-method placeholders). The new rows cover Worker private routing, Hub HTTP `fetch` and response helpers, CI tracker methods and native drag gesture methods. Existing test assertions remain E/I partial. Thirteen test-only Rust helpers were excluded. This is **not** an AST/cfg or anonymous callback exhaustiveness proof; Stage 3–8 still PARTIAL and the Stage 5 cells remain 810 `?` / 230 provisional `✖` / 0 `✔`. Stage 9 remains blocked.
 
+### Stage 3 callback ownership expansion: Card, Settings, Quota, Monitor and About
+
+[27 source-backed grouped event-flow owners](mode-b/stage-3-ui-event-handler-ownership.md) now distinguish actual registered UI/Tauri callbacks from test-only source regex and separately tested helper modules. Card A1 still has **no verified imported-controller execution**. Settings/Quota/Monitor/About have E_PARTIAL event subsets with fake only external Tauri/HTTP/DOM, and real host acceptance remains P/OS. This 27-group planning annex is **not additive to the 728 provisional named/source artifacts** pending AST deduplication; Stage 3–8 remain PARTIAL and no tests/CI were run.
+
 ## Twelve-stage progress ledger
 
 | Stage | Contract | State | Completion evidence / next action |

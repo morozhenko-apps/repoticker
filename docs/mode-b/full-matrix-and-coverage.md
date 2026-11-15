@@ -180,6 +180,10 @@ The [exact source-guard-to-test crosswalk](method-evidence-crosswalk-ui-worker.m
 
 Three [core entrypoint](bulk-crosswalk-core-entrypoints.md), [locale dictionary](bulk-crosswalk-locale-dictionaries.md), and [release tooling](bulk-crosswalk-release-tooling.md) source-to-existing-test ledgers classify the final **24** previously-unlinked paths as **11 E (real subject partial)**, **8 S (source/syntax only)** and **5 D (dictionary value assertions, no owned functions)**. All **80/80** Stage 8 file rows now have explicit E/P/OS/S/D evidence links and remaining obligations; total breakdown **63 E, 12 S, 5 D**. **This is 100% file *index routing*, not code, branch, scenario or MODE B completion.** No Stage 5 cell was promoted: **810 `?`, 230 provisional `✖`, 0 `✔`**. Stage 3 AST completeness and actual method-by-method branch coverage still pending.
 
+### Stage 3–4 event-flow reconciliation: five critical controllers (2026-11-15)
+
+[Source-exact event registration ownership](stage-3-ui-event-handler-ownership.md) identifies **27 grouped callback/event flows**, *not additive* to the provisional 728 numbered+placeholder source records. The 9 Card groups are still **P_CONTROLLER/A1** (no actual app.mjs imported-controller harness), while Settings, Quota, GitHub Monitor and About have selected real E_PARTIAL imported-module assertions with injected **external** Tauri APIs. Full anonymous function AST count and negative category closure remain unknown; no Stage 5 status or Stage 8 file count is promoted.
+
 ## Stage 8: per-file source Coverage Map (not yet completed)
 
 | Production artifact | Functions/types | Source branch candidates | Covered | Remaining | Inventory |

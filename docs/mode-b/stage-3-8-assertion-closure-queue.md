@@ -118,6 +118,10 @@ Three bounded crosswalks map real source guard/outcome and inspected existing te
 
 [Full source-line reconciliation and 11 missing callables](stage-3-lexical-reconciliation-2026-11-15.md) updates four modules: Worker `fail/stub/ingest/subscribe`, Hub `fail/json/fetch`, CI tracker `reset/observe`, native drag `begin/end`. **728 provisional inventory rows** (719 numbered + nine placeholders), 13 Rust fixture helpers excluded. Stage 4 independent WB/HB/CT/DG case owners documented, Stage 5 cells still unpromoted. Parser-backed AST/cfg/anonymous-event inventory remains required before Stage 9.
 
+### Stage 3–4 UI callback ownership pass, 2026-11-15
+
+[Five-controller event-flow ledger](stage-3-ui-event-handler-ownership.md) enumerates **27 non-additive grouped event/callback flow owners**: 9 Card A1, 8 Settings, 3 Quota, 4 GitHub Monitor, 3 About. Direct real-controller test evidence is partial for all but Card; Card event binding remains source-only and A1 pending. Each group includes named next negative/race branch owners; do **not** count these as 27 newly required tests or new AST nodes. Stage 3 AST completeness and Stage 4/5 exhaustive method/branch gates remain open.
+
 ## Separate the executable test queue from policy STOP factors
 
 | Track / relevant source | What remains to map before Stage 9 | Proposed deterministic case IDs and exact proof needed | Stage 9 prerequisites |

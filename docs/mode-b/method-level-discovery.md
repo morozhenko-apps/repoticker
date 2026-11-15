@@ -455,6 +455,9 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 
 ## `apps/desktop/ui/about.mjs`
 
+
+**Anonymous event-closure inventory:** [event-handler ownership ledger](stage-3-ui-event-handler-ownership.md) documents About focus, browser and Close event families.
+
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
 | 7 | `const invoke = command => window.__TAURI__?.core?.invoke(command) ??` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
@@ -466,6 +469,9 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 
 **Method-level reconciliation:** [all main-card controller owners and missing A1 imported-DOM assertions](method-assertions-main-card-controller.md). `P_CONTROLLER` and `CALLBACK_P` indicate missing actual controller test evidence, not observed product failures.
 
+
+
+**Anonymous event-closure inventory:** [27-group event boundary ledger](stage-3-ui-event-handler-ownership.md) includes nine untested actual app.mjs handler families; A1 controller harness missing.
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
@@ -588,6 +594,9 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 ## `apps/desktop/ui/github-monitor.mjs`
 
 **Per-method assertion reconciliation:** [GitHub Monitor direct and private callback evidence](method-assertions-github-monitor.md). Statuses credit actual controller tests, never a branch-completeness certificate.
+
+
+**Anonymous event-closure inventory:** [event-handler ownership ledger](stage-3-ui-event-handler-ownership.md) documents four monitor auth/relay scheduler families.
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
@@ -722,6 +731,9 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 
 **Per-method assertion reconciliation:** [Quota imported-controller method and pending callback cases](method-assertions-quota-controller.md). Two bridge adapters are classified ADAPTER, both hover-kind callback entrypoints P; no all-branches-complete claim.
 
+
+**Anonymous event-closure inventory:** [event-handler ownership ledger](stage-3-ui-event-handler-ownership.md) documents three Quota event families and permission errors.
+
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |
 | 11 | `const byId = id => document.getElementById(id);` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | ADAPTER |
@@ -810,6 +822,9 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 
 **Method-level assertion receipts:** [actual imported Settings controller, 132 tests, direct UI assertions and native boundary gaps](method-assertions-settings-controller.md). `I_PARTIAL` credits behavior through the real controller with external IPC fakes, never live native Keyring.
 
+
+
+**Anonymous event-closure inventory:** [event-handler ownership ledger](stage-3-ui-event-handler-ownership.md) documents eight Settings callback families and real controller E subsets.
 
 | Source line | Named method/type candidate | Risk | Test level | Planning floor | N categories to check | Coverage |
 | ---: | --- | --- | --- | ---: | --- | :---: |

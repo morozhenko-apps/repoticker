@@ -120,3 +120,7 @@ Source read and row matching were performed in the connected GitHub environment,
 ## 2026-11-15: existing real-handler invocation audit
 
 [Handler-specific source-to-test receipts](stage-8-real-ui-callback-assertions.md) verified 19 directly dispatched Settings handlers and five real GitHub Monitor callbacks in the pre-existing test sources, and changed those 24 rows from `CALLBACK_P` to **`E_PARTIAL`**. The remaining **51 of the 75** keep `CALLBACK_P`. **No test suite was run**; evidence is exact imported-module execution code and assertions reviewed in tests, not a fresh pass claim. The N1–N12 matrix is unchanged.
+
+## 2026-11-15 follow-up: 14 more real-handler assertions
+
+[Source-to-subject evidence and missing branches](stage-8-existing-handler-closure-2026-11-15.md) verifies thirteen additional real Settings callbacks (native Relay/auth/open/focus, dynamic repository/root/ignored-child rows, and six language keyboard/click/escape handlers) and the actual GitHub Monitor Relay-phase callback via the imported Hybrid scheduling harness. These existing assertions are `E_PARTIAL` and **were not executed in this audit pass**. Totals: **38/75** newly indexed callbacks have partial direct subject assertions, **37/75** remain `CALLBACK_P`; including one older callback, **38 global `CALLBACK_P`** and **238 global `E_PARTIAL`**. No Stage 5 cell becomes `✔`, and the entire release/test validation gate remains open.

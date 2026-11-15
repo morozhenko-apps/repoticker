@@ -196,3 +196,7 @@ The audit branch is documentation-only; `dev`/main release workflows and Cloudfl
 A future agent can start with `source-map-reconciliation-register.md`, open the owning focused map, inspect the exact production SHA and real test bodies, then fill the matching row of `method-level-discovery.md` and `full-matrix-and-coverage.md`. The original `?` entries are expected and are not a claim that existing tests fail.
 
 No code, tests, CI, hosted environment, user credentials or OS installation were touched by writing this plan.
+
+## 2026-11-15 follow-up: 14 more real-handler assertions
+
+[Source-to-subject evidence and missing branches](stage-8-existing-handler-closure-2026-11-15.md) verifies thirteen additional real Settings callbacks (native Relay/auth/open/focus, dynamic repository/root/ignored-child rows, and six language keyboard/click/escape handlers) and the actual GitHub Monitor Relay-phase callback via the imported Hybrid scheduling harness. These existing assertions are `E_PARTIAL` and **were not executed in this audit pass**. Totals: **38/75** newly indexed callbacks have partial direct subject assertions, **37/75** remain `CALLBACK_P`; including one older callback, **38 global `CALLBACK_P`** and **238 global `E_PARTIAL`**. No Stage 5 cell becomes `✔`, and the entire release/test validation gate remains open.

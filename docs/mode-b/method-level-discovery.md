@@ -649,7 +649,7 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 | 399 | `event?.listen?.("repoticker-github-scope-changed", () => {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
 | 402 | `event?.listen?.("repoticker-config-changed", () => {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
 | 411 | `function applyRelayPhase(phase) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
-| 421 | `event?.listen?.("repoticker-relay-state", evt => {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 421 | `event?.listen?.("repoticker-relay-state", evt => {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
 | 436 | `event?.listen?.("repoticker-relay-reconcile", evt => {` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
 | 467 | `event?.listen?.("repoticker-card-shown", () => { void refresh(); });` | Medium | Node domain/DOM + minimal OS smoke | 2+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
 
@@ -881,7 +881,7 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 | 193 | `async function refreshRelaySecretStatus(revision = settingsRefreshRevision) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
 | 206 | `byId("relay-secret-mask").addEventListener("input", () => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
 | 210 | `byId("relay-remove-secret").addEventListener("click", async () => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
-| 241 | `window.__TAURI__?.event?.listen?.("repoticker-relay-state", event => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 241 | `window.__TAURI__?.event?.listen?.("repoticker-relay-state", event => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
 | 246 | `async function refreshRelayConnectionStatus(revision = settingsRefreshRevision) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
 | 284 | `const validRepoName = name => REPO_NAME.test(name) &&` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
 | 288 | `const sameGithubIdentity = (a, b) => typeof a === "string" &&` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
@@ -890,7 +890,7 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 | 295 | `function updateRepoDirty() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
 | 300 | `function repoChoiceValid() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
 | 307 | `function renderRepoChoices() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
-| 330 | `checkbox.addEventListener("change", () => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 330 | `checkbox.addEventListener("change", () => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
 | 363 | `async function refreshRepoInventory() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
 | 408 | `byId("github-repo-mode").addEventListener("change", event => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
 | 417 | `function clearMonitorScopes() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
@@ -904,12 +904,12 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 | 624 | `async function refreshGithub(knownAuth = null) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
 | 670 | `byId("github-connect").addEventListener("click", async () => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
 | 706 | `byId("github-copy-code").addEventListener("click", async () => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
-| 719 | `window.addEventListener("focus", () => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 719 | `window.addEventListener("focus", () => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
 | 735 | `byId("relay-worker-guide-link").addEventListener("click", event => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
 | 742 | `byId("github-open-device").addEventListener("click", async () => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
 | 746 | `byId("github-cancel-device").addEventListener("click", async () => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
 | 756 | `byId("github-disconnect").addEventListener("click", () => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
-| 771 | `window.__TAURI__?.event?.listen?.("repoticker-github-auth", () => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 771 | `window.__TAURI__?.event?.listen?.("repoticker-github-auth", () => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
 | 777 | `function message(text, error = false) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
 | 782 | `function validRelayUrl(value) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
 | 802 | `function validRelayDraft() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
@@ -921,9 +921,9 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 | 842 | `const authNeedsConfirmation = (githubConnected && githubStartedHere) \|\| disconnectPending;` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | LOCAL_EXPR |
 | 849 | `function displayRootPath(path) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
 | 860 | `function renderRoots() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
-| 879 | `remove.addEventListener("click", () => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 879 | `remove.addEventListener("click", () => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
 | 888 | `function renderIgnoredChildren() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
-| 906 | `remove.addEventListener("click", () => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 906 | `remove.addEventListener("click", () => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
 | 915 | `byId("ignore-child-form").addEventListener("submit", event => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
 | 939 | `async function refresh() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
 | 1031 | `byId("autostart-enabled").addEventListener("change", event => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
@@ -934,15 +934,15 @@ Static catalog/data-only entries are separate testable artifacts: cross-locale s
 | 1115 | `function updateLanguagePicker() {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
 | 1122 | `function closeLanguagePicker(returnFocus = false) {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
 | 1128 | `function openLanguagePicker(position = "selected") {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
-| 1137 | `languageTrigger.addEventListener("click", () => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
-| 1141 | `languageTrigger.addEventListener("keydown", event => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
-| 1149 | `languageList.addEventListener("keydown", event => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
-| 1172 | `option.addEventListener("click", () => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
-| 1183 | `document.addEventListener("pointerdown", event => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
-| 1186 | `document.addEventListener("keydown", event => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 1137 | `languageTrigger.addEventListener("click", () => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 1141 | `languageTrigger.addEventListener("keydown", event => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 1149 | `languageList.addEventListener("keydown", event => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 1172 | `option.addEventListener("click", () => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 1183 | `document.addEventListener("pointerdown", event => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
+| 1186 | `document.addEventListener("keydown", event => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
 | 1192 | `const cancelSettings = async () => {` | High | Node domain/DOM + minimal OS smoke | 3+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | I_PARTIAL |
 | 1234 | `byId("apply-settings").addEventListener("click", async () => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
-| 1347 | `window.__TAURI__?.event?.listen?.("repoticker-settings-opened", () => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | CALLBACK_P |
+| 1347 | `window.__TAURI__?.event?.listen?.("repoticker-settings-opened", () => {` | Critical | Node domain/DOM + minimal OS smoke | 5+ | Positive,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N12 | E_PARTIAL |
 
 ## `apps/desktop/ui/status-metrics.mjs`
 

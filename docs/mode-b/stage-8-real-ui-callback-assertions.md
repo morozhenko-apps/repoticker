@@ -51,3 +51,7 @@ The remaining Settings closures in the 34-node batch include timer polling, dyna
 - Initial 2026-11-15 source sweep: 75 `CALLBACK_P` new rows.
 - This review: **24** rows upgraded to `E_PARTIAL` (19 Settings, 5 Monitor); **51** remain `CALLBACK_P`. Globally, `E_PARTIAL` becomes 224, `CALLBACK_P` becomes 52 (includes one older unclosed callback).
 - This is *not* a fresh test run or suite result, and no N-category receives `✔` from these invocations alone. Other methods and inline anonymous event handlers require full parser/cfg and branch-by-branch enumeration. Card A1 actual imported controller still unverified, native IPC permission and OS Keyring still P. Stage 9 remains blocked.
+
+## 2026-11-15 follow-up: 14 more real-handler assertions
+
+[Source-to-subject evidence and missing branches](stage-8-existing-handler-closure-2026-11-15.md) verifies thirteen additional real Settings callbacks (native Relay/auth/open/focus, dynamic repository/root/ignored-child rows, and six language keyboard/click/escape handlers) and the actual GitHub Monitor Relay-phase callback via the imported Hybrid scheduling harness. These existing assertions are `E_PARTIAL` and **were not executed in this audit pass**. Totals: **38/75** newly indexed callbacks have partial direct subject assertions, **37/75** remain `CALLBACK_P`; including one older callback, **38 global `CALLBACK_P`** and **238 global `E_PARTIAL`**. No Stage 5 cell becomes `✔`, and the entire release/test validation gate remains open.

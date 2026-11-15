@@ -154,6 +154,10 @@ changes merely to report test progress.
 
 [55 registered Tauri command-to-WebView caller ledger](mode-b/native-ipc-command-registration-audit.md) verifies 33 main.rs + 22 external native `#[tauri::command]` declarations and exactly 55 `generate_handler!` entries, with no annotations orphaned or excess. UI source uses 46 distinct literal calls and 3 fixed dynamic menu mappings; 6 registered commands have no direct UI literal caller, which does not prove non-use or authorization safety. Native command security/permissions must be characterized in real Tauri host (N7, A2/O3/NM1), not assumed from `generate_handler!` or plugin capability JSON. Stage 3–8 remain PARTIAL, no tests run.
 
+### Stage 3 AST matching hardening decision (2026-11-15)
+
+[AST-to-register matching contract](mode-b/stage-3-ast-matching-contract.md) records two concrete audit-tool blind spots: multiple AST callables on a single registered line are silently counted as mapped, and stale/noncallable registered rows are never separately reported. The planned correction is read-only, with exact source blob/line/column receipts, separate unmatched/ambiguous/drift evidence and a synthetic diagnostic fixture. **Actual RepoTicker baseline AST scan remains unrun.** This tooling work does not promote Stage 3–8, change the 728 provisional inventory, or begin Stage 9.
+
 ## Twelve-stage progress ledger
 
 | Stage | Contract | State | Completion evidence / next action |

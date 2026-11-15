@@ -86,6 +86,12 @@ function harness({ initialPhase = "polling", nativePhaseRead = null,
       await settle();
     },
     setAuthorized(value) { authorized = value; },
+    async scopeChanged() {
+      const listener = events.get("repoticker-github-scope-changed");
+      assert.equal(typeof listener, "function", "The real monitor must register scope updates");
+      listener({});
+      await settle();
+    },
     async disconnected() {
       const listener = events.get("repoticker-github-auth");
       assert.equal(typeof listener, "function", "The real monitor must register auth updates");
@@ -293,10 +299,15 @@ test("Given a REST collection is pending When the card is shown again Then no co
   await app.shown();
   assert.equal(attempt, 2, "Duplicate non-forced card events must not queue work");
 
+  await app.hint("tasks");
+  assert.equal(attempt, 2,
+    "A forced hint while busy must be queued, never run a concurrent collector");
+
   finishSecond(success);
   await app.ready();
-  assert.equal(attempt, 2, "Completing the original read must not run a queued duplicate");
-  assert.deepEqual(app.kinds(), ["all", "all"]);
+  assert.equal(attempt, 3,
+    "Only the explicitly forced task hint may run after the pending full read");
+  assert.deepEqual(app.kinds(), ["all", "all", "tasks"]);
 });
 
 test("Given native monitor publication rejects When the real queue recovers Then the next state is redacted and unknown", async () => {
@@ -338,6 +349,7 @@ test("Given the old native publication rejects after disconnect When the queue d
   assert.equal(typeof rejectOld, "function", "The first real publish is pending");
   assert.equal(attempts, 1);
 
+  await app.scopeChanged();
   app.setAuthorized(false);
   await app.disconnected();
   assert.equal(delivered.length, 0, "The newer result waits for the pending native call");

@@ -138,6 +138,10 @@ Three bounded crosswalks map real source guard/outcome and inspected existing te
 
 [All 27 baseline Rust source files](stage-3-rust-cfg-test-inventory.md) now have documented `#[test]` annotation counts and applicable target cfg families: 164 annotations (not test executions) across 22 files, five files without inline tests, multiple explicit test-only modules and OS branches. Stage 3 needs a real Rust AST/cfg parser to separate prod methods vs test-fixture functions and macro expansions, then Stage 4/5 trace the appropriate platform outcomes. Do not promote `✔` or infer passing tests. Full final suite is still deferred to Stage 11.
 
+### Native IPC trust/side-effect test ownership, 2026-11-15
+
+[Exact native authorization/side-effect crosswalk](native-ipc-authz-and-sideeffects.md) adds nine deduplicated candidate test owners N7-IPC-01..09 across Relay Secret, Settings, GitHub OAuth/REST, monitor snapshot/publish, Git/OS and notification surfaces. The 30 mapped commands are source-inspected **not** declared test-executed. Preserve NM1/RS1/RS2 STOP factor, characterize real AppHandle caller rights before changing authorization; pure helper coverage is not native IPC coverage. Stage 5 unchanged, full CI/STABLE/FLAKY deferred.
+
 ## Separate the executable test queue from policy STOP factors
 
 | Track / relevant source | What remains to map before Stage 9 | Proposed deterministic case IDs and exact proof needed | Stage 9 prerequisites |

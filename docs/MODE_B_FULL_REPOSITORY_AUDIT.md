@@ -166,6 +166,10 @@ changes merely to report test progress.
 
 [Complete Rust file-source cfg and test annotation reconciliation](mode-b/stage-3-rust-cfg-test-inventory.md) inspected **27** immutable production Rust source files and counted **164 `#[test]` annotations**, present in 22 files; five native/build files have no inline annotated Rust tests. This is **not** an AST/cfg expansion, executable test count, or Stage 11 run. Explicit `#[cfg(test)]` fixture bodies must be excluded from production-method census; Unix/Windows/macOS native branches have separate OS gates. Source-only annotation counts cannot close any Positive/N1–N12 cell. All 728 provisional artifacts and 810 Stage 5 unknowns remain unchanged, Stage 9 blocked.
 
+### Stage 4/5 native IPC authorization and side-effects expansion (2026-11-15)
+
+[Native IPC authorization and side-effect source contract](mode-b/native-ipc-authz-and-sideeffects.md) maps **30 registered high-impact commands** in seven families to concrete guard sites, evidence limitations and nine named independent N7/credential/Git/monitor cases. Source confirms Settings label gate on five Relay Secret commands, strict native REST URL-path checking and credential/ETag vault sequencing. Conversely, several `AppHandle` commands have no *local* WebView label check; effective Tauri custom-command access is **not proven**. NM1 nested `runner_state` and RS1/RS2 Keyring close races remain source-derived STOP hypotheses. No permission defect established, no Stage 5 cell promoted.
+
 ## Twelve-stage progress ledger
 
 | Stage | Contract | State | Completion evidence / next action |

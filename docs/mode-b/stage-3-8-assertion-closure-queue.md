@@ -134,6 +134,10 @@ Three bounded crosswalks map real source guard/outcome and inspected existing te
 
 [Refined parser and exact mismatch fields](tools/README.md): same-line multiple callables are no longer automatically treated as covered by a single registry row, and stale/noncallable rows and Markdown-normalized source drift are output separately. Tool commit `879bbe1`, documentation decision in [Stage 3 matching contract](stage-3-ast-matching-contract.md). An independent local matching implementation was syntax-checked and diagnostically exercised on two fixture files only. **Next action:** verify the committed script itself with `node --check`, run on exact immutable baseline in RepoTicker checkout, review AST discrepancy JSON, then tackle Rust cfg/FFI and shell scripts. Full Stage 3–8 gates remain open; no product tests/CI run.
 
+### Rust cfg and test-only declaration source census, 2026-11-15
+
+[All 27 baseline Rust source files](stage-3-rust-cfg-test-inventory.md) now have documented `#[test]` annotation counts and applicable target cfg families: 164 annotations (not test executions) across 22 files, five files without inline tests, multiple explicit test-only modules and OS branches. Stage 3 needs a real Rust AST/cfg parser to separate prod methods vs test-fixture functions and macro expansions, then Stage 4/5 trace the appropriate platform outcomes. Do not promote `✔` or infer passing tests. Full final suite is still deferred to Stage 11.
+
 ## Separate the executable test queue from policy STOP factors
 
 | Track / relevant source | What remains to map before Stage 9 | Proposed deterministic case IDs and exact proof needed | Stage 9 prerequisites |

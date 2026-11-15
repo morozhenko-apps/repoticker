@@ -150,6 +150,10 @@ Three bounded crosswalks map real source guard/outcome and inspected existing te
 
 [75 source-exact callable candidates with immutable blob and A1/SET/MON/Python owner mapping](stage-3-ui-python-callback-inventory.md) have been added to `method-level-discovery.md`: app.mjs 30, settings.mjs 34, github-monitor.mjs 8 (including two distinct same-line publication-tail arrows), r2_release.py/release_assets.py/apt_repository.py one digest read lambda each. They are **CALLBACK_P**: exact source callback declarations, not independent proof of execution or of still-missing assertions. Existing 27 UI event-flow *groups* are retained and deduplicated against these 72 UI callback nodes. Branch and N-category closure remain open, **808 provisional entries**, Stage 9 blocked. Python named def signatures are already represented in the old registry; lambda is the incremental finding.
 
+### Stage 8 mapping of 24 actual UI callback invocations, 2026-11-15
+
+[Real handler/fixture assertion receipts](stage-8-real-ui-callback-assertions.md) upgrade 19 Settings callback rows (the real module imported, `node.fire` executes each registered handler) and five Monitor callbacks (four explicit auth/scope/config/relay callback invocations plus queued publish `.then`) to **E_PARTIAL**. Exact observed raw source test call sites: 160 `node.fire` across 19 Settings handler IDs; these are not 160 new tests and were **not executed during this audit**. Remaining 51 newly indexed callbacks keep `CALLBACK_P`; no Stage 5 category signoff.
+
 ## Separate the executable test queue from policy STOP factors
 
 | Track / relevant source | What remains to map before Stage 9 | Proposed deterministic case IDs and exact proof needed | Stage 9 prerequisites |

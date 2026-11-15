@@ -116,3 +116,7 @@ The planned cases **do not constitute tests written, tests passed or product def
 ## Evidence and limits
 
 Source read and row matching were performed in the connected GitHub environment, not a checked-out RepoTicker Git clone; each listed blob SHA came directly from the exact baseline file result. Literal source rows and previously indexed line numbers were machine-checked before insertion. A full TypeScript AST traversal and Python `ast` scan of these six files **has not been performed** in this environment. The 71 selected single-line callback expressions plus one duplicated line owner are source-supported but are **not exhaustive callable counts**. No product tests, CI, Cargo, release, mutation, OS/Keyring, network publication or application code were changed or executed. Stage 3–8 remain PARTIAL; Stage 9 is blocked.
+
+## 2026-11-15: existing real-handler invocation audit
+
+[Handler-specific source-to-test receipts](stage-8-real-ui-callback-assertions.md) verified 19 directly dispatched Settings handlers and five real GitHub Monitor callbacks in the pre-existing test sources, and changed those 24 rows from `CALLBACK_P` to **`E_PARTIAL`**. The remaining **51 of the 75** keep `CALLBACK_P`. **No test suite was run**; evidence is exact imported-module execution code and assertions reviewed in tests, not a fresh pass claim. The N1–N12 matrix is unchanged.

@@ -47,6 +47,10 @@ The [global evidence reconciliation](stage-3-8-global-evidence-consistency.md) v
 
 [Six-file callback ownership and exact Git SHA receipts](stage-3-ui-python-callback-inventory.md) adds **75 provisional source callables**: 30 Card arrows, 34 Settings arrows, 8 GitHub Monitor arrows (two on line 209), and 3 Python digest lambdas. Each new row has exact source text, traceable owner ID and `CALLBACK_P` evidence status. Registry **733→808** (799 numbered + 9 non-method placeholders). Six Stage 5/8 function-type counters and the source reconciliation register were updated; **branch candidates remain old lexical estimates** and no Positive/N1–N12 cell changed (810 `?`, 230 provisional `✖`, 0 `✔`). This is **source-confirmed lexical callback enumeration, NOT parser-backed AST completeness or executable test coverage**.
 
+### Stage 8 real-handler assertion receipts for newly indexed UI callbacks (2026-11-15)
+
+[Actual imported-module handler-to-assertion crosswalk](stage-8-real-ui-callback-assertions.md) inspected Settings test fixture's `node.fire` and Monitor's event callback invocation. **24/75** newly indexed source callables now have at least partial *real subject invocation* evidence (19 Settings direct DOM handlers and five Monitor callbacks, including serialized publication `.then`); the other **51 remain CALLBACK_P**, pending handler-specific evidence. E_PARTIAL does not mean all branches or negative categories have passed. Stage 5 retains 810 `?`, 230 provisional `✖`, zero `✔`.
+
 ## Stage 5: file-artifact matrix (pending assertion reconciliation)
 
 | Production artifact | Risk | Family | Signatures | Branch anchors | Positive | N1 | N2 | N3 | N4 | N5 | N6 | N7 | N8 | N9 | N10 | N11 | N12 |

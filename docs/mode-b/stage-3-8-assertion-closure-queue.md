@@ -126,6 +126,10 @@ Three bounded crosswalks map real source guard/outcome and inspected existing te
 
 [Tool](tools/ast-reconciliation.mjs) and [runbook](tools/README.md) provide a read-only full-path JS/TS/Python parse on the immutable baseline, using local git show and producing machine-readable exact source-line gaps. Initial authoring validation: `node --check` exit 0 and a synthetic isolated Git fixture's 3 missing callable nodes, **not a RepoTicker scan**. Actual baseline run required on an authorized checkout. Rust cfg/FFI, anonymous native hooks, and Shell/PowerShell remain unparsed pending dedicated AST tooling; no 728-row completeness signoff.
 
+### Native IPC registry vs WebView source call sites (2026-11-15)
+
+[55-command source audit and Stage 4 negative obligations IPC-1..6](native-ipc-command-registration-audit.md) shows exact native command registration (33 main.rs + 22 external); 46 literal JS calls, three fixed menu mappings, six native commands without literal UI references (`relay_prompt_secret`, `open_actions_job`, `add_root`, `remove_root`, `open_settings`, `set_language`). These counts **do not** establish actual per-WebView permission or observed Tauri command execution. N7 effective custom-command ownership and OS/Keyring remain open; do not modify authorization without STOP decision.
+
 ## Separate the executable test queue from policy STOP factors
 
 | Track / relevant source | What remains to map before Stage 9 | Proposed deterministic case IDs and exact proof needed | Stage 9 prerequisites |

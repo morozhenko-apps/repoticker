@@ -150,6 +150,10 @@ changes merely to report test progress.
 
 [Read-only parser-backed inventory script](mode-b/tools/ast-reconciliation.mjs) and [usage/evidence limits](mode-b/tools/README.md) are now available for running in a RepoTicker checkout. It parses JS/TS via TypeScript and Python via stdlib AST against exact immutable Git objects and identifies missing callable source lines; Rust cfg/FFI and shell are deliberately marked pending. The script was syntax-checked and exercised only against a two-file temporary diagnostic Git fixture; **it has NOT been executed against the actual RepoTicker baseline** because this agent's local container lacks the repository Git checkout and direct GitHub network. The baseline remains accessible via connected GitHub reading tools. Stage 3 AST exhaustiveness and all Stage 4–8 acceptance remain PARTIAL, with no Stage 9 tests authorized.
 
+### Stage 3/4 exact native IPC command provenance (2026-11-15)
+
+[55 registered Tauri command-to-WebView caller ledger](mode-b/native-ipc-command-registration-audit.md) verifies 33 main.rs + 22 external native `#[tauri::command]` declarations and exactly 55 `generate_handler!` entries, with no annotations orphaned or excess. UI source uses 46 distinct literal calls and 3 fixed dynamic menu mappings; 6 registered commands have no direct UI literal caller, which does not prove non-use or authorization safety. Native command security/permissions must be characterized in real Tauri host (N7, A2/O3/NM1), not assumed from `generate_handler!` or plugin capability JSON. Stage 3–8 remain PARTIAL, no tests run.
+
 ## Twelve-stage progress ledger
 
 | Stage | Contract | State | Completion evidence / next action |

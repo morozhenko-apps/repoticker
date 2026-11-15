@@ -39,6 +39,10 @@ The [global evidence reconciliation](stage-3-8-global-evidence-consistency.md) v
 
 [Confirmed 11 omitted callable declarations](stage-3-lexical-reconciliation-2026-11-15.md) increase the provisional numbered inventory from 708 to 719 plus nine placeholders (728 total). Four `Functions/types` counters were updated (Worker 1→5, Hub 7→10, CI tracker 5→7, drag 2→4), but **their branch totals remain old lexical estimates** pending a per-method AST/count reconciliation. Stage 5 statuses remain 810 `?`, 230 provisional `✖`, 0 `✔`. No AST signoff.
 
+### Source-exact AST first slice (2026-11-15)
+
+[Cloudflare triad AST verification](stage-3-real-ast-cloudflare-slice.md) used three exact `dev` blobs. Five Hub arrows omitted from Stage 3 are now indexed: 2 external host WebSocket defaults (P_HOST), 2 history filter/map and 1 SQLite transaction callback (I_PARTIAL). Hub function/type count **10→15**, registry **728→733**. Existing Hub 21 branch anchors are **still historical lexical estimates**, not confirmed AST branch counts. Stage 5: 810 `?`, 230 provisional `✖`, zero `✔`.
+
 ## Stage 5: file-artifact matrix (pending assertion reconciliation)
 
 | Production artifact | Risk | Family | Signatures | Branch anchors | Positive | N1 | N2 | N3 | N4 | N5 | N6 | N7 | N8 | N9 | N10 | N11 | N12 |
@@ -98,7 +102,7 @@ The [global evidence reconciliation](stage-3-8-global-evidence-consistency.md) v
 | `apps/desktop/ui/status-metrics.mjs` | Medium | ui | 3 | 1 | ? | ? | ? | ✖ | ✖ | ✖ | ? | ✖ | ✖ | ? | ? | ✖ | ✖ |
 | `apps/desktop/ui/surface-i18n.mjs` | Medium | ui | 5 | 16 | ? | ? | ? | ✖ | ✖ | ✖ | ? | ✖ | ✖ | ? | ? | ✖ | ✖ |
 | `apps/desktop/ui/view.mjs` | Medium | ui | 4 | 14 | ? | ? | ? | ✖ | ✖ | ✖ | ? | ✖ | ✖ | ? | ? | ✖ | ✖ |
-| `apps/relay-cloudflare/src/hub.mjs` | Critical | relay | 10 | 21 | ? | ? | ? | ? | ? | ? | ? | ? | ? | ✖ | ? | ✖ | ? |
+| `apps/relay-cloudflare/src/hub.mjs` | Critical | relay | 15 | 21 | ? | ? | ? | ? | ? | ? | ? | ? | ? | ✖ | ? | ✖ | ? |
 | `apps/relay-cloudflare/src/index.ts` | Medium | relay | 6 | 0 | ? | ? | ? | ? | ? | ? | ? | ? | ? | ✖ | ? | ✖ | ? |
 | `apps/relay-cloudflare/src/relay-protocol.mjs` | Medium | relay | 9 | 27 | ? | ? | ? | ? | ? | ? | ? | ? | ? | ✖ | ? | ✖ | ✖ |
 | `apps/relay-cloudflare/src/webhook-verify.mjs` | Medium | relay | 1 | 4 | ? | ? | ? | ? | ? | ? | ? | ? | ? | ✖ | ? | ✖ | ✖ |
@@ -243,7 +247,7 @@ Three [core entrypoint](bulk-crosswalk-core-entrypoints.md), [locale dictionary]
 | `apps/desktop/ui/status-metrics.mjs` | 3 | 1 lexical | [compactStatus direct source assertions](method-evidence-crosswalk-monitor-projections.md); shown through real consumer | MP1–MP3 zero/MAX/unsafe sum, invalid independent coverage, real Card DOM | [inventory-ui-final.md](inventory-ui-final.md) |
 | `apps/desktop/ui/surface-i18n.mjs` | 5 | 16 lexical | [E real translated hover projection](bulk-crosswalk-ui-locale.md) | P RTL provider text actual DOM, malformed nested input | [inventory-ui-final.md](inventory-ui-final.md) |
 | `apps/desktop/ui/view.mjs` | 4 | 14 lexical | [E real view/height/Git readiness helpers](bulk-crosswalk-ui-domain.md) | P invalid repository counts and real app/window resize A1 | [inventory-ui-final.md](inventory-ui-final.md) |
-| `apps/relay-cloudflare/src/hub.mjs` | 10 | 21 lexical | [E: 19 real controller + in-memory SQLite tests](bulk-crosswalk-relay.md), idempotence/rollback/sockets | P live DO/Cloudflare hibernation, WebSocket limit 8/9 and revocation while connected | [inventory-core-relay.md](inventory-core-relay.md) |
+| `apps/relay-cloudflare/src/hub.mjs` | 15 | 21 lexical | [E: 19 real controller + in-memory SQLite tests](bulk-crosswalk-relay.md), idempotence/rollback/sockets | P live DO/Cloudflare hibernation, WebSocket limit 8/9 and revocation while connected | [inventory-core-relay.md](inventory-core-relay.md) |
 | `apps/relay-cloudflare/src/index.ts` | 6 | 0 lexical | [S only structural evidence](bulk-crosswalk-core-entrypoints.md): index.ts:1-26 wires default fetch to real handleRelayRequest and exports RelayHub DurableObject forwarding fetch/webSocketMessage/webSocketClose to tested  | Actual Workers runtime module import and binding construction, WebSocketPair/DO alarm and socket hibernation; wrong/missing env credentials and DO instance failure; exact | [inventory-core-relay.md](inventory-core-relay.md) |
 | `apps/relay-cloudflare/src/relay-protocol.mjs` | 9 | 27 lexical | [E: 23 direct protocol tests](bulk-crosswalk-relay.md), exact name/cursor/bearer and body limits | P 48/49 query edge, crypto failures, signed Worker→Hub and hosted streams | [inventory-core-relay.md](inventory-core-relay.md) |
 | `apps/relay-cloudflare/src/webhook-verify.mjs` | 1 | 4 lexical | [HMAC: 4 real method tests](method-evidence-crosswalk-ui-worker.md) (1 static entrypoint check separated) | WH1 empty bytes/crypto exceptions; Worker size boundary and hosted adapter | [inventory-core-relay.md](inventory-core-relay.md) |

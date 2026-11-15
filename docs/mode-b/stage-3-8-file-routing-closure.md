@@ -5,12 +5,12 @@ Parent bac4db6c94d6de3e3ba98e4e439f5a2e48ecdf47; immutable production dev=a3ba7f
 ## Two separate denominators
 
 - **80/80** production file rows have actual source references and a linked Stage 8 Covered/Remaining receipt. **63 E** have at least partial executable test-subject assertions, **12 S** are structural/syntax-only, **5 D** are locale dictionary values verified through imported exports/consumers. These categories are *not* code coverage percentages.
-- **728** provisional source artifacts are now tracked across 80 files: 719 numbered rows and nine non-method placeholders (11 source-exact callables added on 2026-11-15). See [reconciliation](stage-3-lexical-reconciliation-2026-11-15.md). This is not AST-confirmed and not a count of public production methods.
+- **733** provisional source artifacts are now tracked across 80 files: 724 numbered rows and nine non-method placeholders (11 earlier lexical candidates plus five AST-confirmed Hub callbacks). See [reconciliation](stage-3-lexical-reconciliation-2026-11-15.md). This is not AST-confirmed and not a count of public production methods.
 - Stage 5 has 80 file rows times 13 columns: **810 unknown (?)**, **230 provisional Not Applicable (✖)** and **zero fully proven (✔)**. No evidence from a partial test can automatically close a file-wide category.
 
 ## Material gate blockers before Stage 9
 
-1. **Stage 3**: perform reproducible source-based callable/cfg/anonymous-handler AST census on the exact production baseline; compare to the corrected 728 rows and correct missing/over-counted cases. Method risk, test level, expected count and category applicability still need signed completion.
+1. **Stage 3**: perform reproducible source-based callable/cfg/anonymous-handler AST census on the exact production baseline; compare to the corrected 733 rows and correct missing/over-counted cases. Method risk, test level, expected count and category applicability still need signed completion.
 2. **Stage 4**: enumerate all independent outcomes of public business methods, especially app.mjs main controller, Tauri main.rs IPC/lock/Quit, Worker index.ts host adapter, release/script subprocess/publish failure branches. Each branch must have an actual assertion owner or planned test ID, not a lexical source anchor.
 3. **Stage 5**: migrate method-level evidence into all applicable Positive/N1–N12 category cells only after all branches per cell are demonstrably covered; revisit any of 230 provisional ✖ contradicted by actual owned side effects.
 4. **Stage 6**: deduplicate cross-domain interleavings and independently prove scope/cancellation/credential custody; distinguish fake external adapters from domain mocks and from physical host acceptance.

@@ -82,7 +82,7 @@ This register is a **source-file navigation and outstanding-evidence checklist**
 
 | Production file | Risk | Lexical functions/anchors | Map | Primary source map | Stage 3–8 closed? |
 | --- | --- | ---: | :---: | --- | :---: |
-| `apps/relay-cloudflare/src/hub.mjs` | Critical | 10/21 | D | [relay-hub-sqlite](branch-map-relay-hub-sqlite.md) | ? |
+| `apps/relay-cloudflare/src/hub.mjs` | Critical | 15/21 | D | [relay-hub-sqlite](branch-map-relay-hub-sqlite.md) | ? |
 | `apps/relay-cloudflare/src/index.ts` | Medium | 6/0 | D | [relay-cloudflare-entry](branch-map-relay-cloudflare-entry.md) | ? |
 | `apps/relay-cloudflare/src/relay-protocol.mjs` | Medium | 9/27 | D | [relay-protocol-crypto](branch-map-relay-protocol-crypto.md) | ? |
 | `apps/relay-cloudflare/src/webhook-verify.mjs` | Medium | 1/4 | D | [relay-protocol-crypto](branch-map-relay-protocol-crypto.md) | ? |

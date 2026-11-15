@@ -142,6 +142,10 @@ Three bounded crosswalks map real source guard/outcome and inspected existing te
 
 [Exact native authorization/side-effect crosswalk](native-ipc-authz-and-sideeffects.md) adds nine deduplicated candidate test owners N7-IPC-01..09 across Relay Secret, Settings, GitHub OAuth/REST, monitor snapshot/publish, Git/OS and notification surfaces. The 30 mapped commands are source-inspected **not** declared test-executed. Preserve NM1/RS1/RS2 STOP factor, characterize real AppHandle caller rights before changing authorization; pure helper coverage is not native IPC coverage. Stage 5 unchanged, full CI/STABLE/FLAKY deferred.
 
+### Stage 3 real TypeScript AST on three source SHA-verified Cloudflare files, 2026-11-15
+
+[Five missing Hub callback nodes and exact source-blob receipts](stage-3-real-ast-cloudflare-slice.md) found: worker.mjs 5 callables/0 missing; hub.mjs 14 callables + 1 class/5 missing; index.ts 5 callables + 1 class/0 missing. Hub count 10→15, global provisional inventory 728→733. Two missing arrows are Cloudflare WebSocket host defaults P_HOST; three are indirectly exercised through real Hub SQLite tests I_PARTIAL. Socket limit 8/9 already has an actual controller test at `tests/relay-hub.test.mjs:118–122` with injected external socket adapter, so do not reimplement that same test. Full 80-file AST, Rust cfg AST and all negative-category gates remain open.
+
 ## Separate the executable test queue from policy STOP factors
 
 | Track / relevant source | What remains to map before Stage 9 | Proposed deterministic case IDs and exact proof needed | Stage 9 prerequisites |

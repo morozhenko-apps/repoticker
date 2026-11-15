@@ -35,13 +35,13 @@ const PYTHON_AST = [
   '        self.generic_visit(node)',
   '        self.scope.pop()',
   '    def visit_FunctionDef(self, node):',
-  '        result.append({"line": node.lineno, "kind": "function", "name": ".".join(self.scope + [node.name])})',
+  '        result.append({"line": node.lineno, "column": node.col_offset + 1, "kind": "function", "name": ".".join(self.scope + [node.name])})',
   '        self.scope.append(node.name)',
   '        self.generic_visit(node)',
   '        self.scope.pop()',
   '    visit_AsyncFunctionDef = visit_FunctionDef',
   '    def visit_Lambda(self, node):',
-  '        result.append({"line": node.lineno, "kind": "lambda", "name": ".".join(self.scope + ["<lambda>"])})',
+  '        result.append({"line": node.lineno, "column": node.col_offset + 1, "kind": "lambda", "name": ".".join(self.scope + ["<lambda>"])})',
   '        self.generic_visit(node)',
   'Visitor().visit(tree)',
   'print(json.dumps(result))',
@@ -77,7 +77,7 @@ function jsAst(source, path, ts) {
     ts.forEachChild(node, visit);
   }
   visit(file);
-  return out;
+  return out.sort((a, b) => a.line - b.line || a.column - b.column);
 }
 
 function pythonAst(source, path) {
@@ -85,18 +85,62 @@ function pythonAst(source, path) {
     input: source, encoding: 'utf8', maxBuffer: 20 * 1024 * 1024,
   });
   if (r.status !== 0) throw new Error(path + ': Python AST failed: ' + r.stderr.trim());
-  return JSON.parse(r.stdout);
+  return JSON.parse(r.stdout).sort((a, b) => a.line - b.line || a.column - b.column);
 }
 
 function registryPaths(markdown) {
   return [...markdown.matchAll(/^## `([^`]+)`$/gm)].map(x => x[1]);
 }
 
-function registryLines(markdown, path) {
+function registryRows(markdown, path) {
   const start = markdown.indexOf('## `' + path + '`');
+  if (start < 0) throw new Error('Missing registry heading: ' + path);
   const end = markdown.indexOf('\n## `', start + 5);
-  const text = markdown.slice(start, end < 0 ? undefined : end);
-  return [...text.matchAll(/^\| (\d+) \| `([^`]+)` \|/gm)].map(x => Number(x[1]));
+  const section = markdown.slice(start, end < 0 ? undefined : end);
+  return [...section.matchAll(/^\| (\d+) \| `([^`]+)` \|/gm)]
+    .map(match => ({ line: Number(match[1]), declaration: match[2] }));
+}
+
+function reconcile(path, blob, source, ast, rows) {
+  const actualLines = source.split(/\r?\n/);
+  const byLine = new Map();
+  for (const row of rows) {
+    const group = byLine.get(row.line) || { rows: [], ast: [] };
+    group.rows.push(row);
+    byLine.set(row.line, group);
+  }
+  for (const node of ast) {
+    const group = byLine.get(node.line) || { rows: [], ast: [] };
+    group.ast.push(node);
+    byLine.set(node.line, group);
+  }
+  const missing = [], ambiguities = [], unmatchedRegistry = [], sourceDrift = [];
+  let positionalMatches = 0;
+  for (const [line, group] of [...byLine].sort((a, b) => a[0] - b[0])) {
+    const n = Math.min(group.rows.length, group.ast.length);
+    positionalMatches += n;
+    for (const node of group.ast.slice(n)) {
+      missing.push({ path, blob, ...node,
+        reason: group.rows.length ? 'same-line-callable-overflow' : 'unregistered-source-line' });
+    }
+    if (group.ast.length > 1 && group.rows.length) {
+      ambiguities.push({ path, blob, line,
+        astCount: group.ast.length, registryCount: group.rows.length,
+        nodes: group.ast.map(({ column, name, kind }) => ({ column, name, kind })) });
+    }
+    for (const row of group.rows.slice(n)) {
+      unmatchedRegistry.push({ path, blob, ...row,
+        reason: 'no-corresponding-callable-position' });
+    }
+    for (const row of group.rows) {
+      const actual = actualLines[row.line - 1];
+      if (actual === undefined || row.declaration.trim().replace(/\\\|/g, '|') !== actual.trim()) {
+        sourceDrift.push({ path, blob, line: row.line, registered: row.declaration,
+          actual: actual ?? null });
+      }
+    }
+  }
+  return { missing, ambiguities, unmatchedRegistry, sourceDrift, positionalMatches };
 }
 
 function git(root, ...args) {
@@ -116,12 +160,12 @@ function run() {
   git(root, 'cat-file', '-e', baseline + '^{commit}');
   const ts = typescriptParser();
   const paths = registryPaths(registry);
+  if (!paths.length) throw new Error("No production paths found in inventory.");
   const files = [];
   for (const path of paths) {
     const blob = git(root, 'rev-parse', baseline + ':' + path).trim();
     const source = git(root, 'show', baseline + ':' + path);
-    const lines = registryLines(registry, path);
-    const registered = new Set(lines);
+    const rows = registryRows(registry, path);
     let ast = null;
     let parser = 'pending';
     if (/\.(?:mjs|js|ts)$/.test(path)) {
@@ -135,10 +179,10 @@ function run() {
     } else if (/\.(?:sh|ps1)$/.test(path)) {
       parser = 'requires-shell-parser';
     }
-    const missing = ast ? ast.filter(x => !registered.has(x.line)) : null;
-    files.push({ path, blob, parser, recorded: lines.length,
+    const evidence = ast ? reconcile(path, blob, source, ast, rows) : null;
+    files.push({ path, blob, parser, recorded: rows.length,
       astCallables: ast?.length ?? null,
-      missing, exactLineMatches: ast ? ast.length - missing.length : null });
+      ...(evidence || { missing: null, ambiguities: null, unmatchedRegistry: null, sourceDrift: null, positionalMatches: null }) });
   }
   const result = {
     mode: 'B', baseline, astCompleteness: 'PARTIAL',
@@ -148,6 +192,10 @@ function run() {
       astParsed: files.filter(x => x.astCallables !== null).length,
       pending: files.filter(x => x.astCallables === null).length,
       missingCallableNodes: files.reduce((sum, x) => sum + (x.missing?.length || 0), 0),
+      sameLineAmbiguities: files.reduce((sum, x) => sum + (x.ambiguities?.length || 0), 0),
+      registryRowsWithoutCallable: files.reduce((sum, x) => sum + (x.unmatchedRegistry?.length || 0), 0),
+      literalDrift: files.reduce((sum, x) => sum + (x.sourceDrift?.length || 0), 0),
+      provisionalPositions: files.reduce((sum, x) => sum + (x.positionalMatches || 0), 0),
     },
     files,
   };
@@ -155,13 +203,20 @@ function run() {
     process.stdout.write('# Mode B AST reconciliation (not Stage 3 signoff)\n\n');
     process.stdout.write('Baseline: `' + baseline + '`\n\n');
     process.stdout.write('Parsed ' + result.totals.astParsed + '/' + result.totals.files + ' files; ' +
-      result.totals.pending + ' require Rust/shell parsers.\n\n');
+      result.totals.pending + ' require Rust/shell parsers; ' +
+      result.totals.missingCallableNodes + ' unmatched AST callables; ' +
+      result.totals.sameLineAmbiguities + ' same-line ambiguities; ' +
+      result.totals.registryRowsWithoutCallable + ' registry rows without callables; ' +
+      result.totals.literalDrift + ' mismatched source literals.\n\n');
     for (const f of files) {
-      if (f.missing?.length) {
+      if (f.missing?.length || f.ambiguities?.length || f.unmatchedRegistry?.length || f.sourceDrift?.length) {
         process.stdout.write('## `' + f.path + '` @ `' + f.blob + '`\n\n');
         for (const node of f.missing) {
-          process.stdout.write('- Line ' + node.line + ': ' + node.kind + ' `' + node.name + '`\n');
+          process.stdout.write('- Unmapped AST `' + node.line + ':' + node.column + ' ' + node.kind + ' ' + node.name + '` (' + node.reason + ')\n');
         }
+        for (const g of f.ambiguities || []) process.stdout.write('- Same-line ambiguity ' + g.line + ': ' + g.astCount + ' AST nodes / ' + g.registryCount + ' registry rows\n');
+        for (const row of f.unmatchedRegistry || []) process.stdout.write('- Review registry row ' + row.line + ': `' + row.declaration + '`\n');
+        for (const row of f.sourceDrift || []) process.stdout.write('- Source drift ' + row.line + ': `' + row.registered + '` !== `' + row.actual + '`\n');
         process.stdout.write('\n');
       }
     }

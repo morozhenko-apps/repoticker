@@ -9,13 +9,15 @@ const settle = async () => {
 };
 
 function harness({ initialPhase = "polling", nativePhaseRead = null,
-  resultFactory = null, nativeCooldownSeconds = 0 } = {}) {
+  resultFactory = null, nativeCooldownSeconds = 0,
+  nativePublish = null } = {}) {
   const events = new Map();
   const calls = [];
   const collections = [];
   const clock = { ms: 1_000_000 };
   let scheduled = null;
   let phase = initialPhase;
+  let authorized = true;
   const sample = () => ({
     scope: { organization: "team", repositories: ["team/repo"] },
     coverage: { jobs: true, runners: true, running: true, queue: true },
@@ -32,12 +34,13 @@ function harness({ initialPhase = "polling", nativePhaseRead = null,
     switch (command) {
       case "relay_connection_status":
         return nativePhaseRead ? nativePhaseRead() : phase;
-      case "github_auth_status": return { connected: true };
+      case "github_auth_status": return { connected: authorized };
       case "get_monitor_selection": return {
         github_monitor_org: "team", github_monitor_repositories: ["team/repo"],
         ci_notification_mode: "off"
       };
-      case "github_monitor_publish": return null;
+      case "github_monitor_publish":
+        return nativePublish ? nativePublish(args) : null;
       case "github_api_cooldown_seconds": return nativeCooldownSeconds;
       default: throw Error("Unexpected IPC: " + command);
     }
@@ -74,6 +77,25 @@ function harness({ initialPhase = "polling", nativePhaseRead = null,
     async phase(next) {
       phase = next;
       events.get("repoticker-relay-state")?.({ payload: { phase: next } });
+      await settle();
+    },
+    async shown() {
+      const listener = events.get("repoticker-card-shown");
+      assert.equal(typeof listener, "function", "The real monitor must register card-shown");
+      listener({});
+      await settle();
+    },
+    setAuthorized(value) { authorized = value; },
+    async scopeChanged() {
+      const listener = events.get("repoticker-github-scope-changed");
+      assert.equal(typeof listener, "function", "The real monitor must register scope updates");
+      listener({});
+      await settle();
+    },
+    async disconnected() {
+      const listener = events.get("repoticker-github-auth");
+      assert.equal(typeof listener, "function", "The real monitor must register auth updates");
+      listener({ payload: { status: "disconnected" } });
       await settle();
     },
     kinds() { return collections.map(row => row.kind); }
@@ -223,4 +245,124 @@ test("Given unknown native phase When online Then conservatively revert to full 
   await app.tick(120_000);
   assert.deepEqual(app.kinds(), ["all", "all", "all"]);
   assert.equal(app.calls.some(item => item.command === "ci_run_notify"), false);
+});
+
+test("Given the card is shown repeatedly When REST throttle has not elapsed Then only a due full refresh starts", async () => {
+  const app = harness();
+  await app.ready();
+  assert.deepEqual(app.kinds(), ["all"]);
+
+  await app.shown();
+  await app.shown();
+  assert.deepEqual(app.kinds(), ["all"],
+    "Showing the card must not force remote polling before its ordinary due time");
+
+  app.clock.ms += 119_999;
+  await app.shown();
+  assert.deepEqual(app.kinds(), ["all"]);
+
+  app.clock.ms += 1;
+  await app.shown();
+  assert.deepEqual(app.kinds(), ["all", "all"],
+    "At the exact refresh boundary a non-forced card event starts one full read");
+  assert.ok(app.calls.every(({ command }) =>
+    !["run_git_operation", "fetch_all", "safe_pull", "safe_push"].includes(command)));
+});
+
+test("Given a REST collection is pending When the card is shown again Then no concurrent or trailing read is created", async () => {
+  const state = {
+    scope: { organization: "team", repositories: ["team/repo"] },
+    coverage: { jobs: true, runners: true },
+    counts: { running: 1, queued: 0, busy: 0, idle: 1 },
+    errors: []
+  };
+  const success = { state, repositoryCount: 1, failure: null, reason: null };
+  let attempt = 0;
+  let finishSecond;
+  const app = harness({
+    resultFactory: () => {
+      attempt++;
+      if (attempt === 2) {
+        return new Promise(resolve => { finishSecond = resolve; });
+      }
+      return success;
+    }
+  });
+
+  await app.ready();
+  app.clock.ms += 120_000;
+  await app.shown();
+  assert.equal(typeof finishSecond, "function");
+  assert.equal(attempt, 2);
+
+  await app.shown();
+  await app.shown();
+  assert.equal(attempt, 2, "Duplicate non-forced card events must not queue work");
+
+  await app.hint("tasks");
+  assert.equal(attempt, 2,
+    "A forced hint while busy must be queued, never run a concurrent collector");
+
+  finishSecond(success);
+  await app.ready();
+  assert.equal(attempt, 3,
+    "Only the explicitly forced task hint may run after the pending full read");
+  assert.deepEqual(app.kinds(), ["all", "all", "tasks"]);
+});
+
+test("Given native monitor publication rejects When the real queue recovers Then the next state is redacted and unknown", async () => {
+  let attempts = 0;
+  const delivered = [];
+  const app = harness({
+    nativePublish: args => {
+      attempts++;
+      if (attempts === 1)
+        throw Error("PRIVATE_MONITOR_PUBLICATION_FAILURE_WITH_TOKEN");
+      delivered.push(args);
+    }
+  });
+
+  await app.ready();
+  assert.equal(attempts, 2, "A rejected first publication must not poison its successor");
+  assert.deepEqual(delivered, [{
+    connected: true, runnerState: null, message: "GitHub Actions data unavailable."
+  }]);
+  assert.equal(app.collections.length, 0,
+    "Failure during the initial native publication must not claim a completed REST collection");
+  assert.equal(JSON.stringify(delivered).includes("PRIVATE_MONITOR_PUBLICATION_FAILURE"), false);
+});
+
+test("Given the old native publication rejects after disconnect When the queue drains Then only disconnected state is delivered", async () => {
+  let rejectOld;
+  let attempts = 0;
+  const delivered = [];
+  const app = harness({
+    nativePublish: args => {
+      attempts++;
+      if (attempts === 1)
+        return new Promise((resolve, reject) => { rejectOld = reject; });
+      delivered.push(args);
+    }
+  });
+
+  await app.ready();
+  assert.equal(typeof rejectOld, "function", "The first real publish is pending");
+  assert.equal(attempts, 1);
+
+  await app.scopeChanged();
+  app.setAuthorized(false);
+  await app.disconnected();
+  assert.equal(delivered.length, 0, "The newer result waits for the pending native call");
+
+  rejectOld(Error("PRIVATE_STALE_ACCOUNT_ERROR_WITH_TOKEN"));
+  await app.ready();
+
+  assert.ok(delivered.length >= 1, "A revoked account must publish its cleared state");
+  assert.ok(delivered.every(item =>
+    item.connected === false && item.runnerState === null && item.message === null),
+  "No stale connected publication or account metrics may survive the revocation");
+  assert.equal(JSON.stringify(delivered).includes("PRIVATE_STALE_ACCOUNT_ERROR"), false);
+  assert.ok(app.calls.every(({ command }) =>
+    !["run_git_operation", "fetch_all", "safe_pull", "safe_push", "ci_run_notify"].includes(command)),
+  "An auth event must never trigger Git operations or notifications");
 });

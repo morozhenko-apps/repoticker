@@ -6,6 +6,7 @@ import { coreText } from "./locale-catalog.mjs";
 
 const ru = Object.freeze({
   "About RepoTicker": "О RepoTicker",
+  "Close": "Закрыть",
   "RepoTicker application icon": "Значок RepoTicker",
   "Version": "Версия",
   "Created by": "Автор",

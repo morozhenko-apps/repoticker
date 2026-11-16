@@ -6,7 +6,9 @@ import { cardLocale, cardText, cardNoticeText, metricAccessibleLabel } from "./c
 import { mergeMonitorPresentation, reconcileScanPresentation } from "./monitor-presentation.mjs";
 import { placeRepoMenu } from "./repo-menu.mjs";
 import { localeDirection } from "./locale-catalog.mjs";
-import { createScanRefreshQueue } from "./scan-refresh.mjs";
+import { createScanRefreshQueue, shouldSpinForRepos } from "./scan-refresh.mjs";
+import { ciOutcomeForRepo } from "./ci-status.mjs";
+import { repoRowIndicator } from "./repo-row-indicator.mjs";
 import { disableBrowserContextMenu } from "./browser-context-menu.mjs";
 
 disableBrowserContextMenu(document);
@@ -45,12 +47,15 @@ let progress = null;
 let idleTimer = null;
 let cardVisible = false;
 let localScanActive = false;
-let fullMonitorActive = false;
+let ciStatuses = null;
 function updateReposActivity() {
-  const loading = localScanActive || fullMonitorActive;
+  const loading = shouldSpinForRepos(localScanActive, firstSnapshotReady);
   byId("show-repos").setAttribute("aria-busy", String(loading));
+  const status = byId("repo-scan-status");
+  status.hidden = !localScanActive;
+  status.textContent = localScanActive ? cardText(cardLanguage, "refreshing") + "…" : "";
   // Source reads are independent of Fetch/Safe sync and never block Repos.
-  if (loading) cancelAutoHide();
+  if (localScanActive) cancelAutoHide();
   else armAutoHide();
 }
 const IDLE_MS = 15_000;
@@ -63,7 +68,7 @@ function armAutoHide() {
   // Only the compact card is transient. An open Repos drawer must never
   // disappear while users inspect repositories or perform operations.
   if (!cardVisible || view !== "compact" || quotaExpanded ||
-      localScanActive || fullMonitorActive) return;
+      localScanActive) return;
   idleTimer = setTimeout(async () => {
     try { await invoke("hide_card"); resetView(); }
     catch (error) { showError(error); }
@@ -207,6 +212,32 @@ document.addEventListener("pointerdown", event => {
 byId("repo-list").addEventListener("scroll", () => hideRepoMenus(), { passive: true });
 window.addEventListener("resize", () => hideRepoMenus());
 
+function paintCiIndicator(row, repo) {
+  const outcome = ciOutcomeForRepo(repo, ciStatuses);
+  const indicatorState = repoRowIndicator(repo, outcome);
+  const indicator = row.querySelector(".repo-delta");
+  indicator.textContent = indicatorState.text;
+  const statusKey = outcome === "success" ? "ciSuccess" :
+    outcome === "failure" ? "ciFailure" : "ciUnknown";
+  const label = indicatorState.kind === "git" ? indicatorState.text :
+    indicatorState.kind === "unknown" ? cardText(cardLanguage, "unknown") :
+    cardText(cardLanguage, statusKey);
+  indicator.title = label;
+  indicator.setAttribute("aria-label", label);
+  indicator.classList.toggle("is-git-pending", indicatorState.kind === "git");
+  indicator.classList.toggle("is-ci-success", indicatorState.kind === "ci" && outcome === "success");
+  indicator.classList.toggle("is-ci-failed", indicatorState.kind === "ci" && outcome === "failure");
+}
+
+function updateCiStatuses(next) {
+  ciStatuses = next;
+  // Existing rows stay mounted: no scroll reset during remote status updates.
+  document.querySelectorAll(".repo-row").forEach(row => {
+    const repo = snapshot.repositories.find(item => item.path === row.dataset.repoPath);
+    if (repo) paintCiIndicator(row, repo);
+  });
+}
+
 function makeRepoRow(repo) {
   const row = document.createElement("div");
   row.className = "repo-row";
@@ -216,12 +247,7 @@ function makeRepoRow(repo) {
   name.dir = "auto"; // Preserve native script without inheriting RTL UI direction.
   const branch = addText(row, "span", repo.branch, "repo-branch");
   branch.dir = "ltr"; // Git refs are technical identifiers, not localized text.
-  const current = !repo.dirty && !repo.ahead && !repo.behind && repo.upstream;
-  const symbol = repo.dirty ? "●" :
-    repo.ahead && repo.behind ? "⇅" :
-    repo.behind ? "↓" + repo.behind :
-    repo.ahead ? "↑" + repo.ahead :
-    current ? "✓" : "—";
+  // Local Git cleanliness and ahead/behind counts never imply CI success.
   if (progress) {
     if (progress.active?.has(repo.path)) {
       row.classList.add("is-running");
@@ -230,11 +256,8 @@ function makeRepoRow(repo) {
       if (progress.errors?.has(repo.path)) row.classList.add("is-failed");
     }
   }
-  const indicator = addText(row, "span", symbol, "repo-delta");
-  indicator.title = repo.sync_state;
-  indicator.classList.toggle("is-current", Boolean(current));
-  indicator.classList.toggle("is-dirty", Boolean(repo.dirty));
-  indicator.classList.toggle("is-behind", !repo.dirty && repo.behind > 0 && !repo.ahead);
+  addText(row, "span", "—", "repo-delta");
+  paintCiIndicator(row, repo);
 
   const button = addText(row, "button", "⋯", "repo-more");
   button.type = "button";
@@ -253,7 +276,8 @@ function updateActionState() {
   const fetching = progress?.operation === "fetch" && progress.phase !== "finish";
   byId("fetch-all").disabled = fetchCancelling ||
     (isRunning && !fetching) || (!isRunning && !hasRepos);
-  byId("fetch-all").title = cardText(cardLanguage, fetching ? "fetchCancel" : "fetchTitle");
+  byId("fetch-all").title = cardText(cardLanguage,
+    fetchCancelling ? "stopping" : fetching ? "fetchCancel" : "fetchTitle");
   byId("sync-all").disabled = isRunning || eligible === 0;
   for (const [operation, id] of [["fetch", "fetch-all"], ["safe_sync", "sync-all"]]) {
     const button = byId(id);
@@ -261,12 +285,15 @@ function updateActionState() {
     button.classList.toggle("is-working", active);
     if (active) {
       const pct = progress.total
-        ? Math.round(100 * progress.completed / progress.total) : 100;
-      button.querySelector(".action-label").textContent =
-        operation === "fetch" ? cardText(cardLanguage, fetchCancelling ? "stopping" : "cancel") : pct + "%";
+        ? Math.round(100 * progress.completed / progress.total) : 0;
+      button.querySelector(".action-label").textContent = pct + "%";
     } else {
       button.querySelector(".action-label").textContent =
         cardText(cardLanguage, operation === "fetch" ? "fetch" : "safeSync");
+    }
+    if (operation === "fetch") {
+      button.setAttribute("aria-label", cardText(cardLanguage,
+        fetchCancelling ? "stopping" : fetching ? "fetchCancel" : "fetchTitle"));
     }
   }
   const count = byId("pull-indicator");
@@ -402,8 +429,6 @@ for (const [kind, node] of Object.entries(manualIndicator)) {
 }
 function monitorRefreshState(kind, active) {
   if (kind === "all") {
-    fullMonitorActive = active;
-    updateReposActivity();
     for (const node of Object.values(manualIndicator))
       node.setAttribute("aria-busy", String(active));
   } else {
@@ -454,6 +479,12 @@ function setCardLanguage(language) {
     view === "repos" ? "hideRepos" : "showRepos");
   byId("hide-card").title = cardText(cardLanguage, "hideCard");
   updateActionState();
+  document.querySelectorAll(".repo-row").forEach(row => {
+    const repo = snapshot.repositories.find(item => item.path === row.dataset.repoPath);
+    if (repo) paintCiIndicator(row, repo);
+  });
+  if (localScanActive) byId("repo-scan-status").textContent =
+    cardText(cardLanguage, "refreshing") + "…";
   updateMetricAccessibleNames();
   clearBrowserTooltips();
   if (lastNotice !== null) paintNotice();
@@ -714,7 +745,8 @@ void invoke("get_settings_config").then(config => {
 refresh();
 triggerMonitorRefresh = startGithubMonitoring({
   invoke, event: window.__TAURI__?.event, onError: showError,
-  onStage: traceStartup, onRefreshState: monitorRefreshState
+  onStage: traceStartup, onRefreshState: monitorRefreshState,
+  onCiStatus: updateCiStatuses
 });
 
 /* GTK Layer Shell receives physical Wayland relative-pointer events directly.

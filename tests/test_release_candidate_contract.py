@@ -40,6 +40,14 @@ class ReleaseCandidateContract(unittest.TestCase):
         for forbidden in ("gh release create", "scripts/r2_release.py", "environment: apt-release"):
             self.assertNotIn(forbidden, workflow)
 
+    def test_linux_candidate_reports_bundler_errors_without_weakening_gates(self):
+        workflow = (ROOT / ".github/workflows/desktop-acceptance-candidates.yml").read_text()
+        linux = workflow.split("\n  windows:\n", 1)[0]
+        self.assertIn("NO_STRIP: 'true'", linux)
+        self.assertIn("cargo tauri build --verbose --bundles deb,appimage -- --locked", linux)
+        self.assertNotIn("continue-on-error: true", linux)
+        self.assertIn("if-no-files-found: error", linux)
+
     def test_candidate_changes_to_version_or_lockfile_trigger_both_builds(self):
         workflow = (ROOT / ".github/workflows/desktop-acceptance-candidates.yml").read_text()
         for name in (

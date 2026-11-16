@@ -1,4 +1,5 @@
 import { collectRecentCompleted, createCiFailureTracker } from "./ci-failure-events.mjs";
+import { projectLatestCiStatuses } from "./ci-status.mjs";
 import { collectRunnerState } from "./runner-collector.mjs";
 import { listAvailableInstallations } from "./github-installations.mjs";
 export { listAvailableInstallations } from "./github-installations.mjs";
@@ -7,6 +8,10 @@ import { githubFailureReason, githubFailureMessage, mostImportantGithubFailure }
 // Existing job classification is reused; bearer tokens remain in native Rust.
 // Adaptive 2-7 minute refresh avoids excessive REST usage across many repos.
 export const REFRESH_MS = 60_000;
+// Webhooks are advisory and GitHub does not automatically redeliver failures.
+// Even while connected, reconcile full authoritative CI state periodically.
+export const HYBRID_FULL_RECONCILE_MS = 15 * 60_000;
+const RELAY_HINT_BURST_MS = 15_000;
 export function monitorRefreshDelay(repositoryCount) {
   // Each repo requires two run-list queries; a larger portfolio must
   // refresh less often to respect GitHub App user-token API limits.
@@ -180,13 +185,17 @@ export function invalidateMetricGroup(previous, kind) {
 
 export function startGithubMonitoring({ invoke, event, onError = () => {},
   collect = collectForAccount, schedule = setInterval, onStage = () => {},
-  onRefreshState = () => {}, now = () => Date.now() }) {
+  onRefreshState = () => {}, onCiStatus = null, now = () => Date.now() }) {
   let busy = false;
   let rerunKind = null;
   let lastState = null;
   let lastAttempt = 0;
+  let lastFullAttempt = 0;
+  let lastRunnerAttempt = 0;
   let cooldownUntil = 0;
   let minIntervalMs = monitorRefreshDelay(100);
+  let relayOnline = false;
+  let fullReconciliationHealthy = false;
   let hasPublishedResult = false;
   let selectionRevision = 0;
   const ciTracker = createCiFailureTracker();
@@ -206,7 +215,9 @@ export function startGithubMonitoring({ invoke, event, onError = () => {},
   }
   function invalidatePresentation(message) {
     ciTracker.reset();
+    onCiStatus?.(null);
     selectionRevision++;
+    fullReconciliationHealthy = false;
     hasPublishedResult = false;
     lastState = null;
     // Clear the old account's counts now; never wait for an in-flight
@@ -230,10 +241,22 @@ export function startGithubMonitoring({ invoke, event, onError = () => {},
       if (force) rerunKind = rerunKind && rerunKind !== kind ? "all" : kind;
       return;
     }
-    if (!force && now() - lastAttempt < minIntervalMs) return;
+    if (!force) {
+      const lastForGroup = kind === "all" ? lastFullAttempt :
+        kind === "runners" ? lastRunnerAttempt : lastAttempt;
+      const interval = kind === "all" && relayOnline && fullReconciliationHealthy
+        ? HYBRID_FULL_RECONCILE_MS : minIntervalMs;
+      if (now() - lastForGroup < interval) return;
+    }
     busy = true;
     onRefreshState(kind, true);
     lastAttempt = now();
+    if (kind === "all") {
+      lastFullAttempt = lastAttempt;
+      lastRunnerAttempt = lastAttempt;
+    } else if (kind === "runners") {
+      lastRunnerAttempt = lastAttempt;
+    }
     let authorized = false;
     const first = !hasPublishedResult;
     const revision = selectionRevision;
@@ -244,7 +267,9 @@ export function startGithubMonitoring({ invoke, event, onError = () => {},
       if (first) onStage("monitor.auth_ready");
       if (revision !== selectionRevision) return;
       if (!authorized) {
+        if (kind === "all") fullReconciliationHealthy = false;
         ciTracker.reset();
+        onCiStatus?.(null);
         hasPublishedResult = false;
         lastState = null;
         await publish(false, null, null, revision);
@@ -253,6 +278,8 @@ export function startGithubMonitoring({ invoke, event, onError = () => {},
       // Native credential validation precedes this message. Never say
       // "Connect GitHub" while an authorized account is loading.
       if (now() < cooldownUntil) {
+        if (kind === "all") fullReconciliationHealthy = false;
+        if (kind !== "runners") onCiStatus?.(null);
         await publish(true, invalidateMetricGroup(lastState, kind),
           githubFailureMessage("rate_limited"), revision);
         lastState = invalidateMetricGroup(lastState, kind);
@@ -283,6 +310,14 @@ export function startGithubMonitoring({ invoke, event, onError = () => {},
         lastState = next;
         hasPublishedResult = true;
       }
+      // A failed/partial full read must never extend the online safety window.
+      // Runner-only failures remain independently visible.
+      if (kind === "all") {
+        fullReconciliationHealthy = !result.failure &&
+          next?.coverage?.jobs === true &&
+          typeof next.scope?.organization === "string" &&
+          Array.isArray(next.scope.repositories);
+      }
       // Runner-inventory permission is separate from workflow-run access.
       // Never let a runner-only 403 suppress otherwise authoritative CI
       // failures; a jobs/installation failure or global rate limit still
@@ -291,34 +326,48 @@ export function startGithubMonitoring({ invoke, event, onError = () => {},
         Array.isArray(result.state?.errors) && result.state.errors.length > 0 &&
         result.state.errors.every(error =>
           error?.scope === "runners" && error?.reason === "permission_denied");
-      if (selection.ci_failure_notifications !== true) {
-        ciTracker.reset();
-      } else if (revision === selectionRevision && kind !== "runners" &&
-          (!result.failure || runnerOnlyDenied) &&
-          next?.coverage?.jobs === true &&
-          next.scope?.organization && Array.isArray(next.scope.repositories)) {
-        // Completed runs are deliberately independent of active job counts.
-        // One bounded native REST page per repository; no requests when opt-out.
+      const alertMode = selection.ci_notification_mode;
+      const notificationsEnabled = ["failures", "successes", "both"].includes(alertMode);
+      if (!notificationsEnabled) ciTracker.reset();
+      const trustedCiRead = revision === selectionRevision && kind !== "runners" &&
+        (!result.failure || runnerOnlyDenied) &&
+        next?.coverage?.jobs === true &&
+        next.scope?.organization && Array.isArray(next.scope.repositories);
+      // The status read is independent of notification opt-in and uses the
+      // same bounded API snapshot as notifications when they are enabled.
+      if (trustedCiRead && (notificationsEnabled || onCiStatus)) {
         const observations = await collectRecentCompleted({
           get, account: next.scope.organization,
           repositories: next.scope.repositories, maxPages: 1
         });
         if (revision !== selectionRevision) return;
-        const alerts = ciTracker.observe({
-          account: next.scope.organization,
-          repositories: next.scope.repositories,
-          results: observations
-        });
-        for (const alert of alerts.slice(0, 5)) {
-          if (revision !== selectionRevision) break;
-          await invoke("ci_failure_notify", {
-            repository: alert.repository, runId: alert.id,
-            runAttempt: alert.run_attempt
-          }).catch(onError);
+        onCiStatus?.(projectLatestCiStatuses(next.scope.organization, observations));
+        if (notificationsEnabled) {
+          const alerts = ciTracker.observe({
+            account: next.scope.organization,
+            repositories: next.scope.repositories,
+            results: observations, mode: alertMode
+          });
+          for (const alert of alerts.slice(0, 5)) {
+            if (revision !== selectionRevision) break;
+            await invoke("ci_run_notify", {
+              repository: alert.repository, runId: alert.id,
+              runAttempt: alert.run_attempt, conclusion: alert.conclusion
+            }).catch(onError);
+          }
         }
+      } else if (revision === selectionRevision && kind !== "runners") {
+        // Missing trustworthy coverage invalidates old green/red indicators.
+        onCiStatus?.(null);
+        ciTracker.reset();
       }
     } catch (error) {
       if (revision !== selectionRevision) return;
+      if (kind === "all") fullReconciliationHealthy = false;
+      if (kind !== "runners") {
+        ciTracker.reset();
+        onCiStatus?.(null);
+      }
       if (first) onStage("monitor.failed");
       const reason = githubFailureReason(error);
       await applyCooldown(reason);
@@ -355,9 +404,66 @@ export function startGithubMonitoring({ invoke, event, onError = () => {},
     // Invalidate old authorized observations before the next config-only read.
     invalidatePresentation("Checking GitHub connection...");
   });
-  // Refresh only while the application is running, never an API request
-  // per hover, mouse movement or local Git scan.
-  schedule(() => { void refresh(); }, REFRESH_MS);
+  // Phase is native-only, with a read-only initial snapshot to avoid
+  // missing an online event emitted before the monitor's listeners exist.
+  // An older async snapshot must never overwrite a newer native transition.
+  let relayPhaseRevision = 0;
+  function applyRelayPhase(phase) {
+    const wasOnline = relayOnline;
+    relayOnline = phase === "online";
+    if (wasOnline && !relayOnline) {
+      fullReconciliationHealthy = false;
+      // A failed WebSocket may have lost hints; immediately reconcile with
+      // REST, still subject to the global GitHub API cooldown.
+      void refresh(true, "all");
+    }
+  }
+  event?.listen?.("repoticker-relay-state", evt => {
+    relayPhaseRevision++;
+    applyRelayPhase(evt?.payload?.phase);
+  });
+  const initialPhaseRevision = relayPhaseRevision;
+  void invoke("relay_connection_status").then(phase => {
+    if (relayPhaseRevision === initialPhaseRevision) applyRelayPhase(phase);
+  }).catch(() => {
+    // Missing native phase IPC is safe: retain the shorter Simple schedule.
+  });
+
+  // Native Hybrid receives only scope-checked, credential-free reconciliation
+  // triggers. Never accept a run conclusion or invoke local Git operations.
+  const lastRelay = { tasks: -Infinity, all: -Infinity };
+  let trailingRelayTasks = false;
+  event?.listen?.("repoticker-relay-reconcile", evt => {
+    const kind = evt?.payload?.kind;
+    if (kind !== "tasks" && kind !== "all") return;
+    const timestamp = now();
+    if (timestamp - lastRelay[kind] < RELAY_HINT_BURST_MS) {
+      if (kind === "tasks") trailingRelayTasks = true;
+      return;
+    }
+    lastRelay[kind] = timestamp;
+    trailingRelayTasks = false;
+    void refresh(true, kind);
+  });
+
+  // One cheap scheduling tick: keep runner capacity fresh, use relay hints
+  // for CI tasks, and always perform a full REST recovery at least every
+  // 15 minutes. Frequent task hints cannot advance either safety clock.
+  schedule(() => {
+    if (!relayOnline || !fullReconciliationHealthy ||
+        now() - lastFullAttempt >= HYBRID_FULL_RECONCILE_MS) {
+      trailingRelayTasks = false;
+      void refresh(false, "all");
+    } else if (now() - lastRunnerAttempt >= minIntervalMs) {
+      void refresh(false, "runners");
+    } else if (trailingRelayTasks &&
+        now() - lastRelay.tasks >= RELAY_HINT_BURST_MS &&
+        now() >= cooldownUntil) {
+      trailingRelayTasks = false;
+      lastRelay.tasks = now();
+      void refresh(true, "tasks");
+    }
+  }, REFRESH_MS);
   event?.listen?.("repoticker-card-shown", () => { void refresh(); });
   void refresh(true);
   return refresh;

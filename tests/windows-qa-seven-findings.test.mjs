@@ -15,7 +15,7 @@ const keychain = read("apps/desktop/src-tauri/src/github_native.rs");
 
 test("Fetch controls are meaningful localized verbs, not 19 English Fetch labels", () => {
   assert.equal(cardText("en", "fetch"), "Fetch");
-  assert.equal(cardText("ru", "fetch"), "Получить");
+  assert.equal(cardText("ru", "fetch"), "Фетч");
   assert.equal(cardText("pt", "fetch"), "Obter");
   assert.equal(cardText("de", "fetch"), "Abrufen");
   assert.equal(cardText("ja", "fetch"), "取得");

@@ -26,30 +26,207 @@ function applySettingsLanguage(value) {
   byId("message").textContent = t(lastFormText);
   if (draft) byId("autostart-status").textContent = draft.autostartEnabled === null
     ? t("Autostart unavailable") : "";
+  renderRelaySecretState();
+  syncWorkerControls();
 }
 
 
-/** Hybrid relay has no native transport or persistence in v0.2.
- * Its URL input is irrelevant to simple polling and cannot be enabled
- * until a supported connection mode is available in a future release. */
+/** Hybrid endpoint edits remain a Settings draft. The native OS keyring
+ * owns the credential and no WebView operation ever reads the bearer. */
+// Native WSS online proves only the Worker transport, never webhook delivery.
+// A stored password or configured URL cannot make the connection "online".
+let relayPhase = "unknown";
+let relayReason = "none";
+let relayPhaseRevision = 0;
+const RELAY_PHASES = new Set(["polling", "connecting", "online", "fallback"]);
+const RELAY_FAILURE_DETAILS = Object.freeze({
+  configuration: "Relay configuration is unavailable.",
+  scope: "GitHub monitoring account is not configured.",
+  github: "GitHub authorization is unavailable.",
+  missing_secret: "No relay secret is stored. REST monitoring is active.",
+  credential_store: "Cannot access the OS credential store.",
+  invalid_url: "Worker URL is invalid.",
+  http_401: "Worker rejected the client secret (HTTP 401).",
+  http_403: "WebSocket upgrade blocked (HTTP 403).",
+  http_endpoint: "Worker WebSocket endpoint refused the upgrade.",
+  http_service: "Worker failed the WebSocket upgrade (HTTP 5xx).",
+  timeout: "Worker WebSocket connection timed out.",
+  network: "Network connection to Worker failed.",
+  tls: "TLS handshake with Worker failed.",
+  protocol: "WebSocket protocol error.",
+  closed: "WebSocket closed. Reconnecting.",
+  pending_changes: "Relay changes are pending confirmation.",
+  unavailable: "Relay unavailable. REST monitoring is active."
+});
+
+function confirmedRelayConnection() {
+  return relayPhase === "online" &&
+    original?.connectionMode === "hybrid" &&
+    draft?.connectionMode === "hybrid" &&
+    draft.relayUrl === original.relayUrl &&
+    relaySecretConfigured === true && !relaySecretTouched;
+}
 function syncWorkerControls() {
   const mode = byId("github-connection-mode");
   const worker = byId("github-worker-url");
-  const available = !mode.disabled && mode.value === "hybrid";
-  byId("github-worker-row").hidden = !available;
-  worker.disabled = !available;
+  const hybridSelected = mode.value === "hybrid";
+  const connected = confirmedRelayConnection();
+  byId("relay-settings").hidden = !hybridSelected;
+  byId("github-worker-row").hidden = !hybridSelected;
+  worker.disabled = mode.disabled || !hybridSelected || connected;
+  const state = byId("relay-connection-state");
+  state.hidden = !hybridSelected;
+  // The reason is displayed in context; no redundant hover-only tooltip.
+  state.title = "";
+  const isPersistedHybrid = original?.connectionMode === "hybrid";
+  const secretField = byId("relay-secret-mask");
+  const pendingHybridChanges = hybridSelected &&
+    (!isPersistedHybrid || draft?.relayUrl !== original?.relayUrl ||
+      relaySecretTouched ||
+      (secretField.type === "password" && secretField.value.length > 0));
+  let label = "Worker: not connected";
+  let phase = "inactive";
+  if (!pendingHybridChanges && connected) {
+    label = "Worker: connected (WebSocket)";
+    phase = "online";
+  } else if (!pendingHybridChanges && isPersistedHybrid &&
+             relayPhase === "connecting") {
+    label = "Worker: connecting";
+    phase = "connecting";
+  } else if (!pendingHybridChanges && isPersistedHybrid &&
+             relayPhase === "fallback") {
+    label = "Worker: unavailable, REST fallback active";
+    phase = "fallback";
+  } else if (!pendingHybridChanges && isPersistedHybrid &&
+             (relayPhase === "unknown" || relayPhase === "online")) {
+    label = "Worker: checking connection";
+    phase = "unknown";
+  }
+  state.dataset.state = phase;
+  byId("relay-connection-text").textContent = t(label);
+  const detail = byId("relay-connection-detail");
+  let detailKey = "";
+  if (pendingHybridChanges) {
+    detailKey = RELAY_FAILURE_DETAILS.pending_changes;
+  } else if (hybridSelected && isPersistedHybrid && relayPhase === "fallback") {
+    detailKey = RELAY_FAILURE_DETAILS[relayReason] || RELAY_FAILURE_DETAILS.unavailable;
+  } else if (hybridSelected && isPersistedHybrid &&
+             (relayPhase === "polling" ||
+              (relayPhase === "unknown" && relayReason === "unavailable"))) {
+    detailKey = RELAY_FAILURE_DETAILS.unavailable;
+  }
+  detail.hidden = !detailKey;
+  detail.textContent = detailKey ? t(detailKey) : "";
 }
-byId("github-connection-mode").addEventListener("change", syncWorkerControls);
-syncWorkerControls();
+function applyRelayPhase(status) {
+  const phase = typeof status === "string" ? status : status?.phase;
+  const reason = typeof status === "object" ? status?.reason : "none";
+  relayPhase = RELAY_PHASES.has(phase) ? phase : "unknown";
+  relayReason = Object.hasOwn(RELAY_FAILURE_DETAILS, reason) ? reason : "none";
+  syncWorkerControls();
+}
+byId("github-connection-mode").addEventListener("change", event => {
+  if (!draft || saving) return;
+  draft.connectionMode = event.target.value;
+  if (draft.connectionMode === "polling") {
+    // A Simple draft must not revive the previous Worker origin if Hybrid
+    // is selected again. Cancel still preserves the persisted configuration.
+    draft.relayUrl = "";
+    byId("github-worker-url").value = "";
+    const secretField = byId("relay-secret-mask");
+    if (secretField.type === "password") secretField.value = "";
+  }
+  updateApply();
+});
+byId("github-worker-url").addEventListener("input", event => {
+  if (!draft || saving || byId("github-worker-url").disabled) return;
+  draft.relayUrl = event.target.value;
+  updateApply();
+});
 const invoke = (command, args = {}) => window.__TAURI__?.core?.invoke(command, args) ??
   Promise.reject(new Error("Open settings in RepoTicker."));
+// A single explicit Close action replaces OS-level minimize/maximize controls.
+byId("settings-titlebar").addEventListener("mousedown", event => {
+  if (event.button !== 0 || event.target?.id === "settings-close") return;
+  void invoke("start_settings_drag").catch(() => {});
+});
 const traceStartup = stage => {
   void invoke("trace_startup_stage", { stage }).catch(() => {});
 };
 traceStartup("settings.start");
 
+let relaySecretConfigured = null;
+let relaySecretBusy = false;
+let relaySecretTouched = false;
+// Hiding an undecorated Tauri WebView can drop the native "opened" event.
+// Arm this *before* close_settings: hidden WebViews may suspend JS callbacks.
+let settingsNeedsRefreshOnFocus = false;
 let original = null;
 let draft = null;
+syncWorkerControls();
+
+function renderRelaySecretState() {
+  const label = relaySecretConfigured === true ? "Relay secret stored" :
+    relaySecretConfigured === false ? "Relay secret not configured" :
+    "Relay secret unavailable";
+  const mask = byId("relay-secret-mask");
+  const configured = relaySecretConfigured === true;
+  // Only a fixed, non-revealable mask represents the stored Keyring value.
+  if (configured) {
+    mask.type = "text";
+    mask.value = "••••••••••••";
+    mask.readOnly = true;
+  } else {
+    if (mask.type !== "password") mask.value = "";
+    mask.type = "password";
+    mask.readOnly = false;
+  }
+  mask.placeholder = t(relaySecretConfigured === null
+    ? "Relay secret unavailable" : configured ? "Relay secret stored" : "Set relay secret");
+  mask.setAttribute("aria-label", t("Relay secret"));
+  mask.disabled = relaySecretBusy || settingsLoading || saving || relaySecretConfigured !== false;
+  byId("relay-secret-status").textContent = t(label);
+  byId("relay-remove-secret").hidden = !configured;
+  byId("relay-remove-secret").disabled =
+    relaySecretBusy || saving || !configured;
+}
+async function refreshRelaySecretStatus(revision = settingsRefreshRevision) {
+  try {
+    const result = await invoke("relay_secret_status");
+    if (revision !== settingsRefreshRevision) return;
+    relaySecretConfigured = typeof result === "boolean" ? result : null;
+  } catch {
+    if (revision !== settingsRefreshRevision) return;
+    relaySecretConfigured = null;
+  }
+  renderRelaySecretState();
+  updateApply();
+}
+// New candidate remains only in this masked field until explicit OK.
+byId("relay-secret-mask").addEventListener("input", () => {
+  if (saving || settingsLoading || byId("relay-secret-mask").disabled) return;
+  updateApply();
+});
+byId("relay-remove-secret").addEventListener("click", async () => {
+  if (relaySecretBusy || saving || relaySecretConfigured !== true) return;
+  relaySecretBusy = true;
+  renderRelaySecretState();
+  try {
+    await invoke("relay_clear_secret");
+    relaySecretConfigured = false;
+    relaySecretTouched = true;
+    byId("relay-secret-mask").value = "";
+    // Preserve Hybrid selection; the transport fails over to REST.
+    message("");
+  } catch {
+    relaySecretConfigured = null;
+    message("Cannot update relay secret.", true);
+  } finally {
+    relaySecretBusy = false;
+    renderRelaySecretState();
+    updateApply();
+  }
+});
 let saving = false;
 let githubPending = false;
 let githubConnected = false;
@@ -58,6 +235,28 @@ let githubCheckFailed = false;
 let settingsLoading = false;
 let settingsInitFailed = false;
 let settingsRefreshRevision = 0;
+// Listen once, then read a native snapshot on every Settings open. An event
+// received after the read began always wins over the older response.
+const relayListenerReady = Promise.resolve(
+  window.__TAURI__?.event?.listen?.("repoticker-relay-state", event => {
+    relayPhaseRevision++;
+    applyRelayPhase(event?.payload);
+  })
+).catch(() => {});
+async function refreshRelayConnectionStatus(revision = settingsRefreshRevision) {
+  const observedPhaseRevision = relayPhaseRevision;
+  await relayListenerReady;
+  try {
+    const phase = await invoke("relay_connection_diagnostics");
+    if (revision !== settingsRefreshRevision ||
+        observedPhaseRevision !== relayPhaseRevision) return;
+    applyRelayPhase(phase);
+  } catch {
+    if (revision !== settingsRefreshRevision ||
+        observedPhaseRevision !== relayPhaseRevision) return;
+    applyRelayPhase({ phase: "unknown", reason: "unavailable" });
+  }
+}
 let githubStatusTimer = null;
 let githubStatusBusy = false;
 let selectedScope = null;
@@ -224,6 +423,8 @@ function clearMonitorScopes() {
   repoInventoryReady = false;
   repoInventoryComplete = false;
   byId("github-monitor-scope-row").hidden = true;
+  byId("github-account-name").value = "";
+  byId("github-monitor-scope").hidden = true;
   byId("github-repo-controls").hidden = true;
 }
 
@@ -247,12 +448,47 @@ async function refreshMonitorScopes() {
     const select = byId("github-monitor-scope");
     select.dir = "ltr"; // Account identifiers are not translated UI strings.
     select.replaceChildren();
-    const placeholder = document.createElement("option");
-    placeholder.value = "";
-    placeholder.textContent = t("Choose account");
-    select.append(placeholder);
     availableAccounts = new Map(inventory.items.map(item => [item.name, item.id]));
     const accounts = [...availableAccounts.keys()].sort();
+    if (githubScopeAtOpen === null) githubScopeAtOpen = config || "";
+    const suggestion = config ||
+      (inventory.complete && accounts.length === 1 ? accounts[0] : "");
+    // Respect the provider's canonical casing while preserving a stored
+    // account that is temporarily absent from a partial inventory.
+    const resolved = accounts.find(name => sameGithubIdentity(name, suggestion)) ??
+      suggestion;
+    if (!githubScopeTouched) selectedScope = resolved;
+
+    // An already-authorized user with one *fully enumerated* eligible
+    // installation needs no extra account choice or OK confirmation.
+    // A brand-new Device Flow remains provisional until explicit OK.
+    if (!config && inventory.complete && accounts.length === 1 &&
+        !githubScopeTouched && githubWasConnectedAtOpen &&
+        !githubStartedHere && !disconnectPending) {
+      try {
+        await invoke("github_set_monitor_org", { org: accounts[0], repositories: [] });
+        if (revision !== monitorScopesRevision || !githubConnected) return;
+        githubScopeAtOpen = accounts[0];
+        selectedScope = accounts[0];
+      } catch {
+        if (revision !== monitorScopesRevision || !githubConnected) return;
+        // Failed auto-initialization must stay retryable through explicit OK.
+        githubScopeTouched = true;
+        githubMessage("Cannot save GitHub monitoring account.", true);
+      }
+    }
+    const needsPicker = accounts.length > 1 ||
+      (!inventory.complete && !config) || accounts.length === 0;
+    const display = byId("github-account-name");
+    display.hidden = needsPicker;
+    select.hidden = !needsPicker;
+    display.value = selectedScope || (accounts.length === 1 ? accounts[0] : "");
+    if (needsPicker) {
+      const placeholder = document.createElement("option");
+      placeholder.value = "";
+      placeholder.textContent = t("Choose account");
+      select.append(placeholder);
+    }
     for (const name of accounts) {
       const option = document.createElement("option");
       option.value = name;
@@ -260,19 +496,9 @@ async function refreshMonitorScopes() {
       option.textContent = name;
       select.append(option);
     }
-    if (githubScopeAtOpen === null) githubScopeAtOpen = config || "";
-    const suggestion = config ||
-      (inventory.complete && accounts.length === 1 ? accounts[0] : "");
-    // The persisted login may differ only in case from the provider's
-    // canonical spelling. Resolve it before looking up the installation ID.
-    const resolved = accounts.find(name => sameGithubIdentity(name, suggestion)) ??
-      suggestion;
-    // An explicit draft selection must never be overwritten by a late
-    // refresh; an incomplete listing does not prove a saved account gone.
-    if (!githubScopeTouched) selectedScope = resolved;
     select.value = accounts.includes(selectedScope) ? selectedScope : "";
     if (!inventory.complete) githubMessage(
-      t("GitHub installation list incomplete. Some accounts may be unavailable."), true);
+      "GitHub installation list incomplete. Some accounts may be unavailable.", true);
     await refreshRepoInventory();
     if (revision !== monitorScopesRevision || !githubConnected) return;
     updateApply();
@@ -298,7 +524,9 @@ byId("github-monitor-scope").addEventListener("change", event => {
   selectedRepoNames.clear();
   byId("github-repo-filter").value = "";
   updateRepoDirty();
-  githubMessage("Press OK to confirm the monitoring account.");
+  // An actual change of account is reflected by enabled Settings OK.
+  // Do not suggest reconfirmation of an already connected identity.
+  githubMessage("");
   void refreshRepoInventory();
   updateApply();
 });
@@ -340,6 +568,10 @@ function githubMessage(text, error = false) {
   lastGithubText = String(text);
   const element = byId("github-auth-message");
   element.textContent = t(String(text));
+  // Connected is already expressed by the account row; do not print it twice.
+  element.hidden = !text ||
+    (githubConnected && !githubPending && !disconnectPending &&
+     text === githubPhaseLabels.connected && !error);
   element.classList.toggle("error", error);
 }
 
@@ -355,7 +587,9 @@ function githubButtons() {
     : disconnectPending ? t("Pending disconnect")
     : githubConnected ? t("Authorized") : t("Not connected");
   byId("github-connection-indicator").textContent = status;
-  byId("github-account-status").value = status;
+  // Connected account+Disconnect are the single authoritative visible status.
+  byId("github-connection-indicator").hidden =
+    githubConnected && !disconnectPending && !githubPending && !unknown;
   updateApply();
 }
 
@@ -483,7 +717,26 @@ byId("github-copy-code").addEventListener("click", async () => {
 });
 
 window.addEventListener("focus", () => {
+  if (settingsNeedsRefreshOnFocus) {
+    // Native open notifications are best effort while the WebView is hidden.
+    // Only a new Settings session may discard a stale in-memory draft.
+    settingsNeedsRefreshOnFocus = false;
+    void refresh();
+    return;
+  }
   if (githubPending) void refreshGithub();
+  // In the same active session, focus changes must preserve edited fields.
+  if (draft && !saving && !settingsLoading) {
+    void refreshRelayConnectionStatus();
+  }
+});
+
+// Open only the audited deployment guide through a fixed native allowlist.
+byId("relay-worker-guide-link").addEventListener("click", event => {
+  event.preventDefault();
+  void invoke("open_relay_resource", { resource: "guide" }).catch(() => {
+    message("Cannot open Worker documentation.", true);
+  });
 });
 
 byId("github-open-device").addEventListener("click", async () => {
@@ -526,20 +779,70 @@ function message(text, error = false) {
   byId("message").textContent = t(String(text));
   byId("message").classList.toggle("error", error);
 }
+function validRelayUrl(value) {
+  if (value === "") return true;
+  if (typeof value !== "string" || value.length > 512 ||
+      !value.startsWith("https://") || value.trim() !== value ||
+      value.includes("\\")) return false;
+  try {
+    const parsed = new URL(value);
+    const host = parsed.hostname.toLowerCase();
+    return parsed.protocol === "https:" && parsed.username === "" &&
+      parsed.password === "" && parsed.pathname === "/" &&
+      parsed.search === "" && parsed.hash === "" &&
+      (parsed.port === "" || parsed.port === "443") &&
+      host.includes(".") && !/^(?:\d+\.){3}\d+$/.test(host) &&
+      !host.startsWith("[") &&
+      !["localhost", "local", "internal", "invalid", "test"].some(end =>
+        host === end || host.endsWith("." + end));
+  } catch {
+    return false;
+  }
+}
+function validRelayDraft() {
+  if (!draft) return false;
+  // An unused relay URL must never block independent CI or polling settings.
+  if (draft.connectionMode !== "hybrid") return true;
+  const field = byId("relay-secret-mask");
+  const candidate = field.type === "password" ? field.value : "";
+  const candidateValid = (32 <= candidate.length && candidate.length <= 256) &&
+    /^[A-Za-z0-9_-]+$/.test(candidate);
+  const secretReady = relaySecretConfigured === true || candidateValid ||
+    (relaySecretTouched && relaySecretConfigured === false);
+  return validRelayUrl(draft.relayUrl) && draft.relayUrl !== "" &&
+    secretReady && githubConnected && !disconnectPending && !!selectedScope;
+}
+function syncConnectionAvailability() {
+  const mode = byId("github-connection-mode");
+  // Selecting Hybrid exposes setup; committing it still requires credentials.
+  mode.disabled = saving || settingsLoading || settingsInitFailed;
+  syncWorkerControls();
+}
+function pollingNeedsRelayCleanup() {
+  return draft?.connectionMode === "polling" &&
+    (original?.relayUrl !== "" || relaySecretConfigured === true ||
+      relaySecretTouched);
+}
 function isDirty() {
   if (!original || !draft) return false;
-  return original.language !== draft.language ||
+  return pollingNeedsRelayCleanup() || relaySecretTouched ||
+    (byId("relay-secret-mask").type === "password" &&
+     byId("relay-secret-mask").value.length > 0) ||
+    original.connectionMode !== draft.connectionMode ||
+    original.relayUrl !== draft.relayUrl ||
+    original.language !== draft.language ||
     (original.autostartEnabled !== null &&
      original.autostartEnabled !== draft.autostartEnabled) ||
-    original.ciFailureNotifications !== draft.ciFailureNotifications ||
+    original.ciNotificationMode !== draft.ciNotificationMode ||
     JSON.stringify(original.roots) !== JSON.stringify(draft.roots) ||
     JSON.stringify(original.ignoredChildNames) !== JSON.stringify(draft.ignoredChildNames);
 }
 function updateApply() {
+  syncConnectionAvailability();
   const authNeedsConfirmation = (githubConnected && githubStartedHere) || disconnectPending;
   byId("apply-settings").disabled =
     saving || settingsLoading || settingsInitFailed || githubCheckFailed ||
-    githubStarting || githubPending || !repoChoiceValid() ||
+    githubStarting || githubPending || !repoChoiceValid() || !validRelayDraft() ||
     (githubScopeTouched && !!selectedScope && !availableAccounts.has(selectedScope)) ||
     !(isDirty() || authNeedsConfirmation || githubScopeTouched || repoChoiceTouched);
 }
@@ -669,17 +972,29 @@ async function refresh() {
       roots: [...(snapshot.roots || [])],
       language: snapshot.language || "en",
       ignoredChildNames: [...(snapshot.ignored_child_names || [])].sort(),
-      ciFailureNotifications: snapshot.ci_failure_notifications === true,
+      ciNotificationMode: ["off", "failures", "successes", "both"].includes(snapshot.ci_notification_mode)
+         ? snapshot.ci_notification_mode : "off",
+      connectionMode: snapshot.connection_mode === "hybrid" ? "hybrid" : "polling",
+      relayUrl: typeof snapshot.relay_url === "string" ? snapshot.relay_url : "",
       autostartEnabled: typeof autostartState === "boolean" ? autostartState : null
     };
+    relaySecretTouched = false;
+    relaySecretConfigured = null;
+    byId("relay-secret-mask").type = "password";
+    byId("relay-secret-mask").value = "";
+    applyRelayPhase("unknown");
     draft = {
       roots: [...original.roots],
       language: original.language,
       ignoredChildNames: [...original.ignoredChildNames],
-      ciFailureNotifications: original.ciFailureNotifications,
+      ciNotificationMode: original.ciNotificationMode,
+      connectionMode: original.connectionMode,
+      relayUrl: original.relayUrl,
       autostartEnabled: original.autostartEnabled
     };
-    byId("ci-failure-notifications").checked = draft.ciFailureNotifications;
+    byId("ci-notification-mode").value = draft.ciNotificationMode;
+    byId("github-connection-mode").value = draft.connectionMode;
+    byId("github-worker-url").value = draft.relayUrl;
     byId("autostart-enabled").checked = draft.autostartEnabled === true;
     byId("autostart-enabled").disabled = draft.autostartEnabled === null;
     byId("autostart-status").textContent = draft.autostartEnabled === null
@@ -692,6 +1007,8 @@ async function refresh() {
     byId("ignored-child-name").value = "";
     message("");
     updateApply();
+    void refreshRelaySecretStatus(revision);
+    void refreshRelayConnectionStatus(revision);
     await refreshGithub(authAtOpen);
   } catch {
     // Only the newest initialization attempt may change the dialog.
@@ -716,9 +1033,11 @@ byId("autostart-enabled").addEventListener("change", event => {
   draft.autostartEnabled = event.target.checked === true;
   updateApply();
 });
-byId("ci-failure-notifications").addEventListener("change", event => {
+byId("ci-notification-mode").addEventListener("change", event => {
   if (!draft || saving) return;
-  draft.ciFailureNotifications = event.target.checked === true;
+  const value = event.target.value;
+  if (!["off", "failures", "successes", "both"].includes(value)) return;
+  draft.ciNotificationMode = value;
   updateApply();
 });
 byId("add-root-form").addEventListener("submit", event => {
@@ -870,12 +1189,13 @@ document.addEventListener("keydown", event => {
     closeLanguagePicker(true);
   }
 });
-byId("cancel-settings").addEventListener("click", async () => {
+const cancelSettings = async () => {
   if (saving) return;
   // Invalidate pending challenge continuations before the first await.
   ++githubBeginRevision;
   githubStarting = false;
   saving = true;
+  renderRelaySecretState();
   updateApply();
   try {
     // A new Device Flow is provisional until OK. Cancel invalidates
@@ -892,30 +1212,66 @@ byId("cancel-settings").addEventListener("click", async () => {
     githubPending = false;
     githubConnected = githubWasConnectedAtOpen && !githubStartedHere;
     byId("github-user-code").textContent = "";
-    await invoke("close_settings");
+    byId("relay-secret-mask").value = "";
+    settingsNeedsRefreshOnFocus = true;
+    try {
+      await invoke("close_settings");
+    } catch (error) {
+      // An unsuccessful close leaves this editing session open.
+      settingsNeedsRefreshOnFocus = false;
+      throw error;
+    }
   } catch (error) {
     message(String(error), true);
   } finally {
     saving = false;
+    renderRelaySecretState();
     updateApply();
   }
-});
+};
+byId("cancel-settings").addEventListener("click", cancelSettings);
+byId("settings-close").addEventListener("click", cancelSettings);
 byId("apply-settings").addEventListener("click", async () => {
   if (saving || settingsLoading || settingsInitFailed || githubCheckFailed ||
-      githubPending || githubStarting || !repoChoiceValid() ||
+      githubPending || githubStarting || !repoChoiceValid() || !validRelayDraft() ||
       (githubScopeTouched && !!selectedScope && !availableAccounts.has(selectedScope)) ||
       !(isDirty() || githubScopeTouched || repoChoiceTouched ||
         (githubConnected && githubStartedHere) || disconnectPending)) return;
   saving = true;
+  renderRelaySecretState();
   updateApply();
   try {
+    const field = byId("relay-secret-mask");
+    const simpleSelected = draft.connectionMode === "polling";
+    const clearRelay = simpleSelected &&
+      (original.connectionMode === "hybrid" || original.relayUrl !== "" ||
+        relaySecretConfigured === true || relaySecretTouched);
+    if (clearRelay) {
+      // Prepare native removal before config writes; a failed write or
+      // Cancel can discard this draft without deleting the credential.
+      await invoke("relay_clear_secret");
+      relaySecretTouched = true;
+    } else if (!simpleSelected && field.type === "password" && field.value) {
+      await invoke("relay_stage_secret", { secret: field.value });
+      relaySecretConfigured = true;
+      relaySecretTouched = true;
+      renderRelaySecretState();
+    }
+    // Discard uncommitted WebView candidate on any explicit confirmation.
+    if (simpleSelected || field.type === "password") field.value = "";
     const autostartChanged = original.autostartEnabled !== null &&
       draft.autostartEnabled !== original.autostartEnabled;
     const configChanges = {};
     if (original.language !== draft.language)
       configChanges.language = draft.language;
-    if (original.ciFailureNotifications !== draft.ciFailureNotifications)
-      configChanges.ciFailureNotifications = draft.ciFailureNotifications;
+    if (original.ciNotificationMode !== draft.ciNotificationMode)
+      configChanges.ciNotificationMode = draft.ciNotificationMode;
+    if (original.connectionMode !== draft.connectionMode)
+      configChanges.connectionMode = draft.connectionMode;
+    // Simple polling never carries a remembered Worker origin.
+    const relayUrlForSave = simpleSelected ? "" : draft.relayUrl;
+    if (original.relayUrl !== relayUrlForSave)
+      configChanges.relayUrl = relayUrlForSave;
     if (JSON.stringify(original.roots) !== JSON.stringify(draft.roots))
       configChanges.roots = [...draft.roots];
     if (JSON.stringify(original.ignoredChildNames) !== JSON.stringify(draft.ignoredChildNames))
@@ -950,16 +1306,47 @@ byId("apply-settings").addEventListener("click", async () => {
       await invoke("github_disconnect");
       disconnectPending = false;
     }
+    // Keyring changes are committed only by this explicit OK path.
+    // Failures retain the native draft for a retry and keep Settings open.
+    if (relaySecretTouched) {
+      await invoke("relay_commit_secret_draft");
+      relaySecretTouched = false;
+      if (simpleSelected) relaySecretConfigured = false;
+    }
+    if (simpleSelected && clearRelay) {
+      // Do not report a successful disconnect based only on IPC completion.
+      // Both independent persistence layers must confirm that the old
+      // endpoint and credential are actually gone before closing Settings.
+      const [persisted, credentialStored] = await Promise.all([
+        invoke("get_settings_config"),
+        invoke("relay_secret_status")
+      ]);
+      if (persisted?.connection_mode !== "polling" ||
+          (typeof persisted.relay_url === "string" && persisted.relay_url !== "") ||
+          credentialStored !== false) {
+        throw Error("Relay cleanup could not be verified.");
+      }
+    }
     githubStartedHere = false;
-    await invoke("close_settings");
+    settingsNeedsRefreshOnFocus = true;
+    try {
+      await invoke("close_settings");
+    } catch (error) {
+      // An unsuccessful close leaves this editing session open.
+      settingsNeedsRefreshOnFocus = false;
+      throw error;
+    }
   } catch (error) {
     message(String(error), true);
   } finally {
     saving = false;
+    renderRelaySecretState();
     updateApply();
   }
 });
 window.__TAURI__?.event?.listen?.("repoticker-settings-opened", () => {
+  // Native event is the primary path; focus above is its fallback.
+  settingsNeedsRefreshOnFocus = false;
   void refresh();
 });
 void refresh();

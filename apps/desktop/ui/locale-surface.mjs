@@ -1,6 +1,7 @@
 /** About, runner/task hover and billing-display terms for L10N-20. */
 export const SURFACE_TERMS = Object.freeze({
   "es": {
+    "Close": "Cerrar",
     "RepoTicker application icon": "Icono de la aplicación RepoTicker",
     "Open morozhenko.com in your browser": "Abrir morozhenko.com en el navegador",
     "Open source · Apache License 2.0": "Código abierto · Licencia Apache 2.0",
@@ -18,6 +19,7 @@ export const SURFACE_TERMS = Object.freeze({
     "More self-hosted": "Más ejecutores propios"
   },
   "pt": {
+    "Close": "Fechar",
     "RepoTicker application icon": "Ícone da aplicação RepoTicker",
     "Open morozhenko.com in your browser": "Abrir morozhenko.com no navegador",
     "Open source · Apache License 2.0": "Código aberto · Licença Apache 2.0",
@@ -35,6 +37,7 @@ export const SURFACE_TERMS = Object.freeze({
     "More self-hosted": "Mais executores próprios"
   },
   "de": {
+    "Close": "Schließen",
     "RepoTicker application icon": "RepoTicker-App-Symbol",
     "Open morozhenko.com in your browser": "morozhenko.com im Browser öffnen",
     "Open source · Apache License 2.0": "Open Source · Apache-Lizenz 2.0",
@@ -52,6 +55,7 @@ export const SURFACE_TERMS = Object.freeze({
     "More self-hosted": "Weitere selbst gehostete Runner"
   },
   "fr": {
+    "Close": "Fermer",
     "RepoTicker application icon": "Icône de l'application RepoTicker",
     "Open morozhenko.com in your browser": "Ouvrir morozhenko.com dans le navigateur",
     "Open source · Apache License 2.0": "Code source ouvert · Licence Apache 2.0",
@@ -69,6 +73,7 @@ export const SURFACE_TERMS = Object.freeze({
     "More self-hosted": "Autres exécuteurs auto-hébergés"
   },
   "it": {
+    "Close": "Chiudi",
     "RepoTicker application icon": "Icona dell'app RepoTicker",
     "Open morozhenko.com in your browser": "Apri morozhenko.com nel browser",
     "Open source · Apache License 2.0": "Codice aperto · Licenza Apache 2.0",
@@ -86,6 +91,7 @@ export const SURFACE_TERMS = Object.freeze({
     "More self-hosted": "Altri runner self-hosted"
   },
   "pl": {
+    "Close": "Zamknij",
     "RepoTicker application icon": "Ikona aplikacji RepoTicker",
     "Open morozhenko.com in your browser": "Otwórz morozhenko.com w przeglądarce",
     "Open source · Apache License 2.0": "Otwarte źródła · Licencja Apache 2.0",
@@ -103,6 +109,7 @@ export const SURFACE_TERMS = Object.freeze({
     "More self-hosted": "Więcej runnerów własnych"
   },
   "hi": {
+    "Close": "बंद करें",
     "RepoTicker application icon": "RepoTicker ऐप आइकन",
     "Open morozhenko.com in your browser": "ब्राउज़र में morozhenko.com खोलें",
     "Open source · Apache License 2.0": "ओपन सोर्स · Apache लाइसेंस 2.0",
@@ -120,6 +127,7 @@ export const SURFACE_TERMS = Object.freeze({
     "More self-hosted": "अन्य स्वयं होस्ट किए गए रनर"
   },
   "zh-Hant": {
+    "Close": "關閉",
     "RepoTicker application icon": "RepoTicker 應用程式圖示",
     "Open morozhenko.com in your browser": "在瀏覽器開啟 morozhenko.com",
     "Open source · Apache License 2.0": "開放原始碼 · Apache 授權條款 2.0",
@@ -137,6 +145,7 @@ export const SURFACE_TERMS = Object.freeze({
     "More self-hosted": "更多自行託管的執行器"
   },
   "ja": {
+    "Close": "閉じる",
     "RepoTicker application icon": "RepoTicker アプリアイコン",
     "Open morozhenko.com in your browser": "ブラウザーで morozhenko.com を開く",
     "Open source · Apache License 2.0": "オープンソース · Apache License 2.0",
@@ -154,6 +163,7 @@ export const SURFACE_TERMS = Object.freeze({
     "More self-hosted": "ほかのセルフホストランナー"
   },
   "nl": {
+    "Close": "Sluiten",
     "RepoTicker application icon": "RepoTicker-appicoon",
     "Open morozhenko.com in your browser": "morozhenko.com openen in de browser",
     "Open source · Apache License 2.0": "Open broncode · Apache-licentie 2.0",
@@ -171,6 +181,7 @@ export const SURFACE_TERMS = Object.freeze({
     "More self-hosted": "Meer zelfgehoste runners"
   },
   "sv": {
+    "Close": "Stäng",
     "RepoTicker application icon": "RepoTicker-programikon",
     "Open morozhenko.com in your browser": "Öppna morozhenko.com i webbläsaren",
     "Open source · Apache License 2.0": "Öppen källkod · Apache-licens 2.0",
@@ -188,6 +199,7 @@ export const SURFACE_TERMS = Object.freeze({
     "More self-hosted": "Fler självhostade runner"
   },
   "tr": {
+    "Close": "Kapat",
     "RepoTicker application icon": "RepoTicker uygulama simgesi",
     "Open morozhenko.com in your browser": "morozhenko.com adresini tarayıcıda aç",
     "Open source · Apache License 2.0": "Açık kaynak · Apache Lisansı 2.0",
@@ -205,6 +217,7 @@ export const SURFACE_TERMS = Object.freeze({
     "More self-hosted": "Diğer kendi barındırılan çalıştırıcılar"
   },
   "ko": {
+    "Close": "닫기",
     "RepoTicker application icon": "RepoTicker 앱 아이콘",
     "Open morozhenko.com in your browser": "브라우저에서 morozhenko.com 열기",
     "Open source · Apache License 2.0": "오픈 소스 · Apache 라이선스 2.0",
@@ -222,6 +235,7 @@ export const SURFACE_TERMS = Object.freeze({
     "More self-hosted": "추가 자체 호스팅 러너"
   },
   "bn": {
+    "Close": "বন্ধ করুন",
     "RepoTicker application icon": "RepoTicker অ্যাপ আইকন",
     "Open morozhenko.com in your browser": "ব্রাউজারে morozhenko.com খুলুন",
     "Open source · Apache License 2.0": "উন্মুক্ত উৎস · Apache লাইসেন্স 2.0",
@@ -239,6 +253,7 @@ export const SURFACE_TERMS = Object.freeze({
     "More self-hosted": "আরও নিজে হোস্ট করা রানার"
   },
   "th": {
+    "Close": "ปิด",
     "RepoTicker application icon": "ไอคอนแอป RepoTicker",
     "Open morozhenko.com in your browser": "เปิด morozhenko.com ในเบราว์เซอร์",
     "Open source · Apache License 2.0": "โอเพนซอร์ส · ใบอนุญาต Apache 2.0",
@@ -256,6 +271,7 @@ export const SURFACE_TERMS = Object.freeze({
     "More self-hosted": "รันเนอร์ที่โฮสต์เองเพิ่มเติม"
   },
   "id": {
+    "Close": "Tutup",
     "RepoTicker application icon": "Ikon aplikasi RepoTicker",
     "Open morozhenko.com in your browser": "Buka morozhenko.com di browser",
     "Open source · Apache License 2.0": "Sumber terbuka · Lisensi Apache 2.0",
@@ -273,6 +289,7 @@ export const SURFACE_TERMS = Object.freeze({
     "More self-hosted": "Runner yang dihosting sendiri lainnya"
   },
   "fil": {
+    "Close": "Isara",
     "RepoTicker application icon": "Icon ng RepoTicker app",
     "Open morozhenko.com in your browser": "Buksan ang morozhenko.com sa browser",
     "Open source · Apache License 2.0": "Open source · Lisensyang Apache 2.0",
@@ -290,6 +307,7 @@ export const SURFACE_TERMS = Object.freeze({
     "More self-hosted": "Iba pang sariling-host na runner"
   },
   "ar": {
+    "Close": "إغلاق",
     "RepoTicker application icon": "أيقونة تطبيق RepoTicker",
     "Open morozhenko.com in your browser": "فتح morozhenko.com في المتصفح",
     "Open source · Apache License 2.0": "مفتوح المصدر · رخصة Apache 2.0",

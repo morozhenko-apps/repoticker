@@ -30,7 +30,7 @@ function monitor({
   const listeners = new Map(), writes = [], failures = [], notifications = [], apiReads = [];
   const scope = {
     github_monitor_org: "team", github_monitor_repositories: [],
-    ci_failure_notifications: false, ...selection
+    ci_notification_mode: "off", ...selection
   };
   const invoke = async (name, args) => {
     if (name === "github_auth_status")
@@ -42,7 +42,7 @@ function monitor({
       apiReads.push(args.path);
       return get(args.path);
     }
-    if (name === "ci_failure_notify") { notifications.push(args); return null; }
+    if (name === "ci_run_notify") { notifications.push(args); return null; }
     throw Error("unexpected monitor IPC: " + name);
   };
   const refresh = startGithubMonitoring({
@@ -187,7 +187,7 @@ test("Mode B06: notification opt-out causes no completed-run HTTP requests", asy
 test("Mode B06: opted-in CI failure tracker has silent baseline then one new alert", async () => {
   let observations = [completedRun(1, "success")];
   const h = monitor({
-    selection: { ci_failure_notifications: true },
+    selection: { ci_notification_mode: "failures" },
     collect: async () => result(0),
     get: async () => ({ workflow_runs: observations })
   });
@@ -195,8 +195,8 @@ test("Mode B06: opted-in CI failure tracker has silent baseline then one new ale
   assert.equal(h.notifications.length, 0);
   observations = [completedRun(2, "failure"), ...observations];
   await h.refresh(true);
-  assert.deepEqual(h.notifications.map(item => [item.repository, item.runId, item.runAttempt]),
-    [["team/app", 2, 1]]);
+  assert.deepEqual(h.notifications.map(item => [item.repository, item.runId, item.runAttempt, item.conclusion]),
+    [["team/app", 2, 1, "failure"]]);
   await h.refresh(true);
   assert.equal(h.notifications.length, 1);
 });
@@ -205,7 +205,7 @@ test("Mode B06: a stale CI response after logout cannot emit a notification", as
   const oldRead = deferred();
   let count = 0;
   const h = monitor({
-    selection: { ci_failure_notifications: true },
+    selection: { ci_notification_mode: "failures" },
     collect: async () => result(0),
     get: async () => {
       count++;

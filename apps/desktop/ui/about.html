@@ -3,9 +3,14 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <title>About RepoTicker</title><link rel="stylesheet" href="./about.css">
+  <link rel="stylesheet" href="./window-frame.css">
   <script type="module" src="./about.mjs"></script>
 </head>
 <body>
+<header class="about-titlebar" data-tauri-drag-region>
+  <span data-i18n="About RepoTicker" data-tauri-drag-region>About RepoTicker</span>
+  <button id="close-about" class="close-about" type="button" aria-label="Close" data-i18n-aria="Close">×</button>
+</header>
 <main class="about">
   <img src="./icon.png" alt="RepoTicker application icon" data-i18n-alt="RepoTicker application icon" width="72" height="72">
   <h1>RepoTicker</h1>

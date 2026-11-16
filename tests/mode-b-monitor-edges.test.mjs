@@ -426,17 +426,17 @@ test("Mode B runner collector: targeted runners do not request workflow runs or 
 
 test("Mode B CI tracker: scope order change is not a different security scope", () => {
   const tracker = createCiFailureTracker();
-  tracker.observe({
+  tracker.observe({ mode: "failures",
     account: "team", repositories: ["team/a", "team/b"],
     results: [{ repository: "team/a", runs: [] }, { repository: "team/b", runs: [] }]
   });
-  const alerts = tracker.observe({
+  const alerts = tracker.observe({ mode: "failures",
     account: "TEAM", repositories: ["team/b", "team/a"],
     results: [{ repository: "TEAM/B", runs: [run(9, "failure")] },
       { repository: "TEAM/A", runs: [] }]
   });
   assert.deepEqual(alerts.map(x => [x.id, x.run_attempt]), [[9, 1]]);
-  assert.deepEqual(tracker.observe({
+  assert.deepEqual(tracker.observe({ mode: "failures",
     account: "team", repositories: ["team/a", "team/b"],
     results: [{ repository: "team/a", runs: [] },
       { repository: "team/b", runs: [run(9, "failure")] }]
@@ -445,16 +445,16 @@ test("Mode B CI tracker: scope order change is not a different security scope", 
 
 test("Mode B CI tracker: invalid second repo never partially mutates first repo history", () => {
   const tracker = createCiFailureTracker();
-  tracker.observe({
+  tracker.observe({ mode: "failures",
     account: "team", repositories: ["team/a", "team/b"],
     results: [{ repository: "team/a", runs: [] }, { repository: "team/b", runs: [] }]
   });
-  assert.throws(() => tracker.observe({
+  assert.throws(() => tracker.observe({ mode: "failures",
     account: "team", repositories: ["team/a", "team/b"],
     results: [{ repository: "team/a", runs: [run(20, "failure")] },
       { repository: "team/b", runs: [run(21, "failure", 0)] }]
   }), /Invalid notification run facts/);
-  const alerts = tracker.observe({
+  const alerts = tracker.observe({ mode: "failures",
     account: "team", repositories: ["team/a", "team/b"],
     results: [{ repository: "team/a", runs: [run(20, "failure")] },
       { repository: "team/b", runs: [] }]

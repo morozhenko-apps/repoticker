@@ -4,9 +4,14 @@
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <title>RepoTicker Settings</title>
   <link rel="stylesheet" href="./settings.css">
+  <link rel="stylesheet" href="./window-frame.css">
   <script type="module" src="./settings.mjs"></script>
 </head>
 <body>
+<header id="settings-titlebar" class="settings-titlebar">
+  <span id="settings-window-title" data-i18n="Settings">Settings</span>
+  <button id="settings-close" type="button" aria-label="Close" data-i18n-aria="Close">×</button>
+</header>
 <main class="settings-shell">
   <section class="block general">
     <h2 data-i18n="General">General</h2>
@@ -48,7 +53,7 @@
     </div>
   </section>
   <section class="block repositories">
-    <div class="section-heading"><h2 data-i18n="Local repositories">Local repositories</h2><span class="hint" data-i18n="Direct children only">Direct children only</span></div>
+    <h2 data-i18n="Local repositories">Local repositories</h2>
     <form id="add-root-form" class="inline">
       <label for="root-path" class="sr-only" data-i18n="Repository folder">Repository folder</label>
       <input id="root-path" dir="ltr" required placeholder="~/Documents/GitHub" autocomplete="off">
@@ -57,7 +62,7 @@
     </form>
     <div id="roots-list" class="roots-list"></div>
     <details class="ignore-settings">
-      <summary><span data-i18n="Ignored child folders">Ignored child folders</span> <span class="hint" data-i18n="(all enrolled roots)">(all enrolled roots)</span></summary>
+      <summary data-i18n="Ignored child folders">Ignored child folders</summary>
       <form id="ignore-child-form" class="inline">
         <label for="ignored-child-name" class="sr-only" data-i18n="Child folder name">Child folder name</label>
         <input id="ignored-child-name" dir="ltr" data-i18n-placeholder="e.g. Archive" placeholder="e.g. Archive" autocomplete="off" maxlength="255">
@@ -65,15 +70,19 @@
         <button type="submit" data-i18n="Add">Add</button>
       </form>
       <div id="ignored-child-list" class="roots-list" aria-label="Ignored child folders" data-i18n-aria="Ignored child folders"></div>
-      <p class="hint" data-i18n="Exact folder names only, no paths or wildcards. Explicitly enrolled repositories are never hidden.">Exact folder names only, no paths or wildcards. Explicitly enrolled repositories are never hidden.</p>
+      
     </details>
   </section>
   <section class="block github">
-    <div class="section-heading"><h2 data-i18n="GitHub &amp; Relay">GitHub &amp; Relay</h2><span id="github-connection-indicator" class="hint">Checking connection...</span></div>
+    <div class="section-heading"><h2>GitHub</h2><span id="github-connection-indicator" class="hint">Checking connection...</span></div>
     <div class="github-auth-controls">
+      <div id="github-monitor-scope-row" class="github-account-row" hidden>
+        <input id="github-account-name" type="text" dir="ltr" readonly disabled autocomplete="off" spellcheck="false" aria-label="Monitor account" data-i18n-aria="Monitor account" value="">
+        <select id="github-monitor-scope" dir="ltr" aria-label="Monitor account" data-i18n-aria="Monitor account" hidden><option value="" data-i18n="Choose account">Choose account</option></select>
+        <button id="github-disconnect" type="button" data-i18n="Disconnect" hidden>Disconnect</button>
+      </div>
       <button id="github-connect" type="button" data-i18n="Connect GitHub" hidden>Connect GitHub</button>
-      <button id="github-disconnect" type="button" data-i18n="Disconnect" hidden>Disconnect</button>
-      <span id="github-auth-message" class="hint" role="status" aria-live="polite">Checking GitHub connection...</span>
+      <span id="github-auth-message" class="hint" role="status" aria-live="polite" hidden>Checking GitHub connection...</span>
     </div>
     <div id="github-device-flow" class="github-device-flow" hidden>
       <span data-i18n="Enter this code on GitHub:">Enter this code on GitHub:</span>
@@ -83,25 +92,6 @@
       <button id="github-cancel-device" type="button" data-i18n="Cancel">Cancel</button>
     </div>
 
-    <div class="github-grid">
-      <label><span data-i18n="GitHub authorization">GitHub authorization</span><input id="github-account-status" disabled value="Checking connection..."></label>
-      <label id="github-monitor-scope-row" hidden><span data-i18n="Monitor account">Monitor account</span>
-        <select id="github-monitor-scope"><option value="" data-i18n="Choose account">Choose account</option></select>
-      </label>
-      <label><span data-i18n="Connection mode">Connection mode</span><select id="github-connection-mode" disabled>
-        <option value="polling" data-i18n="Simple polling">Simple polling</option>
-        <option value="hybrid" data-i18n="Hybrid webhook relay (not available yet)">Hybrid webhook relay (not available yet)</option>
-      </select></label>
-      <label id="github-worker-row" class="worker-label" hidden><span data-i18n="Worker URL">Worker URL</span>
-        <input id="github-worker-url" disabled placeholder="https://your-worker.example">
-      </label>
-    </div>
-    <div class="ci-alert-controls">
-      <label for="ci-failure-notifications">
-        <input id="ci-failure-notifications" type="checkbox">
-        <span data-i18n="Notify on new CI failures">Notify on new CI failures</span>
-      </label>
-    </div>
     <div id="github-repo-controls" class="github-repo-controls" hidden>
       <div class="github-repo-heading">
         <label for="github-repo-mode" data-i18n="Monitor repositories">Monitor repositories</label>
@@ -115,13 +105,50 @@
       <span id="github-repo-status" class="hint" role="status" hidden></span>
     </div>
   </section>
-  <div class="settings-footer">
-    <span id="message" role="status" aria-live="polite"></span>
-    <div class="footer-buttons">
-      <button id="cancel-settings" type="button" data-i18n="Cancel">Cancel</button>
-      <button id="apply-settings" type="button" class="primary" disabled>OK</button>
+  <section class="block delivery">
+    <h2 data-i18n="CI event source">CI event source</h2>
+    <div class="github-grid">
+      <label><span class="sr-only" data-i18n="CI event source">CI event source</span><select id="github-connection-mode" aria-label="CI event source" data-i18n-aria="CI event source" disabled>
+        <option value="polling" data-i18n="Simple polling">Simple polling</option>
+        <option value="hybrid" data-i18n="Hybrid webhook relay">Hybrid webhook relay</option>
+      </select></label>
     </div>
-  </div>
+    <div id="relay-settings" class="relay-settings" hidden>
+      <label id="github-worker-row" class="worker-label" hidden><span data-i18n="Worker URL">Worker URL</span>
+        <input id="github-worker-url" disabled dir="ltr" maxlength="512" autocomplete="off" spellcheck="false" placeholder="https://your-worker.example">
+      </label>
+      <label class="relay-secret-label" for="relay-secret-mask" data-i18n="Relay secret">Relay secret</label>
+      <div class="relay-secret-controls">
+        <input id="relay-secret-mask" type="password" disabled autocomplete="off" spellcheck="false" aria-label="Relay secret" data-i18n-aria="Relay secret" placeholder="Set relay secret">
+        <button id="relay-remove-secret" type="button" data-i18n="Disconnect" disabled hidden>Disconnect</button>
+        <span id="relay-secret-status" class="sr-only" role="status" aria-live="polite">Relay secret unavailable</span>
+      </div>
+      <div id="relay-connection-state" class="relay-connection-state" role="status" aria-live="polite" data-state="unknown" hidden title="">
+        <span class="relay-connection-dot" aria-hidden="true"></span>
+        <span id="relay-connection-text"></span>
+        <span id="relay-connection-detail" class="relay-connection-detail" hidden></span>
+      </div>
+      <p class="relay-resource-links"><a id="relay-worker-guide-link" href="https://github.com/morozhenko-apps/repoticker/blob/dev/apps/relay-cloudflare/README.md" target="_blank" rel="noopener noreferrer" data-i18n="Deployment guide">Deployment guide</a></p>
+    </div>
+    <div class="ci-alert-controls">
+      <label for="ci-notification-mode">
+        <span data-i18n="CI notifications">CI notifications</span>
+        <select id="ci-notification-mode">
+          <option value="off" data-i18n="Off">Off</option>
+          <option value="failures" data-i18n="Failures only">Failures only</option>
+          <option value="successes" data-i18n="Successes only">Successes only</option>
+          <option value="both" data-i18n="Failures and successes">Failures and successes</option>
+        </select>
+      </label>
+    </div>
+  </section>
 </main>
+<footer class="settings-footer">
+  <span id="message" role="status" aria-live="polite"></span>
+  <div class="footer-buttons">
+    <button id="cancel-settings" type="button" data-i18n="Cancel">Cancel</button>
+    <button id="apply-settings" type="button" class="primary" disabled>OK</button>
+  </div>
+</footer>
 </body>
 </html>

@@ -1,5 +1,6 @@
 :root { color-scheme: light dark; font-family: system-ui,"Segoe UI",sans-serif; font-size: 13px; }
 * { box-sizing: border-box; }
+html, body, body * { -webkit-user-select: none; user-select: none; }
 html,body { margin:0; width:100%; height:100%; overflow:hidden; background:transparent; }
 .usage-bubble { pointer-events:none; width:100%; height:100%; display:flex; flex-direction:column; overflow:hidden;
   padding: 11px; background:#f8fafb; color:#242b30; border:1px solid #bcc4cc;

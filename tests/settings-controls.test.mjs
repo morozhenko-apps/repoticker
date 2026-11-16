@@ -100,28 +100,41 @@ test("Device Flow buttons register and invoke native commands after JS startup",
   assert.equal(elements.get("github-connection-indicator").textContent,
     "Checking connection...");
   assert.equal(elements.get("github-connect").hidden, true);
-  assert.equal(elements.get("github-account-status").value,
-    "Checking connection...");
+  assert.equal(elements.get("github-account-name").value, "",
+    "Account identity is pending; redundant Authorized field is removed");
   assert.ok(!calls.some(c => c.command === "get_snapshot"));
   await new Promise(resolve => setImmediate(resolve));
   const mode = elements.get("github-connection-mode");
   const workerRow = elements.get("github-worker-row");
   const workerUrl = elements.get("github-worker-url");
+  const relaySection = elements.get("relay-settings");
+  const notificationMode = elements.get("ci-notification-mode");
+  assert.equal(mode.disabled, false,
+    "Hybrid setup must be selectable before a relay key exists");
+  assert.equal(notificationMode.value, "off");
   mode.disabled = true;
   mode.value = "polling";
-  handlers.get("github-connection-mode:change")();
+  handlers.get("github-connection-mode:change")({ target: mode });
   assert.equal(workerRow.hidden, true);
   assert.equal(workerUrl.disabled, true);
-  // The unavailable relay must not expose its URL in polling mode.
+  assert.equal(relaySection.hidden, true);
+  // Expose Hybrid setup first; a credential is needed only to commit.
   mode.disabled = false;
   mode.value = "hybrid";
-  handlers.get("github-connection-mode:change")();
+  handlers.get("github-connection-mode:change")({ target: mode });
+  assert.equal(relaySection.hidden, false);
   assert.equal(workerRow.hidden, false);
   assert.equal(workerUrl.disabled, false);
+  assert.equal(notificationMode.value, "off",
+    "source selection must not rewrite CI notification types");
+  assert.equal(elements.get("apply-settings").disabled, true,
+    "incomplete Hybrid must not be persisted without native credentials");
   mode.value = "polling";
-  handlers.get("github-connection-mode:change")();
+  handlers.get("github-connection-mode:change")({ target: mode });
   assert.equal(workerRow.hidden, true);
   assert.equal(workerUrl.disabled, true);
+  assert.equal(relaySection.hidden, true);
+  assert.equal(notificationMode.value, "off");
   for (const button of ["github-connect", "github-copy-code",
     "github-open-device", "github-cancel-device"]) {
     assert.equal(typeof handlers.get(button + ":click"), "function",
@@ -149,13 +162,20 @@ test("Device Flow buttons register and invoke native commands after JS startup",
   assert.equal(elements.get("github-copy-code").textContent, "Copy code");
 });
 
-test("shipped Simple polling has no configurable Worker URL or active Hybrid mode", () => {
-  assert.match(html, /id="github-connection-mode" disabled/);
+test("Simple polling remains default and Hybrid saving requires native credential readiness", () => {
+  assert.match(html, /id="github-connection-mode"[^>]*\bdisabled\b/);
   assert.match(html, /value="polling" data-i18n="Simple polling">Simple polling/);
-  assert.match(html, /value="hybrid" data-i18n="Hybrid webhook relay \(not available yet\)">Hybrid webhook relay \(not available yet\)/);
+  assert.match(html, /value="hybrid" data-i18n="Hybrid webhook relay">Hybrid webhook relay/);
+  assert.match(html, /id="relay-settings"[^>]*hidden/);
   assert.match(html, /id="github-worker-row"[^>]*hidden/);
   assert.match(html, /id="github-worker-url" disabled/);
-  assert.doesNotMatch(js, /save_settings[\s\S]*worker_url|save_settings[\s\S]*workerUrl/);
+  assert.match(js, /configChanges\.connectionMode = draft\.connectionMode/);
+  // The confirmed mode now determines whether the relay URL is persisted or cleared.
+  assert.match(js, /const relayUrlForSave = simpleSelected \? "" : draft\.relayUrl/);
+  assert.match(js, /configChanges\.relayUrl = relayUrlForSave/);
+  assert.match(js, /await invoke\("relay_clear_secret"\)/);
+  assert.match(js, /validRelayDraft\(\)/);
+  assert.match(js, /relaySecretConfigured === true/);
 });
 
 test("Settings native command reads config only, without Git scanning", () => {

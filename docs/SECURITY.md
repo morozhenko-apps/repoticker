@@ -11,8 +11,7 @@ The app inspects repositories under explicitly enrolled folders. Fetch must not 
 GitHub OAuth access and refresh tokens are handled by the native layer and stored with the operating system's credential service. They are not copied to WebView, saved as plaintext preferences, embedded in URLs or exposed in diagnostic messages.
 
 The optional operator-owned Hybrid relay has its own OS credential entry,
-separate from GitHub authorization. The owner explicitly requested inline
-secret entry instead of a separate native password dialog. A new secret
+separate from GitHub authorization. A new relay secret
 briefly resides in the trusted Settings WebView and crosses an allowlisted
 Settings-only IPC call on explicit OK. This weakens the previous native-only
 boundary; JavaScript memory cannot be reliably zeroized. Neither the
@@ -39,3 +38,23 @@ GitHub API input/output is restricted to approved endpoints and bounded data. Pe
 Repository paths and status information are processed locally. Remote requests go to Git endpoints configured by the user or to GitHub when connected. The website, downloads and support pages have a separate privacy notice.
 
 When filing a report, remove local paths, usernames, private repository identifiers, tokens, workflow contents and other personal data from logs or screenshots. For user-facing details, see the [Privacy Policy](https://morozhenko.com/repoticker/privacy-policy).
+
+## Native diagnostics policy
+
+Normal operation should not emit verbose hover, geometry or startup timing
+traces. UI diagnostics are enabled only by an explicit
+`REPOTICKER_UI_DEBUG=1` value; merely defining the variable (including
+`0`) must not enable them. The separate startup and relay diagnostic flags
+remain opt-in.
+
+Native warnings may report a finite operation/stage identifier so a failed
+action remains diagnosable, but must not interpolate arbitrary OS, Git,
+network, provider or filesystem error strings into stderr. Redaction must not
+change the action's return value, cancellation behavior, user-visible error
+state or safe fallback path.
+
+For implementation admission, check all native warning call sites for
+variable error interpolation and guard unintended debug branches.
+Use focused contract tests for these invariants and one applicable final
+stable/CI gate after the complete change. Do not weaken existing relay
+phase/error diagnostic contracts.

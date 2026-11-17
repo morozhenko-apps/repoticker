@@ -48,6 +48,11 @@ use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 use tauri_plugin_dialog::DialogExt;
 
+// Fixed native warning stages only. Provider/OS errors must not enter stderr.
+pub(crate) fn native_warning(stage: &'static str, _error: impl std::fmt::Display) {
+    eprintln!("RepoTicker native warning: stage={stage}");
+}
+
 #[derive(Default)]
 struct OperationLock(Mutex<()>);
 
@@ -388,7 +393,7 @@ fn execute(
     if app.state::<ShutdownSignal>().is_requested() {
         if let Some(token) = cancellation.as_ref() {
             if let Err(error) = token.cancel() {
-                eprintln!("RepoTicker quit Fetch cancellation failed: {error}");
+                native_warning("quit_fetch_cancellation_failed", error);
             }
         }
         return Err("RepoTicker is shutting down".into());
@@ -681,7 +686,7 @@ async fn set_card_view(
 // labels; callers cannot inject paths, account names or provider payloads.
 #[tauri::command]
 fn ui_hover_debug_enabled() -> bool {
-    std::env::var_os("REPOTICKER_UI_DEBUG").is_some()
+    std::env::var("REPOTICKER_UI_DEBUG").as_deref() == Ok("1")
 }
 
 #[tauri::command]
@@ -835,7 +840,7 @@ fn show_usage_popup(app: AppHandle, kind: String) -> Result<(), String> {
             .ok_or_else(|| "Usage popup unavailable".to_owned())?;
         if let Err(error) = position_unmanaged_usage_popup(&card, &popup) {
             // Geometry failure must not prevent showing the tooltip.
-            eprintln!("RepoTicker usage popup positioning unavailable: {error}");
+            native_warning("usage_popup_positioning_unavailable", error);
         }
         // On Windows, native SetWindowPos after show establishes actual
         // topmost z-order above the card without activating the tooltip.
@@ -844,17 +849,17 @@ fn show_usage_popup(app: AppHandle, kind: String) -> Result<(), String> {
         #[cfg(target_os = "windows")]
         {
             if let Err(error) = popup.set_focusable(false) {
-                eprintln!("RepoTicker usage popup focus hint unavailable: {error}");
+                native_warning("usage_popup_focus_hint_unavailable", error);
             }
             if let Err(error) = popup.set_ignore_cursor_events(true) {
-                eprintln!("RepoTicker usage popup cursor hint unavailable: {error}");
+                native_warning("usage_popup_cursor_hint_unavailable", error);
             }
         }
         #[cfg(target_os = "windows")]
         if let Err(error) = windows_geometry::clip_usage_popup(&popup) {
-            eprintln!("RepoTicker usage popup rounded region unavailable: {error}");
+            native_warning("usage_popup_rounded_region_unavailable", error);
         }
-        if std::env::var_os("REPOTICKER_UI_DEBUG").is_some() {
+        if ui_hover_debug_enabled() {
             eprintln!("RepoTicker usage popup show requested: {kind}");
         }
         popup
@@ -863,7 +868,7 @@ fn show_usage_popup(app: AppHandle, kind: String) -> Result<(), String> {
         #[cfg(target_os = "windows")]
         windows_geometry::raise_usage_popup(&popup)
             .map_err(|error| format!("Usage popup native ordering failed: {error}"))?;
-        if std::env::var_os("REPOTICKER_UI_DEBUG").is_some() {
+        if ui_hover_debug_enabled() {
             eprintln!("RepoTicker usage popup visible: {kind}");
         }
     }
@@ -891,14 +896,14 @@ fn hide_usage_popup(app: AppHandle) -> Result<(), String> {
     let popup = app
         .get_webview_window("usage")
         .ok_or_else(|| "Usage popup unavailable".to_owned())?;
-    if std::env::var_os("REPOTICKER_UI_DEBUG").is_some() {
+    if ui_hover_debug_enabled() {
         eprintln!(
             "RepoTicker usage popup hide requested: visible={:?}",
             popup.is_visible()
         );
     }
     popup.hide().map_err(|error| error.to_string())?;
-    if std::env::var_os("REPOTICKER_UI_DEBUG").is_some() {
+    if ui_hover_debug_enabled() {
         eprintln!(
             "RepoTicker usage popup hidden: visible={:?}",
             popup.is_visible()
@@ -921,14 +926,14 @@ async fn resize_usage_popup(app: AppHandle, height: i32) -> Result<(), String> {
         .map_err(|error| error.to_string())?;
     if let Some(card) = app.get_webview_window("main") {
         if let Err(error) = position_unmanaged_usage_popup(&card, &popup) {
-            eprintln!("RepoTicker usage popup resize placement failed: {error}");
+            native_warning("usage_popup_resize_placement_failed", error);
         }
     }
     #[cfg(target_os = "windows")]
     {
         // Content-driven updates can resize a hidden popup; never show it here.
         if let Err(error) = windows_geometry::clip_usage_popup(&popup) {
-            eprintln!("RepoTicker usage popup resize clipping unavailable: {error}");
+            native_warning("usage_popup_resize_clipping_unavailable", error);
         }
         if popup
             .is_visible()
@@ -957,7 +962,7 @@ fn hide_card(app: AppHandle) -> Result<(), String> {
     #[cfg(target_os = "windows")]
     if let Err(error) = windows_geometry::save(&app, &window) {
         // A read-only or unavailable config must never prevent hiding the card.
-        eprintln!("RepoTicker Windows anchor save failed: {error}");
+        native_warning("windows_anchor_save_failed", error);
     }
     window.hide().map_err(|err| err.to_string())?;
     let _ = app.emit("repoticker-card-hidden", ());
@@ -971,11 +976,11 @@ fn show_compact_card(app: &AppHandle) {
     #[cfg(target_os = "linux")]
     if linux_surface::enabled() {
         if let Err(error) = linux_surface::request_resize(app, 122) {
-            eprintln!("RepoTicker Layer Shell compact resize: {error}");
+            native_warning("layer_shell_compact_resize", error);
         }
         let _ = app.emit("repoticker-reset-view", ());
         if let Err(error) = linux_surface::show(app) {
-            eprintln!("RepoTicker Layer Shell show: {error}");
+            native_warning("layer_shell_show", error);
         }
         let _ = app.emit("repoticker-card-shown", ());
         return;
@@ -991,17 +996,17 @@ fn show_compact_card(app: &AppHandle) {
                 122.0
             },
         ) {
-            eprintln!("RepoTicker compact resize: {error}");
+            native_warning("compact_resize", error);
         }
         #[cfg(target_os = "windows")]
         if let Err(error) = windows_geometry::restore(app, &window) {
-            eprintln!("RepoTicker Windows anchor restore failed: {error}");
+            native_warning("windows_anchor_restore_failed", error);
         }
         let _ = app.emit("repoticker-reset-view", ());
         let _ = window.show();
         let _ = window.set_focus();
         #[cfg(target_os = "linux")]
-        if std::env::var_os("REPOTICKER_UI_DEBUG").is_some() {
+        if ui_hover_debug_enabled() {
             eprintln!(
                 "RepoTicker fallback geometry: requested=390x122 outer={:?} inner={:?} position={:?} scale={:?}",
                 window.outer_size(),
@@ -1712,7 +1717,7 @@ fn toggle_card(app: &AppHandle) {
         if window.is_visible().unwrap_or(false) {
             #[cfg(target_os = "windows")]
             if let Err(error) = windows_geometry::save(app, &window) {
-                eprintln!("RepoTicker Windows anchor save failed: {error}");
+                native_warning("windows_anchor_save_failed", error);
             }
             let _ = window.hide();
             let _ = app.emit("repoticker-card-hidden", ());
@@ -1786,7 +1791,7 @@ fn refresh_tray_language(app: &AppHandle, language: &str) {
         if let Err(error) =
             build_desktop_tray_menu(app, language).and_then(|menu| tray.set_menu(Some(menu)))
         {
-            eprintln!("RepoTicker tray locale refresh unavailable: {error}");
+            native_warning("tray_locale_refresh_unavailable", error);
         }
     }
 }
@@ -1811,7 +1816,7 @@ fn request_quit(app: &AppHandle) {
             if let Err(error) = token.cancel() {
                 // The worker still owns a bounded child watchdog. Do not
                 // exit before it has returned an outcome and released the lock.
-                eprintln!("RepoTicker quit Fetch cancellation failed: {error}");
+                native_warning("quit_fetch_cancellation_failed", error);
             }
         }
         let operation = app.state::<OperationLock>();
@@ -1900,26 +1905,24 @@ fn main() {
                     if let Err(error) =
                         window.set_icon(tauri::image::Image::new_owned(rgba, width, height))
                     {
-                        eprintln!("RepoTicker native window icon unavailable: {error}");
+                        native_warning("native_window_icon_unavailable", error);
                     }
                 }
             }
             #[cfg(target_os = "linux")]
             {
                 linux_surface::install(app)?;
-                // This line is always emitted so user logs distinguish the
-                // native KDE Layer Shell path from Tauri/X11 fallback.
-                eprintln!(
-                    "RepoTicker surface mode={} session={} wayland_display={} gdk_backend={}",
-                    if linux_surface::enabled() {
-                        "gtk-layer-shell"
-                    } else {
-                        "tauri-fallback"
-                    },
-                    std::env::var("XDG_SESSION_TYPE").unwrap_or_else(|_| "unknown".to_owned()),
-                    std::env::var_os("WAYLAND_DISPLAY").is_some(),
-                    std::env::var("GDK_BACKEND").unwrap_or_else(|_| "default".to_owned()),
-                );
+                // Only a finite surface category is useful in opt-in diagnostics.
+                if ui_hover_debug_enabled() {
+                    eprintln!(
+                        "RepoTicker surface mode={}",
+                        if linux_surface::enabled() {
+                            "gtk-layer-shell"
+                        } else {
+                            "tauri-fallback"
+                        }
+                    );
+                }
                 linux_tray::install(app)?;
             }
 
@@ -1961,7 +1964,7 @@ fn main() {
             #[cfg(target_os = "linux")]
             if !linux_surface::enabled()
                 && window.label() == "main"
-                && std::env::var_os("REPOTICKER_UI_DEBUG").is_some()
+                && ui_hover_debug_enabled()
             {
                 match event {
                     tauri::WindowEvent::Resized(size) => {
@@ -1999,7 +2002,7 @@ fn main() {
                     // geometry owns a WebviewWindow. Resolve the typed handle.
                     if let Some(card) = window.app_handle().get_webview_window("main") {
                         if let Err(error) = windows_geometry::save(window.app_handle(), &card) {
-                            eprintln!("RepoTicker Windows close anchor save failed: {error}");
+                            native_warning("windows_close_anchor_save_failed", error);
                         }
                     }
                 }

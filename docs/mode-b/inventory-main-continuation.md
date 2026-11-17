@@ -1,0 +1,178 @@
+# Mode B main.rs post-inline-test executable continuation
+
+Exact source `5b07a3273a27516af8ceb793f0d427a1bada964b`. **Critical inventory correction:** `main.rs` contains small inline `#[cfg(test)]` modules in the *middle* of production code (footer, relay links, monitor selection). A naive inventory truncating at the first test attribute at L786 silently misses large portions of native command and shutdown logic. This separate supplement covers source L786-end, excluding recognized inline-only regions L786-805, L1120-1146 and L1456-1619. Ranges are audit hints and must be verified when source changes; do not infer coverage from extraction.
+
+**Methods (38)**
+
+- L807 `fn show_usage_popup(app: AppHandle, kind: String) -> Result<(), String> {`
+- L886 `fn hide_usage_popup(app: AppHandle) -> Result<(), String> {`
+- L911 `async fn resize_usage_popup(app: AppHandle, height: i32) -> Result<(), String> {`
+- L945 `fn hide_card(app: AppHandle) -> Result<(), String> {`
+- L967 `fn show_compact_card(app: &AppHandle) {`
+- L1017 `fn show_settings(app: &AppHandle) {`
+- L1044 `fn show_about(app: &AppHandle) {`
+- L1056 `fn hide_about(app: AppHandle) -> Result<(), String> {`
+- L1071 `fn get_about_info() -> AboutInfo {`
+- L1079 `fn launch_browser(url: &str) -> Result<(), String> {`
+- L1094 `fn open_project_website() -> Result<(), String> {`
+- L1100 `fn trusted_relay_resource_url(resource: &str) -> Option<&'static str> {`
+- L1111 `fn open_relay_resource(window: tauri::WebviewWindow, resource: String) -> Result<(), String> {`
+- L1147 `fn open_actions_job(url: String) -> Result<(), String> {`
+- L1177 `fn enrolled_repository(app: &AppHandle, repo_path: &str) -> Result<PathBuf, String> {`
+- L1190 `async fn open_repository_on_github(app: AppHandle, repo_path: String) -> Result<(), String> {`
+- L1201 `fn launch_file_manager(path: &std::path::Path) -> Result<(), String> {`
+- L1216 `async fn open_repository_folder(app: AppHandle, repo_path: String) -> Result<(), String> {`
+- L1227 `async fn copy_repository_path(app: AppHandle, repo_path: String) -> Result<(), String> {`
+- L1242 `async fn start_card_drag(app: AppHandle) -> Result<bool, String> {`
+- L1256 `async fn stop_card_drag(app: AppHandle) -> Result<(), String> {`
+- L1276 `fn open_settings(app: AppHandle) {`
+- L1281 `fn start_settings_drag(app: AppHandle) -> Result<(), String> {`
+- L1291 `async fn select_repository_root(app: AppHandle) -> Result<Option<String>, String> {`
+- L1315 `fn clear_relay_url_for_polling(config: &mut Config) -> bool {`
+- L1324 `fn save_settings(`
+- L1444 `fn close_settings(app: AppHandle) -> Result<(), String> {`
+- L1620 `fn validate_monitor_repositories(`
+- L1651 `fn github_set_monitor_org(`
+- L1685 `fn set_language(app: AppHandle, language: String) -> Result<(), String> {`
+- L1699 `fn toggle_card(app: &AppHandle) {`
+- L1726 `fn tray_image() -> Image<'static> {`
+- L1732 `fn build_desktop_tray_menu(app: &AppHandle, language: &str) -> tauri::Result<Menu<tauri::Wry>> {`
+- L1780 `fn refresh_tray_language(app: &AppHandle, language: &str) {`
+- L1797 `fn request_quit(app: &AppHandle) {`
+- L1834 `fn dispatch_menu_action(app: &AppHandle, operation: &'static str) {`
+- L1844 `fn configure_gdk_for_native_wayland() {`
+- L1858 `fn main() {`
+
+**Branch/return candidates (127)**
+
+- L808 let code = match kind.as_str() {
+- L814 if ui_hover_debug_enabled() {
+- L826 if !use_unmanaged_popup {
+- L829 if use_unmanaged_popup {
+- L836 if let Err(error) = position_unmanaged_usage_popup(&card, &popup) {
+- L846 if let Err(error) = popup.set_focusable(false) {
+- L849 if let Err(error) = popup.set_ignore_cursor_events(true) {
+- L854 if let Err(error) = windows_geometry::clip_usage_popup(&popup) {
+- L857 if std::env::var_os("REPOTICKER_UI_DEBUG").is_some() {
+- L866 if std::env::var_os("REPOTICKER_UI_DEBUG").is_some() {
+- L873 if let Some(usage) = app.get_webview_window("usage") {
+- L874 let script = match code {
+- L888 if linux_surface::enabled() {
+- L889 return linux_surface::hide_usage(&app);
+- L894 if std::env::var_os("REPOTICKER_UI_DEBUG").is_some() {
+- L901 if std::env::var_os("REPOTICKER_UI_DEBUG").is_some() {
+- L913 if linux_surface::enabled() {
+- L914 return linux_surface::resize_usage(app, height).await;
+- L922 if let Some(card) = app.get_webview_window("main") {
+- L923 if let Err(error) = position_unmanaged_usage_popup(&card, &popup) {
+- L930 if let Err(error) = windows_geometry::clip_usage_popup(&popup) {
+- L933 if popup
+- L950 if linux_surface::enabled() {
+- L954 return Ok(());
+- L958 if let Err(error) = windows_geometry::save(&app, &window) {
+- L972 if linux_surface::enabled() {
+- L973 if let Err(error) = linux_surface::request_resize(app, 122) {
+- L977 if let Err(error) = linux_surface::show(app) {
+- L981 return;
+- L985 if let Some(window) = app.get_webview_window("main") {
+- L986 if let Err(error) = resize_unmanaged_card(
+- L988 if cfg!(target_os = "windows") {
+- L997 if let Err(error) = windows_geometry::restore(app, &window) {
+- L1004 if std::env::var_os("REPOTICKER_UI_DEBUG").is_some() {
+- L1018 if let Some(window) = app.get_webview_window("settings") {
+- L1021 if !window.is_visible().unwrap_or(false) {
+- L1033 if let Some(monitor) = monitor {
+- L1045 if let Some(window) = app.get_webview_window("about") {
+- L1101 match resource {
+- L1112 if window.label() != "settings" {
+- L1113 return Err("Relay resource links are available only in Settings.".into());
+- L1151 if path.contains(['?', '#', '@']) \|\| path.contains("//") {
+- L1152 return Err("Untrusted GitHub Actions URL".into());
+- L1162 if parts.len() != 7
+- L1171 return Err("Untrusted GitHub Actions URL".into());
+- L1244 if linux_surface::enabled() {
+- L1246 return Ok(true);
+- L1258 if linux_surface::enabled() {
+- L1259 return linux_surface::stop_drag(&app).await;
+- L1266 return windows_geometry::save(&app, &window);
+- L1301 match selected {
+- L1316 if config.connection_mode == ConnectionMode::Polling {
+- L1335 if url.is_empty() {
+- L1342 if language
+- L1346 return Err("Unsupported language".into());
+- L1349 if let Some(roots) = roots {
+- L1350 if roots.len() > 100 {
+- L1351 return Err("Too many enrolled roots".into());
+- L1354 for root in roots {
+- L1358 if !paths.contains(&text) {
+- L1372 if let Some(roots) = validated {
+- L1373 if config.roots != roots {
+- L1378 if let Some(language) = language {
+- L1379 if config.language != language {
+- L1385 if let Some(mode) = ci_notification_mode {
+- L1386 if config.ci_notification_mode != mode {
+- L1391 if let Some(ignored) = ignored {
+- L1392 if config.ignored_child_names != ignored {
+- L1397 if let Some(mode) = connection_mode {
+- L1398 if config.connection_mode != mode {
+- L1403 if config.connection_mode == ConnectionMode::Polling {
+- L1405 } else if let Some(url) = canonical_relay {
+- L1406 if config.relay_url != url {
+- L1411 if config.connection_mode == ConnectionMode::Hybrid && config.relay_url.is_none() {
+- L1412 return Err("Hybrid requires a valid relay HTTPS URL.".into());
+- L1416 if let Some(locale) = saved_locale {
+- L1422 if std::env::var("REPOTICKER_RELAY_DEBUG").as_deref() == Ok("1") {
+- L1423 match read_config(&app) {
+- L1426 if saved.connection_mode == ConnectionMode::Hybrid {
+- L1436 if changed {
+- L1624 if repositories.len() > 100 \|\| (!repositories.is_empty() && org.is_none()) {
+- L1625 return Err("Invalid GitHub repository selection.".into());
+- L1628 for repository in repositories {
+- L1630 return Err("Invalid GitHub repository selection.".into());
+- L1632 if !org.is_some_and(\|account\| owner.eq_ignore_ascii_case(account))
+- L1642 return Err("Invalid GitHub repository selection.".into());
+- L1656 if org
+- L1660 return Err("Invalid GitHub account.".into());
+- L1663 let changed_account = match (config.github_monitor_org.as_deref(), org.as_deref()) {
+- L1668 let selected = match repositories {
+- L1670 None if changed_account => Vec::new(),
+- L1686 if !tray_i18n::is_supported_locale(&language) {
+- L1687 return Err("Unsupported language".into());
+- L1701 if linux_surface::enabled() {
+- L1702 if linux_surface::visible() {
+- L1709 return;
+- L1711 if let Some(window) = app.get_webview_window("main") {
+- L1712 if window.is_visible().unwrap_or(false) {
+- L1714 if let Err(error) = windows_geometry::save(app, &window) {
+- L1785 if let Some(tray) = app.tray_by_id("repoticker") {
+- L1786 if let Err(error) =
+- L1798 if !app.state::<ShutdownSignal>().begin() {
+- L1799 return;
+- L1803 let active = match app.state::<ActiveFetch>().0.lock() {
+- L1807 return;
+- L1810 if let Some(token) = active {
+- L1811 if let Err(error) = token.cancel() {
+- L1821 match operation_guard {
+- L1853 if wayland_session && wayland_socket {
+- L1897 for label in ["settings", "about"] {
+- L1898 if let Some(window) = app.get_webview_window(label) {
+- L1900 if let Err(error) =
+- L1914 if linux_surface::enabled() {
+- L1937 .on_menu_event(\|app, event\| match event.id().as_ref() {
+- L1947 if let TrayIconEvent::Click {
+- L1962 if !linux_surface::enabled()
+- L1966 match event {
+- L1976 if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+- L1978 if window.label() == "usage" {
+- L1980 return;
+- L1982 if window.label() == "settings" \|\| window.label() == "about" {
+- L1983 if window.label() == "settings" {
+- L1987 return;
+- L1990 if linux_surface::enabled() {
+- L1997 if window.label() == "main" {
+- L2000 if let Some(card) = window.app_handle().get_webview_window("main") {
+- L2001 if let Err(error) = windows_geometry::save(window.app_handle(), &card) {
+
+## Mandatory native interaction mapping
+
+The requirements include native Linux/Windows menus, safe Git process handoff, OS shutdown, separate Settings and GitHub scope transactions, credential protection, window geometry and no hidden state mutation. Each method listed above requires both positive and pertinent N-cases. Pure Rust path validators can be unit-tested; Tauri AppHandle/GTK and external launcher paths need contract adapters and physical smoke where possible. A passing UI source regex test alone is insufficient. `request_quit` must cover idle, active fetch, failed cancellation, poisoned lock and repeated activation. Production `save_settings` and `github_set_monitor_org` must cover all persistence and auth-state boundaries.

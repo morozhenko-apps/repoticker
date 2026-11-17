@@ -16,6 +16,7 @@ test("card recognizes canonical locales and rejects unknown variants", () => {
     assert.equal(cardLocale(value), "en");
   }
   assert.equal(cardText("en", "fetch"), "Fetch");
+  assert.equal(cardText("ru", "fetch"), "Фетч");
   assert.equal(cardText("ru", "repos"), "Репо");
   assert.equal(cardText("ru", "safeSync"), "Синхр.");
   assert.equal(cardLocale("pt"), "pt");
@@ -31,7 +32,7 @@ test("complete compact-card control keys are available in both locales", () => {
     "gitOperations", "showRepos", "hideRepos", "hideCard",
     "fetchTitle", "fetchCancel", "syncTitle", "syncUnavailable",
     "refreshRunners", "refreshTasks", "billing", "refresh",
-    "refreshing", "unknown", "total", "online", "offline", "running",
+    "refreshing", "ciSuccess", "ciFailure", "ciUnknown", "unknown", "total", "online", "offline", "running",
     "queued", "cannotResize"
   ];
   for (const locale of ["en", "ru"])
@@ -112,4 +113,41 @@ test("compact accessible metrics isolate Arabic numeric values but not unknown",
     }
   }
   assert.equal(source.offline, "—");
+});
+
+test("Fetch keeps progress percentage visible with cancellation available through its accessible label", () => {
+  const start = card.indexOf("function updateActionState()");
+  const end = card.indexOf("\n/*", start);
+  const action = card.slice(start, end);
+  assert.ok(start >= 0 && end > start, "action state controller must exist");
+  assert.match(action, /Math\.round\(100 \* progress\.completed \/ progress\.total\) : 0/);
+  assert.match(action, /button\.querySelector\("\.action-label"\)\.textContent = pct \+ "%"/);
+  assert.match(action, /button\.setAttribute\("aria-label", cardText\(cardLanguage,/);
+  assert.match(action, /fetchCancelling \? "stopping" : fetching \? "fetchCancel" : "fetchTitle"/);
+  assert.match(card, /void cancelActiveFetch\(\)/, "Fetch action remains cancellable");
+});
+
+
+test("repository source-refresh status uses existing translations in every supported locale", () => {
+  assert.match(markup, /id="repo-scan-status"[^>]*role="status"/);
+  assert.match(card, /cardText\(cardLanguage, "refreshing"\) \+ "…"/);
+  assert.equal(cardText("ru", "refreshing"), "Обновление");
+  for (const { code } of LOCALE_ROSTER)
+    assert.ok(cardText(code, "refreshing").trim().length > 0, code);
+});
+
+test("CI status indicators have locale-complete distinct semantics", () => {
+  for (const { code } of LOCALE_ROSTER) {
+    const success = cardText(code, "ciSuccess");
+    const failure = cardText(code, "ciFailure");
+    const unavailable = cardText(code, "ciUnknown");
+    assert.ok(success.trim() && failure.trim() && unavailable.trim(), code);
+    assert.notEqual(success, failure, code);
+    assert.notEqual(success, unavailable, code);
+    assert.notEqual(failure, unavailable, code);
+    if (code !== "en" && code !== "ru") {
+      assert.notEqual(success, cardText("en", "ciSuccess"), code);
+      assert.notEqual(failure, cardText("en", "ciFailure"), code);
+    }
+  }
 });

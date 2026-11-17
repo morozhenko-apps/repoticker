@@ -161,10 +161,10 @@ test("mutation M11: impossible Gregorian UTC dates must not alert as valid runs"
     async m => {
       const tracker = m.createCiFailureTracker();
       const scope = { account: "team", repositories: ["team/app"] };
-      tracker.observe({
+      tracker.observe({ mode: "failures",
         ...scope, results: [{ repository: "team/app", runs: [] }]
       });
-      await assert.rejects(async () => tracker.observe({
+      await assert.rejects(async () => tracker.observe({ mode: "failures",
         ...scope,
         results: [{ repository: "team/app", runs: [{
           id: 42, run_attempt: 1, conclusion: "failure",

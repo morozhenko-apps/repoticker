@@ -111,6 +111,11 @@ export const LOCALE_ROSTER = Object.freeze([
 ].map(Object.freeze));
 export const CORE_TERMS = Object.freeze({
   "es": {
+    "CI notifications": "Notificaciones de CI",
+    "Off": "Desactivadas",
+    "Failures only": "Solo fallos",
+    "Successes only": "Solo éxitos",
+    "Failures and successes": "Fallos y éxitos",
     "Open card": "Abrir panel",
     "Settings": "Configuración",
     "Fetch": "Obtener",
@@ -157,6 +162,11 @@ export const CORE_TERMS = Object.freeze({
     "Not connected": "No conectado"
   },
   "pt": {
+    "CI notifications": "Notificações de CI",
+    "Off": "Desativadas",
+    "Failures only": "Apenas falhas",
+    "Successes only": "Apenas sucessos",
+    "Failures and successes": "Falhas e sucessos",
     "Open card": "Abrir painel",
     "Settings": "Definições",
     "Fetch": "Obter",
@@ -203,6 +213,11 @@ export const CORE_TERMS = Object.freeze({
     "Not connected": "Não ligado"
   },
   "de": {
+    "CI notifications": "CI-Benachrichtigungen",
+    "Off": "Aus",
+    "Failures only": "Nur Fehler",
+    "Successes only": "Nur Erfolge",
+    "Failures and successes": "Fehler und Erfolge",
     "Open card": "Karte öffnen",
     "Settings": "Einstellungen",
     "Fetch": "Abrufen",
@@ -249,6 +264,11 @@ export const CORE_TERMS = Object.freeze({
     "Not connected": "Nicht verbunden"
   },
   "fr": {
+    "CI notifications": "Notifications CI",
+    "Off": "Désactivées",
+    "Failures only": "Échecs uniquement",
+    "Successes only": "Réussites uniquement",
+    "Failures and successes": "Échecs et réussites",
     "Open card": "Ouvrir la fenêtre",
     "Settings": "Paramètres",
     "Fetch": "Récupérer",
@@ -295,6 +315,11 @@ export const CORE_TERMS = Object.freeze({
     "Not connected": "Non connecté"
   },
   "it": {
+    "CI notifications": "Notifiche CI",
+    "Off": "Disattivate",
+    "Failures only": "Solo errori",
+    "Successes only": "Solo successi",
+    "Failures and successes": "Errori e successi",
     "Open card": "Apri scheda",
     "Settings": "Impostazioni",
     "Fetch": "Recupera",
@@ -341,6 +366,11 @@ export const CORE_TERMS = Object.freeze({
     "Not connected": "Non connesso"
   },
   "pl": {
+    "CI notifications": "Powiadomienia CI",
+    "Off": "Wyłączone",
+    "Failures only": "Tylko niepowodzenia",
+    "Successes only": "Tylko sukcesy",
+    "Failures and successes": "Niepowodzenia i sukcesy",
     "Open card": "Otwórz panel",
     "Settings": "Ustawienia",
     "Fetch": "Pobierz",
@@ -387,6 +417,11 @@ export const CORE_TERMS = Object.freeze({
     "Not connected": "Nie połączono"
   },
   "hi": {
+    "CI notifications": "CI सूचनाएँ",
+    "Off": "बंद",
+    "Failures only": "केवल विफलताएँ",
+    "Successes only": "केवल सफलताएँ",
+    "Failures and successes": "विफलताएँ और सफलताएँ",
     "Open card": "कार्ड खोलें",
     "Settings": "सेटिंग्स",
     "Fetch": "प्राप्त करें",
@@ -433,6 +468,11 @@ export const CORE_TERMS = Object.freeze({
     "Not connected": "कनेक्ट नहीं है"
   },
   "zh-Hant": {
+    "CI notifications": "CI 通知",
+    "Off": "關閉",
+    "Failures only": "僅失敗",
+    "Successes only": "僅成功",
+    "Failures and successes": "失敗和成功",
     "Open card": "開啟面板",
     "Settings": "設定",
     "Fetch": "擷取",
@@ -479,6 +519,11 @@ export const CORE_TERMS = Object.freeze({
     "Not connected": "未連結"
   },
   "ja": {
+    "CI notifications": "CI 通知",
+    "Off": "オフ",
+    "Failures only": "失敗のみ",
+    "Successes only": "成功のみ",
+    "Failures and successes": "失敗と成功",
     "Open card": "カードを開く",
     "Settings": "設定",
     "Fetch": "取得",
@@ -525,6 +570,11 @@ export const CORE_TERMS = Object.freeze({
     "Not connected": "未接続"
   },
   "nl": {
+    "CI notifications": "CI-meldingen",
+    "Off": "Uit",
+    "Failures only": "Alleen mislukkingen",
+    "Successes only": "Alleen successen",
+    "Failures and successes": "Mislukkingen en successen",
     "Open card": "Kaart openen",
     "Settings": "Instellingen",
     "Fetch": "Ophalen",
@@ -571,6 +621,11 @@ export const CORE_TERMS = Object.freeze({
     "Not connected": "Niet verbonden"
   },
   "sv": {
+    "CI notifications": "CI-aviseringar",
+    "Off": "Av",
+    "Failures only": "Endast misslyckade körningar",
+    "Successes only": "Endast lyckade körningar",
+    "Failures and successes": "Misslyckade och lyckade körningar",
     "Open card": "Öppna panel",
     "Settings": "Inställningar",
     "Fetch": "Hämta",
@@ -617,6 +672,11 @@ export const CORE_TERMS = Object.freeze({
     "Not connected": "Inte ansluten"
   },
   "tr": {
+    "CI notifications": "CI bildirimleri",
+    "Off": "Kapalı",
+    "Failures only": "Yalnızca başarısızlıklar",
+    "Successes only": "Yalnızca başarılar",
+    "Failures and successes": "Başarısızlıklar ve başarılar",
     "Open card": "Kartı aç",
     "Settings": "Ayarlar",
     "Fetch": "Getir",
@@ -663,6 +723,11 @@ export const CORE_TERMS = Object.freeze({
     "Not connected": "Bağlı değil"
   },
   "ko": {
+    "CI notifications": "CI 알림",
+    "Off": "끔",
+    "Failures only": "실패만",
+    "Successes only": "성공만",
+    "Failures and successes": "실패 및 성공",
     "Open card": "카드 열기",
     "Settings": "설정",
     "Fetch": "가져오기",
@@ -709,6 +774,11 @@ export const CORE_TERMS = Object.freeze({
     "Not connected": "연결되지 않음"
   },
   "bn": {
+    "CI notifications": "CI বিজ্ঞপ্তি",
+    "Off": "বন্ধ",
+    "Failures only": "শুধু ব্যর্থতা",
+    "Successes only": "শুধু সফলতা",
+    "Failures and successes": "ব্যর্থতা ও সফলতা",
     "Open card": "কার্ড খুলুন",
     "Settings": "সেটিংস",
     "Fetch": "আনুন",
@@ -755,6 +825,11 @@ export const CORE_TERMS = Object.freeze({
     "Not connected": "সংযুক্ত নয়"
   },
   "th": {
+    "CI notifications": "การแจ้งเตือน CI",
+    "Off": "ปิด",
+    "Failures only": "เฉพาะที่ล้มเหลว",
+    "Successes only": "เฉพาะที่สำเร็จ",
+    "Failures and successes": "ทั้งล้มเหลวและสำเร็จ",
     "Open card": "เปิดการ์ด",
     "Settings": "การตั้งค่า",
     "Fetch": "ดึงข้อมูล",
@@ -801,6 +876,11 @@ export const CORE_TERMS = Object.freeze({
     "Not connected": "ไม่ได้เชื่อมต่อ"
   },
   "id": {
+    "CI notifications": "Notifikasi CI",
+    "Off": "Nonaktif",
+    "Failures only": "Hanya kegagalan",
+    "Successes only": "Hanya keberhasilan",
+    "Failures and successes": "Kegagalan dan keberhasilan",
     "Open card": "Buka kartu",
     "Settings": "Pengaturan",
     "Fetch": "Ambil",
@@ -847,6 +927,11 @@ export const CORE_TERMS = Object.freeze({
     "Not connected": "Belum terhubung"
   },
   "fil": {
+    "CI notifications": "Mga notification ng CI",
+    "Off": "Naka-off",
+    "Failures only": "Mga pagkabigo lang",
+    "Successes only": "Mga tagumpay lang",
+    "Failures and successes": "Mga pagkabigo at tagumpay",
     "Open card": "Buksan ang card",
     "Settings": "Mga setting",
     "Fetch": "Kunin",
@@ -893,6 +978,11 @@ export const CORE_TERMS = Object.freeze({
     "Not connected": "Hindi konektado"
   },
   "ar": {
+    "CI notifications": "إشعارات CI",
+    "Off": "إيقاف",
+    "Failures only": "الإخفاقات فقط",
+    "Successes only": "النجاحات فقط",
+    "Failures and successes": "الإخفاقات والنجاحات",
     "Open card": "فتح البطاقة",
     "Settings": "الإعدادات",
     "Fetch": "جلب",

@@ -63,7 +63,7 @@ test("only clean, behind and upstream tracking repos activate safe pull", () => 
 test("successes do not create logs, errors remain visible and check is green", () => {
   assert.doesNotMatch(ui, /result-line/);
   assert.match(ui, /results\.filter\(item => item\.status === "error"\)/);
-  assert.match(css, /\.repo-delta\.is-current \{[^}]*color: #159947/s);
+  assert.match(css, /\.repo-delta\.is-ci-success \{[^}]*color: #159947/s);
   assert.match(css, /\.repo-name \{[^}]*font-weight: 400/s);
   assert.match(html, /class="quota-anchor status-hover" tabindex="0"/);
   assert.doesNotMatch(html, /id="quota-tooltip"/);
@@ -93,7 +93,9 @@ test("settings has a separate entrypoint and card can be dragged", () => {
 
 test("repository drawer disables idle dismissal and drag never survives hiding", () => {
   assert.match(ui, /view !== "compact"/);
-  assert.match(ui, /if \(!cardVisible \|\| view !== "compact" \|\| quotaExpanded \|\|\s*localScanActive \|\| fullMonitorActive\) return/);
+  assert.match(ui, /if \(!cardVisible \|\| view !== "compact" \|\| quotaExpanded \|\|\s*localScanActive\) return/);
+  assert.doesNotMatch(ui, /fullMonitorActive/,
+    "background GitHub checks must not keep the local repository spinner busy");
   assert.match(ui, /"repoticker-card-hidden"/);
   assert.match(ui, /stopDragging\(\)/);
   assert.match(ui, /dragSurface\.setPointerCapture\(event\.pointerId\)/);
@@ -193,7 +195,7 @@ test("GitHub Device Flow Settings never expose bearer tokens to JavaScript", () 
   assert.match(js, /githubFailureLabels/);
   assert.doesNotMatch(js, /accessToken|refreshToken|deviceCode|localStorage/);
   assert.equal(cfg.app.windows.find(w=>w.label==="main").height, 122);
-  assert.equal(cfg.app.windows.find(w=>w.label==="settings").height, 720);
+  assert.equal(cfg.app.windows.find(w=>w.label==="settings").height, 780);
 });
 
 test("read-only monitor flow shares native state and allows installation selection", () => {
@@ -219,4 +221,21 @@ test("only status hovers use help cursor and compact metric row cannot change ca
   assert.match(css, /\.card button:disabled \{ cursor: default; \}/);
   assert.doesNotMatch(css, /\.card button, \.card input, \.card select, \.card \.quota-anchor/);
   assert.match(css, /\.status-strip \{[^}]*height: 25px; min-height: 25px; max-height: 25px; overflow: hidden;/);
+});
+
+test("CI checkmark and cross depend only on resolved GitHub Actions outcomes", () => {
+  assert.match(ui, /ciOutcomeForRepo\(repo, ciStatuses\)/);
+  assert.match(ui, /repoRowIndicator\(repo, outcome\)/);
+  const indicator = readFileSync(new URL("../apps/desktop/ui/repo-row-indicator.mjs", import.meta.url), "utf8");
+  assert.match(indicator, /outcome === "success" \? "✓"/);
+  assert.match(indicator, /outcome === "failure" \? "✕"/);
+  assert.match(indicator, /if \(ahead > 0 \|\| behind > 0\)/);
+  assert.match(ui, /"ciUnknown"/);
+  assert.match(ui, /onCiStatus: updateCiStatuses/);
+  assert.match(ui, /document\.querySelectorAll\("\.repo-row"\)\.forEach/);
+  assert.doesNotMatch(ui, /const current = !repo\.dirty/);
+  assert.doesNotMatch(ui, /current \? "✓"/);
+  assert.match(css, /\.repo-delta\.is-ci-success \{[^}]*color: #159947/);
+  assert.match(css, /\.repo-delta\.is-ci-failed \{[^}]*color: #bf3434/);
+  assert.match(ui, /syncReadyCommitCount\(snapshot\.repositories\)/);
 });

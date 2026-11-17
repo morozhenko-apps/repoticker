@@ -74,13 +74,23 @@ test("all legacy static UI labels are present in every additional locale", () =>
   }
 });
 
+test("shared Settings titlebar labels cannot shadow canonical core translations", () => {
+  for (const code of expected.slice(2)) {
+    assert.ok(Object.hasOwn(CORE_TERMS[code], "Settings"), code + " missing core Settings");
+    assert.equal(Object.hasOwn(EXTENDED_TERMS[code], "Settings"), false,
+      code + " redefines the canonical Settings label");
+    assert.equal(coreText(code, "Settings"), CORE_TERMS[code].Settings);
+  }
+});
+
 test("native catalog uses the identical seven fixed menu/title keys", () => {
   const keys = ["Open card", "Settings", "Fetch", "Sync", "About RepoTicker",
     "Quit", "RepoTicker Settings"].sort();
   for (const [code, records] of Object.entries(native)) {
     assert.deepEqual(Object.keys(records).sort(), keys, code);
     assert.ok(records["RepoTicker Settings"].includes("RepoTicker"));
-    assert.ok(records["About RepoTicker"].includes("RepoTicker"));
+    if (code === "ru") assert.equal(records["About RepoTicker"], "О программе");
+    else assert.ok(records["About RepoTicker"].includes("RepoTicker"));
   }
   assert.equal(native.pt.Settings, "Definições");
   assert.equal(native["zh-Hant"].Quit, "結束");
@@ -140,7 +150,8 @@ test("dynamic Git card templates preserve placeholders and untranslated values",
     "addRoot", "gitOperations", "gitOperationsFor", "showRepos",
     "hideRepos", "hideCard", "fetchTitle", "fetchCancel", "syncTitle",
     "syncReady", "syncUnavailable", "refreshRunners", "refreshTasks",
-    "billing", "refresh", "refreshing", "cannotResize", "gitErrors", "total"
+    "billing", "refresh", "refreshing", "ciSuccess", "ciFailure",
+    "ciUnknown", "cannotResize", "gitErrors", "total"
   ];
   for (const code of expected.slice(2)) {
     assert.deepEqual(Object.keys(CARD_TERMS[code]).sort(), [...expectedKeys].sort());

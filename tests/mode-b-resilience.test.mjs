@@ -179,9 +179,9 @@ test("Mode B billing: a valid zero is not a known allowance or remaining balance
   assert.equal(result.personal.reported, null);
 });
 
-test("Mode B notification tracker: a failed repository read preserves prior baseline", () => {
+test("Mode B notification tracker: provider outage rebaselines failed repo without dropping healthy state", () => {
   const tracker = createCiFailureTracker();
-  const settings = { account: "team", repositories: ["team/a", "team/b"] };
+  const settings = { account: "team", repositories: ["team/a", "team/b"], mode: "failures" };
   assert.deepEqual(tracker.observe({ ...settings, results: [
     { repository: "team/a", runs: [notificationRun(1, "success")] },
     { repository: "team/b", runs: [notificationRun(2, "success")] }
@@ -195,16 +195,19 @@ test("Mode B notification tracker: a failed repository read preserves prior base
     { repository: "team/a", runs: [notificationRun(3, "failure")] },
     { repository: "team/b", runs: [notificationRun(4, "failure")] }
   ] });
-  assert.deepEqual(second.map(item => [item.repository, item.id]), [["team/b", 4]]);
+  assert.deepEqual(second, [],
+    "repository b did not report during the outage and must silently rebaseline");
   assert.deepEqual(tracker.observe({ ...settings, results: [
     { repository: "team/a", runs: [notificationRun(3, "failure")] },
-    { repository: "team/b", runs: [notificationRun(4, "failure")] }
-  ] }), []);
+    { repository: "team/b", runs: [
+      notificationRun(5, "failure"), notificationRun(4, "failure")
+    ] }
+  ] }).map(item => [item.repository, item.id]), [["team/b", 5]]);
 });
 
 test("Mode B notification tracker: bounded history still deduplicates newest run", () => {
   const tracker = createCiFailureTracker({ maxRemembered: 200 });
-  const settings = { account: "team", repositories: ["team/app"] };
+  const settings = { account: "team", repositories: ["team/app"], mode: "failures" };
   tracker.observe({ ...settings, results: [{
     repository: "team/app",
     runs: Array.from({ length: 200 }, (_, i) => notificationRun(i + 1, "success"))

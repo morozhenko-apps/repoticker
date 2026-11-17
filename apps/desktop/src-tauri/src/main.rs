@@ -13,6 +13,9 @@ mod github_oauth_wire;
 mod github_rate_gate;
 mod github_session;
 mod monitor_cache;
+mod relay_endpoint;
+mod relay_secret;
+mod relay_transport;
 mod startup_diagnostics;
 mod tray_i18n;
 #[cfg(target_os = "windows")]
@@ -77,7 +80,44 @@ struct Config {
     #[serde(default)]
     github_monitor_repositories: Vec<String>,
     #[serde(default)]
-    ci_failure_notifications: bool,
+    ci_notification_mode: CiNotificationMode,
+    #[serde(default)]
+    connection_mode: ConnectionMode,
+    #[serde(default)]
+    relay_url: Option<String>,
+}
+
+// Configs written by previous versions contain no notification mode.
+// Unknown values fail closed; the old failure-only boolean is ignored.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+enum CiNotificationMode {
+    #[default]
+    Off,
+    Failures,
+    Successes,
+    Both,
+}
+
+/// Connection choice is a nonsecret local preference; GitHub REST remains
+/// the authoritative source of workflow status in both modes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+enum ConnectionMode {
+    #[default]
+    Polling,
+    Hybrid,
+}
+
+impl CiNotificationMode {
+    fn allows(self, conclusion: &str) -> bool {
+        match (self, conclusion) {
+            (Self::Both, "failure" | "success")
+            | (Self::Failures, "failure")
+            | (Self::Successes, "success") => true,
+            _ => false,
+        }
+    }
 }
 
 fn default_language() -> String {
@@ -94,7 +134,8 @@ struct RepoSummary {
     behind: u64,
     dirty: bool,
     sync_state: String,
-    ci: Option<String>,
+    /// Canonical provider identity, never inferred from the folder name.
+    github_repo: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -167,7 +208,9 @@ fn default_config() -> Config {
         card_right_margin: None,
         github_monitor_org: None,
         github_monitor_repositories: Vec::new(),
-        ci_failure_notifications: false,
+        ci_notification_mode: CiNotificationMode::Off,
+        connection_mode: ConnectionMode::Polling,
+        relay_url: None,
     }
 }
 
@@ -216,7 +259,7 @@ fn present(repo: RepoSnapshot) -> RepoSummary {
         behind: repo.behind,
         dirty: repo.dirty,
         sync_state: decision_label(repo.decision),
-        ci: None,
+        github_repo: repo.github_repo,
     }
 }
 
@@ -476,7 +519,7 @@ fn get_monitor_scope(app: AppHandle) -> Result<Option<String>, String> {
 struct MonitorSelection {
     github_monitor_org: Option<String>,
     github_monitor_repositories: Vec<String>,
-    ci_failure_notifications: bool,
+    ci_notification_mode: CiNotificationMode,
 }
 
 #[tauri::command]
@@ -485,7 +528,7 @@ fn get_monitor_selection(app: AppHandle) -> Result<MonitorSelection, String> {
     Ok(MonitorSelection {
         github_monitor_org: config.github_monitor_org,
         github_monitor_repositories: config.github_monitor_repositories,
-        ci_failure_notifications: config.ci_failure_notifications,
+        ci_notification_mode: config.ci_notification_mode,
     })
 }
 
@@ -498,7 +541,9 @@ struct SettingsConfig {
     github_monitor_org: Option<String>,
     github_monitor_repositories: Vec<String>,
     ignored_child_names: Vec<String>,
-    ci_failure_notifications: bool,
+    ci_notification_mode: CiNotificationMode,
+    connection_mode: ConnectionMode,
+    relay_url: Option<String>,
 }
 
 #[tauri::command]
@@ -511,7 +556,9 @@ fn get_settings_config(app: AppHandle) -> Result<SettingsConfig, String> {
         github_monitor_org: config.github_monitor_org,
         github_monitor_repositories: config.github_monitor_repositories,
         ignored_child_names: config.ignored_child_names,
-        ci_failure_notifications: config.ci_failure_notifications,
+        ci_notification_mode: config.ci_notification_mode,
+        connection_mode: config.connection_mode,
+        relay_url: config.relay_url,
     })
 }
 
@@ -969,10 +1016,25 @@ fn show_compact_card(app: &AppHandle) {
 
 fn show_settings(app: &AppHandle) {
     if let Some(window) = app.get_webview_window("settings") {
+        // Reopening an OS-hidden window must never resurrect an abandoned
+        // credential draft from a prior Settings session.
+        if !window.is_visible().unwrap_or(false) {
+            relay_secret::discard_draft(app);
+        }
         let language = read_config(app)
             .map(|config| config.language)
             .unwrap_or_else(|_| "en".to_owned());
         let _ = window.set_title(tray_i18n::window_title(&language, "settings"));
+        let monitor = window
+            .current_monitor()
+            .ok()
+            .flatten()
+            .or_else(|| window.primary_monitor().ok().flatten());
+        if let Some(monitor) = monitor {
+            let available = f64::from(monitor.size().height) / monitor.scale_factor() - 90.0;
+            let height = available.clamp(600.0, 800.0);
+            let _ = window.set_size(tauri::LogicalSize::new(660.0, height));
+        }
         let _ = window.show();
         let _ = window.set_focus();
         let _ = app.emit("repoticker-settings-opened", ());
@@ -988,6 +1050,14 @@ fn show_about(app: &AppHandle) {
         let _ = window.show();
         let _ = window.set_focus();
     }
+}
+
+#[tauri::command]
+fn hide_about(app: AppHandle) -> Result<(), String> {
+    let window = app
+        .get_webview_window("about")
+        .ok_or_else(|| "About window is unavailable".to_owned())?;
+    window.hide().map_err(|error| error.to_string())
 }
 
 #[derive(Serialize)]
@@ -1023,6 +1093,53 @@ fn launch_browser(url: &str) -> Result<(), String> {
 #[tauri::command]
 fn open_project_website() -> Result<(), String> {
     launch_browser("https://morozhenko.com")
+}
+
+/// Open only audited Worker source and setup pages in the system browser.
+/// The WebView supplies an enum-like resource name, never a URL to execute.
+fn trusted_relay_resource_url(resource: &str) -> Option<&'static str> {
+    match resource {
+        // This QA link must target stable reviewed documentation at release.
+        "guide" => Some(
+            "https://github.com/morozhenko-apps/repoticker/blob/dev/apps/relay-cloudflare/README.md",
+        ),
+        _ => None,
+    }
+}
+
+#[tauri::command]
+fn open_relay_resource(window: tauri::WebviewWindow, resource: String) -> Result<(), String> {
+    if window.label() != "settings" {
+        return Err("Relay resource links are available only in Settings.".into());
+    }
+    let url = trusted_relay_resource_url(&resource)
+        .ok_or_else(|| "Unknown relay documentation resource.".to_owned())?;
+    launch_browser(url)
+}
+
+#[cfg(test)]
+mod relay_resource_links_tests {
+    use super::trusted_relay_resource_url;
+
+    #[test]
+    fn only_fixed_deployment_guide_is_allowed() {
+        let guide = trusted_relay_resource_url("guide").expect("guide URL");
+        assert!(trusted_relay_resource_url("source").is_none());
+        assert_eq!(
+            guide,
+            "https://github.com/morozhenko-apps/repoticker/blob/dev/apps/relay-cloudflare/README.md"
+        );
+        for input in [
+            "",
+            "https://attacker.example",
+            "source/../../other",
+            "file:///etc/passwd",
+            "guide?url=other",
+            "../guide",
+        ] {
+            assert!(trusted_relay_resource_url(input).is_none());
+        }
+    }
 }
 
 /// Open an allowlisted GitHub Actions job in the user's web browser.
@@ -1161,6 +1278,16 @@ fn open_settings(app: AppHandle) {
 }
 
 #[tauri::command]
+fn start_settings_drag(app: AppHandle) -> Result<(), String> {
+    let window = app
+        .get_webview_window("settings")
+        .ok_or_else(|| "Settings window is unavailable".to_owned())?;
+    window
+        .start_dragging()
+        .map_err(|_| "Cannot drag Settings window.".to_owned())
+}
+
+#[tauri::command]
 async fn select_repository_root(app: AppHandle) -> Result<Option<String>, String> {
     let (sender, receiver) = tokio::sync::oneshot::channel();
     // The plugin owns the OS dialog; the WebView receives only the chosen path.
@@ -1184,14 +1311,34 @@ async fn select_repository_root(app: AppHandle) -> Result<Option<String>, String
     }
 }
 
+/// Persisted polling mode must not retain an old Worker origin.
+fn clear_relay_url_for_polling(config: &mut Config) -> bool {
+    if config.connection_mode == ConnectionMode::Polling {
+        config.relay_url.take().is_some()
+    } else {
+        false
+    }
+}
+
 #[tauri::command]
 fn save_settings(
     app: AppHandle,
     roots: Option<Vec<String>>,
     language: Option<String>,
     ignored_child_names: Option<Vec<String>>,
-    ci_failure_notifications: Option<bool>,
+    ci_notification_mode: Option<CiNotificationMode>,
+    connection_mode: Option<ConnectionMode>,
+    relay_url: Option<String>,
 ) -> Result<(), String> {
+    let canonical_relay = relay_url
+        .map(|url| {
+            if url.is_empty() {
+                Ok(None)
+            } else {
+                relay_endpoint::normalize_base_url(&url).map(Some)
+            }
+        })
+        .transpose()?;
     if language
         .as_deref()
         .is_some_and(|locale| !tray_i18n::is_supported_locale(locale))
@@ -1235,9 +1382,9 @@ fn save_settings(
                 changed = true;
             }
         }
-        if let Some(enabled) = ci_failure_notifications {
-            if config.ci_failure_notifications != enabled {
-                config.ci_failure_notifications = enabled;
+        if let Some(mode) = ci_notification_mode {
+            if config.ci_notification_mode != mode {
+                config.ci_notification_mode = mode;
                 changed = true;
             }
         }
@@ -1247,12 +1394,47 @@ fn save_settings(
                 changed = true;
             }
         }
+        if let Some(mode) = connection_mode {
+            if config.connection_mode != mode {
+                config.connection_mode = mode;
+                changed = true;
+            }
+        }
+        if config.connection_mode == ConnectionMode::Polling {
+            changed |= clear_relay_url_for_polling(config);
+        } else if let Some(url) = canonical_relay {
+            if config.relay_url != url {
+                config.relay_url = url;
+                changed = true;
+            }
+        }
+        if config.connection_mode == ConnectionMode::Hybrid && config.relay_url.is_none() {
+            return Err("Hybrid requires a valid relay HTTPS URL.".into());
+        }
         Ok((changed, changed))
     })?;
     if let Some(locale) = saved_locale {
         refresh_tray_language(&app, &locale);
     }
+    // Optional on-device diagnostic: re-read persisted state, never the
+    // origin or Keyring credential bytes. A diagnostic failure cannot fail
+    // an already committed Settings transaction.
+    if std::env::var("REPOTICKER_RELAY_DEBUG").as_deref() == Ok("1") {
+        match read_config(&app) {
+            Ok(saved) => eprintln!(
+                "RepoTicker relay config: mode={} origin_configured={}",
+                if saved.connection_mode == ConnectionMode::Hybrid {
+                    "hybrid"
+                } else {
+                    "polling"
+                },
+                saved.relay_url.is_some()
+            ),
+            Err(_) => eprintln!("RepoTicker relay config: state=unavailable"),
+        }
+    }
     if changed {
+        relay_transport::restart(&app);
         let _ = app.emit("repoticker-config-changed", ());
     }
     Ok(())
@@ -1261,6 +1443,7 @@ fn save_settings(
 #[tauri::command]
 fn close_settings(app: AppHandle) -> Result<(), String> {
     github_session::cancel_pending(&app);
+    relay_secret::discard_draft(&app);
     let window = app
         .get_webview_window("settings")
         .ok_or_else(|| "Settings window is unavailable".to_owned())?;
@@ -1348,7 +1531,61 @@ mod monitor_selection_tests {
         let config: Config = serde_json::from_value(old).unwrap();
         assert!(config.github_monitor_repositories.is_empty());
         assert!(config.ignored_child_names.is_empty());
-        assert!(!config.ci_failure_notifications);
+        assert_eq!(config.ci_notification_mode, CiNotificationMode::Off);
+        assert_eq!(config.connection_mode, ConnectionMode::Polling);
+        assert!(config.relay_url.is_none());
+    }
+
+    #[test]
+    fn saved_polling_clears_legacy_relay_origin_without_changing_hybrid() {
+        for (mode, expected) in [("polling", true), ("hybrid", false)] {
+            let mut config: Config = serde_json::from_value(serde_json::json!({
+                "roots": [],
+                "language": "en",
+                "connection_mode": mode,
+                "relay_url": "https://relay.example.com/"
+            }))
+            .unwrap();
+            assert_eq!(clear_relay_url_for_polling(&mut config), expected);
+            assert_eq!(config.relay_url.is_none(), expected);
+            assert!(!clear_relay_url_for_polling(&mut config));
+        }
+        let mut empty: Config = serde_json::from_value(serde_json::json!({
+            "roots": [], "connection_mode": "polling"
+        }))
+        .unwrap();
+        assert!(!clear_relay_url_for_polling(&mut empty));
+    }
+
+    #[test]
+    fn old_notification_boolean_is_ignored_and_new_mode_defaults_off() {
+        let legacy = serde_json::json!({
+            "roots": [],
+            "language": "en",
+            "ci_failure_notifications": true
+        });
+        let config: Config = serde_json::from_value(legacy).unwrap();
+        assert_eq!(config.ci_notification_mode, CiNotificationMode::Off);
+        let saved = serde_json::to_value(config).unwrap();
+        assert!(saved.get("ci_failure_notifications").is_none());
+        assert_eq!(saved["ci_notification_mode"], "off");
+    }
+
+    #[test]
+    fn ci_notification_mode_restricts_conclusions() {
+        for (mode, fail, success) in [
+            (CiNotificationMode::Off, false, false),
+            (CiNotificationMode::Failures, true, false),
+            (CiNotificationMode::Successes, false, true),
+            (CiNotificationMode::Both, true, true),
+        ] {
+            assert_eq!(mode.allows("failure"), fail);
+            assert_eq!(mode.allows("success"), success);
+            assert!(!mode.allows("cancelled"));
+            assert!(!mode.allows("unknown"));
+        }
+        let invalid = serde_json::from_value::<CiNotificationMode>(serde_json::json!("unknown"));
+        assert!(invalid.is_err(), "unknown persisted mode must fail closed");
     }
 
     #[test]
@@ -1439,6 +1676,7 @@ fn github_set_monitor_org(
     })?;
     app.state::<github_etag_cache::GitHubETagCache>()
         .invalidate();
+    relay_transport::restart(&app);
     let _ = app.emit("repoticker-github-scope-changed", ());
     Ok(())
 }
@@ -1534,7 +1772,7 @@ fn build_desktop_tray_menu(app: &AppHandle, language: &str) -> tauri::Result<Men
         true,
         None::<&str>,
     )?;
-    Menu::with_items(app, &[&open, &settings, &fetch, &sync, &about, &quit])
+    Menu::with_items(app, &[&open, &fetch, &sync, &settings, &about, &quit])
 }
 
 /// A settings write must not be reported as failed merely because the
@@ -1639,6 +1877,9 @@ fn main() {
         .manage(JsonStore::default())
         .manage(monitor_cache::MonitorCache::default())
         .manage(ci_notifications::DeliveredAlerts::default())
+        .manage(std::sync::Arc::new(relay_secret::RelayPromptGate::default()))
+        .manage(relay_secret::RelaySecretDraftState::default())
+        .manage(relay_transport::RelayTransportState::default())
         .manage(github_rate_gate::GitHubRateGate::default())
         .manage(github_api::GitHubRestClient::default())
         .manage(github_etag_cache::GitHubETagCache::default())
@@ -1646,6 +1887,9 @@ fn main() {
             github_session::GitHubAuthManager::default(),
         ))
         .setup(|app| {
+            // A process-local native WSS supervisor never depends on whether
+            // the tray card or Settings WebView has been opened.
+            relay_transport::restart(app.handle());
             // Explicit per-window icon: the OS titlebar is independent from
             // the tray icon and WebView's About PNG. Without this GTK may
             // fall back to a generic WebView icon even when the DEB icon is
@@ -1736,6 +1980,9 @@ fn main() {
                     return;
                 }
                 if window.label() == "settings" || window.label() == "about" {
+                    if window.label() == "settings" {
+                        relay_secret::discard_draft(window.app_handle());
+                    }
                     let _ = window.hide();
                     return;
                 }
@@ -1768,7 +2015,14 @@ fn main() {
             get_settings_config,
             autostart::autostart_is_enabled,
             autostart::autostart_set_enabled,
-            ci_notifications::ci_failure_notify,
+            ci_notifications::ci_run_notify,
+            relay_secret::relay_secret_status,
+            relay_secret::relay_prompt_secret,
+            relay_secret::relay_stage_secret,
+            relay_secret::relay_clear_secret,
+            relay_secret::relay_commit_secret_draft,
+            relay_transport::relay_connection_status,
+            relay_transport::relay_connection_diagnostics,
             startup_diagnostics::trace_startup_stage,
             github_session::github_auth_status,
             github_session::github_flow_status,
@@ -1783,6 +2037,7 @@ fn main() {
             github_session::github_open_device_page,
             github_session::github_copy_user_code,
             get_about_info,
+            hide_about,
             open_actions_job,
             open_repository_on_github,
             open_repository_folder,
@@ -1794,9 +2049,11 @@ fn main() {
             hide_usage_popup,
             resize_usage_popup,
             open_project_website,
+            open_relay_resource,
             add_root,
             remove_root,
             open_settings,
+            start_settings_drag,
             set_language,
             save_settings,
             select_repository_root,

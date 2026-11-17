@@ -30,3 +30,28 @@ test("QA installer starts exactly one actual installed binary, not guessed CLI",
   assert.match(source, /exec "\$BIN"/);
   assert.doesNotMatch(source, /^repo-ticker\s*$/m);
 });
+
+test("QA installer replaces same-version production DEB and proves exact payload", () => {
+  assert.ok(source.includes('sudo apt install --reinstall "$DEB"'));
+  assert.ok(source.includes('PAYLOAD="$(mktemp -d'));
+  assert.ok(source.includes('dpkg-deb -x "$DEB" "$PAYLOAD"'));
+  assert.ok(source.includes('cmp -s "$BIN" "$PAYLOAD/usr/bin/repoticker"'));
+  assert.ok(source.includes('Installed executable differs from verified CI package'));
+  assert.ok(source.includes('refusing launch'));
+  const verified = source.indexOf('cmp -s "$BIN" "$PAYLOAD/usr/bin/repoticker"');
+  const launch = source.indexOf('exec "$BIN"');
+  assert.ok(verified >= 0 && launch > verified);
+  assert.ok(!source.includes('sudo apt install "$DEB"'));
+});
+
+test("QA installer requires the synchronized current Debian package version", () => {
+  // Only the exact candidate version is allowed. No wildcard or stale pin.
+  assert.match(source, /python3[^\n]*release_version\.py/);
+  assert.match(source, /DEB="\$OUT\/repoticker_\$\{VERSION\}_amd64\.deb"/);
+  assert.match(source, /dpkg-deb -f "\$DEB" Package/);
+  assert.match(source, /dpkg-deb -f "\$DEB" Version/);
+  assert.match(source, /dpkg-deb -f "\$DEB" Architecture/);
+  assert.match(source, /Version\)" != "\$VERSION"/);
+  assert.match(source, /Architecture\)" != "amd64"/);
+  assert.doesNotMatch(source, /repoticker_0\.2\.0_amd64\.deb/);
+});

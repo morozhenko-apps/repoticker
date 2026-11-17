@@ -46,7 +46,12 @@ test("packaging keeps a branded launcher but no hyphenated Debian package", () =
 test("unpublished installer refuses legacy package and launches canonical executable", () => {
   assert.match(qa, /dpkg-query -W -f='\$\{Status\}' repo-ticker/);
   assert.match(qa, /sudo apt remove repo-ticker/);
-  assert.match(qa, /DEB="\$OUT\/repoticker_0\.2\.0_amd64\.deb"/);
+  assert.match(qa, /VERSION="\$\(python3 "\$SCRIPT_DIR\/release_version\.py"\)"/);
+  assert.match(qa, /DEB="\$OUT\/repoticker_\$\{VERSION\}_amd64\.deb"/);
+  assert.match(qa, /dpkg-deb -f "\$DEB" Package\)" != "repoticker"/);
+  assert.match(qa, /dpkg-deb -f "\$DEB" Version\)" != "\$VERSION"/);
+  assert.match(qa, /dpkg-deb -f "\$DEB" Architecture\)" != "amd64"/);
+  assert.doesNotMatch(qa, /repoticker_0\.2\.0_amd64\.deb/);
   assert.match(qa, /BIN="\/usr\/bin\/repoticker"/);
   assert.match(qa, /dpkg-query -L repoticker/);
   assert.match(qa, /exec "\$BIN"/);

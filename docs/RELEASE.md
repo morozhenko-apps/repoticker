@@ -1,9 +1,19 @@
-# RepoTicker release requirements
+# RepoTicker releases
 
-Release artifacts are versioned and immutable. Linux APT is signed; Windows installers are treated according to their actual signing state, not as automatically trusted just because a build passed.
+## Current release: v1.0.0
 
-Release publication requires a reviewed source revision, the appropriate protected signing environment, platform package verification and explicit release authorization. Do not advance protected release branches, create version tags or write public artifacts merely to obtain a passing status.
+RepoTicker v1.0.0 was published on 31 October 2026 from the approved `main` release commit. It is the stable Linux and Windows desktop release.
 
-The release publisher must verify the byte length and SHA-256 of public downloads before a release is considered complete. Temporary CI bundles are not permanent mirrors and may be removed only after verified external publication. A source test or upload acknowledgement alone does not prove download availability.
+- [Release notes](https://github.com/morozhenko-apps/repoticker/releases/tag/v1.0.0)
+- [Linux DEB and signed APT repository](https://download.morozhenko.com/dist/RepoTicker/linux/)
+- [Distribution manifest and SHA-256 hashes](https://download.morozhenko.com/dist/RepoTicker/latest.json)
 
-Signing credentials, account details, personal key backups, bucket names and operational recovery commands are managed privately. This public document intentionally contains no credential inventory or signing-custody details. The release workflow and signing scripts define executable implementation checks.
+The distribution contains a Linux DEB package, Linux AppImage and Windows NSIS installer. The Windows installer is **not code-signed**. Downloadable binaries are hosted in the product distribution rather than attached to the GitHub Release. Verify the published SHA-256 hash before installing.
+
+## Release contract
+
+Release source and packages are immutable. The release workflow accepts a version tag on the exact approved `main` commit, verifies that Cargo and Tauri versions match and builds Linux and Windows packages.
+
+The protected publisher must verify publicly readable files against their expected sizes and hashes before a version is considered published. An upload acknowledgment or a successful build alone is not publication proof. Never replace previously published versioned objects or tags.
+
+Documentation of a published release is separate from confirmation that any website, installation redirect or application update is live. Those external paths must be checked independently.

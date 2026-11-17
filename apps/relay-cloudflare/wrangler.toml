@@ -1,0 +1,16 @@
+# Operator-owned Worker; name must match the existing Cloudflare service.
+# Do not place repository names or secrets here.
+name = "repoticker-relay"
+main = "src/index.ts"
+compatibility_date = "2026-11-08"
+# Preserve operator-managed runtime variables on Git-linked Wrangler deploys.
+# In particular, never erase ALLOWED_REPOSITORIES configured in the Dashboard.
+keep_vars = true
+
+[[durable_objects.bindings]]
+name = "RELAY_HUB"
+class_name = "RelayHub"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["RelayHub"]

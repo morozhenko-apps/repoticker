@@ -36,7 +36,7 @@ function billingGateway(blocked = new Map()) {
 }
 const run = (id, conclusion, run_attempt = 1) =>
   ({ id, conclusion, run_attempt, updated_at: "2026-10-29T12:00:00Z" });
-const scope = { account: "team", repositories: ["team/a", "team/b"] };
+const scope = { account: "team", repositories: ["team/a", "team/b"], mode: "failures" };
 const observe = (tracker, a, b, override = scope) =>
   tracker.observe({ ...override, results: [
     { repository: override.repositories[0], runs: a },
@@ -265,22 +265,24 @@ test("Mode B05: separate run attempts notify separately while repeat observation
   assert.deepEqual(observe(tracker, [run(1,"failure",2)], []), []);
 });
 
-test("Mode B05: permission error does not erase a repository's established baseline", () => {
+test("Mode B05: unreadable repository rebaselines silently and later new failures alert", () => {
   const tracker = createCiFailureTracker();
   observe(tracker, [run(1,"success")], []);
   tracker.observe({ ...scope, results: [
     { repository: "team/a", error: "unavailable" },
     { repository: "team/b", runs: [] }
   ] });
-  const alerts = observe(tracker, [run(2,"failure")], []);
-  assert.deepEqual(alerts.map(x=>x.id), [2]);
+  const recovered = observe(tracker, [run(2,"failure")], []);
+  assert.deepEqual(recovered, [], "unobserved interval requires a silent baseline");
+  const alerts = observe(tracker, [run(3,"failure"),run(2,"failure")], []);
+  assert.deepEqual(alerts.map(x=>x.id), [3]);
 });
 
 test("Mode B05: account case and reordered repositories preserve notification history", () => {
   const tracker = createCiFailureTracker();
   observe(tracker, [run(1,"success")], []);
   const changed = {
-    account: "TEAM", repositories: ["TEAM/B","TEAM/A"]
+    account: "TEAM", repositories: ["TEAM/B","TEAM/A"], mode: "failures"
   };
   const alerts = tracker.observe({ ...changed, results: [
     { repository:"TEAM/B",runs:[] },
@@ -292,7 +294,7 @@ test("Mode B05: account case and reordered repositories preserve notification hi
 test("Mode B05: switching to another account creates a fresh silent baseline", () => {
   const tracker = createCiFailureTracker();
   observe(tracker, [run(1,"success")], []);
-  const newScope = { account:"other",repositories:["other/a","other/b"] };
+  const newScope = { account:"other",repositories:["other/a","other/b"],mode:"failures" };
   const alerts = tracker.observe({ ...newScope, results:[
     { repository:"other/a",runs:[run(9,"failure")] },
     { repository:"other/b",runs:[] }

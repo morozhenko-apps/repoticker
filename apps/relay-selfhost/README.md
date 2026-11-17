@@ -4,4 +4,4 @@ This adapter will be deployable through Docker on a VPS, on any HTTPS/WebSocket-
 
 The implementation and Docker image do not exist yet. Do not expose a public webhook endpoint until signed-payload validation, downstream authentication, per-tenant isolation, storage limits and resume/reconciliation have integration tests.
 
-See `docs/RELAY.md`.
+See the [relay contract](../../docs/RELAY.md).

@@ -188,4 +188,4 @@ typecheck/bundle validation and operator-reviewed Cloudflare DO quota,
 secret rotation, WAF rate-limiting, webhook redelivery behavior and network
 failover. The Worker does not require R2 or storage credentials for any other application.
 
-See docs/RELAY.md for staged acceptance and explicit trust boundaries.
+See the [relay security contract](../../docs/RELAY.md) for runtime trust boundaries.

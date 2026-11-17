@@ -52,7 +52,7 @@ test("Windows close handler saves using typed WebviewWindow rather than generic 
   assert.match(main, /if let Some\(card\) = window\.app_handle\(\)\.get_webview_window\("main"\)/);
   assert.match(main, /windows_geometry::save\(window\.app_handle\(\), &card\)/);
   assert.doesNotMatch(main, /windows_geometry::save\(window\.app_handle\(\), window\)/);
-  assert.match(main, /Windows close anchor save failed/);
+  assert.match(main, /native_warning\("windows_close_anchor_save_failed", error\)/);
 });
 
 test("Native folder selection has no broad WebView permissions", () => {

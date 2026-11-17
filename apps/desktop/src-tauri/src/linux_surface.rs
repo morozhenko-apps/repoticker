@@ -82,7 +82,7 @@ extern "C" fn on_relative_motion(dx: f64, dy: f64) {
                     window.set_layer_shell_margin(Edge::Bottom, margins.0);
                     window.set_layer_shell_margin(Edge::Right, margins.1);
                 }
-                if std::env::var_os("REPOTICKER_UI_DEBUG").is_some() {
+                if crate::ui_hover_debug_enabled() {
                     eprintln!(
                         "RepoTicker relative drag: physical=({dx:.2},{dy:.2}) applied=({delta_x},{delta_y}) margins={:?}->{:?} allocated={}x{}",
                         before,
@@ -169,7 +169,7 @@ pub fn install(app: &mut App) -> Result<(), Box<dyn std::error::Error>> {
     layer.set_exclusive_zone(-1);
     layer.set_keyboard_mode(KeyboardMode::OnDemand);
     // Never present at initialization: the tray controls popup visibility.
-    if std::env::var_os("REPOTICKER_UI_DEBUG").is_some() {
+    if crate::ui_hover_debug_enabled() {
         layer.connect_size_allocate(|_window, allocation| {
             eprintln!(
                 "RepoTicker GTK geometry: requested={} actual={}x{} margins={:?} visible={}",
@@ -442,7 +442,7 @@ fn apply_card_height(window: &gtk::ApplicationWindow, height: i32) -> Result<(),
         window.set_anchor(Edge::Right, true);
         window.set_layer_shell_margin(Edge::Bottom, bottom);
         window.set_layer_shell_margin(Edge::Right, right);
-        if std::env::var_os("REPOTICKER_UI_DEBUG").is_some() {
+        if crate::ui_hover_debug_enabled() {
             eprintln!(
                 "RepoTicker resize: height={height} margins=({bottom},{right}) allocated={}x{}",
                 window.allocated_width(),
@@ -468,7 +468,7 @@ pub fn request_resize(app: &AppHandle, height: i32) -> Result<(), String> {
     validate_card_height(height)?;
     on_main(app, move |window| {
         if let Err(error) = apply_card_height(window, height) {
-            eprintln!("RepoTicker Layer Shell resize: {error}");
+            crate::native_warning("layer_shell_resize", error);
         }
     })
 }
@@ -508,7 +508,7 @@ pub fn show(app: &AppHandle) -> Result<(), String> {
             window.set_layer_shell_margin(Edge::Right, right);
         });
         window.show_all();
-        if std::env::var_os("REPOTICKER_UI_DEBUG").is_some() {
+        if crate::ui_hover_debug_enabled() {
             eprintln!(
                 "RepoTicker layer: requested={} allocated={} margins={:?}",
                 CARD_HEIGHT.load(Ordering::Acquire),
@@ -555,7 +555,7 @@ pub fn cancel_drag(app: &AppHandle) -> Result<(), String> {
     let writer = app.clone();
     on_main(app, move |_| {
         if let Err(error) = stop_on_gtk(&writer) {
-            eprintln!("RepoTicker: cannot end relative drag: {error}");
+            crate::native_warning("cannot_end_relative_drag", error);
         }
     })
 }

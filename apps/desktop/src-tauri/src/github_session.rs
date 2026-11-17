@@ -162,7 +162,7 @@ fn publish_with_reason(app: &AppHandle, status: &'static str, reason: Option<&'s
         }
     }
     // In debug mode, report only fixed non-sensitive phase identifiers.
-    if std::env::var_os("REPOTICKER_UI_DEBUG").is_some() {
+    if crate::ui_hover_debug_enabled() {
         eprintln!(
             "RepoTicker github auth phase={status} reason={}",
             reason.unwrap_or("none")

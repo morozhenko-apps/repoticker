@@ -5,21 +5,43 @@ umask 077
 
 REPO="morozhenko-apps/repoticker"
 ENVIRONMENT="apt-release"
-BACKUP="$HOME/morozhenko/secrets/RepoTicker"
+BACKUP="${REPOTICKER_SIGNING_BACKUP_DIR:-}"
 FPR="${1:-}"
 
 if [[ ! "$FPR" =~ ^[0-9a-fA-F]{40}$ ]]; then
   echo "Usage: bash scripts/provision_apt_key.sh <40-character GPG fingerprint>" >&2
   exit 2
 fi
-for item in gh gpg base64; do
+if [[ -z "$BACKUP" || "$BACKUP" != /* || ! -d "$BACKUP" ]]; then
+  echo "Set REPOTICKER_SIGNING_BACKUP_DIR to an existing absolute directory on a mounted backup volume." >&2
+  exit 1
+fi
+for item in gh gpg base64 realpath findmnt; do
   command -v "$item" >/dev/null || { echo "Missing $item" >&2; exit 1; }
 done
-[[ -d "$BACKUP" ]] || {
-  echo "The mounted Google Drive directory does not exist: $BACKUP" >&2
-  echo "Verify the mount; refusing to create a backup in a local lookalike directory." >&2
+BACKUP="$(realpath -e -- "$BACKUP" 2>/dev/null)" || {
+  echo "Signing backup destination cannot be resolved." >&2
   exit 1
 }
+MOUNT_TYPE="$(findmnt --target "$BACKUP" --noheadings --output FSTYPE 2>/dev/null)" || {
+  echo "Signing backup mount cannot be verified." >&2
+  exit 1
+}
+MOUNT_TARGET="$(findmnt --target "$BACKUP" --noheadings --output TARGET 2>/dev/null)" || {
+  echo "Signing backup mount cannot be verified." >&2
+  exit 1
+}
+case "$MOUNT_TYPE" in
+  fuse*|nfs|nfs4|cifs|smb3|davfs|sshfs) ;;
+  *)
+    echo "Signing backup destination is not on a remote or FUSE filesystem." >&2
+    exit 1
+    ;;
+esac
+if [[ -z "$MOUNT_TARGET" || "$MOUNT_TARGET" == "/" || ! -w "$BACKUP" ]]; then
+  echo "Signing backup volume is unavailable or not writable." >&2
+  exit 1
+fi
 gh auth status >/dev/null
 gh api "repos/$REPO/environments/$ENVIRONMENT" --jq .name >/dev/null || {
   echo "Configure GitHub environment '$ENVIRONMENT' with required reviewers first." >&2
@@ -53,7 +75,7 @@ printf '%s\n' "$FPR" > "$BACKUP/FINGERPRINT"
 chmod 600 "$BACKUP/$filename"
 chmod 644 "$BACKUP/repoticker-archive-keyring.gpg" "$BACKUP/repoticker-public.asc" "$BACKUP/FINGERPRINT"
 
-echo "Encrypted full-key backup: $BACKUP/$filename"
+echo "Encrypted full-key backup stored on the mounted backup volume."
 printf 'Signing subkey passphrase: ' >&2
 IFS= read -rs key_pass
 printf '\n' >&2

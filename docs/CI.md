@@ -39,3 +39,19 @@ Use bounded, redacted diagnostic reasons and sanitized screenshots.
 A historical test run is not proof that a different source revision passed.
 See [security](SECURITY.md), [architecture](ARCHITECTURE.md) and
 [release](RELEASE.md) for the current durable contracts.
+
+## Operator signing-key backup
+
+`scripts/provision_apt_key.sh` is an explicit local operator procedure,
+not an unattended CI job. Set `REPOTICKER_SIGNING_BACKUP_DIR` to an existing
+absolute path inside a currently mounted backup filesystem before invoking
+the script. No personal path or default destination is embedded in source.
+
+The provisioning script must fail closed if the variable is empty,
+relative, missing or resolves to an ordinary local filesystem. A mounted
+FUSE or network filesystem is required; simply finding a directory on
+disk does not prove the remote backup is mounted. The script never creates
+a substitute local directory. It encrypts the complete signing-key backup
+before allowing a validated signing subkey to be sent to protected
+GitHub environment secrets. Never print signing credentials, passphrases,
+private paths or secret bytes in logs.

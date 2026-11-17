@@ -13,8 +13,11 @@ test("native warning diagnostics retain stage but never format raw OS errors", (
   assert.equal((native.match(/native_warning\("[a-z0-9_]+", error\)/g) || []).length, 17);
   assert.equal((surface.match(/crate::native_warning\("[a-z0-9_]+", error\)/g) || []).length, 2);
   for (const moduleSource of [native, surface]) {
-    assert.doesNotMatch(moduleSource, /eprintln!\([^;]*\{error\}/);
-    assert.doesNotMatch(moduleSource, /eprintln!\([^;]*(?:error:\?|secret\.as_str|relay_url)/i);
+    const emitted = [...moduleSource.matchAll(/eprintln!\(([\s\S]*?)\);/g)].map(match => match[1]);
+    assert.ok(emitted.length > 0, "Expected at least one native warning to audit");
+    for (const call of emitted) {
+      assert.doesNotMatch(call, /\{error(?:[:}])|\berror\b|secret\.as_str|relay_url/i);
+    }
   }
 });
 
@@ -26,5 +29,8 @@ test("verbose desktop traces only enable with an explicit debug value of 1", () 
     assert.doesNotMatch(moduleSource, /std::env::var_os\("REPOTICKER_UI_DEBUG"\)\.is_some\(\)/);
   }
   assert.match(native, /if ui_hover_debug_enabled\(\) \{\s*eprintln!\(\s*"RepoTicker surface mode=/);
-  assert.doesNotMatch(native, /eprintln!\([^;]*(?:XDG_SESSION_TYPE|GDK_BACKEND)/);
+  const emitted = [...native.matchAll(/eprintln!\(([\s\S]*?)\);/g)].map(match => match[1]);
+  for (const call of emitted) {
+    assert.doesNotMatch(call, /XDG_SESSION_TYPE|GDK_BACKEND/);
+  }
 });

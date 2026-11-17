@@ -1962,10 +1962,7 @@ fn main() {
         })
         .on_window_event(|window, event| {
             #[cfg(target_os = "linux")]
-            if !linux_surface::enabled()
-                && window.label() == "main"
-                && ui_hover_debug_enabled()
-            {
+            if !linux_surface::enabled() && window.label() == "main" && ui_hover_debug_enabled() {
                 match event {
                     tauri::WindowEvent::Resized(size) => {
                         eprintln!("RepoTicker fallback resized: {size:?}");
